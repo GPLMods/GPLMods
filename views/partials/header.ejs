@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <%- include('anti-zoom') %>
 
     <% const siteName="GPL Mods Official" ; const defaultTitle="GPL Mods - 100% Safe & Working Premium Unlocked Mods" ;
         const
@@ -604,6 +604,7 @@
                     box-shadow: 0 16px 45px rgba(0, 0, 0, 0.95), 0 0 15px rgba(255, 215, 0, 0.2) !important;
                     z-index: 100005 !important;
                 }
+
                 .header-notif-wrapper {
                     position: static !important;
                 }
@@ -1316,13 +1317,13 @@
                                                 <li><a href="/licenses"><i class="fas fa-file-contract"
                                                             style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                         License Hub</a></li>
-                                                <li><a href="/community"><i class="fas fa-comments"
+                                                <li><a href="/community"><i class="fa-solid fa-file-contract"
                                                             style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                         Community Forums</a></li>
                                                 <li><a href="/upload"><i class="fas fa-cloud-upload-alt"
                                                             style="margin-right: 10px; width: 18px; text-align: center;"></i>
                                                         Upload A New Mod</a></li>
-                                                <li><a href="/clubs"><i class="fas fa-comments"
+                                                <li><a href="/clubs"><i class="fa-duotone fa-thin fa-messages"
                                                             style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
                                                         Chat &amp; Clubs</a></li>
                                                 <li><a href="/membership"><i class="fas fa-gem"
@@ -1346,7 +1347,7 @@
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                 Donate Us!</a></li>
                                                         <li><a href="/sponsor"><i
-                                                                    class="fa-regular fa-hand-holding-circle-dollar"
+                                                                    class="fa-solid fa-hand-holding-circle-dollar"
                                                                     style="margin-right: 10px; width: 18px; text-align: center; color: #1ee973;"></i>
                                                                 Sponsors!</a></li>
                                                         <li><a href="/promote"><i class="fas fa-bullhorn"
@@ -1392,7 +1393,7 @@
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
                                                                     Donate Us!</a></li>
                                                             <li><a href="/sponsor"><i
-                                                                        class="fa-regular fa-hand-holding-circle-dollar"
+                                                                        class="fa-solid fa-hand-holding-circle-dollar"
                                                                         style="margin-right: 10px; width: 18px; text-align: center; color: #1ee973;"></i>
                                                                     Sponsors!</a></li>
                                                             <li><a href="/promote"><i class="fas fa-bullhorn"

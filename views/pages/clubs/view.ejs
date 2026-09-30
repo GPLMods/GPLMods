@@ -1153,10 +1153,249 @@
             width: 44px;
             height: 44px;
         }
-        .poll-embed-card {
-            max-width: 100%;
-            padding: 12px;
-        }
+    /* Custom Select for Channel Modals */
+    .chan-custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .chan-custom-select {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #333645;
+        background-color: #0d0e12;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        min-height: 44px;
+        color: #fff;
+    }
+    .chan-custom-select:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .chan-custom-select-wrapper.open .chan-custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .chan-custom-select-text {
+        color: #fff;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .chan-custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #14151e;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-6px);
+        transition: all 0.25s ease;
+        z-index: 1005;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .chan-custom-select-wrapper.open .chan-custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .chan-custom-option {
+        padding: 10px 14px;
+        color: var(--silver);
+        font-size: 0.88rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: background 0.2s, color 0.2s;
+    }
+    .chan-custom-option:hover {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .chan-custom-option.selected {
+        background-color: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        font-weight: 700;
+    }
+
+    /* Channel Type Pills in Topbar */
+    .chan-type-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        margin-left: 6px;
+    }
+    .chan-type-pill.text { background: rgba(255, 215, 0, 0.12); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.3); }
+    .chan-type-pill.polls { background: rgba(56, 239, 125, 0.12); color: #38ef7d; border: 1px solid rgba(56, 239, 125, 0.3); }
+    .chan-type-pill.announce { background: rgba(0, 210, 255, 0.12); color: #00d2ff; border: 1px solid rgba(0, 210, 255, 0.3); }
+    .chan-type-pill.rules { background: rgba(186, 104, 200, 0.12); color: #ba68c8; border: 1px solid rgba(186, 104, 200, 0.3); }
+    .chan-type-pill.feeds { background: rgba(255, 152, 0, 0.12); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); }
+    .chan-type-pill.locked { background: rgba(244, 67, 54, 0.15); color: #ff8a80; border: 1px solid rgba(244, 67, 54, 0.35); }
+    .chan-type-pill.priv { background: rgba(142, 68, 173, 0.2); color: #bb86fc; border: 1px solid rgba(142, 68, 173, 0.4); }
+
+    /* Typing UI Indicator */
+    .club-typing-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 14px;
+        background: rgba(15, 16, 21, 0.95);
+        border-top: 1px solid rgba(255, 215, 0, 0.15);
+        border-radius: 6px 6px 0 0;
+        font-size: 0.78rem;
+        color: var(--silver);
+        animation: fadeInTyping 0.2s ease-out;
+    }
+    @keyframes fadeInTyping {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .typing-bubble-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .typing-bubble-dots .typing-dot {
+        width: 4px;
+        height: 4px;
+        background: var(--gold);
+        border-radius: 50%;
+        animation: typingDotPulse 1.4s infinite ease-in-out;
+    }
+    .typing-bubble-dots .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-bubble-dots .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingDotPulse {
+        0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+        40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .typing-usernames-text {
+        font-weight: 500;
+        color: #fff;
+    }
+
+    /* Read-Only Locked Full Box in Chat */
+    .chat-locked-full-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.35);
+        border-radius: 10px;
+        padding: 12px 18px;
+        margin: 6px 0;
+    }
+
+    /* Channel Settings & Options GUI Modal */
+    .channel-menu-gui-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(6px);
+        z-index: 1050;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+    .channel-menu-gui-box {
+        background: #14151b;
+        border: 1px solid #333645;
+        border-radius: 18px;
+        width: 100%;
+        max-width: 680px;
+        max-height: 88vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.1);
+    }
+    .channel-menu-gui-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid #282a36;
+        background: #0d0e12;
+    }
+    .channel-menu-gui-header h3 {
+        margin: 0;
+        font-size: 1.15rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .channel-menu-tabs-bar {
+        display: flex;
+        gap: 4px;
+        padding: 8px 16px;
+        background: #101117;
+        border-bottom: 1px solid #282a36;
+        overflow-x: auto;
+    }
+    .chan-tab-btn {
+        background: none;
+        border: none;
+        color: var(--silver);
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .chan-tab-btn:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+    .chan-tab-btn.active {
+        background: rgba(255, 215, 0, 0.14);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+    }
+    .channel-menu-tab-content {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .channel-menu-gui-btn {
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        color: var(--gold);
+        font-weight: 600;
+        padding: 6px 12px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .channel-menu-gui-btn:hover {
+        background: var(--gold);
+        color: #000;
     }
 </style>
 
@@ -1351,6 +1590,25 @@
                 <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
                 <span style="font-weight: 700;"><%= activeChannel ? activeChannel.name : 'general' %></span>
 
+                <!-- Channel Type & Status Pills -->
+                <% if (activeChannel) { %>
+                    <% if (activeChannel.type === 'rules') { %>
+                        <span class="chan-type-pill rules"><i class="fas fa-scroll"></i> Rules</span>
+                    <% } else if (activeChannel.type === 'announcements') { %>
+                        <span class="chan-type-pill announce"><i class="fas fa-bullhorn"></i> Announcements</span>
+                    <% } else if (activeChannel.type === 'polls') { %>
+                        <span class="chan-type-pill polls"><i class="fas fa-poll"></i> Polls</span>
+                    <% } else if (activeChannel.type === 'new-uploads' || activeChannel.type === 'new-updates') { %>
+                        <span class="chan-type-pill feeds"><i class="fas fa-rss"></i> Mod Feed</span>
+                    <% } else { %>
+                        <span class="chan-type-pill text"><i class="fas fa-hashtag"></i> Text</span>
+                    <% } %>
+                    <span class="chan-type-pill locked" id="topbarLockedBadge" style="display: <%= activeChannel.isReadOnly ? 'inline-flex' : 'none' %>;"><i class="fas fa-lock"></i> Locked</span>
+                    <% if (activeChannel.isPrivate) { %>
+                        <span class="chan-type-pill priv"><i class="fas fa-shield-alt"></i> Private</span>
+                    <% } %>
+                <% } %>
+
                 <!-- Verified Badge for Club in Topbar -->
                 <% 
                     const clubCreatorRole = club.creator ? club.creator.role : '';
@@ -1377,20 +1635,11 @@
             </div>
 
             <div class="topbar-actions">
-                <!-- Mod Share System -->
-                <button type="button" class="topbar-btn" data-club-id="<%= club._id %>" data-club-name="<%= club.name %>" data-club-url="/clubs/<%= club.slug %>" onclick="handleClubShare(this)" title="Share Club">
-                    <i class="fas fa-share-alt"></i>
+                <!-- Consolidated Channel Options & Settings GUI Button -->
+                <button type="button" class="channel-menu-gui-btn" id="btnOpenChannelMenu" onclick="openChannelSettingsGUI()" title="Channel Settings, Roles, Permissions &amp; Invites">
+                    <i class="fas fa-sliders-h"></i>
+                    <span class="hide-mobile">Channel Menu</span>
                 </button>
-
-                <!-- Restrict Channel Toggle (Staff/Creator) -->
-                <% if (hasManageClubPerm) { %>
-                    <button type="button" class="topbar-btn" id="btnToggleChannelRestrict" onclick="toggleChannelRestriction()" title="<%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Restrict Channel Chat' %>" style="color: <%= (activeChannel && activeChannel.isReadOnly) ? '#e74c3c' : 'var(--silver)' %>;">
-                        <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock' : 'fa-lock-open' %>"></i>
-                    </button>
-                    <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Track Creator Mod Updates">
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                <% } %>
 
                 <!-- Toggle Members Sidebar on Mobile/Desktop -->
                 <button type="button" class="topbar-btn" onclick="toggleMembersSidebar()" title="Toggle Members List">
@@ -1401,7 +1650,12 @@
 
         <!-- Channel Restricted Warning Banner -->
         <div id="channelRestrictedNotice" style="display: <%= (activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none' %>; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600;">
-            <i class="fas fa-lock"></i> Chat in this channel is restricted to staff announcements.
+            <i class="fas fa-lock"></i> Chat in this channel is locked / restricted to staff announcements.
+            <% if (hasManageClubPerm) { %>
+                <button type="button" onclick="toggleChannelRestriction()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 8px;">
+                    Unlock Now
+                </button>
+            <% } %>
         </div>
 
         <!-- Chat Messages Container -->
@@ -1573,11 +1827,34 @@
                 <i class="fas fa-ban"></i> <strong>External links are forbidden!</strong> Only official GPLMods site links are allowed in this chat.
             </div>
 
-            <div class="chat-input-box" style="position: relative;">
+            <!-- Real-time Typing Indicator Bar -->
+            <div id="clubTypingBar" class="club-typing-bar" style="display: none;">
+                <div class="typing-bubble-dots">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                </div>
+                <span id="clubTypingUsersText" class="typing-usernames-text"></span>
+            </div>
+
+            <!-- Channel Locked Chat Placeholder for Members -->
+            <% 
+                const isChanLocked = activeChannel && activeChannel.isReadOnly; 
+                const canPostWhenLocked = isStaff || isClubCreator;
+            %>
+            <div id="channelLockedChatOverlay" style="display: <%= (isChanLocked && !canPostWhenLocked) ? 'flex' : 'none' %>;" class="chat-locked-full-box">
+                <i class="fas fa-lock" style="color: var(--gold); font-size: 1.3rem;"></i>
+                <div>
+                    <strong style="color: #fff; display: block; font-size: 0.95rem;">Channel is in Read-Only Mode</strong>
+                    <span style="color: var(--silver); font-size: 0.82rem;">This channel is locked. Only staff and channel managers have permission to send messages here.</span>
+                </div>
+            </div>
+
+            <div class="chat-input-box" id="mainChatInputBox" style="position: relative; display: <%= (isChanLocked && !canPostWhenLocked) ? 'none' : 'flex' %>;">
                 <!-- Discord Mention Autocomplete Dropdown -->
                 <div id="mentionAutocompleteDropdown" class="mention-autocomplete-dropdown"></div>
 
-                <textarea id="chatInput" class="chat-textarea" rows="1" placeholder="<%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'This channel is read-only.' : `Message #${activeChannel ? activeChannel.name : 'general'}...` %>" <%= (activeChannel && activeChannel.isReadOnly && !isStaff && !isClubCreator) ? 'disabled' : '' %>></textarea>
+                <textarea id="chatInput" class="chat-textarea" rows="1" placeholder="<%= isChanLocked ? (canPostWhenLocked ? `Message #${activeChannel ? activeChannel.name : 'general'} (Channel is locked for members)...` : 'This channel is read-only.') : `Message #${activeChannel ? activeChannel.name : 'general'}...` %>"></textarea>
 
                 <div class="chat-input-actions">
                     <!-- Emoticon Button (ASCII faces) -->
@@ -1728,7 +2005,7 @@
 <!-- MODALS (CREATE CHANNEL, POLL, SHARE, ETC)  -->
 <!-- ========================================== -->
 
-<!-- Create Channel Modal -->
+<!-- Create Channel Modal (With Custom Dropdown GUI) -->
 <div class="gpl-modal-backdrop" id="createChannelModal">
     <div class="gpl-modal-box">
         <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-hashtag" style="color: var(--gold);"></i> Create Text Channel</h3>
@@ -1741,12 +2018,42 @@
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Topic</label>
                 <input type="text" name="topic" placeholder="Channel purpose or guidelines..." style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
             </div>
+            <!-- Custom Channel Type Dropdown GUI -->
             <div style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Type</label>
-                <select name="type" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
-                    <option value="text">Text Channel</option>
-                    <option value="polls">Community Polls Channel</option>
-                </select>
+                <div class="chan-custom-select-wrapper" id="wrapper-createChannelType">
+                    <div class="chan-custom-select">
+                        <span class="chan-custom-select-text">
+                            <i class="fas fa-hashtag" style="color: var(--gold);"></i>
+                            <span class="text-label">Text Channel</span>
+                        </span>
+                        <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
+                    </div>
+                    <div class="chan-custom-options">
+                        <div class="chan-custom-option selected" data-value="text">
+                            <i class="fas fa-hashtag" style="color: var(--gold);"></i>
+                            <div>
+                                <strong style="color: #fff; display: block;">Text Channel</strong>
+                                <span style="font-size: 0.78rem; color: var(--silver);">Standard text discussions and mod releases</span>
+                            </div>
+                        </div>
+                        <div class="chan-custom-option" data-value="polls">
+                            <i class="fas fa-poll" style="color: #38ef7d;"></i>
+                            <div>
+                                <strong style="color: #fff; display: block;">Community Polls Channel</strong>
+                                <span style="font-size: 0.78rem; color: var(--silver);">Community voting, member feedback & polls</span>
+                            </div>
+                        </div>
+                        <div class="chan-custom-option" data-value="announcements">
+                            <i class="fas fa-bullhorn" style="color: #00d2ff;"></i>
+                            <div>
+                                <strong style="color: #fff; display: block;">Announcements Channel</strong>
+                                <span style="font-size: 0.78rem; color: var(--silver);">Broadcast and staff updates only</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="type" id="createChannelTypeInput" value="text">
+                </div>
             </div>
             <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
                 <input type="checkbox" name="isPrivate" id="channelPrivateCheck">
@@ -1757,6 +2064,355 @@
                 <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Create Channel</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- CONSOLIDATED CHANNEL SETTINGS & ACTIONS GUI MODAL              -->
+<!-- ============================================================== -->
+<div class="channel-menu-gui-modal" id="channelSettingsGUIModal">
+    <div class="channel-menu-gui-box">
+        <div class="channel-menu-gui-header">
+            <h3>
+                <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
+                <span>#<%= activeChannel ? activeChannel.name : 'general' %> — Settings</span>
+            </h3>
+            <button type="button" onclick="closeChannelSettingsGUI()" style="background: none; border: none; color: var(--silver); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+
+        <!-- Navigation Tabs Bar -->
+        <div class="channel-menu-tabs-bar">
+            <button type="button" class="chan-tab-btn active" id="tabBtn-info" onclick="switchChannelMenuTab('info')">
+                <i class="fas fa-info-circle"></i> <span>Channel Info</span>
+            </button>
+            <button type="button" class="chan-tab-btn" id="tabBtn-invite" onclick="switchChannelMenuTab('invite')">
+                <i class="fas fa-link"></i> <span>Invite &amp; Share</span>
+            </button>
+            <% if (hasManageClubPerm) { %>
+                <button type="button" class="chan-tab-btn" id="tabBtn-lock" onclick="switchChannelMenuTab('lock')">
+                    <i class="fas fa-lock"></i> <span>Lock &amp; Access</span>
+                </button>
+                <button type="button" class="chan-tab-btn" id="tabBtn-edit" onclick="switchChannelMenuTab('edit')">
+                    <i class="fas fa-edit"></i> <span>Edit Channel</span>
+                </button>
+                <button type="button" class="chan-tab-btn" id="tabBtn-roles" onclick="switchChannelMenuTab('roles')">
+                    <i class="fas fa-user-shield"></i> <span>Roles &amp; Perms</span>
+                </button>
+                <% if (!['rules', 'announcements', 'new-uploads', 'new-updates'].includes(activeChannel ? activeChannel.type : '')) { %>
+                    <button type="button" class="chan-tab-btn" id="tabBtn-danger" onclick="switchChannelMenuTab('danger')" style="color: #ff6b6b;">
+                        <i class="fas fa-trash-alt"></i> <span>Delete</span>
+                    </button>
+                <% } %>
+            <% } %>
+        </div>
+
+        <!-- TAB 1: Channel Overview & Information (All Members) -->
+        <div class="channel-menu-tab-content" id="tabPane-info">
+            <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                        <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1.2rem;">#<%= activeChannel ? activeChannel.name : 'general' %></h4>
+                        <p style="margin: 0; color: var(--silver); font-size: 0.85rem;"><%= activeChannel && activeChannel.topic ? activeChannel.topic : 'No description set for this channel.' %></p>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <% if (activeChannel) { %>
+                            <% if (activeChannel.type === 'rules') { %>
+                                <span class="chan-type-pill rules"><i class="fas fa-scroll"></i> Rules</span>
+                            <% } else if (activeChannel.type === 'announcements') { %>
+                                <span class="chan-type-pill announce"><i class="fas fa-bullhorn"></i> Announcements</span>
+                            <% } else if (activeChannel.type === 'polls') { %>
+                                <span class="chan-type-pill polls"><i class="fas fa-poll"></i> Polls</span>
+                            <% } else if (activeChannel.type === 'new-uploads' || activeChannel.type === 'new-updates') { %>
+                                <span class="chan-type-pill feeds"><i class="fas fa-rss"></i> Mod Feed</span>
+                            <% } else { %>
+                                <span class="chan-type-pill text"><i class="fas fa-hashtag"></i> Text</span>
+                            <% } %>
+                            <span class="chan-type-pill <%= activeChannel.isReadOnly ? 'locked' : 'polls' %>" id="guiChannelLockStatus">
+                                <i class="fas <%= activeChannel.isReadOnly ? 'fa-lock' : 'fa-lock-open' %>"></i>
+                                <%= activeChannel.isReadOnly ? 'Read-Only' : 'Open Chat' %>
+                            </span>
+                            <span class="chan-type-pill <%= activeChannel.isPrivate ? 'priv' : 'text' %>">
+                                <i class="fas <%= activeChannel.isPrivate ? 'fa-shield-alt' : 'fa-globe' %>"></i>
+                                <%= activeChannel.isPrivate ? 'Private' : 'Public' %>
+                            </span>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; font-size: 0.84rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px;">
+                    <div>
+                        <span style="color: var(--silver); display: block;">Channel Type:</span>
+                        <strong style="color: #fff;"><%= activeChannel ? activeChannel.type.toUpperCase() : 'TEXT' %> Channel</strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--silver); display: block;">Who Can Chat:</span>
+                        <strong style="color: <%= (activeChannel && activeChannel.isReadOnly) ? '#ff8a80' : '#69f0ae' %>;">
+                            <%= (activeChannel && activeChannel.isReadOnly) ? 'Staff & Managers Only' : 'All Club Members' %>
+                        </strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--silver); display: block;">Club:</span>
+                        <strong style="color: var(--gold);"><%= club.name %></strong>
+                    </div>
+                    <div>
+                        <span style="color: var(--silver); display: block;">Your Role:</span>
+                        <strong style="color: #fff;">
+                            <%= isClubCreator ? 'Club Owner' : (isStaff ? 'Site Staff' : (membership ? 'Member' : 'Guest')) %>
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="copyActiveChannelLink()" style="background: rgba(255,215,0,0.15); border: 1px solid var(--gold); color: #fff; padding: 8px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-copy" style="color: var(--gold); margin-right: 6px;"></i> Copy Channel Link
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 2: Invite & Share Link (All Members) -->
+        <div class="channel-menu-tab-content" id="tabPane-invite" style="display: none;">
+            <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Direct Channel Invite Link</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="directChannelInviteInput" readonly style="flex: 1; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 0.9rem;" value="">
+                    <button type="button" id="btnCopyChannelInvite" onclick="copyChannelInviteDirect()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 0 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-copy"></i> <span>Copy</span>
+                    </button>
+                </div>
+                <p style="color: var(--silver); font-size: 0.78rem; margin: 8px 0 0 0;">
+                    Share this link with friends or community members. It takes them directly into <strong>#<%= activeChannel ? activeChannel.name : 'general' %></strong>!
+                </p>
+            </div>
+
+            <!-- Social Share Quick Links -->
+            <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 10px;">Quick Share via Platforms:</label>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+                <a href="#" id="shareChanWhatsApp" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #25D366; color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </a>
+                <a href="#" id="shareChanTelegram" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #0088cc; color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fab fa-telegram-plane"></i> Telegram
+                </a>
+                <a href="#" id="shareChanTwitter" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #1da1f2; color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fab fa-x-twitter"></i> X / Twitter
+                </a>
+                <a href="#" id="shareChanReddit" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: center; gap: 8px; background: #ff4500; color: #fff; text-decoration: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fab fa-reddit"></i> Reddit
+                </a>
+            </div>
+        </div>
+
+        <% if (hasManageClubPerm) { %>
+            <!-- TAB 3: Lock Chat & Privacy Controls (Staff/Manager Only) -->
+            <div class="channel-menu-tab-content" id="tabPane-lock" style="display: none;">
+                <!-- 1. Lock/Unlock Chat Section -->
+                <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                        <div>
+                            <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1rem;"><i class="fas fa-lock" style="color: var(--gold); margin-right: 6px;"></i> Lock Channel Chat</h4>
+                            <p style="margin: 0; color: var(--silver); font-size: 0.82rem;">
+                                Restrict regular members from sending messages. Only staff, owner, and managers can chat.
+                            </p>
+                        </div>
+                        <button type="button" id="btnGuiToggleLock" onclick="toggleChannelRestriction()" style="background: <%= (activeChannel && activeChannel.isReadOnly) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)' %>; border: 1px solid <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; color: <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock-open' : 'fa-lock' %>"></i>
+                            <span id="btnGuiToggleLockText"><%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Lock Channel Chat' %></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Channel Privacy & Allowed Roles -->
+                <form id="channelPrivacyAccessForm" onsubmit="saveChannelPrivacyAccess(event)">
+                    <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                            <div>
+                                <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1rem;"><i class="fas fa-shield-alt" style="color: #ba68c8; margin-right: 6px;"></i> Channel Access &amp; Privacy</h4>
+                                <p style="margin: 0; color: var(--silver); font-size: 0.82rem;">Control whether this channel is public to everyone or restricted to specific base roles.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="guiChanIsPrivate" name="isPrivate" <%= (activeChannel && activeChannel.isPrivate) ? 'checked' : '' %>>
+                                <label for="guiChanIsPrivate" style="color: #fff; font-size: 0.88rem; font-weight: 600;">Private Channel</label>
+                            </div>
+                        </div>
+
+                        <!-- Roles Checklist -->
+                        <div id="guiChanRolesChecklistWrap" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; margin-top: 14px;">
+                            <label style="display: block; font-size: 0.82rem; color: var(--silver); margin-bottom: 8px;">Roles with Access to this Channel:</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <% (roles || []).forEach(r => { 
+                                    const isAllowed = (activeChannel && activeChannel.allowedRoles && activeChannel.allowedRoles.some(ar => String(ar) === String(r._id)));
+                                %>
+                                    <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.85rem; cursor: pointer;">
+                                        <input type="checkbox" name="allowedRoles" value="<%= r._id %>" <%= isAllowed ? 'checked' : '' %>>
+                                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
+                                        <span><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                                    </label>
+                                <% }); %>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                            <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                                Save Access Settings
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 4: Edit Channel Information (Staff/Manager Only) -->
+            <div class="channel-menu-tab-content" id="tabPane-edit" style="display: none;">
+                <form id="editChannelInfoForm" onsubmit="saveChannelInformation(event)">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Name</label>
+                        <input type="text" id="editChannelName" name="name" value="<%= activeChannel ? activeChannel.name : '' %>" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Topic</label>
+                        <input type="text" id="editChannelTopic" name="topic" value="<%= (activeChannel && activeChannel.topic) ? activeChannel.topic : '' %>" placeholder="Channel purpose or guidelines..." style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 18px;">
+                        <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Channel Type</label>
+                        <div class="chan-custom-select-wrapper" id="wrapper-editChannelType">
+                            <% const editCurType = activeChannel ? activeChannel.type : 'text'; %>
+                            <div class="chan-custom-select">
+                                <span class="chan-custom-select-text">
+                                    <i class="fas <%= editCurType === 'polls' ? 'fa-poll' : (editCurType === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag') %>" style="color: var(--gold);"></i>
+                                    <span class="text-label"><%= editCurType === 'polls' ? 'Community Polls Channel' : (editCurType === 'announcements' ? 'Announcements Channel' : 'Text Channel') %></span>
+                                </span>
+                                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
+                            </div>
+                            <div class="chan-custom-options">
+                                <div class="chan-custom-option <%= editCurType === 'text' ? 'selected' : '' %>" data-value="text">
+                                    <i class="fas fa-hashtag" style="color: var(--gold);"></i>
+                                    <div><strong style="color: #fff; display: block;">Text Channel</strong><span style="font-size: 0.78rem; color: var(--silver);">Standard text discussions and mod releases</span></div>
+                                </div>
+                                <div class="chan-custom-option <%= editCurType === 'polls' ? 'selected' : '' %>" data-value="polls">
+                                    <i class="fas fa-poll" style="color: #38ef7d;"></i>
+                                    <div><strong style="color: #fff; display: block;">Community Polls Channel</strong><span style="font-size: 0.78rem; color: var(--silver);">Community voting, member feedback & polls</span></div>
+                                </div>
+                                <div class="chan-custom-option <%= editCurType === 'announcements' ? 'selected' : '' %>" data-value="announcements">
+                                    <i class="fas fa-bullhorn" style="color: #00d2ff;"></i>
+                                    <div><strong style="color: #fff; display: block;">Announcements Channel</strong><span style="font-size: 0.78rem; color: var(--silver);">Broadcast and staff updates only</span></div>
+                                </div>
+                            </div>
+                            <input type="hidden" name="type" id="editChannelTypeInput" value="<%= editCurType %>">
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                            Save Channel Information
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB 5: Role Management & "Make Roles" (Staff/Manager Only) -->
+            <div class="channel-menu-tab-content" id="tabPane-roles" style="display: none;">
+                <!-- 1. Create New Custom Role ("Make Roles") -->
+                <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 1rem;"><i class="fas fa-plus-circle" style="color: var(--gold); margin-right: 6px;"></i> Create New Custom Role</h4>
+                    <form id="createRoleGUIForm" onsubmit="submitCreateRole(event)">
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
+                                <input type="text" id="newRoleName" placeholder="e.g. VIP Modder, Helper" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 8px 10px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Badge Emoji</label>
+                                <input type="text" id="newRoleBadge" placeholder="🛡️" value="🛡️" maxlength="4" style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 8px 10px; box-sizing: border-box; text-align: center;">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Color</label>
+                                <input type="color" id="newRoleColor" value="#FFD700" style="width: 100%; height: 36px; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 2px; cursor: pointer; box-sizing: border-box;">
+                            </div>
+                        </div>
+
+                        <!-- Permissions Checkboxes -->
+                        <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; font-size: 0.82rem; color: var(--silver);">
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="permManageChannels"> Manage Channels
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="permKickMembers"> Kick Members
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <input type="checkbox" id="permPostPolls" checked> Create Polls
+                            </label>
+                        </div>
+
+                        <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                            <i class="fas fa-magic"></i> Make Role
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 2. Existing Roles List -->
+                <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 10px 0; color: #fff; font-size: 0.95rem;">Existing Club Roles</h4>
+                    <div id="guiRolesDisplayList" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <% (roles || []).forEach(r => { %>
+                            <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
+                                <%= r.badgeIcon || '🛡️' %> <%= r.name %>
+                            </span>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <!-- 3. Assign / Remove Role from Member -->
+                <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px;">
+                    <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 0.95rem;"><i class="fas fa-user-tag" style="color: var(--gold); margin-right: 6px;"></i> Assign Base Roles to Members</h4>
+                    <form id="assignMemberRoleForm" onsubmit="submitMemberRoleAssignment(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                            <div>
+                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Choose Member</label>
+                                <select id="assignTargetMember" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                                    <option value="">-- Select Member --</option>
+                                    <% (members || []).forEach(m => { %>
+                                        <% if (m.user) { %>
+                                            <option value="<%= m._id %>"><%= m.user.username %></option>
+                                        <% } %>
+                                    <% }); %>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Choose Role</label>
+                                <select id="assignTargetRole" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                                    <option value="">-- Select Role --</option>
+                                    <% (roles || []).forEach(r => { %>
+                                        <option value="<%= r._id %>"><%= r.badgeIcon || '🛡️' %> <%= r.name %></option>
+                                    <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" name="action" value="add" onclick="this.form.actionVal='add'" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-plus"></i> Assign Role
+                            </button>
+                            <button type="submit" name="action" value="remove" onclick="this.form.actionVal='remove'" style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; font-weight: 600; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-minus"></i> Remove Role
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TAB 6: Danger Zone / Delete Channel (Staff/Manager Only) -->
+            <% if (!['rules', 'announcements', 'new-uploads', 'new-updates'].includes(activeChannel ? activeChannel.type : '')) { %>
+                <div class="channel-menu-tab-content" id="tabPane-danger" style="display: none;">
+                    <div style="background: rgba(244, 67, 54, 0.1); border: 1px solid rgba(244, 67, 54, 0.4); border-radius: 12px; padding: 20px;">
+                        <h4 style="margin: 0 0 8px 0; color: #ff8a80; font-size: 1.05rem;"><i class="fas fa-exclamation-triangle"></i> Delete This Channel</h4>
+                        <p style="margin: 0 0 16px 0; color: var(--silver); font-size: 0.85rem; line-height: 1.5;">
+                            Are you sure you want to permanently delete <strong>#<%= activeChannel ? activeChannel.name : '' %></strong>? This action cannot be undone. All message logs and community polls in this channel will be erased.
+                        </p>
+                        <button type="button" onclick="deleteActiveChannel()" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 8px; cursor: pointer;">
+                            <i class="fas fa-trash-alt"></i> Delete Channel Permanently
+                        </button>
+                    </div>
+                </div>
+            <% } %>
+        <% } %>
     </div>
 </div>
 
@@ -2151,11 +2807,36 @@
     }
 
     // 3. Send Message Handler
+    // 3. Send Message & Typing Emitter Handler
     const chatInput = document.getElementById('chatInput');
     const warningBanner = document.getElementById('linkWarningBanner');
 
+    let clubTypingTimeout = null;
+    let isUserTyping = false;
+
+    function emitClubTyping() {
+        if (!socket || !channelId) return;
+        if (!isUserTyping) {
+            isUserTyping = true;
+            socket.emit('club_typing', { clubId, channelId });
+        }
+        clearTimeout(clubTypingTimeout);
+        clubTypingTimeout = setTimeout(() => {
+            stopClubTypingImmediate();
+        }, 1800);
+    }
+
+    function stopClubTypingImmediate() {
+        if (isUserTyping) {
+            isUserTyping = false;
+            clearTimeout(clubTypingTimeout);
+            socket.emit('club_stop_typing', { clubId, channelId });
+        }
+    }
+
     function sendClubMessage() {
         if (isChannelReadOnly) return;
+        stopClubTypingImmediate();
         const text = chatInput.value ? chatInput.value.trim() : '';
         if (!text) return;
 
@@ -2176,12 +2857,26 @@
         hideMentionDropdown();
     }
 
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey && mentionDropdown.style.display !== 'block') {
-            e.preventDefault();
-            sendClubMessage();
-        }
-    });
+    if (chatInput) {
+        chatInput.addEventListener('input', () => {
+            if (chatInput.value.trim().length > 0) {
+                emitClubTyping();
+            } else {
+                stopClubTypingImmediate();
+            }
+        });
+
+        chatInput.addEventListener('blur', () => {
+            stopClubTypingImmediate();
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && mentionDropdown.style.display !== 'block') {
+                e.preventDefault();
+                sendClubMessage();
+            }
+        });
+    }
 
     // 4. Socket Listeners for Real-Time Updates
     socket.on('club_new_message', (msg) => {
@@ -2302,9 +2997,101 @@
         }
     });
 
+    // Live Typing Indicator State & Listeners
+    const activeTypers = new Map();
+
+    function updateTypingUI() {
+        const typingBar = document.getElementById('clubTypingBar');
+        const typingText = document.getElementById('clubTypingUsersText');
+        if (!typingBar || !typingText) return;
+
+        const typers = Array.from(activeTypers.keys());
+        if (typers.length === 0) {
+            typingBar.style.display = 'none';
+            typingText.textContent = '';
+        } else {
+            typingBar.style.display = 'flex';
+            if (typers.length === 1) {
+                typingText.textContent = `${typers[0]} is typing...`;
+            } else if (typers.length === 2) {
+                typingText.textContent = `${typers[0]} and ${typers[1]} are typing...`;
+            } else {
+                typingText.textContent = `${typers[0]} and ${typers.length - 1} others are typing...`;
+            }
+        }
+    }
+
+    socket.on('club_user_typing', (data) => {
+        if (!data || String(data.channelId) !== channelId) return;
+        if (data.username && data.username !== currentUsername) {
+            activeTypers.set(data.username, Date.now());
+            updateTypingUI();
+        }
+    });
+
+    socket.on('club_user_stop_typing', (data) => {
+        if (!data || String(data.channelId) !== channelId) return;
+        if (data.username && activeTypers.has(data.username)) {
+            activeTypers.delete(data.username);
+            updateTypingUI();
+        }
+    });
+
+    // Clear stale typing indicators after 4.5 seconds
+    setInterval(() => {
+        const now = Date.now();
+        let changed = false;
+        for (const [user, time] of activeTypers.entries()) {
+            if (now - time > 4500) {
+                activeTypers.delete(user);
+                changed = true;
+            }
+        }
+        if (changed) updateTypingUI();
+    }, 2000);
+
+    // Live Channel Lock / Restriction Updated
     socket.on('club_channel_restriction_updated', (data) => {
-        if (String(data.channelId) === channelId) {
-            window.location.reload();
+        if (!data || String(data.channelId) !== channelId) return;
+        const isLocked = Boolean(data.isReadOnly);
+        const canPostWhenLocked = hasManageClubPermClient;
+
+        // Topbar badge
+        const topbarBadge = document.getElementById('topbarLockedBadge');
+        if (topbarBadge) topbarBadge.style.display = isLocked ? 'inline-flex' : 'none';
+
+        // Warning banner
+        const notice = document.getElementById('channelRestrictedNotice');
+        if (notice) notice.style.display = isLocked ? 'flex' : 'none';
+
+        // Locked Chat Overlay & Main Input Box
+        const overlay = document.getElementById('channelLockedChatOverlay');
+        const mainInput = document.getElementById('mainChatInputBox');
+        if (overlay) overlay.style.display = (isLocked && !canPostWhenLocked) ? 'flex' : 'none';
+        if (mainInput) mainInput.style.display = (isLocked && !canPostWhenLocked) ? 'none' : 'flex';
+
+        // Update placeholder
+        if (chatInput) {
+            chatInput.placeholder = isLocked 
+                ? (canPostWhenLocked ? 'Message channel (Channel is locked for members)...' : 'This channel is read-only.')
+                : `Message #${document.querySelector('.topbar-channel-info span')?.textContent?.trim() || 'general'}...`;
+        }
+
+        // GUI Modal Lock Status Pill & Button
+        const guiStatus = document.getElementById('guiChannelLockStatus');
+        if (guiStatus) {
+            guiStatus.className = `chan-type-pill ${isLocked ? 'locked' : 'polls'}`;
+            guiStatus.innerHTML = `<i class="fas ${isLocked ? 'fa-lock' : 'fa-lock-open'}"></i> ${isLocked ? 'Read-Only' : 'Open Chat'}`;
+        }
+        const lockBtn = document.getElementById('btnGuiToggleLock');
+        const lockBtnText = document.getElementById('btnGuiToggleLockText');
+        if (lockBtn && lockBtnText) {
+            lockBtn.style.background = isLocked ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)';
+            lockBtn.style.borderColor = isLocked ? '#69f0ae' : '#ff8a80';
+            lockBtn.style.color = isLocked ? '#69f0ae' : '#ff8a80';
+            const icon = lockBtn.querySelector('i');
+            if (icon) icon.className = `fas ${isLocked ? 'fa-lock-open' : 'fa-lock'}`;
+            lockBtnText.textContent = isLocked ? 'Unlock Channel Chat' : 'Lock Channel Chat';
         }
     });
 
@@ -2790,17 +3577,338 @@
         if (modal) modal.style.display = 'none';
     }
 
-    function copyShareDirectLink() {
-        const input = document.getElementById('shareDirectLinkInput');
-        const copyBtn = document.getElementById('copyShareLinkBtn');
+    // ==========================================
+    // CHANNEL MENU GUI MODAL & CUSTOM DROPDOWN SYSTEM
+    // ==========================================
+
+    // Initialize Custom Select GUI for Modals (Create & Edit Channel Type)
+    function initCustomChannelSelects() {
+        document.querySelectorAll('.chan-custom-select-wrapper').forEach(wrapper => {
+            const trigger = wrapper.querySelector('.chan-custom-select');
+            const optionsList = wrapper.querySelectorAll('.chan-custom-option');
+            const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+            const textLabel = wrapper.querySelector('.text-label');
+            const iconSpan = wrapper.querySelector('.chan-custom-select-text i');
+
+            if (trigger) {
+                trigger.onclick = (e) => {
+                    e.stopPropagation();
+                    // Close any other open selects
+                    document.querySelectorAll('.chan-custom-select-wrapper').forEach(w => {
+                        if (w !== wrapper) w.classList.remove('open');
+                    });
+                    wrapper.classList.toggle('open');
+                };
+            }
+
+            optionsList.forEach(opt => {
+                opt.onclick = (e) => {
+                    e.stopPropagation();
+                    const val = opt.getAttribute('data-value');
+                    const optStrong = opt.querySelector('strong');
+                    const optText = optStrong ? optStrong.textContent.trim() : val;
+                    const optIcon = opt.querySelector('i');
+
+                    if (textLabel) textLabel.textContent = optText;
+                    if (iconSpan && optIcon) {
+                        iconSpan.className = optIcon.className;
+                        iconSpan.style.color = optIcon.style.color || 'var(--gold)';
+                    }
+                    if (hiddenInput) hiddenInput.value = val;
+
+                    optionsList.forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    wrapper.classList.remove('open');
+                };
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('.chan-custom-select-wrapper').forEach(w => {
+                if (!w.contains(e.target)) {
+                    w.classList.remove('open');
+                }
+            });
+        });
+    }
+    initCustomChannelSelects();
+
+    // Channel Settings GUI Modal Controls
+    function openChannelSettingsGUI() {
+        const modal = document.getElementById('channelSettingsGUIModal');
+        if (!modal) return;
+
+        // Populate invite links
+        const directInput = document.getElementById('directChannelInviteInput');
+        const inviteUrl = window.location.origin + '/clubs/<%= club.slug %>?channel=' + (channelId || '');
+        if (directInput) directInput.value = inviteUrl;
+
+        const chanName = '<%= activeChannel ? activeChannel.name : "general" %>';
+        const clubTitle = '<%= club.name %>';
+        const encUrl = encodeURIComponent(inviteUrl);
+        const encText = encodeURIComponent(`Join #${chanName} in ${clubTitle} on GPLMods: `);
+
+        const wa = document.getElementById('shareChanWhatsApp');
+        const tg = document.getElementById('shareChanTelegram');
+        const tw = document.getElementById('shareChanTwitter');
+        const rd = document.getElementById('shareChanReddit');
+
+        if (wa) wa.href = `https://api.whatsapp.com/send?text=${encText}${encUrl}`;
+        if (tg) tg.href = `https://t.me/share/url?url=${encUrl}&text=${encText}`;
+        if (tw) tw.href = `https://twitter.com/intent/tweet?text=${encText}&url=${encUrl}`;
+        if (rd) rd.href = `https://reddit.com/submit?url=${encUrl}&title=${encodeURIComponent('Join #' + chanName + ' on GPLMods')}`;
+
+        modal.style.display = 'flex';
+    }
+
+    function closeChannelSettingsGUI() {
+        const modal = document.getElementById('channelSettingsGUIModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function switchChannelMenuTab(tabName) {
+        document.querySelectorAll('.chan-tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.channel-menu-tab-content').forEach(pane => pane.style.display = 'none');
+
+        const activeBtn = document.getElementById('tabBtn-' + tabName);
+        const activePane = document.getElementById('tabPane-' + tabName);
+        if (activeBtn) activeBtn.classList.add('active');
+        if (activePane) activePane.style.display = 'block';
+    }
+
+    function copyActiveChannelLink() {
+        const url = window.location.origin + '/clubs/<%= club.slug %>?channel=' + (channelId || '');
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Channel link copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy channel link:', url);
+            });
+        } else {
+            prompt('Copy channel link:', url);
+        }
+    }
+
+    function copyChannelInviteDirect() {
+        const input = document.getElementById('directChannelInviteInput');
+        const btn = document.getElementById('btnCopyChannelInvite');
         if (!input) return;
-        navigator.clipboard.writeText(input.value).then(() => {
-            if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            setTimeout(() => { if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 3000);
-        }).catch(() => {
+
+        const finishCopy = () => {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy</span>';
+                }, 2500);
+            }
+        };
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(input.value).then(finishCopy).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                finishCopy();
+            });
+        } else {
             input.select();
             document.execCommand('copy');
-            if (copyBtn) copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            finishCopy();
+        }
+    }
+
+    // Save Channel Info (Name, Topic, Type)
+    async function saveChannelInformation(e) {
+        e.preventDefault();
+        if (!channelId) return;
+
+        const name = document.getElementById('editChannelName')?.value?.trim();
+        const topic = document.getElementById('editChannelTopic')?.value?.trim();
+        const type = document.getElementById('editChannelTypeInput')?.value;
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ name, topic, type })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Channel information updated successfully!');
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to update channel.');
+            }
+        } catch (err) {
+            alert('An error occurred while saving channel information.');
+        }
+    }
+
+    // Save Channel Privacy & Role Access
+    async function saveChannelPrivacyAccess(e) {
+        e.preventDefault();
+        if (!channelId) return;
+
+        const isPrivate = document.getElementById('guiChanIsPrivate')?.checked;
+        const roleCheckboxes = document.querySelectorAll('#guiChanRolesChecklistWrap input[name="allowedRoles"]:checked');
+        const allowedRoles = Array.from(roleCheckboxes).map(cb => cb.value);
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ isPrivate, allowedRoles })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Channel privacy and role access updated successfully!');
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to update channel access.');
+            }
+        } catch (err) {
+            alert('An error occurred while saving channel privacy settings.');
+        }
+    }
+
+    // Create New Custom Role ("Make Roles")
+    async function submitCreateRole(e) {
+        e.preventDefault();
+        const name = document.getElementById('newRoleName')?.value?.trim();
+        const badgeIcon = document.getElementById('newRoleBadge')?.value?.trim() || '🛡️';
+        const color = document.getElementById('newRoleColor')?.value || '#FFD700';
+        const canManageChannels = document.getElementById('permManageChannels')?.checked;
+        const canKickMembers = document.getElementById('permKickMembers')?.checked;
+        const canPostPolls = document.getElementById('permPostPolls')?.checked;
+
+        if (!name) return alert('Role name is required.');
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/roles`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    name,
+                    badgeIcon,
+                    color,
+                    canManageChannels,
+                    canKickMembers,
+                    canPostPolls
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.role) {
+                alert(`Role "${data.role.name}" created successfully!`);
+
+                // Dynamically append role pill
+                const list = document.getElementById('guiRolesDisplayList');
+                if (list) {
+                    const pill = document.createElement('span');
+                    pill.className = 'discord-sidebar-role-pill';
+                    pill.style.cssText = `color: ${data.role.color}; background: ${data.role.color}18; border: 1px solid ${data.role.color}40; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;`;
+                    pill.textContent = `${data.role.badgeIcon || '🛡️'} ${data.role.name}`;
+                    list.appendChild(pill);
+                }
+
+                // Dynamically add to role assignment select
+                const roleSelect = document.getElementById('assignTargetRole');
+                if (roleSelect) {
+                    const opt = document.createElement('option');
+                    opt.value = data.role._id;
+                    opt.textContent = `${data.role.badgeIcon || '🛡️'} ${data.role.name}`;
+                    roleSelect.appendChild(opt);
+                }
+
+                // Reset inputs
+                document.getElementById('newRoleName').value = '';
+            } else {
+                alert(data.error || 'Failed to create role.');
+            }
+        } catch (err) {
+            alert('An error occurred while creating role.');
+        }
+    }
+
+    // Assign / Remove Role from Member
+    async function submitMemberRoleAssignment(e) {
+        e.preventDefault();
+        const memberId = document.getElementById('assignTargetMember')?.value;
+        const roleId = document.getElementById('assignTargetRole')?.value;
+        const form = e.target;
+        const action = form.actionVal || 'add';
+
+        if (!memberId || !roleId) {
+            return alert('Please select both a member and a role.');
+        }
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/roles/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ memberId, roleId, action })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Role ${action === 'remove' ? 'removed from' : 'assigned to'} member successfully!`);
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to update member role.');
+            }
+        } catch (err) {
+            alert('An error occurred while updating member role.');
+        }
+    }
+
+    // Delete Active Channel Permanently
+    async function deleteActiveChannel() {
+        if (!channelId) return;
+        if (!confirm('Are you ABSOLUTELY sure you want to permanently delete this channel? All chat messages and polls in this channel will be erased.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Channel deleted successfully.');
+                window.location.href = data.fallbackUrl || `/clubs/<%= club.slug %>`;
+            } else {
+                alert(data.error || 'Failed to delete channel.');
+            }
+        } catch (err) {
+            alert('An error occurred while deleting the channel.');
+        }
+    }
+
+    // Close Channel Settings GUI on backdrop click & ESC
+    const channelSettingsModalBackdrop = document.getElementById('channelSettingsGUIModal');
+    if (channelSettingsModalBackdrop) {
+        channelSettingsModalBackdrop.addEventListener('click', (e) => {
+            if (e.target === channelSettingsModalBackdrop) {
+                closeChannelSettingsGUI();
+            }
         });
     }
 </script>

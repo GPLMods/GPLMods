@@ -269,6 +269,228 @@
         gap: 10px;
         font-size: 0.95rem;
     }
+    /* Image Upload Previews & Live Card Preview */
+    .upload-preview-card {
+        background: #0d0e12;
+        border: 1px solid #333645;
+        border-radius: 12px;
+        padding: 16px;
+    }
+    .image-upload-zone {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .avatar-preview-box {
+        position: relative;
+        width: 74px;
+        height: 74px;
+        border-radius: 16px;
+        border: 2px solid var(--gold);
+        background: #14151b;
+        flex-shrink: 0;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .club-avatar-preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .upload-badge-overlay {
+        position: absolute;
+        bottom: 0;
+        inset-inline: 0;
+        background: rgba(0,0,0,0.65);
+        color: #fff;
+        font-size: 0.7rem;
+        text-align: center;
+        padding: 2px 0;
+    }
+    .banner-upload-zone {
+        width: 100%;
+    }
+    .banner-preview-box {
+        position: relative;
+        width: 100%;
+        height: 80px;
+        border-radius: 10px;
+        border: 1.5px solid #333645;
+        background: #14151b;
+        overflow: hidden;
+    }
+    .club-banner-preview-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .banner-badge-overlay {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: rgba(0,0,0,0.65);
+        color: var(--gold);
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+    }
+    .upload-zone-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        flex-grow: 1;
+    }
+    .file-hidden-input {
+        display: none !important;
+    }
+    .btn-choose-file {
+        background: #1e202b;
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        color: var(--gold);
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        width: fit-content;
+        transition: all 0.2s ease;
+    }
+    .btn-choose-file:hover {
+        background: var(--gold);
+        color: #000;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    .file-name-display {
+        font-size: 0.78rem;
+        color: var(--silver);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .btn-remove-preview {
+        background: none;
+        border: none;
+        color: #ff6b6b;
+        font-size: 0.78rem;
+        cursor: pointer;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        width: fit-content;
+    }
+    .btn-remove-preview:hover {
+        text-decoration: underline;
+    }
+
+    /* Live Card Shell */
+    .live-card-preview-container {
+        background: #0d0e12;
+        border: 1px dashed #333645;
+        border-radius: 14px;
+        padding: 18px;
+        display: flex;
+        justify-content: center;
+    }
+    .club-card-preview-shell {
+        width: 100%;
+        max-width: 380px;
+        background: #14151b;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+    .preview-banner-wrap {
+        height: 100px;
+        background: #1f2029;
+        position: relative;
+    }
+    .preview-banner-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-badges {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 2;
+    }
+    .preview-badge-pill {
+        background: rgba(76, 175, 80, 0.2);
+        color: #69f0ae;
+        border: 1px solid #69f0ae;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .preview-avatar-wrap {
+        position: absolute;
+        bottom: -22px;
+        left: 16px;
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        border: 2.5px solid #14151b;
+        background: #0d0e12;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .preview-avatar-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-card-body {
+        padding: 28px 16px 16px;
+    }
+    .preview-club-name {
+        margin: 0 0 4px 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    .preview-club-desc {
+        margin: 0 0 10px 0;
+        font-size: 0.82rem;
+        color: var(--silver);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .preview-tags-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 12px;
+    }
+    .preview-tag-pill {
+        font-size: 0.7rem;
+        background: #1e202b;
+        border: 1px solid #2e3040;
+        color: var(--silver);
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .preview-footer-meta {
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.78rem;
+        color: var(--silver);
+    }
+
     @media (max-width: 768px) {
         .form-row-2col { grid-template-columns: 1fr; }
         .club-create-card { padding: 24px 18px; }
@@ -349,42 +571,43 @@
                 <input type="text" id="clubTags" name="tags" class="form-control-input" placeholder="e.g. Android, IPA, Gaming, Tools, Tweaks, Windows" value="<%= formData.tags || 'Gaming, Modding, Community' %>">
             </div>
 
-            <!-- Language & Country/Region Dropdowns -->
+            <!-- Language & Country/Region Dropdowns (Dynamic Flag Emojis) -->
             <div class="form-row-2col">
                 <!-- Custom Primary Language Dropdown -->
                 <div class="form-group-block dropdown-block" style="z-index: 50;">
                     <label>Primary Language</label>
                     <div class="custom-select-wrapper" id="wrapper-primaryLanguage">
+                        <% 
+                            const languagesList = [
+                                { code: 'English', label: 'English', flag: '🇬🇧' },
+                                { code: 'Spanish', label: 'Español (Spanish)', flag: '🇪🇸' },
+                                { code: 'Hindi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
+                                { code: 'French', label: 'Français (French)', flag: '🇫🇷' },
+                                { code: 'Russian', label: 'Русский (Russian)', flag: '🇷🇺' },
+                                { code: 'German', label: 'Deutsch (German)', flag: '🇩🇪' },
+                                { code: 'Portuguese', label: 'Português (Portuguese)', flag: '🇧🇷' },
+                                { code: 'Arabic', label: 'العربية (Arabic)', flag: '🇦🇪' },
+                                { code: 'Chinese', label: '中文 (Chinese)', flag: '🇨🇳' },
+                                { code: 'Indonesian', label: 'Bahasa Indonesia', flag: '🇮🇩' },
+                                { code: 'Japanese', label: '日本語 (Japanese)', flag: '🇯🇵' },
+                                { code: 'Korean', label: '한국어 (Korean)', flag: '🇰🇷' },
+                                { code: 'Turkish', label: 'Türkçe (Turkish)', flag: '🇹🇷' }
+                            ];
+                            const curLang = formData.primaryLanguage || 'English';
+                            const curLangObj = languagesList.find(l => l.code === curLang) || languagesList[0];
+                        %>
                         <div class="custom-select">
                             <span class="custom-select-text">
-                                <i class="fas fa-globe" style="color: var(--gold);"></i>
-                                <span class="text-label"><%= formData.primaryLanguage || 'English' %></span>
+                                <span class="custom-select-flag" style="font-size: 1.25rem; line-height: 1;"><%= curLangObj.flag %></span>
+                                <span class="text-label"><%= curLangObj.label %></span>
                             </span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
                         <div class="custom-options">
-                            <% 
-                                const languagesList = [
-                                    { code: 'English', label: 'English', flag: '🇬🇧' },
-                                    { code: 'Spanish', label: 'Español (Spanish)', flag: '🇪🇸' },
-                                    { code: 'Hindi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
-                                    { code: 'French', label: 'Français (French)', flag: '🇫🇷' },
-                                    { code: 'Russian', label: 'Русский (Russian)', flag: '🇷🇺' },
-                                    { code: 'German', label: 'Deutsch (German)', flag: '🇩🇪' },
-                                    { code: 'Portuguese', label: 'Português (Portuguese)', flag: '🇧🇷' },
-                                    { code: 'Arabic', label: 'العربية (Arabic)', flag: '🇦🇪' },
-                                    { code: 'Chinese', label: '中文 (Chinese)', flag: '🇨🇳' },
-                                    { code: 'Indonesian', label: 'Bahasa Indonesia', flag: '🇮🇩' },
-                                    { code: 'Japanese', label: '日本語 (Japanese)', flag: '🇯🇵' },
-                                    { code: 'Korean', label: '한국어 (Korean)', flag: '🇰🇷' },
-                                    { code: 'Turkish', label: 'Türkçe (Turkish)', flag: '🇹🇷' }
-                                ];
-                                const curLang = formData.primaryLanguage || 'English';
-                            %>
                             <% languagesList.forEach(lang => { %>
                                 <div class="custom-option <%= (curLang === lang.code) ? 'selected' : '' %>" data-value="<%= lang.code %>">
-                                    <span><%= lang.flag %></span>
-                                    <span><%= lang.label %></span>
+                                    <span class="opt-flag" style="font-size: 1.25rem; line-height: 1;"><%= lang.flag %></span>
+                                    <span class="opt-label"><%= lang.label %></span>
                                 </div>
                             <% }); %>
                         </div>
@@ -396,40 +619,41 @@
                 <div class="form-group-block dropdown-block" style="z-index: 50;">
                     <label>Country / Region</label>
                     <div class="custom-select-wrapper" id="wrapper-country">
+                        <% 
+                            const regionsList = [
+                                { code: 'GLOBAL', label: 'Worldwide / Global', flag: '🌐' },
+                                { code: 'United States', label: 'United States', flag: '🇺🇸' },
+                                { code: 'India', label: 'India', flag: '🇮🇳' },
+                                { code: 'United Kingdom', label: 'United Kingdom', flag: '🇬🇧' },
+                                { code: 'Canada', label: 'Canada', flag: '🇨🇦' },
+                                { code: 'Germany', label: 'Germany', flag: '🇩🇪' },
+                                { code: 'France', label: 'France', flag: '🇫🇷' },
+                                { code: 'Brazil', label: 'Brazil', flag: '🇧🇷' },
+                                { code: 'Russia', label: 'Russia', flag: '🇷🇺' },
+                                { code: 'Indonesia', label: 'Indonesia', flag: '🇮🇩' },
+                                { code: 'Japan', label: 'Japan', flag: '🇯🇵' },
+                                { code: 'South Korea', label: 'South Korea', flag: '🇰🇷' },
+                                { code: 'Australia', label: 'Australia', flag: '🇦🇺' },
+                                { code: 'Spain', label: 'Spain', flag: '🇪🇸' },
+                                { code: 'Mexico', label: 'Mexico', flag: '🇲🇽' },
+                                { code: 'Italy', label: 'Italy', flag: '🇮🇹' },
+                                { code: 'Turkey', label: 'Turkey', flag: '🇹🇷' }
+                            ];
+                            const curCountry = formData.country || 'GLOBAL';
+                            const curCountryObj = regionsList.find(r => r.code === curCountry) || regionsList[0];
+                        %>
                         <div class="custom-select">
                             <span class="custom-select-text">
-                                <i class="fas fa-map-marker-alt" style="color: var(--gold);"></i>
-                                <span class="text-label"><%= formData.country || 'GLOBAL' %></span>
+                                <span class="custom-select-flag" style="font-size: 1.25rem; line-height: 1;"><%= curCountryObj.flag %></span>
+                                <span class="text-label"><%= curCountryObj.label %></span>
                             </span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
                         <div class="custom-options">
-                            <% 
-                                const regionsList = [
-                                    { code: 'GLOBAL', label: 'Worldwide / Global', flag: '🌐' },
-                                    { code: 'United States', label: 'United States', flag: '🇺🇸' },
-                                    { code: 'India', label: 'India', flag: '🇮🇳' },
-                                    { code: 'United Kingdom', label: 'United Kingdom', flag: '🇬🇧' },
-                                    { code: 'Canada', label: 'Canada', flag: '🇨🇦' },
-                                    { code: 'Germany', label: 'Germany', flag: '🇩🇪' },
-                                    { code: 'France', label: 'France', flag: '🇫🇷' },
-                                    { code: 'Brazil', label: 'Brazil', flag: '🇧🇷' },
-                                    { code: 'Russia', label: 'Russia', flag: '🇷🇺' },
-                                    { code: 'Indonesia', label: 'Indonesia', flag: '🇮🇩' },
-                                    { code: 'Japan', label: 'Japan', flag: '🇯🇵' },
-                                    { code: 'South Korea', label: 'South Korea', flag: '🇰🇷' },
-                                    { code: 'Australia', label: 'Australia', flag: '🇦🇺' },
-                                    { code: 'Spain', label: 'Spain', flag: '🇪🇸' },
-                                    { code: 'Mexico', label: 'Mexico', flag: '🇲🇽' },
-                                    { code: 'Italy', label: 'Italy', flag: '🇮🇹' },
-                                    { code: 'Turkey', label: 'Turkey', flag: '🇹🇷' }
-                                ];
-                                const curCountry = formData.country || 'GLOBAL';
-                            %>
                             <% regionsList.forEach(reg => { %>
                                 <div class="custom-option <%= (curCountry === reg.code) ? 'selected' : '' %>" data-value="<%= reg.code %>">
-                                    <span><%= reg.flag %></span>
-                                    <span><%= reg.label %></span>
+                                    <span class="opt-flag" style="font-size: 1.25rem; line-height: 1;"><%= reg.flag %></span>
+                                    <span class="opt-label"><%= reg.label %></span>
                                 </div>
                             <% }); %>
                         </div>
@@ -482,16 +706,79 @@
                 <textarea id="rules" name="rules" class="form-control-textarea" rows="4" placeholder="1. Be respectful to all members.&#10;2. Only GPLMods site links are allowed in chat.&#10;3. No malicious files or scamming."><%= formData.rules || "Be respectful to all members and staff.\nOnly official GPLMods site links are allowed in the chat.\nNo spam, scamming, or abusive language.\nFollow platform community safety guidelines." %></textarea>
             </div>
 
-            <!-- Icon & Banner Upload -->
+            <!-- Icon & Banner Upload with Interactive Previews -->
             <div class="form-row-2col">
-                <div class="form-group-block">
-                    <label for="icon">Club Icon <span class="hint">(Square image, max 5MB)</span></label>
-                    <input type="file" id="icon" name="icon" class="form-control-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                <div class="form-group-block upload-preview-card">
+                    <label for="icon">Club Icon <span class="hint">(Square avatar, max 5MB)</span></label>
+                    <div class="image-upload-zone" id="iconUploadZone">
+                        <div class="avatar-preview-box">
+                            <img src="/images/default-avatar.png" id="iconPreviewImg" alt="Club Icon Preview" class="club-avatar-preview-img">
+                            <div class="upload-badge-overlay"><i class="fas fa-camera"></i></div>
+                        </div>
+                        <div class="upload-zone-meta">
+                            <input type="file" id="icon" name="icon" class="file-hidden-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                            <button type="button" class="btn-choose-file" onclick="document.getElementById('icon').click()">
+                                <i class="fas fa-upload"></i> Choose Icon
+                            </button>
+                            <span class="file-name-display" id="iconFileName">No image selected (PNG, JPG, WEBP)</span>
+                            <button type="button" class="btn-remove-preview" id="iconRemoveBtn" style="display: none;">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group-block">
-                    <label for="banner">Club Banner <span class="hint">(Wide banner image, max 5MB)</span></label>
-                    <input type="file" id="banner" name="banner" class="form-control-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                <div class="form-group-block upload-preview-card">
+                    <label for="banner">Club Banner <span class="hint">(Wide banner, max 5MB)</span></label>
+                    <div class="banner-upload-zone" id="bannerUploadZone">
+                        <div class="banner-preview-box">
+                            <img src="/images/default-banner.jpg" id="bannerPreviewImg" alt="Club Banner Preview" class="club-banner-preview-img">
+                            <div class="banner-badge-overlay"><i class="fas fa-image"></i> Banner</div>
+                        </div>
+                        <div class="upload-zone-meta" style="margin-top: 8px;">
+                            <input type="file" id="banner" name="banner" class="file-hidden-input" accept="image/png,image/jpeg,image/webp,image/gif">
+                            <button type="button" class="btn-choose-file" onclick="document.getElementById('banner').click()">
+                                <i class="fas fa-upload"></i> Choose Banner
+                            </button>
+                            <span class="file-name-display" id="bannerFileName">No image selected (1200x400 recommended)</span>
+                            <button type="button" class="btn-remove-preview" id="bannerRemoveBtn" style="display: none;">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Pre-Join Club Card Preview -->
+            <div class="form-group-block" style="margin-top: 14px; margin-bottom: 24px;">
+                <label style="display: flex; align-items: center; justify-content: space-between;">
+                    <span><i class="fas fa-eye" style="color: var(--gold); margin-right: 6px;"></i> Live Pre-Join Club Card Preview</span>
+                    <span class="hint" style="font-weight: normal;">Live preview of how your club appears in discovery</span>
+                </label>
+                <div class="live-card-preview-container">
+                    <div class="club-card-preview-shell">
+                        <div class="preview-banner-wrap">
+                            <img src="/images/default-banner.jpg" id="liveCardBannerImg" alt="Banner">
+                            <div class="preview-badges">
+                                <span class="preview-badge-pill" id="liveCardPrivacyBadge"><i class="fas fa-globe"></i> Public</span>
+                            </div>
+                            <div class="preview-avatar-wrap">
+                                <img src="/images/default-avatar.png" id="liveCardAvatarImg" alt="Avatar">
+                            </div>
+                        </div>
+                        <div class="preview-card-body">
+                            <h3 class="preview-club-name" id="liveCardName">Your Club Name</h3>
+                            <p class="preview-club-desc" id="liveCardDesc">Brief summary of what your community is about...</p>
+                            <div class="preview-tags-row" id="liveCardTags">
+                                <span class="preview-tag-pill">#Gaming</span>
+                                <span class="preview-tag-pill">#Modding</span>
+                            </div>
+                            <div class="preview-footer-meta">
+                                <span id="liveCardCountry"><span class="preview-flag">🌐</span> GLOBAL</span>
+                                <span id="liveCardLang"><span class="preview-flag">🇬🇧</span> English</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -531,10 +818,17 @@
                 wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
 
-                // Update text content with icon/flag if present
-                const labelSpan = selectText.querySelector('.text-label');
-                if (labelSpan) {
-                    labelSpan.textContent = val;
+                // Dynamic emoji flag and label update
+                const optFlag = opt.querySelector('.opt-flag') || opt.querySelector('span:first-child');
+                const optLabel = opt.querySelector('.opt-label') || opt.querySelector('span:nth-child(2)');
+                const targetFlag = selectText.querySelector('.custom-select-flag');
+                const targetLabel = selectText.querySelector('.text-label');
+
+                if (optFlag && optLabel && targetFlag && targetLabel) {
+                    targetFlag.innerHTML = optFlag.innerHTML;
+                    targetLabel.textContent = optLabel.textContent.trim();
+                } else if (targetLabel) {
+                    targetLabel.textContent = val;
                 } else {
                     selectText.innerHTML = opt.innerHTML;
                 }
@@ -558,15 +852,30 @@
                 if (!currentTags.includes(tagVal)) {
                     currentTags.unshift(tagVal);
                     tagsInput.value = currentTags.slice(0, 10).join(', ');
+                    updateLiveTags(tagsInput.value);
                 }
             }
         });
 
         // 2. Primary Language Dropdown
-        initCustomSelect('wrapper-primaryLanguage', 'primaryLanguage');
+        initCustomSelect('wrapper-primaryLanguage', 'primaryLanguage', (val, opt) => {
+            const flag = opt.querySelector('.opt-flag')?.textContent || '🌐';
+            const label = opt.querySelector('.opt-label')?.textContent || val;
+            const liveLang = document.getElementById('liveCardLang');
+            if (liveLang) {
+                liveLang.innerHTML = `<span class="preview-flag">${flag}</span> ${val}`;
+            }
+        });
 
         // 3. Country / Region Dropdown
-        initCustomSelect('wrapper-country', 'country');
+        initCustomSelect('wrapper-country', 'country', (val, opt) => {
+            const flag = opt.querySelector('.opt-flag')?.textContent || '🌐';
+            const label = opt.querySelector('.opt-label')?.textContent || val;
+            const liveCountry = document.getElementById('liveCardCountry');
+            if (liveCountry) {
+                liveCountry.innerHTML = `<span class="preview-flag">${flag}</span> ${val}`;
+            }
+        });
 
         // 4. Club Privacy Dropdown
         initCustomSelect('wrapper-clubPrivacy', 'isPrivateInput', (val) => {
@@ -580,12 +889,149 @@
                     ? '<i class="fas fa-lock" style="color: #ff8a80;"></i> <span class="text-label">Private Club (Join Approval Required)</span>'
                     : '<i class="fas fa-globe" style="color: #69f0ae;"></i> <span class="text-label">Public Club (Instant Join for All Members)</span>';
             }
+
+            const livePrivacy = document.getElementById('liveCardPrivacyBadge');
+            if (livePrivacy) {
+                if (isPriv) {
+                    livePrivacy.style.background = 'rgba(244, 67, 54, 0.2)';
+                    livePrivacy.style.color = '#ff6b6b';
+                    livePrivacy.style.borderColor = '#ff6b6b';
+                    livePrivacy.innerHTML = '<i class="fas fa-lock"></i> Private';
+                } else {
+                    livePrivacy.style.background = 'rgba(76, 175, 80, 0.2)';
+                    livePrivacy.style.color = '#69f0ae';
+                    livePrivacy.style.borderColor = '#69f0ae';
+                    livePrivacy.innerHTML = '<i class="fas fa-globe"></i> Public';
+                }
+            }
         });
 
         // Close dropdowns on outside click
         document.addEventListener('click', () => {
             document.querySelectorAll('.custom-select-wrapper.open').forEach(w => w.classList.remove('open'));
         });
+
+        // ==========================================
+        // IMAGE UPLOAD PREVIEW & LIVE CARD SYNC
+        // ==========================================
+        const iconInput = document.getElementById('icon');
+        const iconPreviewImg = document.getElementById('iconPreviewImg');
+        const liveCardAvatarImg = document.getElementById('liveCardAvatarImg');
+        const iconFileName = document.getElementById('iconFileName');
+        const iconRemoveBtn = document.getElementById('iconRemoveBtn');
+
+        const bannerInput = document.getElementById('banner');
+        const bannerPreviewImg = document.getElementById('bannerPreviewImg');
+        const liveCardBannerImg = document.getElementById('liveCardBannerImg');
+        const bannerFileName = document.getElementById('bannerFileName');
+        const bannerRemoveBtn = document.getElementById('bannerRemoveBtn');
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Handle Icon Selection
+        if (iconInput) {
+            iconInput.addEventListener('change', function(e) {
+                const file = this.files && this.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Image file is too large! Maximum allowed size is 5MB.');
+                        this.value = '';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        if (iconPreviewImg) iconPreviewImg.src = evt.target.result;
+                        if (liveCardAvatarImg) liveCardAvatarImg.src = evt.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                    if (iconFileName) iconFileName.textContent = `${file.name} (${formatBytes(file.size)})`;
+                    if (iconRemoveBtn) iconRemoveBtn.style.display = 'inline-flex';
+                }
+            });
+        }
+
+        if (iconRemoveBtn) {
+            iconRemoveBtn.addEventListener('click', () => {
+                if (iconInput) iconInput.value = '';
+                if (iconPreviewImg) iconPreviewImg.src = '/images/default-avatar.png';
+                if (liveCardAvatarImg) liveCardAvatarImg.src = '/images/default-avatar.png';
+                if (iconFileName) iconFileName.textContent = 'No image selected (PNG, JPG, WEBP)';
+                iconRemoveBtn.style.display = 'none';
+            });
+        }
+
+        // Handle Banner Selection
+        if (bannerInput) {
+            bannerInput.addEventListener('change', function(e) {
+                const file = this.files && this.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('Banner image is too large! Maximum allowed size is 5MB.');
+                        this.value = '';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        if (bannerPreviewImg) bannerPreviewImg.src = evt.target.result;
+                        if (liveCardBannerImg) liveCardBannerImg.src = evt.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                    if (bannerFileName) bannerFileName.textContent = `${file.name} (${formatBytes(file.size)})`;
+                    if (bannerRemoveBtn) bannerRemoveBtn.style.display = 'inline-flex';
+                }
+            });
+        }
+
+        if (bannerRemoveBtn) {
+            bannerRemoveBtn.addEventListener('click', () => {
+                if (bannerInput) bannerInput.value = '';
+                if (bannerPreviewImg) bannerPreviewImg.src = '/images/default-banner.jpg';
+                if (liveCardBannerImg) liveCardBannerImg.src = '/images/default-banner.jpg';
+                if (bannerFileName) bannerFileName.textContent = 'No image selected (1200x400 recommended)';
+                bannerRemoveBtn.style.display = 'none';
+            });
+        }
+
+        // Live Text Preview Sync
+        const clubNameInput = document.getElementById('clubName');
+        const liveCardName = document.getElementById('liveCardName');
+        if (clubNameInput && liveCardName) {
+            clubNameInput.addEventListener('input', function() {
+                liveCardName.textContent = this.value.trim() || 'Your Club Name';
+            });
+        }
+
+        const clubDescInput = document.getElementById('clubDesc');
+        const liveCardDesc = document.getElementById('liveCardDesc');
+        if (clubDescInput && liveCardDesc) {
+            clubDescInput.addEventListener('input', function() {
+                liveCardDesc.textContent = this.value.trim() || 'Brief summary of what your community is about...';
+            });
+        }
+
+        const clubTagsInput = document.getElementById('clubTags');
+        function updateLiveTags(tagString) {
+            const liveTagsContainer = document.getElementById('liveCardTags');
+            if (!liveTagsContainer) return;
+            const tags = (tagString || '').split(',').map(t => t.trim()).filter(Boolean);
+            if (tags.length === 0) {
+                liveTagsContainer.innerHTML = '<span class="preview-tag-pill">#Gaming</span><span class="preview-tag-pill">#Modding</span>';
+            } else {
+                liveTagsContainer.innerHTML = tags.slice(0, 4).map(t => `<span class="preview-tag-pill">#${t.replace(/^#/, '')}</span>`).join('');
+            }
+        }
+        if (clubTagsInput) {
+            clubTagsInput.addEventListener('input', function() {
+                updateLiveTags(this.value);
+            });
+            updateLiveTags(clubTagsInput.value);
+        }
     });
 </script>
 

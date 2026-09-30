@@ -42,12 +42,20 @@
             --wordpress-color: #21759B;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        html { 
+            scroll-behavior: smooth; 
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--black);
             color: var(--white);
             line-height: 1.6;
+            touch-action: manipulation;
+        }
+        input, select, textarea {
+            font-size: 16px; /* Prevents auto zoom in iOS Safari on focus */
         }
         .container { width: 90%; max-width: 1200px; margin: auto; }
     /* Custom Select Wrapper */

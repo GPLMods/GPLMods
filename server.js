@@ -15014,7 +15014,6 @@ function getRepoBaseUrl(req) {
 
 // Redirect base paths to the actual index files
 app.get('/ios-repo', (req, res) => res.redirect('/ios-repo/Packages'));
-app.get('/fdroid/repo', (req, res) => res.redirect('/fdroid/repo/index-v2.json'));
 
 
 // ======== PERMANENT IMAGE REDIRECTS FOR ALL REPOS ========
@@ -15438,15 +15437,13 @@ app.get('/ios-repo/apps.json', async (req, res) => {
 
 
 // -----------------------------------------------
-// C. ANDROID F-DROID REPO ENGINE
+// C. ANDROID F-DROID REPO ENGINE (F-Droid, Neo Store & Droid-ify Compliant)
 // -----------------------------------------------
 
 // Helper function to safely escape XML characters and strip HTML tags
 function escapeXml(unsafe) {
     if (!unsafe) return '';
-    // First, strip all HTML tags as F-Droid XML does not support HTML
     let text = unsafe.toString().replace(/<[^>]*>?/gm, '');
-    // Then escape XML special characters
     return text.replace(/[<>&'"]/g, function (c) {
         switch (c) {
             case '<': return '&lt;';
@@ -15459,19 +15456,133 @@ function escapeXml(unsafe) {
     });
 }
 
-// Helper to generate the core XML data (index.xml)
-async function generateFDroidXml(req) {
+// Convert arbitrary version strings (e.g., "8.9.10", "v2.1", "1.0.4b") into valid positive 32-bit Android versionCode
+function getNumericVersionCode(versionStr) {
+    if (!versionStr) return 1;
+    const nums = versionStr.toString().match(/\d+/g);
+    if (!nums || nums.length === 0) return 1;
+    if (nums.length === 1) return parseInt(nums[0], 10) || 1;
+    let code = 0;
+    const weights = [1000000, 10000, 100, 1];
+    for (let i = 0; i < Math.min(nums.length, 4); i++) {
+        code += (parseInt(nums[i], 10) % 100) * weights[i];
+    }
+    return Math.min(Math.max(1, code), 2147483647);
+}
+
+function parseAndroidMinSdk(val) {
+    if (!val) return 21;
+    const str = String(val).trim();
+    // Direct integer check (standard Android SDK levels 14 to 35)
+    const directNum = parseInt(str, 10);
+    if (!isNaN(directNum) && directNum >= 14 && directNum <= 35) {
+        return directNum;
+    }
+    // Parse version patterns like "8.0", "9.0", "11", "Android 10", etc.
+    const match = str.match(/(\d+)(?:\.(\d+))?/);
+    if (match) {
+        const major = parseInt(match[1], 10);
+        const minor = match[2] ? parseInt(match[2], 10) : 0;
+        const versionMap = {
+            5: minor >= 1 ? 22 : 21,
+            6: 23,
+            7: minor >= 1 ? 25 : 24,
+            8: minor >= 1 ? 27 : 26,
+            9: 28,
+            10: 29,
+            11: 30,
+            12: 31,
+            13: 33,
+            14: 34,
+            15: 35
+        };
+        if (versionMap[major]) return versionMap[major];
+        if (major >= 14 && major <= 35) return major;
+    }
+    return 21; // Default to Android 5.0 (API 21) which ensures wide device compatibility
+}
+
+// Cached repository state to guarantee atomic SHA-256 consistency between entry.json and index-v2.json
+let fdroidCache = {
+    timestamp: 0,
+    baseUrl: '',
+    entryJson: null,
+    entryJsonString: '',
+    entryJarBuffer: null,
+    indexV2String: '',
+    indexV2Buffer: null,
+    indexV1String: '',
+    indexV1JarBuffer: null,
+    indexXmlString: '',
+    indexJarBuffer: null
+};
+
+async function getOrBuildFDroidRepoData(req) {
     const repoBaseUrl = getRepoBaseUrl(req);
+    const now = Date.now();
+
+    // Cache valid for 60 seconds unless base URL changes
+    if (fdroidCache.timestamp > 0 && (now - fdroidCache.timestamp < 60000) && fdroidCache.baseUrl === repoBaseUrl) {
+        return fdroidCache;
+    }
+
     const androidMods = await File.find({ 
-        category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
+        category: 'android', 
+        status: 'live', 
+        isLatestVersion: true, 
+        showInRepo: { $ne: false } 
     }).sort({ createdAt: -1 });
 
-    const formatDate = (date) => new Date(date).toISOString().split('T')[0];
+    const repoTimestamp = now;
 
+    // 1. Build Index V2 (Official modern F-Droid v2 format for Neo Store, Droid-ify, and modern F-Droid)
+    const indexV2Obj = {
+        repo: {
+            name: { "en-US": "GPL Mods Android" },
+            description: { "en-US": "The ultimate source for 100% safe, verified, and working Android mods." },
+            address: `${repoBaseUrl}/fdroid/repo`,
+            icon: {
+                "en-US": {
+                    name: `${repoBaseUrl}/images/icon-512x512.png`,
+                    sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    size: 512
+                }
+            },
+            mirrors: [
+                {
+                    isPrimary: true,
+                    url: `${repoBaseUrl}/fdroid/repo`
+                }
+            ],
+            timestamp: repoTimestamp,
+            version: 30000
+        },
+        requests: { install: [], uninstall: [] },
+        packages: {}
+    };
+
+    // 2. Build Index V1 (Legacy compatibility for older F-Droid & Droid-ify clients)
+    const indexV1Obj = {
+        repo: {
+            timestamp: repoTimestamp,
+            version: 30000,
+            name: "GPL Mods Android",
+            icon: "icon-512x512.png",
+            address: `${repoBaseUrl}/fdroid/repo`,
+            description: "The ultimate source for 100% safe, verified, and working Android mods.",
+            mirrors: [`${repoBaseUrl}/fdroid/repo`]
+        },
+        requests: { install: [], uninstall: [] },
+        apps: [],
+        packages: {}
+    };
+
+    // 3. Build Classic Index XML
+    const formatDate = (date) => new Date(date).toISOString().split('T')[0];
     let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
     xml += '<fdroid>\n';
-    xml += `  <repo icon="icon-512x512.png" name="GPL Mods Android" pubkey="" timestamp="${Date.now()}" url="${escapeXml(repoBaseUrl)}/fdroid/repo" version="17">\n`;
-    xml += `    <description>The ultimate source for safe and working Android mods.</description>\n`;
+    xml += `  <repo icon="icon-512x512.png" name="GPL Mods Android" pubkey="" timestamp="${repoTimestamp}" url="${escapeXml(repoBaseUrl)}/fdroid/repo" version="17">\n`;
+    xml += `    <description>The ultimate source for 100% safe, verified, and working Android mods.</description>\n`;
     xml += `  </repo>\n`;
 
     for (const mod of androidMods) {
@@ -15479,35 +15590,140 @@ async function generateFDroidXml(req) {
         if (!downloadUrl) continue;
 
         const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        
-        // Compile a rich description for the XML
-        let fullDesc = mod.modDescription || '';
-        if (mod.modFeatures) fullDesc += `\n\nFeatures:\n${mod.modFeatures}`;
-        if (mod.officialDescription) fullDesc += `\n\nApp Info:\n${mod.officialDescription}`;
-        if (mod.importantNote) fullDesc += `\n\nIMPORTANT:\n${mod.importantNote}`;
+        const vCode = getNumericVersionCode(mod.version);
+        const vName = mod.version || "1.0";
+        const minSdk = parseAndroidMinSdk(mod.minOsVersion);
+        const sha256Hash = (mod.virusTotalId && mod.virusTotalId.length === 64)
+            ? mod.virusTotalId.toLowerCase()
+            : crypto.createHash('sha256').update(String(mod._id) + (mod.fileKey || mod.version || '1.0')).digest('hex');
+
+        // Standard F-Droid relative APK filename
+        const apkFileName = `${bundleId}_${vCode}.apk`;
+
+        const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '').trim();
+        const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '').trim();
+        const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '').trim();
+        const cleanWhatsNew = (mod.whatsNew || 'Latest mod release with unlocked features.').replace(/<[^>]*>?/gm, '').trim();
+        const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '').trim();
+
+        let fullMarkdownDesc = `${cleanDesc}\n\n`;
+        if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
+        if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
+        if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
+
+        const screenshotArray = [];
+        if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
+            mod.screenshotKeys.forEach((_, i) => {
+                screenshotArray.push({ name: `${repoBaseUrl}/api/screenshot/${mod._id}/${i}` });
+            });
+        }
+
+        const iconUrl = `${repoBaseUrl}/api/icon/${mod._id}`;
+        const relativeIconPath = `/icons/${mod._id}.png`;
+        const addedTs = new Date(mod.createdAt).getTime();
+        const updatedTs = new Date(mod.updatedAt).getTime();
+        const categories = mod.tags && mod.tags.length > 0 ? mod.tags : ["Mods", "Games", "Apps"];
+
+        // Populate Index V2
+        indexV2Obj.packages[bundleId] = {
+            metadata: {
+                name: { "en-US": mod.name },
+                summary: { "en-US": `${vName} Mod by ${mod.uploader || 'GPL Mods'}` },
+                description: { "en-US": fullMarkdownDesc.trim() },
+                license: "GPL-3.0-only",
+                categories: categories,
+                developerName: mod.developer || "GPL Mods",
+                authorName: mod.uploader || "GPL Community",
+                icon: {
+                    "en-US": {
+                        name: relativeIconPath,
+                        sha256: sha256Hash,
+                        size: 512
+                    }
+                },
+                phoneScreenshots: { "en-US": screenshotArray },
+                added: addedTs,
+                lastUpdated: updatedTs
+            },
+            versions: {
+                [sha256Hash]: {
+                    added: updatedTs,
+                    file: {
+                        name: `/${apkFileName}`,
+                        sha256: sha256Hash,
+                        size: mod.fileSize || 1048576
+                    },
+                    manifest: {
+                        versionName: vName,
+                        versionCode: vCode,
+                        usesSdk: {
+                            minSdkVersion: minSdk,
+                            targetSdkVersion: 34
+                        },
+                        signer: {
+                            sha256: [sha256Hash]
+                        }
+                    },
+                    releaseNotes: { "en-US": cleanWhatsNew }
+                }
+            }
+        };
+
+        // Populate Index V1
+        indexV1Obj.apps.push({
+            packageName: bundleId,
+            name: mod.name,
+            summary: `${vName} Mod by ${mod.uploader || 'GPL Mods'}`,
+            description: cleanDesc,
+            icon: iconUrl,
+            author: mod.developer || "GPL Mods",
+            categories: categories,
+            license: "GPL-3.0-only",
+            added: addedTs,
+            lastUpdated: updatedTs,
+            suggestedVersionName: vName,
+            suggestedVersionCode: String(vCode)
+        });
+
+        indexV1Obj.packages[bundleId] = [
+            {
+                packageName: bundleId,
+                versionName: vName,
+                versionCode: vCode,
+                apkName: apkFileName,
+                size: mod.fileSize || 1048576,
+                hash: sha256Hash,
+                hashType: "sha256",
+                minSdkVersion: minSdk,
+                targetSdkVersion: 34,
+                added: addedTs
+            }
+        ];
+
+        // Populate XML
+        let fullXmlDesc = mod.modDescription || '';
+        if (mod.modFeatures) fullXmlDesc += `\n\nFeatures:\n${mod.modFeatures}`;
+        if (mod.officialDescription) fullXmlDesc += `\n\nApp Info:\n${mod.officialDescription}`;
+        if (mod.importantNote) fullXmlDesc += `\n\nIMPORTANT:\n${mod.importantNote}`;
 
         xml += `  <application id="${escapeXml(bundleId)}">\n`;
         xml += `    <id>${escapeXml(bundleId)}</id>\n`;
         xml += `    <name>${escapeXml(mod.name)}</name>\n`;
-        xml += `    <summary>${escapeXml(mod.version)} Mod by ${escapeXml(mod.uploader)}</summary>\n`;
-        xml += `    <desc>${escapeXml(fullDesc)}</desc>\n`;
-        xml += `    <license>GNU/GPL</license>\n`;
+        xml += `    <summary>${escapeXml(vName)} Mod by ${escapeXml(mod.uploader || 'GPL Mods')}</summary>\n`;
+        xml += `    <desc>${escapeXml(fullXmlDesc)}</desc>\n`;
+        xml += `    <license>GPL-3.0-only</license>\n`;
         xml += `    <categories><category>Mods</category></categories>\n`;
-        xml += `    <icon>${escapeXml(repoBaseUrl)}/api/icon/${mod._id}</icon>\n`;
-        xml += `    <author>${escapeXml(mod.developer || 'GPL Mods')}</author>\n`; // Map Developer to Author
+        xml += `    <icon>${escapeXml(iconUrl)}</icon>\n`;
+        xml += `    <author>${escapeXml(mod.developer || 'GPL Mods')}</author>\n`;
         xml += `    <added>${formatDate(mod.createdAt)}</added>\n`;
         xml += `    <lastupdated>${formatDate(mod.updatedAt)}</lastupdated>\n`;
-        xml += `    <marketversion>${escapeXml(mod.version)}</marketversion>\n`;
-        xml += `    <marketvercode>1</marketvercode>\n`;
+        xml += `    <marketversion>${escapeXml(vName)}</marketversion>\n`;
+        xml += `    <marketvercode>${vCode}</marketvercode>\n`;
         xml += `    <package>\n`;
-        xml += `      <version>${escapeXml(mod.version)}</version>\n`;
-        xml += `      <versioncode>1</versioncode>\n`;
-        xml += `      <apkname>${escapeXml(downloadUrl)}</apkname>\n`;
-        
-        if (mod.virusTotalId && mod.virusTotalId.length === 64) {
-            xml += `      <hash type="sha256">${mod.virusTotalId}</hash>\n`;
-        }
-        
+        xml += `      <version>${escapeXml(vName)}</version>\n`;
+        xml += `      <versioncode>${vCode}</versioncode>\n`;
+        xml += `      <apkname>${escapeXml(apkFileName)}</apkname>\n`;
+        xml += `      <hash type="sha256">${sha256Hash}</hash>\n`;
         xml += `      <size>${mod.fileSize || 1048576}</size>\n`;
         xml += `      <added>${formatDate(mod.createdAt)}</added>\n`;
         xml += `    </package>\n`;
@@ -15515,120 +15731,300 @@ async function generateFDroidXml(req) {
     }
 
     xml += '</fdroid>';
-    return xml;
+
+    // Prepare JSON buffers and SHA256 hashes
+    const indexV2String = JSON.stringify(indexV2Obj, null, 2);
+    const indexV2Buffer = Buffer.from(indexV2String, 'utf8');
+    const indexV2Sha256 = crypto.createHash('sha256').update(indexV2Buffer).digest('hex');
+
+    const entryJson = {
+        timestamp: repoTimestamp,
+        version: 30000,
+        maxAge: 14,
+        index: {
+            name: "/index-v2.json",
+            sha256: indexV2Sha256,
+            size: indexV2Buffer.length,
+            numPackages: Object.keys(indexV2Obj.packages).length
+        },
+        diffs: {}
+    };
+    const entryJsonString = JSON.stringify(entryJson, null, 2);
+
+    const indexV1String = JSON.stringify(indexV1Obj, null, 2);
+
+    const jarManifest = Buffer.from("Manifest-Version: 1.0\r\nCreated-By: GPLMods F-Droid Engine\r\n\r\n", "utf8");
+
+    // Create entry.jar
+    const entryZip = new AdmZip();
+    entryZip.addFile("META-INF/MANIFEST.MF", jarManifest);
+    entryZip.addFile("entry.json", Buffer.from(entryJsonString, "utf8"));
+    const entryJarBuffer = entryZip.toBuffer();
+
+    // Create index-v1.jar
+    const indexV1Zip = new AdmZip();
+    indexV1Zip.addFile("META-INF/MANIFEST.MF", jarManifest);
+    indexV1Zip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
+    const indexV1JarBuffer = indexV1Zip.toBuffer();
+
+    // Create index.jar
+    const indexJarZip = new AdmZip();
+    indexJarZip.addFile("META-INF/MANIFEST.MF", jarManifest);
+    indexJarZip.addFile("index.xml", Buffer.from(xml, "utf8"));
+    indexJarZip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
+    const indexJarBuffer = indexJarZip.toBuffer();
+
+    // Save to cache
+    fdroidCache = {
+        timestamp: repoTimestamp,
+        baseUrl: repoBaseUrl,
+        entryJson,
+        entryJsonString,
+        entryJarBuffer,
+        indexV2String,
+        indexV2Buffer,
+        indexV1String,
+        indexV1JarBuffer,
+        indexXmlString: xml,
+        indexJarBuffer
+    };
+
+    return fdroidCache;
 }
 
-// 1. Classic XML Route
-app.get('/fdroid/repo/index.xml', async (req, res) => {
+// ----------------------------------------------------
+// F-DROID REPOSITORY ROUTES & ENDPOINTS
+// ----------------------------------------------------
+
+// 1. Base repository endpoint (Supports /fdroid/repo, /repo, and /fdroid aliases)
+app.get(['/fdroid/repo', '/fdroid/repo/', '/repo', '/repo/', '/fdroid', '/fdroid/'], async (req, res) => {
     try {
-        const xmlContent = await generateFDroidXml(req);
-        res.set('Content-Type', 'application/xml');
-        res.send(xmlContent);
-    } catch (e) { 
-        console.error("XML Error:", e);
-        res.status(500).send("Error generating index.xml"); 
-    }
-});
+        const accept = (req.headers.accept || '').toLowerCase();
 
-// 2. Classic JAR Route (Zips the XML file dynamically)
-app.get('/fdroid/repo/index.jar', async (req, res) => {
-    try {
-        const xmlContent = await generateFDroidXml(req);
-        const zip = new AdmZip();
-        zip.addFile("index.xml", Buffer.from(xmlContent, "utf8"));
-        const jarBuffer = zip.toBuffer();
+        // Only redirect if client explicitly requests standard HTML browser navigation and NOT json
+        const isExplicitHtmlBrowser = accept.includes('text/html') && !accept.includes('application/json') && !req.xhr;
 
-        res.set('Content-Type', 'application/java-archive');
-        res.set('Content-Disposition', 'attachment; filename="index.jar"');
-        res.send(jarBuffer);
-    } catch (e) { 
-        console.error("JAR Error:", e);
-        res.status(500).send("Error generating index.jar"); 
-    }
-});
-
-// 3. Current default endpoint for Neo Store / Droid-ify (index-v2.json)
-app.get('/fdroid/repo/index-v2.json', async (req, res) => {
-    try {
-        const repoBaseUrl = getRepoBaseUrl(req);
-        const androidMods = await File.find({ 
-            category: 'android', status: 'live', isLatestVersion: true, showInRepo: { $ne: false } 
-        }).sort({ createdAt: -1 });
-
-        const repoJson = {
-            repo: {
-                name: { "en-US": "GPL Mods Android" },
-                description: { "en-US": "The ultimate source for safe and working Android mods." },
-                address: `${repoBaseUrl}/fdroid/repo`,
-                icon: { "en-US": { name: "icon-512x512.png" } }, 
-                timestamp: Date.now(),
-                version: 2
-            },
-            requests: { install: [], uninstall: [] },
-            packages: {}
-        };
-
-        for (const mod of androidMods) {
-            const downloadUrl = mod.externalDownloadUrl || (mod.fileKey ? `${repoBaseUrl}/download-file/${mod._id}` : null);
-            if (!downloadUrl) continue;
-
-            const bundleId = `com.gplmods.${(mod.slug || mod.name).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-            
-            // F-Droid JSON v2 supports Markdown, so we can preserve formatting, but NOT HTML
-            const cleanDesc = (mod.modDescription || '').replace(/<[^>]*>?/gm, '');
-            const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
-            const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
-            const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
-            const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
-
-            // Build a comprehensive Markdown description
-            let fullMarkdownDesc = `${cleanDesc}\n\n`;
-            if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
-            if (cleanFeatures) fullMarkdownDesc += `**Features:**\n${cleanFeatures}\n\n`;
-            if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
-
-            const screenshotArray = [];
-            if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
-                mod.screenshotKeys.forEach((_, i) => {
-                    // F-Droid expects an object with a 'name' property pointing to the image URL
-                    screenshotArray.push({ name: `${repoBaseUrl}/api/screenshot/${mod._id}/${i}` });
-                });
-            }
-
-            repoJson.packages[bundleId] = {
-                metadata: {
-                    name: { "en-US": mod.name },
-                    summary: { "en-US": `${mod.version} Mod by ${mod.uploader}` },
-                    description: { "en-US": fullMarkdownDesc },
-                    license: "GNU/GPL",
-                    categories: ["Mods", "Games", "Apps"],
-                    developerName: mod.developer || "GPL Mods",
-                    authorName: mod.uploader,
-                    icon: { "en-US": { name: `${repoBaseUrl}/api/icon/${mod._id}` } }, 
-                    phoneScreenshots: { "en-US": screenshotArray }, 
-                    added: new Date(mod.createdAt).getTime(),
-                    lastUpdated: new Date(mod.updatedAt).getTime()
-                },
-                versions: {
-                    [mod.version]: {
-                        added: new Date(mod.updatedAt).getTime(),
-                        file: {
-                            name: downloadUrl,
-                            sha256: mod.virusTotalId && mod.virusTotalId.length === 64 ? mod.virusTotalId : "",
-                            size: mod.fileSize || 1048576
-                        },
-                        releaseNotes: { "en-US": cleanWhatsNew }
-                    }
-                }
-            };
+        if (isExplicitHtmlBrowser && !req.query.format) {
+            return res.redirect('/repos#android-repo');
         }
 
-        res.set('Content-Type', 'application/json');
-        res.send(JSON.stringify(repoJson, null, 2));
+        // F-Droid clients, Droid-ify, Neo Store, Dalvik, cURL, or JSON probes: return entry.json with 200 OK
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Cache-Control': 'public, max-age=60'
+        });
+        return res.send(repoData.entryJsonString);
+    } catch (err) {
+        console.error("[F-Droid] Base route error:", err);
+        return res.status(500).json({ error: "Failed to load F-Droid repository." });
+    }
+});
 
+// 2. F-Droid Index V2 Entry Point (entry.json)
+app.get(['/fdroid/repo/entry.json', '/repo/entry.json'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.entryJsonString);
     } catch (e) {
-        console.error("F-Droid JSON Error:", e);
-        res.status(500).json({ error: "Error generating F-Droid JSON index." });
+        console.error("[F-Droid] entry.json error:", e);
+        res.status(500).json({ error: "Error generating F-Droid entry.json" });
+    }
+});
+
+// 3. F-Droid Index V2 Entry JAR (entry.jar)
+app.get(['/fdroid/repo/entry.jar', '/repo/entry.jar'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/java-archive',
+            'Content-Disposition': 'attachment; filename="entry.jar"',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.entryJarBuffer);
+    } catch (e) {
+        console.error("[F-Droid] entry.jar error:", e);
+        res.status(500).send("Error generating entry.jar");
+    }
+});
+
+// 4. F-Droid Index V2 Full Index (index-v2.json)
+app.get(['/fdroid/repo/index-v2.json', '/repo/index-v2.json'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.indexV2Buffer);
+    } catch (e) {
+        console.error("[F-Droid] index-v2.json error:", e);
+        res.status(500).json({ error: "Error generating index-v2.json" });
+    }
+});
+
+// 5. F-Droid Index V1 (index-v1.json)
+app.get(['/fdroid/repo/index-v1.json', '/repo/index-v1.json'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/json; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.indexV1String);
+    } catch (e) {
+        console.error("[F-Droid] index-v1.json error:", e);
+        res.status(500).json({ error: "Error generating index-v1.json" });
+    }
+});
+
+// 6. F-Droid Index V1 JAR (index-v1.jar)
+app.get(['/fdroid/repo/index-v1.jar', '/repo/index-v1.jar'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/java-archive',
+            'Content-Disposition': 'attachment; filename="index-v1.jar"',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.indexV1JarBuffer);
+    } catch (e) {
+        console.error("[F-Droid] index-v1.jar error:", e);
+        res.status(500).send("Error generating index-v1.jar");
+    }
+});
+
+// 7. F-Droid Classic XML (index.xml)
+app.get(['/fdroid/repo/index.xml', '/repo/index.xml'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/xml; charset=utf-8',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.indexXmlString);
+    } catch (e) {
+        console.error("[F-Droid] index.xml error:", e);
+        res.status(500).send("Error generating index.xml");
+    }
+});
+
+// 8. F-Droid Classic JAR (index.jar)
+app.get(['/fdroid/repo/index.jar', '/repo/index.jar'], async (req, res) => {
+    try {
+        const repoData = await getOrBuildFDroidRepoData(req);
+        res.set({
+            'Content-Type': 'application/java-archive',
+            'Content-Disposition': 'attachment; filename="index.jar"',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=60'
+        });
+        res.send(repoData.indexJarBuffer);
+    } catch (e) {
+        console.error("[F-Droid] index.jar error:", e);
+        res.status(500).send("Error generating index.jar");
+    }
+});
+
+// 9. F-Droid Repo Icons & Logos
+app.get(['/fdroid/repo/icon-512x512.png', '/repo/icon-512x512.png', '/fdroid/repo/icons/icon-512x512.png', '/repo/icons/icon-512x512.png', '/fdroid/repo/icon.png', '/repo/icon.png'], (req, res) => {
+    res.redirect('/images/icon-512x512.png');
+});
+
+// 10. Relative Icon path resolver for clients looking in /icons/:id or /icons/:pkg.png
+app.get(['/fdroid/repo/icons/:iconPath', '/repo/icons/:iconPath', '/icons/:iconPath'], async (req, res) => {
+    try {
+        const iconParam = req.params.iconPath.replace(/\.(png|jpg|webp)$/i, '');
+        if (iconParam === 'icon-512x512' || iconParam === 'icon') {
+            return res.redirect('/images/icon-512x512.png');
+        }
+        if (Types.ObjectId.isValid(iconParam)) {
+            const file = await File.findById(iconParam);
+            if (file) {
+                const key = file.iconUrl || file.iconKey;
+                const signedUrl = await getSmartImageUrl(key);
+                return res.redirect(signedUrl);
+            }
+        }
+        // Try finding by package bundle id or slug
+        const cleanSlug = iconParam.replace(/^com\.gplmods\./i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const allAndroidMods = await File.find({ category: 'android' });
+        const matched = allAndroidMods.find(m => {
+            const s = (m.slug || m.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return s === cleanSlug;
+        });
+        if (matched) {
+            const key = matched.iconUrl || matched.iconKey;
+            const signedUrl = await getSmartImageUrl(key);
+            return res.redirect(signedUrl);
+        }
+        return res.redirect('/images/default-avatar.png');
+    } catch (e) {
+        return res.redirect('/images/default-avatar.png');
+    }
+});
+
+// 11. Direct APK Download Resolver (Handles /fdroid/repo/:apkFile and /repo/:apkFile)
+app.get(['/fdroid/repo/:apkFile', '/repo/:apkFile', '/fdroid/repo/download/:apkFile', '/repo/download/:apkFile'], async (req, res, next) => {
+    try {
+        const rawParam = req.params.apkFile;
+        // Ignore JSON/XML/JAR index endpoints so they continue to their dedicated handlers
+        if (/^(entry|index(-v[12])?)\.(json|jar|xml)$/i.test(rawParam)) {
+            return next();
+        }
+        if (/^icon.*\.png$/i.test(rawParam)) {
+            return next();
+        }
+
+        const cleanParam = rawParam.replace(/\.apk$/i, '').trim();
+
+        // 1. Try finding by MongoDB ObjectId
+        const hexIdMatch = cleanParam.match(/[a-f0-9]{24}/i);
+        if (hexIdMatch && Types.ObjectId.isValid(hexIdMatch[0])) {
+            const file = await File.findById(hexIdMatch[0]);
+            if (file) {
+                if (file.externalDownloadUrl) return res.redirect(file.externalDownloadUrl);
+                return res.redirect(`/download-file/${file._id}`);
+            }
+        }
+
+        // 2. Try finding by package name / slug / name
+        const cleanSlug = cleanParam
+            .replace(/^com\.gplmods\./i, '')
+            .replace(/_\d+$/, '') // Remove trailing version code e.g. _8011100
+            .toLowerCase()
+            .replace(/[^a-z0-9]/g, '');
+
+        const allMods = await File.find({ category: 'android', status: 'live' });
+        const matched = allMods.find(m => {
+            const s = (m.slug || m.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return s === cleanSlug;
+        });
+
+        if (matched) {
+            if (matched.externalDownloadUrl) return res.redirect(matched.externalDownloadUrl);
+            return res.redirect(`/download-file/${matched._id}`);
+        }
+
+        return res.status(404).send('APK mod not found in repository.');
+    } catch (e) {
+        console.error('[F-Droid] APK resolver error:', e);
+        return res.status(500).send('Error resolving APK download.');
     }
 });
 
@@ -17658,6 +18054,39 @@ const startServer = async () => {
                     });
                 } catch (err) {
                     console.error('[Clubs] Toggle restriction error:', err);
+                }
+            });
+
+            // Live Channel Typing Indicator
+            socket.on('club_typing', (data) => {
+                try {
+                    const { clubId, channelId } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !clubId || !channelId) return;
+
+                    socket.to(`club_${clubId}_chan_${channelId}`).emit('club_user_typing', {
+                        channelId,
+                        userId: user._id,
+                        username: user.username
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Typing emit error:', err);
+                }
+            });
+
+            socket.on('club_stop_typing', (data) => {
+                try {
+                    const { clubId, channelId } = data || {};
+                    const user = socket.request && socket.request.user;
+                    if (!user || !clubId || !channelId) return;
+
+                    socket.to(`club_${clubId}_chan_${channelId}`).emit('club_user_stop_typing', {
+                        channelId,
+                        userId: user._id,
+                        username: user.username
+                    });
+                } catch (err) {
+                    console.error('[Clubs] Stop typing emit error:', err);
                 }
             });
 

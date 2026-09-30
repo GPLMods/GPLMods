@@ -21,7 +21,95 @@
     /* Chart Area */
     .chart-box { background: var(--dark-gray); padding: 26px; border-radius: 15px; border: 1px solid #333; margin-bottom: 36px; }
     .chart-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 14px; flex-wrap: wrap; gap: 15px;}
-    .chart-controls select { background: var(--black); color: var(--gold); border: 1px solid #444; padding: 8px 15px; border-radius: 8px; outline: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-weight: bold;}
+    
+    /* Custom Dropdown for Chart Controls */
+    .stats-custom-dropdown {
+        position: relative;
+        min-width: 200px;
+        user-select: none;
+    }
+    .stats-dropdown-btn {
+        background: #0d0e12;
+        border: 1.5px solid #333648;
+        border-radius: 10px;
+        padding: 10px 16px;
+        color: #fff;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .stats-dropdown-btn:hover {
+        border-color: rgba(255, 215, 0, 0.6);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+    }
+    .stats-custom-dropdown.open .stats-dropdown-btn {
+        border-color: var(--gold);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .stats-dropdown-arrow {
+        color: var(--silver);
+        font-size: 0.8rem;
+        transition: transform 0.3s ease, color 0.3s ease;
+    }
+    .stats-custom-dropdown.open .stats-dropdown-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    .stats-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #14151e;
+        border: 1.5px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.8);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-6px);
+        transition: all 0.25s ease;
+        z-index: 100;
+        overflow: hidden;
+    }
+    .stats-custom-dropdown.open .stats-dropdown-menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .stats-dropdown-option {
+        padding: 11px 16px;
+        color: var(--silver);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s, color 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .stats-dropdown-option:last-child {
+        border-bottom: none;
+    }
+    .stats-dropdown-option:hover {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .stats-dropdown-option.selected {
+        background-color: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        font-weight: 700;
+    }
     
     /* Filter Bars */
     .filter-section {
@@ -254,13 +342,35 @@
     <!-- 2. Chart.js Graph Area -->
     <div class="chart-box">
         <div class="chart-controls">
-            <h2 style="color: var(--white); margin: 0; font-size: 1.4em;">Performance Over Time</h2>
-            <select id="timeRangeSelector">
-                <option value="7">Last 7 Days</option>
-                <option value="30" selected>Last 30 Days</option>
-                <option value="365">This Year</option>
-                <option value="all">All Time</option>
-            </select>
+            <h2 style="color: var(--white); margin: 0; font-size: 1.4em;"><i class="fas fa-chart-line" style="color: var(--gold); margin-right: 8px;"></i> Performance Over Time</h2>
+            <div class="stats-custom-dropdown" id="statsTimeDropdown">
+                <div class="stats-dropdown-btn" id="statsDropdownBtn">
+                    <span class="stats-selected-val">
+                        <i class="fas fa-calendar-alt" style="color: var(--gold); margin-right: 8px;"></i>
+                        <span id="selectedTimeLabel">Last 30 Days</span>
+                    </span>
+                    <i class="fas fa-chevron-down stats-dropdown-arrow"></i>
+                </div>
+                <div class="stats-dropdown-menu" id="statsDropdownMenu">
+                    <div class="stats-dropdown-option" data-value="7">
+                        <i class="far fa-circle option-radio"></i>
+                        <span>Last 7 Days</span>
+                    </div>
+                    <div class="stats-dropdown-option selected" data-value="30">
+                        <i class="fas fa-check-circle option-radio" style="color: var(--gold);"></i>
+                        <span>Last 30 Days</span>
+                    </div>
+                    <div class="stats-dropdown-option" data-value="365">
+                        <i class="far fa-circle option-radio"></i>
+                        <span>This Year</span>
+                    </div>
+                    <div class="stats-dropdown-option" data-value="all">
+                        <i class="far fa-circle option-radio"></i>
+                        <span>All Time</span>
+                    </div>
+                </div>
+                <input type="hidden" id="timeRangeSelector" value="30">
+            </div>
         </div>
         <div style="position: relative; height: 340px; width: 100%;">
             <canvas id="statsChart"></canvas>
@@ -492,9 +602,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderChart(30);
 
-    document.getElementById('timeRangeSelector').addEventListener('change', function() {
-        renderChart(this.value);
-    });
+    // Interactive Custom Dropdown for Time Range
+    const timeDropdown = document.getElementById('statsTimeDropdown');
+    const timeBtn = document.getElementById('statsDropdownBtn');
+    const timeMenu = document.getElementById('statsDropdownMenu');
+    const timeInput = document.getElementById('timeRangeSelector');
+    const selectedTimeLabel = document.getElementById('selectedTimeLabel');
+
+    if (timeDropdown && timeBtn && timeMenu) {
+        timeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            timeDropdown.classList.toggle('open');
+        });
+
+        timeMenu.addEventListener('click', (e) => {
+            const opt = e.target.closest('.stats-dropdown-option');
+            if (!opt) return;
+
+            const val = opt.getAttribute('data-value');
+            const labelText = opt.querySelector('span').textContent;
+
+            timeMenu.querySelectorAll('.stats-dropdown-option').forEach(o => {
+                o.classList.remove('selected');
+                const radio = o.querySelector('.option-radio');
+                if (radio) {
+                    radio.className = 'far fa-circle option-radio';
+                    radio.style.color = '';
+                }
+            });
+
+            opt.classList.add('selected');
+            const activeRadio = opt.querySelector('.option-radio');
+            if (activeRadio) {
+                activeRadio.className = 'fas fa-check-circle option-radio';
+                activeRadio.style.color = 'var(--gold)';
+            }
+
+            if (selectedTimeLabel) selectedTimeLabel.textContent = labelText;
+            if (timeInput) timeInput.value = val;
+            timeDropdown.classList.remove('open');
+
+            renderChart(val);
+        });
+
+        document.addEventListener('click', () => {
+            timeDropdown.classList.remove('open');
+        });
+    }
 
     // 2. Interactive Status & Platform Filters (Defaults to Live mods)
     const statusTabs = document.querySelectorAll('.status-tab');

@@ -967,10 +967,114 @@ router.post('/:slugOrId/channels', ensureAuth, async (req, res) => {
 
         await Club.findByIdAndUpdate(club._id, { $inc: { channelCount: 1 } });
 
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${club._id}`).emit('club_channel_created', newChannel);
+        }
+
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.json({ success: true, channel: newChannel });
+        }
         return res.redirect(`/clubs/${club.slug}?channel=${newChannel._id}`);
     } catch (err) {
         console.error('[Clubs] Channel creation error:', err);
         return res.status(500).json({ error: 'Failed to create channel.' });
+    }
+});
+
+// Edit Channel Information & Access
+router.post('/:slugOrId/channels/:channelId/edit', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+
+        if (!isClubCreator && !isStaff) {
+            return res.status(403).json({ error: 'Unauthorized to edit channel.' });
+        }
+
+        const channel = await ClubChannel.findById(req.params.channelId);
+        if (!channel) return res.status(404).json({ error: 'Channel not found.' });
+
+        const { name, topic, type, isPrivate, isReadOnly, allowedRoles } = req.body;
+
+        if (name && name.trim()) {
+            channel.name = slugify(name.trim());
+        }
+        if (typeof topic === 'string') {
+            channel.topic = topic.trim();
+        }
+        if (type && ['text', 'polls', 'announcements'].includes(type) && !['rules', 'new-uploads', 'new-updates'].includes(channel.type)) {
+            channel.type = type;
+        }
+        if (typeof isPrivate !== 'undefined') {
+            channel.isPrivate = isPrivate === true || isPrivate === 'true' || isPrivate === 'on';
+        }
+        if (typeof isReadOnly !== 'undefined') {
+            channel.isReadOnly = isReadOnly === true || isReadOnly === 'true' || isReadOnly === 'on';
+        }
+        if (allowedRoles) {
+            channel.allowedRoles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+        }
+
+        await channel.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${club._id}`).emit('club_channel_updated', channel);
+        }
+
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.json({ success: true, channel });
+        }
+        return res.redirect(`/clubs/${club.slug}?channel=${channel._id}`);
+    } catch (err) {
+        console.error('[Clubs] Channel edit error:', err);
+        return res.status(500).json({ error: 'Failed to edit channel.' });
+    }
+});
+
+// Delete Channel
+router.post('/:slugOrId/channels/:channelId/delete', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+
+        if (!isClubCreator && !isStaff) {
+            return res.status(403).json({ error: 'Unauthorized to delete channel.' });
+        }
+
+        const channel = await ClubChannel.findById(req.params.channelId);
+        if (!channel) return res.status(404).json({ error: 'Channel not found.' });
+
+        // Protected system channels
+        if (['rules', 'announcements', 'new-uploads', 'new-updates'].includes(channel.type)) {
+            return res.status(400).json({ error: 'Default system channels cannot be deleted.' });
+        }
+
+        await ClubMessage.deleteMany({ channel: channel._id });
+        await ClubChannel.findByIdAndDelete(channel._id);
+        await Club.findByIdAndUpdate(club._id, { $inc: { channelCount: -1 } });
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`club_${club._id}`).emit('club_channel_deleted', { channelId: channel._id });
+        }
+
+        const fallback = await ClubChannel.findOne({ club: club._id }).sort({ position: 1 });
+
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.json({ success: true, fallbackUrl: `/clubs/${club.slug}${fallback ? '?channel=' + fallback._id : ''}` });
+        }
+        return res.redirect(`/clubs/${club.slug}${fallback ? '?channel=' + fallback._id : ''}`);
+    } catch (err) {
+        console.error('[Clubs] Channel deletion error:', err);
+        return res.status(500).json({ error: 'Failed to delete channel.' });
     }
 });
 
@@ -979,7 +1083,7 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) return res.status(404).json({ error: 'Club not found' });
 
-        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id);
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
         const isStaff = ['owner', 'admin'].includes(req.user.role);
 
         if (!isClubCreator && !isStaff) {
@@ -999,11 +1103,11 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
             position: 20,
             permissions: {
                 canManageClub: false,
-                canManageChannels: canManageChannels === 'on' || canManageChannels === 'true',
+                canManageChannels: canManageChannels === 'on' || canManageChannels === 'true' || canManageChannels === true,
                 canManageRoles: false,
-                canKickMembers: canKickMembers === 'on' || canKickMembers === 'true',
+                canKickMembers: canKickMembers === 'on' || canKickMembers === 'true' || canKickMembers === true,
                 canSendMessages: true,
-                canPostPolls: canPostPolls === 'on' || canPostPolls === 'true',
+                canPostPolls: canPostPolls === 'on' || canPostPolls === 'true' || canPostPolls === true,
                 canAuditPrivate: false
             }
         });
@@ -1011,10 +1115,53 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
         const allRoles = await ClubRole.find({ club: club._id }).lean();
         saveClubRolesArchive(club.name, allRoles);
 
+        if (req.xhr || req.headers.accept?.includes('json')) {
+            return res.json({ success: true, role: newRole });
+        }
         return res.redirect(`/clubs/${club.slug}`);
     } catch (err) {
         console.error('[Clubs] Role creation error:', err);
         return res.status(500).json({ error: 'Failed to create role.' });
+    }
+});
+
+// Role Assignment to Members (Add / Remove)
+router.post('/:slugOrId/roles/assign', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+
+        if (!isClubCreator && !isStaff) {
+            return res.status(403).json({ error: 'Unauthorized to manage member roles.' });
+        }
+
+        const { memberId, roleId, action } = req.body;
+        if (!memberId || !roleId) {
+            return res.status(400).json({ error: 'Member ID and Role ID are required.' });
+        }
+
+        const member = await ClubMember.findById(memberId);
+        if (!member) return res.status(404).json({ error: 'Member not found.' });
+
+        if (action === 'remove') {
+            member.roles = (member.roles || []).filter(r => String(r) !== String(roleId));
+        } else {
+            if (!member.roles) member.roles = [];
+            if (!member.roles.some(r => String(r) === String(roleId))) {
+                member.roles.push(roleId);
+            }
+        }
+
+        await member.save();
+        await member.populate('roles');
+
+        return res.json({ success: true, member });
+    } catch (err) {
+        console.error('[Clubs] Role assignment error:', err);
+        return res.status(500).json({ error: 'Failed to update member role.' });
     }
 });
 
