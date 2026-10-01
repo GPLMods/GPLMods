@@ -1397,6 +1397,165 @@
         background: var(--gold);
         color: #000;
     }
+
+    /* Access Mode 3-Card Selector */
+    .access-mode-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .access-mode-card {
+        background: #14151b;
+        border: 1.5px solid #282a36;
+        border-radius: 10px;
+        padding: 12px 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+        user-select: none;
+    }
+    .access-mode-card:hover {
+        border-color: rgba(255, 215, 0, 0.4);
+        background: #181a24;
+    }
+    .access-mode-card.selected {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.08);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+    }
+    .access-mode-card i {
+        font-size: 1.25rem;
+        margin-bottom: 6px;
+        display: block;
+    }
+    .access-mode-card .mode-title {
+        display: block;
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #fff;
+        margin-bottom: 2px;
+    }
+    .access-mode-card .mode-desc {
+        display: block;
+        font-size: 0.68rem;
+        color: var(--silver);
+        line-height: 1.3;
+    }
+
+    /* Role Counter & Badges */
+    .role-usage-counter-wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 0.82rem;
+    }
+    .role-usage-counter {
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+    .role-usage-counter.under { background: rgba(76, 175, 80, 0.15); color: #69f0ae; }
+    .role-usage-counter.near { background: rgba(255, 152, 0, 0.15); color: #ffb74d; }
+    .role-usage-counter.max { background: rgba(244, 67, 54, 0.2); color: #ff8a80; }
+
+    /* Member Invite Badge */
+    .member-invite-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(255, 215, 0, 0.12);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        color: var(--gold);
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 10px;
+        margin-left: 6px;
+        vertical-align: middle;
+    }
+    .topbar-invite-badge {
+        background: var(--gold);
+        color: #000;
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 1px 6px;
+        border-radius: 8px;
+        margin-left: 4px;
+    }
+
+    /* Track Type Pills */
+    .track-type-pills {
+        display: inline-flex;
+        background: #0f1015;
+        border: 1px solid #282a36;
+        border-radius: 8px;
+        padding: 2px;
+        gap: 2px;
+    }
+    .track-pill {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #8e9297;
+        cursor: pointer;
+        transition: all 0.18s;
+        border: none;
+        background: transparent;
+    }
+    .track-pill:hover { color: #fff; }
+    .track-pill.active {
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+    }
+
+    /* Universal GPL Toast Notification Container */
+    #gplToastContainer {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 9999999;
+        pointer-events: none;
+        max-width: 90vw;
+        width: 380px;
+    }
+    .gpl-toast-item {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 18px;
+        border-radius: 12px;
+        background: #14151b;
+        color: #fff;
+        font-size: 0.88rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(8px);
+        transform: translateY(20px);
+        opacity: 0;
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+    }
+    .gpl-toast-item.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .gpl-toast-item.success { border-color: #69f0ae; }
+    .gpl-toast-item.success i { color: #69f0ae; font-size: 1.2rem; }
+    .gpl-toast-item.error { border-color: #ff8a80; }
+    .gpl-toast-item.error i { color: #ff8a80; font-size: 1.2rem; }
+    .gpl-toast-item.info { border-color: var(--gold); }
+    .gpl-toast-item.info i { color: var(--gold); font-size: 1.2rem; }
 </style>
 
 <div class="discord-app-layout">
@@ -1474,9 +1633,12 @@
                 <i class="fas fa-info-circle"></i>
                 <span>Club Overview &amp; Info</span>
             </a>
-            <div class="club-menu-item" data-club-id="<%= club._id %>" data-club-name="<%= club.name %>" data-club-url="/clubs/<%= club.slug %>" onclick="handleClubShare(this); toggleClubMenu();">
-                <i class="fas fa-share-alt"></i>
-                <span>Invite &amp; Share Club</span>
+            <div class="club-menu-item" onclick="openUniqueInviteModal(); toggleClubMenu();">
+                <i class="fas fa-user-plus" style="color: var(--gold);"></i>
+                <span>Invite Members (Unique Link)</span>
+                <% if (myInviteCount > 0) { %>
+                    <span class="member-invite-badge" style="margin-left: auto;"><i class="fas fa-trophy"></i> <%= myInviteCount %></span>
+                <% } %>
             </div>
             <% if (hasManageClubPerm) { %>
                 <div class="club-menu-divider"></div>
@@ -1485,8 +1647,14 @@
                     <span>Create Text Channel</span>
                 </div>
                 <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
-                    <i class="fas fa-user-plus"></i>
+                    <i class="fas fa-rss" style="color: var(--gold);"></i>
                     <span>Tracked Creators</span>
+                </div>
+            <% } else { %>
+                <div class="club-menu-divider"></div>
+                <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
+                    <i class="fas fa-bell"></i>
+                    <span>My Subscriptions</span>
                 </div>
             <% } %>
             <div class="club-menu-divider"></div>
@@ -1495,8 +1663,8 @@
                 <span>Explore Other Clubs</span>
             </a>
             <% if (!club.isDefault && membership && !isClubCreator) { %>
-                <form action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;" onsubmit="return confirm('Are you sure you want to leave this club?');">
-                    <button type="submit" class="club-menu-item" style="color: #ff5252;">
+                <form id="leaveClubForm" action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;">
+                    <button type="button" class="club-menu-item" onclick="confirmLeaveClub(event)" style="color: #ff5252; background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Leave Club</span>
                     </button>
@@ -1635,6 +1803,20 @@
             </div>
 
             <div class="topbar-actions">
+                <!-- Invite Button with counter -->
+                <button type="button" class="topbar-btn" onclick="openUniqueInviteModal()" title="Invite Friends & View Total Invites" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.35); color: var(--gold); font-weight: 600; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <i class="fas fa-user-plus"></i>
+                    <span class="hide-mobile">Invite</span>
+                    <% if (myInviteCount > 0) { %>
+                        <span class="topbar-invite-badge"><%= myInviteCount %></span>
+                    <% } %>
+                </button>
+
+                <!-- Tracked Creators Quick Button -->
+                <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
+                    <i class="fas fa-rss"></i>
+                </button>
+
                 <!-- Consolidated Channel Options & Settings GUI Button -->
                 <button type="button" class="channel-menu-gui-btn" id="btnOpenChannelMenu" onclick="openChannelSettingsGUI()" title="Channel Settings, Roles, Permissions &amp; Invites">
                     <i class="fas fa-sliders-h"></i>
@@ -1839,18 +2021,22 @@
 
             <!-- Channel Locked Chat Placeholder for Members -->
             <% 
-                const isChanLocked = activeChannel && activeChannel.isReadOnly; 
-                const canPostWhenLocked = isStaff || isClubCreator;
+                const canChatInChannel = typeof canUserChatInActiveChannel !== 'undefined' ? canUserChatInActiveChannel : true;
+                const isPublicViewRestricted = activeChannel && activeChannel.accessMode === 'public_view' && !canChatInChannel;
             %>
-            <div id="channelLockedChatOverlay" style="display: <%= (isChanLocked && !canPostWhenLocked) ? 'flex' : 'none' %>;" class="chat-locked-full-box">
+            <div id="channelLockedChatOverlay" style="display: <%= canChatInChannel ? 'none' : 'flex' %>;" class="chat-locked-full-box">
                 <i class="fas fa-lock" style="color: var(--gold); font-size: 1.3rem;"></i>
                 <div>
-                    <strong style="color: #fff; display: block; font-size: 0.95rem;">Channel is in Read-Only Mode</strong>
-                    <span style="color: var(--silver); font-size: 0.82rem;">This channel is locked. Only staff and channel managers have permission to send messages here.</span>
+                    <strong style="color: #fff; display: block; font-size: 0.95rem;">
+                        <%= isPublicViewRestricted ? 'Restricted Chat Channel' : 'Channel is in Read-Only Mode' %>
+                    </strong>
+                    <span style="color: var(--silver); font-size: 0.82rem;">
+                        <%= isPublicViewRestricted ? 'This channel is publicly viewable, but only members with assigned roles have permission to send messages.' : 'This channel is locked. Only staff and channel managers have permission to send messages here.' %>
+                    </span>
                 </div>
             </div>
 
-            <div class="chat-input-box" id="mainChatInputBox" style="position: relative; display: <%= (isChanLocked && !canPostWhenLocked) ? 'none' : 'flex' %>;">
+            <div class="chat-input-box" id="mainChatInputBox" style="position: relative; display: <%= canChatInChannel ? 'flex' : 'none' %>;">
                 <!-- Discord Mention Autocomplete Dropdown -->
                 <div id="mentionAutocompleteDropdown" class="mention-autocomplete-dropdown"></div>
 
@@ -1988,10 +2174,32 @@
                                 <div class="online-dot"></div>
                             </div>
                             <div class="member-meta-box">
-                                <span class="member-display-name" style="color: <%= (memRole && memRole.color && memRole.name !== 'everyone') ? memRole.color : '#fff' %>;"><%= mem.user.username %></span>
-                                <span class="discord-sidebar-role-pill" style="color: <%= memRole.color || '#99aab5' %>; background: <%= (memRole.color || '#99aab5') %>18; border: 1px solid <%= (memRole.color || '#99aab5') %>40;">
-                                    <%= memRole.badgeIcon || '🌐' %> <%= memRole.name %>
-                                </span>
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                                    <span class="member-display-name" style="color: <%= (memRole && memRole.color && memRole.name !== 'everyone') ? memRole.color : '#fff' %>;"><%= mem.user.username %></span>
+                                    <% if (mem.inviteCount && mem.inviteCount > 0) { %>
+                                        <span class="member-invite-badge" title="<%= mem.inviteCount %> user(s) invited">
+                                            <i class="fas fa-trophy"></i> <%= mem.inviteCount %>
+                                        </span>
+                                    <% } %>
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px;">
+                                    <% if (mem.roles && mem.roles.length > 0) { %>
+                                        <% mem.roles.slice(0, 3).forEach(r => { %>
+                                            <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40;">
+                                                <%= r.badgeIcon || '🛡️' %> <%= r.name %>
+                                            </span>
+                                        <% }); %>
+                                        <% if (mem.roles.length > 3) { %>
+                                            <span class="discord-sidebar-role-pill" style="color: var(--silver); background: rgba(255,255,255,0.06); font-size: 0.68rem;" title="<%= mem.roles.slice(3).map(r => r.name).join(', ') %>">
+                                                +<%= mem.roles.length - 3 %>
+                                            </span>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span class="discord-sidebar-role-pill" style="color: #99aab5; background: #99aab518; border: 1px solid #99aab540;">
+                                            🌐 everyone
+                                        </span>
+                                    <% } %>
+                                </div>
                             </div>
                         </div>
                     <% } %>
@@ -2005,7 +2213,7 @@
 <!-- MODALS (CREATE CHANNEL, POLL, SHARE, ETC)  -->
 <!-- ========================================== -->
 
-<!-- Create Channel Modal (With Custom Dropdown GUI) -->
+<!-- Create Channel Modal (With Custom Dropdown GUI & 3 Access Modes) -->
 <div class="gpl-modal-backdrop" id="createChannelModal">
     <div class="gpl-modal-box">
         <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-hashtag" style="color: var(--gold);"></i> Create Text Channel</h3>
@@ -2055,10 +2263,57 @@
                     <input type="hidden" name="type" id="createChannelTypeInput" value="text">
                 </div>
             </div>
-            <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="isPrivate" id="channelPrivateCheck">
-                <label for="channelPrivateCheck" style="color: #fff; font-size: 0.88rem;">Private / Role-Specific Channel</label>
+
+            <!-- 3-Way Access Mode Selector -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 8px;">Channel Access Mode</label>
+                <div class="access-mode-grid">
+                    <label class="access-mode-card selected" onclick="selectAccessMode('create', 'open', this)">
+                        <input type="radio" name="accessMode" value="open" checked style="display: none;">
+                        <div class="mode-header">
+                            <div class="mode-icon open"><i class="fas fa-globe"></i></div>
+                            <div class="mode-title">Open</div>
+                        </div>
+                        <div class="mode-desc">Public to all club members. Everyone can view and chat.</div>
+                    </label>
+                    <label class="access-mode-card" onclick="selectAccessMode('create', 'public_view', this)">
+                        <input type="radio" name="accessMode" value="public_view" style="display: none;">
+                        <div class="mode-header">
+                            <div class="mode-icon public-view"><i class="fas fa-eye"></i></div>
+                            <div class="mode-title">Public View</div>
+                        </div>
+                        <div class="mode-desc">Visible to all, but only allowed roles can send messages.</div>
+                    </label>
+                    <label class="access-mode-card" onclick="selectAccessMode('create', 'role_private', this)">
+                        <input type="radio" name="accessMode" value="role_private" style="display: none;">
+                        <div class="mode-header">
+                            <div class="mode-icon role-private"><i class="fas fa-user-lock"></i></div>
+                            <div class="mode-title">Role-Private</div>
+                        </div>
+                        <div class="mode-desc">Completely hidden from members who lack an allowed role.</div>
+                    </label>
+                </div>
             </div>
+
+            <!-- Allowed Roles Checklist (visible when public_view or role_private is chosen) -->
+            <div id="createChannelRolesSection" style="display: none; background: #0d0e12; border: 1px solid #282a36; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.82rem; color: var(--gold); font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-shield-alt"></i> Select Roles with Chat/Access Permissions:
+                </label>
+                <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
+                    <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { %>
+                        <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.84rem; cursor: pointer;">
+                            <input type="checkbox" name="allowedRoles" value="<%= r._id %>">
+                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
+                            <span><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                        </label>
+                    <% }); %>
+                    <% if ((roles || []).filter(r => r.name !== 'everyone').length === 0) { %>
+                        <span style="color: var(--silver); font-size: 0.8rem; font-style: italic;">No custom roles created yet. You can create roles in Roles &amp; Perms.</span>
+                    <% } %>
+                </div>
+            </div>
+
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button type="button" onclick="closeCreateChannelModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
                 <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Create Channel</button>
@@ -2222,25 +2477,48 @@
                     </div>
                 </div>
 
-                <!-- 2. Channel Privacy & Allowed Roles -->
+                <!-- 2. Channel Privacy & Allowed Roles (3 Access Modes) -->
                 <form id="channelPrivacyAccessForm" onsubmit="saveChannelPrivacyAccess(event)">
                     <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                            <div>
-                                <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1rem;"><i class="fas fa-shield-alt" style="color: #ba68c8; margin-right: 6px;"></i> Channel Access &amp; Privacy</h4>
-                                <p style="margin: 0; color: var(--silver); font-size: 0.82rem;">Control whether this channel is public to everyone or restricted to specific base roles.</p>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <input type="checkbox" id="guiChanIsPrivate" name="isPrivate" <%= (activeChannel && activeChannel.isPrivate) ? 'checked' : '' %>>
-                                <label for="guiChanIsPrivate" style="color: #fff; font-size: 0.88rem; font-weight: 600;">Private Channel</label>
-                            </div>
+                        <h4 style="margin: 0 0 4px 0; color: #fff; font-size: 1rem;"><i class="fas fa-shield-alt" style="color: #ba68c8; margin-right: 6px;"></i> Channel Access &amp; Privacy</h4>
+                        <p style="margin: 0 0 14px 0; color: var(--silver); font-size: 0.82rem;">Select how this channel is presented and who is allowed to view or chat.</p>
+
+                        <!-- 3-Way Access Mode Selector for Active Channel -->
+                        <% const curAccessMode = activeChannel ? (activeChannel.accessMode || (activeChannel.isPrivate ? 'role_private' : 'open')) : 'open'; %>
+                        <div class="access-mode-grid" style="margin-bottom: 14px;">
+                            <label class="access-mode-card <%= curAccessMode === 'open' ? 'selected' : '' %>" onclick="selectAccessMode('edit', 'open', this)">
+                                <input type="radio" name="accessMode" value="open" <%= curAccessMode === 'open' ? 'checked' : '' %> style="display: none;">
+                                <div class="mode-header">
+                                    <div class="mode-icon open"><i class="fas fa-globe"></i></div>
+                                    <div class="mode-title">Open</div>
+                                </div>
+                                <div class="mode-desc">Public to all club members. Everyone can view and chat.</div>
+                            </label>
+                            <label class="access-mode-card <%= curAccessMode === 'public_view' ? 'selected' : '' %>" onclick="selectAccessMode('edit', 'public_view', this)">
+                                <input type="radio" name="accessMode" value="public_view" <%= curAccessMode === 'public_view' ? 'checked' : '' %> style="display: none;">
+                                <div class="mode-header">
+                                    <div class="mode-icon public-view"><i class="fas fa-eye"></i></div>
+                                    <div class="mode-title">Public View</div>
+                                </div>
+                                <div class="mode-desc">Visible to all, but only allowed roles can send messages.</div>
+                            </label>
+                            <label class="access-mode-card <%= curAccessMode === 'role_private' ? 'selected' : '' %>" onclick="selectAccessMode('edit', 'role_private', this)">
+                                <input type="radio" name="accessMode" value="role_private" <%= curAccessMode === 'role_private' ? 'checked' : '' %> style="display: none;">
+                                <div class="mode-header">
+                                    <div class="mode-icon role-private"><i class="fas fa-user-lock"></i></div>
+                                    <div class="mode-title">Role-Private</div>
+                                </div>
+                                <div class="mode-desc">Completely hidden from members who lack an allowed role.</div>
+                            </label>
                         </div>
 
                         <!-- Roles Checklist -->
-                        <div id="guiChanRolesChecklistWrap" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; margin-top: 14px;">
-                            <label style="display: block; font-size: 0.82rem; color: var(--silver); margin-bottom: 8px;">Roles with Access to this Channel:</label>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                <% (roles || []).forEach(r => { 
+                        <div id="editChanRolesChecklistWrap" style="<%= curAccessMode === 'open' ? 'display: none;' : '' %> border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; margin-top: 14px;">
+                            <label style="display: block; font-size: 0.82rem; color: var(--gold); font-weight: 600; margin-bottom: 8px;">
+                                <i class="fas fa-shield-alt"></i> Select Roles with Access/Chat Permissions:
+                            </label>
+                            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
+                                <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { 
                                     const isAllowed = (activeChannel && activeChannel.allowedRoles && activeChannel.allowedRoles.some(ar => String(ar) === String(r._id)));
                                 %>
                                     <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.85rem; cursor: pointer;">
@@ -2348,53 +2626,83 @@
                     </form>
                 </div>
 
-                <!-- 2. Existing Roles List -->
+                <!-- 2. Existing Roles List with Edit & Delete Actions -->
                 <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 10px 0; color: #fff; font-size: 0.95rem;">Existing Club Roles</h4>
-                    <div id="guiRolesDisplayList" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">Existing Club Roles</h4>
+                        <span style="font-size: 0.75rem; color: var(--silver);"><%= (roles || []).length %> Roles</span>
+                    </div>
+                    <div id="guiRolesDisplayList" style="display: flex; flex-direction: column; gap: 8px;">
                         <% (roles || []).forEach(r => { %>
-                            <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;">
-                                <%= r.badgeIcon || '🛡️' %> <%= r.name %>
-                            </span>
+                            <div class="role-list-row" id="roleRow-<%= r._id %>" style="display: flex; align-items: center; justify-content: space-between; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                                        <%= r.badgeIcon || '🛡️' %> <%= r.name %>
+                                    </span>
+                                    <% if (r.name === 'everyone') { %>
+                                        <span style="font-size: 0.72rem; color: #8e9297;">(Default Role)</span>
+                                    <% } %>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <% if (r.name !== 'everyone') { %>
+                                        <button type="button" onclick="openEditRoleModal('<%= r._id %>', '<%= r.name %>', '<%= r.badgeIcon || "🛡️" %>', '<%= r.color || "#FFD700" %>', <%= r.permissions?.canManageChannels || false %>, <%= r.permissions?.canKickMembers || false %>, <%= r.permissions?.canPostPolls || false %>)" style="background: rgba(255,255,255,0.06); border: 1px solid #3a3d4d; color: var(--silver); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;" title="Edit Role">
+                                            <i class="fas fa-pencil-alt"></i> Edit
+                                        </button>
+                                        <button type="button" onclick="confirmDeleteRole('<%= r._id %>', '<%= r.name %>')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;" title="Delete Role">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
                         <% }); %>
                     </div>
                 </div>
 
-                <!-- 3. Assign / Remove Role from Member -->
+                <!-- 3. Assign Roles to Member (Max 10 Roles Limit Enforced) -->
                 <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px;">
-                    <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 0.95rem;"><i class="fas fa-user-tag" style="color: var(--gold); margin-right: 6px;"></i> Assign Base Roles to Members</h4>
-                    <form id="assignMemberRoleForm" onsubmit="submitMemberRoleAssignment(event)">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Choose Member</label>
-                                <select id="assignTargetMember" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
-                                    <option value="">-- Select Member --</option>
-                                    <% (members || []).forEach(m => { %>
-                                        <% if (m.user) { %>
-                                            <option value="<%= m._id %>"><%= m.user.username %></option>
-                                        <% } %>
-                                    <% }); %>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Choose Role</label>
-                                <select id="assignTargetRole" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
-                                    <option value="">-- Select Role --</option>
-                                    <% (roles || []).forEach(r => { %>
-                                        <option value="<%= r._id %>"><%= r.badgeIcon || '🛡️' %> <%= r.name %></option>
-                                    <% }); %>
-                                </select>
-                            </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                        <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">
+                            <i class="fas fa-user-tag" style="color: var(--gold); margin-right: 6px;"></i> Assign Roles to Member
+                        </h4>
+                        <span id="memberRoleCounterBadge" class="roles-counter-badge">
+                            0 / 10 Roles Assigned
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Select Member</label>
+                        <select id="assignTargetMember" onchange="onSelectMemberForRoles(this.value)" style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                            <option value="">-- Choose Member --</option>
+                            <% (members || []).forEach(m => { %>
+                                <% if (m.user) { %>
+                                    <option value="<%= m._id %>" data-roles="<%= (m.roles || []).map(r => r._id || r).join(',') %>">
+                                        <%= m.user.username %> (<%= (m.roles || []).length %> roles)
+                                    </option>
+                                <% } %>
+                            <% }); %>
+                        </select>
+                    </div>
+
+                    <!-- Member Roles Checkboxes Grid -->
+                    <div id="memberRolesCheckboxesSection" style="display: none; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;">
+                        <label style="display: block; font-size: 0.8rem; color: var(--silver); margin-bottom: 8px;">
+                            Check or uncheck roles for this member (Max 10):
+                        </label>
+                        <div id="memberRolesCheckboxesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; margin-bottom: 14px;">
+                            <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { %>
+                                <label class="role-checkbox-item" id="roleLabel-<%= r._id %>" style="display: flex; align-items: center; gap: 8px; background: #14151b; border: 1px solid #2a2d3a; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.82rem; color: #fff;">
+                                    <input type="checkbox" class="member-role-checkbox" value="<%= r._id %>" onchange="onMemberRoleCheckboxChange()">
+                                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>; flex-shrink: 0;"></span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                                </label>
+                            <% }); %>
                         </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="submit" name="action" value="add" onclick="this.form.actionVal='add'" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
-                                <i class="fas fa-plus"></i> Assign Role
-                            </button>
-                            <button type="submit" name="action" value="remove" onclick="this.form.actionVal='remove'" style="background: transparent; border: 1px solid #ff6b6b; color: #ff6b6b; font-weight: 600; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
-                                <i class="fas fa-minus"></i> Remove Role
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button type="button" onclick="saveMemberAssignedRoles()" id="btnSaveMemberRoles" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">
+                                <i class="fas fa-save"></i> Save Member Roles
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
 
@@ -2406,7 +2714,7 @@
                         <p style="margin: 0 0 16px 0; color: var(--silver); font-size: 0.85rem; line-height: 1.5;">
                             Are you sure you want to permanently delete <strong>#<%= activeChannel ? activeChannel.name : '' %></strong>? This action cannot be undone. All message logs and community polls in this channel will be erased.
                         </p>
-                        <button type="button" onclick="deleteActiveChannel()" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 8px; cursor: pointer;">
+                        <button type="button" onclick="confirmDeleteActiveChannel()" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 8px; cursor: pointer;">
                             <i class="fas fa-trash-alt"></i> Delete Channel Permanently
                         </button>
                     </div>
@@ -2437,23 +2745,109 @@
     </div>
 </div>
 
-<!-- Tracked Creator Profiles Modal -->
-<div class="gpl-modal-backdrop" id="trackedCreatorsModal">
-    <div class="gpl-modal-box">
-        <h3 style="color: #fff; margin-top: 0; margin-bottom: 14px;"><i class="fas fa-rss" style="color: var(--gold);"></i> Track Creator Mod Updates</h3>
-        <p style="color: var(--silver); font-size: 0.85rem; margin-bottom: 18px;">
-            Assign developer/creator profiles to track. When they upload a new mod or publish an update, an automated rich card will be posted to #new-uploads and #new-updates.
-        </p>
-        <form action="/clubs/<%= club.slug %>/tracked-creators" method="POST">
-            <div style="margin-bottom: 18px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Creator Username</label>
-                <input type="text" name="username" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+<!-- Tracked Creator Profiles Modal (Multi-Profile, Uploads/Updates/Both, Club & Personal) -->
+<div class="gpl-modal-backdrop" id="trackedCreatorsModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="gpl-modal-box" style="max-width: 620px; background: #14151b; border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 92%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-rss" style="color: var(--gold);"></i> Track Creator Mod Updates &amp; Uploads
+            </h3>
+            <button type="button" onclick="closeTrackedCreatorsModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <!-- Tracking Tabs -->
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid #282a36; padding-bottom: 10px; margin-bottom: 16px;">
+            <button type="button" class="chan-tab-btn active" id="tabBtn-trackPersonal" onclick="switchTrackTab('personal')" style="background: rgba(255,215,0,0.15); border: 1px solid var(--gold); color: #fff; padding: 7px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <i class="fas fa-user-check"></i> <span>My Tracked Creators</span>
+            </button>
+            <% if (hasManageClubPerm) { %>
+                <button type="button" class="chan-tab-btn" id="tabBtn-trackClub" onclick="switchTrackTab('club')" style="background: transparent; border: 1px solid #333645; color: var(--silver); padding: 7px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-satellite-dish"></i> <span>Club Feed Tracking</span>
+                </button>
+            <% } %>
+        </div>
+
+        <!-- TAB 1: Personal User Creator Tracking -->
+        <div id="trackPane-personal">
+            <p style="color: var(--silver); font-size: 0.84rem; margin-bottom: 14px; line-height: 1.4;">
+                Track creators to receive personalized notifications whenever they publish new mods or mod updates.
+            </p>
+
+            <!-- Add Personal Tracked Creator Form -->
+            <form id="addPersonalTrackForm" onsubmit="submitAddPersonalTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                <div style="margin-bottom: 10px;">
+                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Creator Username</label>
+                    <input type="text" id="personalTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 6px;">What do you want to track?</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                            <input type="radio" name="personalTrackType" value="both" checked> Both Uploads &amp; Updates
+                        </label>
+                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                            <input type="radio" name="personalTrackType" value="uploads"> New Uploads Only
+                        </label>
+                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                            <input type="radio" name="personalTrackType" value="updates"> Mod Updates Only
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-plus"></i> Track Creator
+                </button>
+            </form>
+
+            <!-- Personal Tracked Creators List -->
+            <div>
+                <label style="display: block; font-size: 0.82rem; color: var(--silver); margin-bottom: 8px; font-weight: 600;">Creators You Are Currently Tracking:</label>
+                <div id="personalTrackedList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+                    <div style="text-align: center; color: var(--silver); padding: 18px; font-size: 0.85rem;">Loading tracked creators...</div>
+                </div>
             </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="closeTrackedCreatorsModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Add Tracked Creator</button>
+        </div>
+
+        <% if (hasManageClubPerm) { %>
+            <!-- TAB 2: Club Mod Feeds Tracking -->
+            <div id="trackPane-club" style="display: none;">
+                <p style="color: var(--silver); font-size: 0.84rem; margin-bottom: 14px; line-height: 1.4;">
+                    Assign creator profiles to feed into this club's <strong>#new-uploads</strong> and <strong>#new-updates</strong> channels.
+                </p>
+
+                <!-- Add Club Tracked Creator Form -->
+                <form id="addClubTrackForm" onsubmit="submitAddClubTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Creator Username</label>
+                        <input type="text" id="clubTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 6px;">Feed Notification Scope</label>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                                <input type="radio" name="clubTrackType" value="both" checked> Both Uploads &amp; Updates
+                            </label>
+                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                                <input type="radio" name="clubTrackType" value="uploads"> New Uploads Only
+                            </label>
+                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
+                                <input type="radio" name="clubTrackType" value="updates"> Mod Updates Only
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                        <i class="fas fa-rss"></i> Add to Club Feeds
+                    </button>
+                </form>
+
+                <!-- Club Tracked Creators List -->
+                <div>
+                    <label style="display: block; font-size: 0.82rem; color: var(--silver); margin-bottom: 8px; font-weight: 600;">Creators Feeding This Club:</label>
+                    <div id="clubTrackedList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+                        <div style="text-align: center; color: var(--silver); padding: 18px; font-size: 0.85rem;">Loading club tracked creators...</div>
+                    </div>
+                </div>
             </div>
-        </form>
+        <% } %>
     </div>
 </div>
 
@@ -2550,6 +2944,144 @@
     </div>
 </div>
 
+<!-- ============================================================== -->
+<!-- UNIQUE MEMBER INVITE MODAL                                     -->
+<!-- ============================================================== -->
+<div class="gpl-modal-backdrop" id="uniqueInviteModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-trophy" style="color: var(--gold);"></i> Your Unique Club Invite
+            </h3>
+            <button type="button" onclick="closeUniqueInviteModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <!-- Invite Stats Banner -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+            <div style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25); border-radius: 10px; padding: 12px; text-align: center;">
+                <span style="display: block; font-size: 0.75rem; color: var(--silver); text-transform: uppercase;">Your Unique Code</span>
+                <strong style="color: var(--gold); font-size: 1.15rem; letter-spacing: 1px;"><%= myInviteCode || 'ACTIVE' %></strong>
+            </div>
+            <div style="background: rgba(100,181,246,0.08); border: 1px solid rgba(100,181,246,0.25); border-radius: 10px; padding: 12px; text-align: center;">
+                <span style="display: block; font-size: 0.75rem; color: var(--silver); text-transform: uppercase;">Total Invites</span>
+                <strong style="color: #64b5f6; font-size: 1.15rem;" id="myInviteStatNum"><%= myInviteCount %> Invited 🏆</strong>
+            </div>
+        </div>
+
+        <!-- Link Copy Box -->
+        <div style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 0.8rem; color: var(--silver); margin-bottom: 6px;">Your Personal Invite Link:</label>
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="myUniqueInviteInput" readonly style="flex: 1; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;" value="">
+                <button type="button" onclick="copyMyUniqueInviteLink()" id="btnCopyMyInvite" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 18px; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-copy"></i> <span>Copy</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Announcement Explanation Card -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid #282a36; border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.82rem; color: var(--silver); line-height: 1.45;">
+            <div style="color: #69f0ae; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-sparkles"></i> Automated Invite Rewards &amp; Announcements
+            </div>
+            When a friend opens your link and joins <strong><%= club.name %></strong>:
+            <ul style="margin: 6px 0 0 16px; padding: 0;">
+                <li>An automated celebratory announcement is posted in the club chat mentioning your invite!</li>
+                <li>Your total invite count increases and displays on your member card 🏆</li>
+                <li>You receive an in-app notification confirming the accepted invite!</li>
+            </ul>
+        </div>
+
+        <!-- Social Share Quick Buttons -->
+        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 8px;">Share Instantly:</label>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <a href="#" id="shareInviteWhatsApp" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 8px; color: #25d366; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
+                <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> WhatsApp
+            </a>
+            <a href="#" id="shareInviteTelegram" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); border-radius: 8px; color: #0088cc; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
+                <i class="fab fa-telegram-plane" style="font-size: 1.2rem;"></i> Telegram
+            </a>
+            <a href="#" id="shareInviteTwitter" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); border-radius: 8px; color: #1da1f2; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
+                <i class="fab fa-x-twitter" style="font-size: 1.2rem;"></i> Twitter
+            </a>
+            <a href="#" id="shareInviteReddit" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 8px; color: #ff4500; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
+                <i class="fab fa-reddit-alien" style="font-size: 1.2rem;"></i> Reddit
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- EDIT ROLE MODAL                                                -->
+<!-- ============================================================== -->
+<div class="gpl-modal-backdrop" id="editRoleModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-user-shield" style="color: var(--gold);"></i> Edit Custom Role
+            </h3>
+            <button type="button" onclick="closeEditRoleModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="editRoleForm" onsubmit="submitEditRole(event)">
+            <input type="hidden" id="editRoleId">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
+                    <input type="text" id="editRoleNameInput" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 10px; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Badge Emoji</label>
+                    <input type="text" id="editRoleBadgeInput" maxlength="4" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 10px; box-sizing: border-box; text-align: center;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Color</label>
+                    <input type="color" id="editRoleColorInput" style="width: 100%; height: 38px; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; padding: 2px; cursor: pointer; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <!-- Permissions -->
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; font-size: 0.82rem; color: var(--silver);">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="editPermManageChannels"> Manage Channels
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="editPermKickMembers"> Kick Members
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="editPermPostPolls"> Create Polls
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeEditRoleModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
+                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- UNIVERSAL CONFIRMATION MODAL (Zero browser static confirm)     -->
+<!-- ============================================================== -->
+<div class="gpl-modal-backdrop" id="gplUniversalConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 9999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid #ff453a; border-radius: 16px; padding: 26px; width: 90%; max-width: 420px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); text-align: center;">
+        <div id="gplConfirmIconWrap" style="width: 54px; height: 54px; border-radius: 50%; background: rgba(255,69,58,0.15); border: 1.5px solid #ff453a; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; color: #ff453a; font-size: 1.6rem;">
+            <i class="fas fa-exclamation-triangle" id="gplConfirmIcon"></i>
+        </div>
+        <h3 id="gplConfirmTitle" style="color: #fff; margin: 0 0 8px; font-size: 1.25rem;">Confirm Action</h3>
+        <p id="gplConfirmMessage" style="color: var(--silver); font-size: 0.88rem; line-height: 1.5; margin: 0 0 22px;"></p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="closeGplConfirmModal(false)" id="gplConfirmCancelBtn" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
+            <button type="button" onclick="closeGplConfirmModal(true)" id="gplConfirmActionBtn" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 9px 24px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(231,76,60,0.4);">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- FLOATING TOAST CONTAINER                                       -->
+<!-- ============================================================== -->
+<div id="gplToastContainer"></div>
+
 <!-- Scripts -->
 <script src="/socket.io/socket.io.js"></script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
@@ -2566,6 +3098,101 @@
     const clubRoles = <%- JSON.stringify(roles.map(r => ({ _id: r._id, name: r.name, color: r.color, icon: r.badgeIcon, isDefault: r.isDefault }))) %>;
     const clubMembers = <%- JSON.stringify(members.map(m => ({ _id: m.user?._id, username: m.user?.username, role: m.user?.role, roles: (m.roles || []).map(r => r.name || r) }))) %>;
     const currentUserRoles = <%- JSON.stringify(membership && membership.roles ? membership.roles.map(r => r.name || r) : ['everyone']) %>;
+    const myInviteCode = '<%= myInviteCode || "" %>';
+    let myInviteCount = <%= myInviteCount || 0 %>;
+
+    // ==========================================
+    // ZERO BROWSER STATIC: TOAST & CONFIRM SYSTEM
+    // ==========================================
+    function showGplToast(message, type = 'info', duration = 3500) {
+        const container = document.getElementById('gplToastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `gpl-toast ${type}`;
+
+        let iconClass = 'fa-info-circle';
+        if (type === 'success') iconClass = 'fa-check-circle';
+        if (type === 'error') iconClass = 'fa-exclamation-circle';
+        if (type === 'warning') iconClass = 'fa-exclamation-triangle';
+
+        toast.innerHTML = `
+            <i class="fas ${iconClass} toast-icon"></i>
+            <div class="toast-body">
+                <span class="toast-msg">${message}</span>
+            </div>
+            <button type="button" class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'gplToastSlideOut 0.3s forwards ease';
+            setTimeout(() => toast.remove(), 320);
+        }, duration);
+    }
+
+    let activeConfirmCallback = null;
+    function openGplConfirmModal({ title = 'Confirm Action', message = 'Are you sure you want to proceed?', confirmText = 'Confirm', isDanger = true, onConfirm = null }) {
+        const modal = document.getElementById('gplUniversalConfirmModal');
+        const titleEl = document.getElementById('gplConfirmTitle');
+        const msgEl = document.getElementById('gplConfirmMessage');
+        const actionBtn = document.getElementById('gplConfirmActionBtn');
+        const iconWrap = document.getElementById('gplConfirmIconWrap');
+
+        if (!modal) return;
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        if (actionBtn) {
+            actionBtn.textContent = confirmText;
+            actionBtn.style.background = isDanger ? '#e74c3c' : 'var(--gold)';
+            actionBtn.style.color = isDanger ? '#fff' : '#000';
+        }
+        if (iconWrap) {
+            iconWrap.style.borderColor = isDanger ? '#ff453a' : 'var(--gold)';
+            iconWrap.style.background = isDanger ? 'rgba(255,69,58,0.15)' : 'rgba(255,215,0,0.15)';
+            iconWrap.style.color = isDanger ? '#ff453a' : 'var(--gold)';
+        }
+
+        activeConfirmCallback = onConfirm;
+        modal.style.display = 'flex';
+    }
+
+    function closeGplConfirmModal(confirmed = false) {
+        const modal = document.getElementById('gplUniversalConfirmModal');
+        if (modal) modal.style.display = 'none';
+
+        if (confirmed && typeof activeConfirmCallback === 'function') {
+            const cb = activeConfirmCallback;
+            activeConfirmCallback = null;
+            cb();
+        } else {
+            activeConfirmCallback = null;
+        }
+    }
+
+    // Access Mode Card Selector (for Create Channel & Edit Channel settings)
+    function selectAccessMode(context, mode, cardEl) {
+        const parent = cardEl.closest('.access-mode-grid');
+        if (parent) {
+            parent.querySelectorAll('.access-mode-card').forEach(c => c.classList.remove('selected'));
+        }
+        cardEl.classList.add('selected');
+        const radio = cardEl.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+
+        if (context === 'create') {
+            const rolesSection = document.getElementById('createChannelRolesSection');
+            if (rolesSection) {
+                rolesSection.style.display = (mode === 'open') ? 'none' : 'block';
+            }
+        } else if (context === 'edit') {
+            const rolesSection = document.getElementById('editChanRolesChecklistWrap');
+            if (rolesSection) {
+                rolesSection.style.display = (mode === 'open') ? 'none' : 'block';
+            }
+        }
+    }
 
     // Discord Mention System & Role Pings
     function formatDiscordMentions(text) {
@@ -3096,7 +3723,7 @@
     });
 
     socket.on('club_message_error', (data) => {
-        alert(data.message || 'Error sending message.');
+        showGplToast(data.message || 'Error sending message.', 'error');
     });
 
     socket.on('club_reaction_updated', (data) => {
@@ -3268,7 +3895,7 @@
         if (window.executeTranslation) {
             await window.executeTranslation(currentLang, msgEl);
         } else {
-            alert('Live translation engine active.');
+            showGplToast('Live translation engine active.', 'info');
         }
     }
 
@@ -3414,10 +4041,10 @@
         } else {
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(fullShareUrl).then(() => {
-                    alert(`Link to "${clubName}" copied to clipboard!`);
+                    showGplToast(`Link to "${clubName}" copied to clipboard!`, 'success');
                 });
             } else {
-                prompt('Copy this club link:', fullShareUrl);
+                showGplToast(`Club link: ${fullShareUrl}`, 'info');
             }
         }
     }
@@ -3445,7 +4072,7 @@
             messageId
         });
         closeForwardModal();
-        alert('Message forwarded successfully!');
+        showGplToast('Message forwarded successfully!', 'success');
     }
 
     function openEditMessageModal(messageId) {
@@ -3680,12 +4307,12 @@
         const url = window.location.origin + '/clubs/<%= club.slug %>?channel=' + (channelId || '');
         if (navigator.clipboard) {
             navigator.clipboard.writeText(url).then(() => {
-                alert('Channel link copied to clipboard!');
+                showGplToast('Channel link copied to clipboard!', 'success');
             }).catch(() => {
-                prompt('Copy channel link:', url);
+                showGplToast(`Channel link: ${url}`, 'info');
             });
         } else {
-            prompt('Copy channel link:', url);
+            showGplToast(`Channel link: ${url}`, 'info');
         }
     }
 
@@ -3701,6 +4328,7 @@
                     btn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy</span>';
                 }, 2500);
             }
+            showGplToast('Channel invite link copied!', 'success');
         };
 
         if (navigator.clipboard) {
@@ -3716,79 +4344,377 @@
         }
     }
 
-    // Save Channel Info (Name, Topic, Type)
-    async function saveChannelInformation(e) {
-        e.preventDefault();
-        if (!channelId) return;
+    // ==========================================
+    // UNIQUE MEMBER INVITE MODAL & SYSTEM
+    // ==========================================
+    function openUniqueInviteModal() {
+        const modal = document.getElementById('uniqueInviteModal');
+        const input = document.getElementById('myUniqueInviteInput');
+        if (!modal) return;
 
-        const name = document.getElementById('editChannelName')?.value?.trim();
-        const topic = document.getElementById('editChannelTopic')?.value?.trim();
-        const type = document.getElementById('editChannelTypeInput')?.value;
+        const fullInviteUrl = window.location.origin + '/clubs/<%= club.slug %>?invite=' + (myInviteCode || '');
+        if (input) input.value = fullInviteUrl;
 
-        try {
-            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ name, topic, type })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Channel information updated successfully!');
-                window.location.reload();
-            } else {
-                alert(data.error || 'Failed to update channel.');
+        const encUrl = encodeURIComponent(fullInviteUrl);
+        const encText = encodeURIComponent(`Join ${'<%= club.name %>' || 'my club'} on GPLMods using my personal invite: `);
+
+        const wa = document.getElementById('shareInviteWhatsApp');
+        const tg = document.getElementById('shareInviteTelegram');
+        const tw = document.getElementById('shareInviteTwitter');
+        const rd = document.getElementById('shareInviteReddit');
+
+        if (wa) wa.href = `https://api.whatsapp.com/send?text=${encText}${encUrl}`;
+        if (tg) tg.href = `https://t.me/share/url?url=${encUrl}&text=${encText}`;
+        if (tw) tw.href = `https://twitter.com/intent/tweet?text=${encText}&url=${encUrl}`;
+        if (rd) rd.href = `https://reddit.com/submit?url=${encUrl}&title=${encodeURIComponent('Join ' + '<%= club.name %>')}`;
+
+        modal.style.display = 'flex';
+    }
+
+    function closeUniqueInviteModal() {
+        const modal = document.getElementById('uniqueInviteModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function copyMyUniqueInviteLink() {
+        const input = document.getElementById('myUniqueInviteInput');
+        const btn = document.getElementById('btnCopyMyInvite');
+        if (!input) return;
+
+        const finishCopy = () => {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy</span>';
+                }, 2500);
             }
-        } catch (err) {
-            alert('An error occurred while saving channel information.');
+            showGplToast('Your personal club invite link was copied! Share it with friends 🏆', 'success');
+        };
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(input.value).then(finishCopy).catch(() => {
+                input.select();
+                document.execCommand('copy');
+                finishCopy();
+            });
+        } else {
+            input.select();
+            document.execCommand('copy');
+            finishCopy();
         }
     }
 
-    // Save Channel Privacy & Role Access
-    async function saveChannelPrivacyAccess(e) {
-        e.preventDefault();
-        if (!channelId) return;
-
-        const isPrivate = document.getElementById('guiChanIsPrivate')?.checked;
-        const roleCheckboxes = document.querySelectorAll('#guiChanRolesChecklistWrap input[name="allowedRoles"]:checked');
-        const allowedRoles = Array.from(roleCheckboxes).map(cb => cb.value);
-
-        try {
-            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ isPrivate, allowedRoles })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert('Channel privacy and role access updated successfully!');
-                window.location.reload();
-            } else {
-                alert(data.error || 'Failed to update channel access.');
+    // Leave Club with Custom Confirmation
+    function confirmLeaveClub(e) {
+        if (e) e.preventDefault();
+        openGplConfirmModal({
+            title: 'Leave Club?',
+            message: 'Are you sure you want to leave <%= club.name %>? You will lose access to member-only channels and roles.',
+            confirmText: 'Leave Club',
+            isDanger: true,
+            onConfirm: () => {
+                const form = document.getElementById('leaveClubForm');
+                if (form) form.submit();
             }
-        } catch (err) {
-            alert('An error occurred while saving channel privacy settings.');
+        });
+    }
+
+    // ==========================================
+    // TRACKED CREATOR PROFILES SYSTEM (AJAX)
+    // ==========================================
+    function openTrackedCreatorsModal() {
+        const modal = document.getElementById('trackedCreatorsModal');
+        if (modal) modal.style.display = 'flex';
+        loadPersonalTrackedCreators();
+        <% if (hasManageClubPerm) { %>
+            loadClubTrackedCreators();
+        <% } %>
+    }
+
+    function closeTrackedCreatorsModal() {
+        const modal = document.getElementById('trackedCreatorsModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function switchTrackTab(tab) {
+        const btnPersonal = document.getElementById('tabBtn-trackPersonal');
+        const btnClub = document.getElementById('tabBtn-trackClub');
+        const panePersonal = document.getElementById('trackPane-personal');
+        const paneClub = document.getElementById('trackPane-club');
+
+        if (tab === 'personal') {
+            if (btnPersonal) {
+                btnPersonal.style.background = 'rgba(255,215,0,0.15)';
+                btnPersonal.style.borderColor = 'var(--gold)';
+                btnPersonal.style.color = '#fff';
+            }
+            if (btnClub) {
+                btnClub.style.background = 'transparent';
+                btnClub.style.borderColor = '#333645';
+                btnClub.style.color = 'var(--silver)';
+            }
+            if (panePersonal) panePersonal.style.display = 'block';
+            if (paneClub) paneClub.style.display = 'none';
+        } else {
+            if (btnClub) {
+                btnClub.style.background = 'rgba(255,215,0,0.15)';
+                btnClub.style.borderColor = 'var(--gold)';
+                btnClub.style.color = '#fff';
+            }
+            if (btnPersonal) {
+                btnPersonal.style.background = 'transparent';
+                btnPersonal.style.borderColor = '#333645';
+                btnPersonal.style.color = 'var(--silver)';
+            }
+            if (paneClub) paneClub.style.display = 'block';
+            if (panePersonal) panePersonal.style.display = 'none';
         }
     }
 
-    // Create New Custom Role ("Make Roles")
+    async function loadPersonalTrackedCreators() {
+        const container = document.getElementById('personalTrackedList');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/api/user/tracking');
+            const data = await res.json();
+            if (!data.success || !data.trackedCreators || data.trackedCreators.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--silver); padding: 18px; font-size: 0.82rem;">You are not tracking any creator profiles yet.</div>';
+                return;
+            }
+
+            container.innerHTML = data.trackedCreators.map(item => {
+                const c = item.creator || {};
+                const cName = c.username || 'Unknown';
+                const cAvatar = c.signedAvatarUrl || c.avatarUrl || '/images/default-avatar.png';
+                const tType = item.trackType || 'both';
+
+                return `
+                    <div class="creator-track-row" style="display: flex; align-items: center; justify-content: space-between; background: #0d0e12; border: 1px solid #282a36; border-radius: 10px; padding: 10px 14px; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                            <img src="${cAvatar}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="overflow: hidden;">
+                                <strong style="color: #fff; display: block; font-size: 0.88rem; text-overflow: ellipsis; white-space: nowrap;">${cName}</strong>
+                                <span style="font-size: 0.72rem; color: var(--silver); text-transform: capitalize;">Tracking: ${tType}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                            <button type="button" onclick="updatePersonalTrackType('${c._id}', '${tType === 'both' ? 'uploads' : (tType === 'uploads' ? 'updates' : 'both')}')" style="background: rgba(255,215,0,0.1); border: 1px solid var(--gold); color: var(--gold); border-radius: 6px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer;" title="Cycle tracking preference">
+                                <i class="fas fa-sliders-h"></i> ${tType === 'both' ? 'Both' : (tType === 'uploads' ? 'Uploads' : 'Updates')}
+                            </button>
+                            <button type="button" onclick="removePersonalTrackedCreator('${c._id}', '${cName}')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer;" title="Stop tracking">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            container.innerHTML = '<div style="color: #ff8a80; padding: 12px; font-size: 0.8rem;">Failed to load tracked creators.</div>';
+        }
+    }
+
+    async function submitAddPersonalTrack(e) {
+        e.preventDefault();
+        const username = document.getElementById('personalTrackUsername')?.value?.trim();
+        const trackType = document.querySelector('input[name="personalTrackType"]:checked')?.value || 'both';
+
+        if (!username) return showGplToast('Username is required.', 'warning');
+
+        try {
+            const res = await fetch('/api/user/tracking/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, trackType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast(data.message || `Now tracking ${username}!`, 'success');
+                document.getElementById('personalTrackUsername').value = '';
+                loadPersonalTrackedCreators();
+            } else {
+                showGplToast(data.error || 'Failed to track creator.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error adding tracked creator.', 'error');
+        }
+    }
+
+    async function updatePersonalTrackType(creatorId, trackType) {
+        try {
+            const res = await fetch('/api/user/tracking/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ creatorId, trackType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast(`Updated tracking mode to: ${trackType}`, 'success');
+                loadPersonalTrackedCreators();
+            } else {
+                showGplToast(data.error || 'Failed to update tracking.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error updating tracking.', 'error');
+        }
+    }
+
+    function removePersonalTrackedCreator(creatorId, username) {
+        openGplConfirmModal({
+            title: `Stop Tracking ${username}?`,
+            message: `You will no longer receive new upload or update alerts for @${username}.`,
+            confirmText: 'Remove',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/api/user/tracking/remove', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ creatorId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showGplToast(`Removed ${username} from your tracked creators.`, 'success');
+                        loadPersonalTrackedCreators();
+                    } else {
+                        showGplToast(data.error || 'Failed to remove creator.', 'error');
+                    }
+                } catch (err) {
+                    showGplToast('Error removing tracked creator.', 'error');
+                }
+            }
+        });
+    }
+
+    // Club Tracking API
+    async function loadClubTrackedCreators() {
+        const container = document.getElementById('clubTrackedList');
+        if (!container) return;
+
+        try {
+            const res = await fetch('/clubs/<%= club.slug %>/tracked-creators');
+            const data = await res.json();
+            if (!data.success || !data.trackedCreators || data.trackedCreators.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--silver); padding: 18px; font-size: 0.82rem;">No creator profiles assigned to club feeds yet.</div>';
+                return;
+            }
+
+            container.innerHTML = data.trackedCreators.map(item => {
+                const c = item.creator || {};
+                const cName = c.username || 'Unknown';
+                const cAvatar = c.signedAvatarUrl || c.avatarUrl || '/images/default-avatar.png';
+                const tType = item.trackType || 'both';
+
+                return `
+                    <div class="creator-track-row" style="display: flex; align-items: center; justify-content: space-between; background: #0d0e12; border: 1px solid #282a36; border-radius: 10px; padding: 10px 14px; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+                            <img src="${cAvatar}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0;" onerror="this.src='/images/default-avatar.png'">
+                            <div style="overflow: hidden;">
+                                <strong style="color: #fff; display: block; font-size: 0.88rem; text-overflow: ellipsis; white-space: nowrap;">${cName}</strong>
+                                <span style="font-size: 0.72rem; color: var(--silver); text-transform: capitalize;">Scope: ${tType}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+                            <button type="button" onclick="updateClubTrackType('${c._id}', '${tType === 'both' ? 'uploads' : (tType === 'uploads' ? 'updates' : 'both')}')" style="background: rgba(255,215,0,0.1); border: 1px solid var(--gold); color: var(--gold); border-radius: 6px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer;">
+                                <i class="fas fa-sliders-h"></i> ${tType === 'both' ? 'Both' : (tType === 'uploads' ? 'Uploads' : 'Updates')}
+                            </button>
+                            <button type="button" onclick="removeClubTrackedCreator('${c._id}', '${cName}')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (err) {
+            container.innerHTML = '<div style="color: #ff8a80; padding: 12px; font-size: 0.8rem;">Failed to load club feeds tracking.</div>';
+        }
+    }
+
+    async function submitAddClubTrack(e) {
+        e.preventDefault();
+        const username = document.getElementById('clubTrackUsername')?.value?.trim();
+        const trackType = document.querySelector('input[name="clubTrackType"]:checked')?.value || 'both';
+
+        if (!username) return showGplToast('Username is required.', 'warning');
+
+        try {
+            const res = await fetch('/clubs/<%= club.slug %>/tracked-creators/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, trackType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast(data.message || `Added ${username} to club mod feeds!`, 'success');
+                document.getElementById('clubTrackUsername').value = '';
+                loadClubTrackedCreators();
+            } else {
+                showGplToast(data.error || 'Failed to add creator to club.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error adding creator to club.', 'error');
+        }
+    }
+
+    async function updateClubTrackType(creatorId, trackType) {
+        try {
+            const res = await fetch('/clubs/<%= club.slug %>/tracked-creators/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ creatorId, trackType })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast(`Updated club feed scope to: ${trackType}`, 'success');
+                loadClubTrackedCreators();
+            } else {
+                showGplToast(data.error || 'Failed to update club feed scope.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error updating club feed scope.', 'error');
+        }
+    }
+
+    function removeClubTrackedCreator(creatorId, username) {
+        openGplConfirmModal({
+            title: `Remove ${username} from Club Feeds?`,
+            message: `New mods and updates from @${username} will no longer be posted automatically in #new-uploads and #new-updates.`,
+            confirmText: 'Remove',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch('/clubs/<%= club.slug %>/tracked-creators/remove', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ creatorId })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showGplToast(`Removed ${username} from club mod feeds.`, 'success');
+                        loadClubTrackedCreators();
+                    } else {
+                        showGplToast(data.error || 'Failed to remove creator from club.', 'error');
+                    }
+                } catch (err) {
+                    showGplToast('Error removing creator from club.', 'error');
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    // ROLE MANAGEMENT & ASSIGNMENT (MAX 10 ENFORCED)
+    // ==========================================
     async function submitCreateRole(e) {
         e.preventDefault();
         const name = document.getElementById('newRoleName')?.value?.trim();
         const badgeIcon = document.getElementById('newRoleBadge')?.value?.trim() || '🛡️';
         const color = document.getElementById('newRoleColor')?.value || '#FFD700';
-        const canManageChannels = document.getElementById('permManageChannels')?.checked;
-        const canKickMembers = document.getElementById('permKickMembers')?.checked;
-        const canPostPolls = document.getElementById('permPostPolls')?.checked;
+        const canManageChannels = document.getElementById('permManageChannels')?.checked || false;
+        const canKickMembers = document.getElementById('permKickMembers')?.checked || false;
+        const canPostPolls = document.getElementById('permPostPolls')?.checked || false;
 
-        if (!name) return alert('Role name is required.');
+        if (!name) return showGplToast('Role name is required.', 'warning');
 
         try {
             const res = await fetch(`/clubs/<%= club.slug %>/roles`, {
@@ -3809,105 +4735,365 @@
             });
             const data = await res.json();
             if (data.success && data.role) {
-                alert(`Role "${data.role.name}" created successfully!`);
+                showGplToast(`Role "${data.role.name}" created successfully!`, 'success');
 
-                // Dynamically append role pill
                 const list = document.getElementById('guiRolesDisplayList');
                 if (list) {
-                    const pill = document.createElement('span');
-                    pill.className = 'discord-sidebar-role-pill';
-                    pill.style.cssText = `color: ${data.role.color}; background: ${data.role.color}18; border: 1px solid ${data.role.color}40; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;`;
-                    pill.textContent = `${data.role.badgeIcon || '🛡️'} ${data.role.name}`;
-                    list.appendChild(pill);
+                    const row = document.createElement('div');
+                    row.className = 'role-list-row';
+                    row.id = `roleRow-${data.role._id}`;
+                    row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;';
+                    row.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="discord-sidebar-role-pill" style="color: ${data.role.color}; background: ${data.role.color}18; border: 1px solid ${data.role.color}40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                                ${data.role.badgeIcon || '🛡️'} ${data.role.name}
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <button type="button" onclick="openEditRoleModal('${data.role._id}', '${data.role.name}', '${data.role.badgeIcon || '🛡️'}', '${data.role.color}', ${data.role.permissions?.canManageChannels || false}, ${data.role.permissions?.canKickMembers || false}, ${data.role.permissions?.canPostPolls || false})" style="background: rgba(255,255,255,0.06); border: 1px solid #3a3d4d; color: var(--silver); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">
+                                <i class="fas fa-pencil-alt"></i> Edit
+                            </button>
+                            <button type="button" onclick="confirmDeleteRole('${data.role._id}', '${data.role.name}')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    `;
+                    list.appendChild(row);
                 }
 
-                // Dynamically add to role assignment select
-                const roleSelect = document.getElementById('assignTargetRole');
-                if (roleSelect) {
-                    const opt = document.createElement('option');
-                    opt.value = data.role._id;
-                    opt.textContent = `${data.role.badgeIcon || '🛡️'} ${data.role.name}`;
-                    roleSelect.appendChild(opt);
+                // Append checkbox to member roles list
+                const checkList = document.getElementById('memberRolesCheckboxesList');
+                if (checkList) {
+                    const label = document.createElement('label');
+                    label.className = 'role-checkbox-item';
+                    label.id = `roleLabel-${data.role._id}`;
+                    label.style.cssText = 'display: flex; align-items: center; gap: 8px; background: #14151b; border: 1px solid #2a2d3a; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.82rem; color: #fff;';
+                    label.innerHTML = `
+                        <input type="checkbox" class="member-role-checkbox" value="${data.role._id}" onchange="onMemberRoleCheckboxChange()">
+                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${data.role.color || '#5865F2'}; flex-shrink: 0;"></span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${data.role.badgeIcon || '🛡️'} ${data.role.name}</span>
+                    `;
+                    checkList.appendChild(label);
                 }
 
-                // Reset inputs
                 document.getElementById('newRoleName').value = '';
             } else {
-                alert(data.error || 'Failed to create role.');
+                showGplToast(data.error || 'Failed to create role.', 'error');
             }
         } catch (err) {
-            alert('An error occurred while creating role.');
+            showGplToast('An error occurred while creating role.', 'error');
         }
     }
 
-    // Assign / Remove Role from Member
-    async function submitMemberRoleAssignment(e) {
-        e.preventDefault();
-        const memberId = document.getElementById('assignTargetMember')?.value;
-        const roleId = document.getElementById('assignTargetRole')?.value;
-        const form = e.target;
-        const action = form.actionVal || 'add';
+    function openEditRoleModal(roleId, name, badgeIcon, color, canManageChannels, canKickMembers, canPostPolls) {
+        const modal = document.getElementById('editRoleModal');
+        if (!modal) return;
 
-        if (!memberId || !roleId) {
-            return alert('Please select both a member and a role.');
+        document.getElementById('editRoleId').value = roleId;
+        document.getElementById('editRoleNameInput').value = name;
+        document.getElementById('editRoleBadgeInput').value = badgeIcon || '🛡️';
+        document.getElementById('editRoleColorInput').value = color || '#FFD700';
+        document.getElementById('editPermManageChannels').checked = Boolean(canManageChannels);
+        document.getElementById('editPermKickMembers').checked = Boolean(canKickMembers);
+        document.getElementById('editPermPostPolls').checked = Boolean(canPostPolls);
+
+        modal.style.display = 'flex';
+    }
+
+    function closeEditRoleModal() {
+        const modal = document.getElementById('editRoleModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    async function submitEditRole(e) {
+        e.preventDefault();
+        const roleId = document.getElementById('editRoleId')?.value;
+        const name = document.getElementById('editRoleNameInput')?.value?.trim();
+        const badgeIcon = document.getElementById('editRoleBadgeInput')?.value?.trim() || '🛡️';
+        const color = document.getElementById('editRoleColorInput')?.value || '#FFD700';
+        const canManageChannels = document.getElementById('editPermManageChannels')?.checked || false;
+        const canKickMembers = document.getElementById('editPermKickMembers')?.checked || false;
+        const canPostPolls = document.getElementById('editPermPostPolls')?.checked || false;
+
+        if (!roleId || !name) return showGplToast('Role name is required.', 'warning');
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/roles/${roleId}/edit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, badgeIcon, color, canManageChannels, canKickMembers, canPostPolls })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast(`Role "${name}" updated successfully!`, 'success');
+                closeEditRoleModal();
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                showGplToast(data.error || 'Failed to update role.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error updating role.', 'error');
+        }
+    }
+
+    function confirmDeleteRole(roleId, roleName) {
+        openGplConfirmModal({
+            title: `Delete Role "${roleName}"?`,
+            message: `Are you sure you want to delete "${roleName}"? It will be automatically removed from all members and private channel permissions.`,
+            confirmText: 'Delete Role',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/clubs/<%= club.slug %>/roles/${roleId}/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showGplToast(`Role "${roleName}" deleted.`, 'success');
+                        const row = document.getElementById(`roleRow-${roleId}`);
+                        if (row) row.remove();
+                        const checkLabel = document.getElementById(`roleLabel-${roleId}`);
+                        if (checkLabel) checkLabel.remove();
+                    } else {
+                        showGplToast(data.error || 'Failed to delete role.', 'error');
+                    }
+                } catch (err) {
+                    showGplToast('Error deleting role.', 'error');
+                }
+            }
+        });
+    }
+
+    // Member Roles Assignment (Strict 10 Roles Maximum)
+    function onSelectMemberForRoles(memberId) {
+        const section = document.getElementById('memberRolesCheckboxesSection');
+        if (!memberId) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+
+        const select = document.getElementById('assignTargetMember');
+        const selectedOpt = select.querySelector(`option[value="${memberId}"]`);
+        const rolesAttr = selectedOpt ? selectedOpt.getAttribute('data-roles') : '';
+        const memberRoleIds = rolesAttr ? rolesAttr.split(',').filter(Boolean) : [];
+
+        // Check assigned roles, uncheck rest
+        document.querySelectorAll('.member-role-checkbox').forEach(cb => {
+            cb.checked = memberRoleIds.includes(cb.value);
+        });
+
+        if (section) section.style.display = 'block';
+        onMemberRoleCheckboxChange();
+    }
+
+    function onMemberRoleCheckboxChange() {
+        const allCheckboxes = document.querySelectorAll('.member-role-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.member-role-checkbox:checked');
+        const count = checkedCheckboxes.length;
+
+        const counterBadge = document.getElementById('memberRoleCounterBadge');
+        if (counterBadge) {
+            counterBadge.textContent = `${count} / 10 Roles Assigned`;
+            counterBadge.style.borderColor = (count >= 10) ? '#ff453a' : 'var(--gold)';
+            counterBadge.style.color = (count >= 10) ? '#ff8a80' : 'var(--gold)';
+        }
+
+        if (count >= 10) {
+            allCheckboxes.forEach(cb => {
+                if (!cb.checked) {
+                    cb.disabled = true;
+                    const parent = cb.closest('.role-checkbox-item');
+                    if (parent) parent.classList.add('max-roles-disabled');
+                }
+            });
+            if (count > 10) {
+                showGplToast('Maximum 10 roles reached for this member.', 'warning');
+            }
+        } else {
+            allCheckboxes.forEach(cb => {
+                cb.disabled = false;
+                const parent = cb.closest('.role-checkbox-item');
+                if (parent) parent.classList.remove('max-roles-disabled');
+            });
+        }
+    }
+
+    async function saveMemberAssignedRoles() {
+        const memberId = document.getElementById('assignTargetMember')?.value;
+        if (!memberId) return showGplToast('Please select a member first.', 'warning');
+
+        const checkedBoxes = Array.from(document.querySelectorAll('.member-role-checkbox:checked'));
+        if (checkedBoxes.length > 10) {
+            return showGplToast('Cannot assign more than 10 roles to a member.', 'error');
+        }
+
+        const roleIds = checkedBoxes.map(cb => cb.value);
+        const saveBtn = document.getElementById('btnSaveMemberRoles');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         }
 
         try {
-            const res = await fetch(`/clubs/<%= club.slug %>/roles/assign`, {
+            const res = await fetch(`/clubs/<%= club.slug %>/members/${memberId}/roles`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ roles: roleIds })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showGplToast('Member roles saved successfully!', 'success');
+                const select = document.getElementById('assignTargetMember');
+                const opt = select.querySelector(`option[value="${memberId}"]`);
+                if (opt) {
+                    opt.setAttribute('data-roles', roleIds.join(','));
+                }
+            } else {
+                showGplToast(data.error || 'Failed to update member roles.', 'error');
+            }
+        } catch (err) {
+            showGplToast('Error saving member roles.', 'error');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Member Roles';
+            }
+        }
+    }
+
+    // ==========================================
+    // CHANNEL EDIT, PRIVACY & DELETE
+    // ==========================================
+    async function saveChannelInformation(e) {
+        e.preventDefault();
+        if (!channelId) return;
+
+        const name = document.getElementById('editChannelName')?.value?.trim();
+        const topic = document.getElementById('editChannelTopic')?.value?.trim();
+        const type = document.getElementById('editChannelTypeInput')?.value;
+
+        try {
+            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ memberId, roleId, action })
+                body: JSON.stringify({ name, topic, type })
             });
             const data = await res.json();
             if (data.success) {
-                alert(`Role ${action === 'remove' ? 'removed from' : 'assigned to'} member successfully!`);
-                window.location.reload();
+                showGplToast('Channel information updated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 600);
             } else {
-                alert(data.error || 'Failed to update member role.');
+                showGplToast(data.error || 'Failed to update channel.', 'error');
             }
         } catch (err) {
-            alert('An error occurred while updating member role.');
+            showGplToast('An error occurred while saving channel information.', 'error');
         }
     }
 
-    // Delete Active Channel Permanently
-    async function deleteActiveChannel() {
+    async function saveChannelPrivacyAccess(e) {
+        e.preventDefault();
         if (!channelId) return;
-        if (!confirm('Are you ABSOLUTELY sure you want to permanently delete this channel? All chat messages and polls in this channel will be erased.')) {
-            return;
-        }
+
+        const accessModeRadio = document.querySelector('input[name="accessMode"]:checked');
+        const accessMode = accessModeRadio ? accessModeRadio.value : 'open';
+
+        const roleCheckboxes = document.querySelectorAll('#editChanRolesChecklistWrap input[name="allowedRoles"]:checked');
+        const allowedRoles = Array.from(roleCheckboxes).map(cb => cb.value);
 
         try {
-            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/delete`, {
+            const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/edit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                body: JSON.stringify({ accessMode, allowedRoles })
             });
             const data = await res.json();
             if (data.success) {
-                alert('Channel deleted successfully.');
-                window.location.href = data.fallbackUrl || `/clubs/<%= club.slug %>`;
+                showGplToast('Channel privacy and role access updated successfully!', 'success');
+                setTimeout(() => window.location.reload(), 600);
             } else {
-                alert(data.error || 'Failed to delete channel.');
+                showGplToast(data.error || 'Failed to update channel access.', 'error');
             }
         } catch (err) {
-            alert('An error occurred while deleting the channel.');
+            showGplToast('An error occurred while saving channel privacy settings.', 'error');
         }
     }
 
-    // Close Channel Settings GUI on backdrop click & ESC
+    function confirmDeleteActiveChannel() {
+        if (!channelId) return;
+        openGplConfirmModal({
+            title: 'Delete Channel Permanently?',
+            message: 'Are you ABSOLUTELY sure you want to permanently delete this channel? All chat messages, media, and polls in this channel will be completely erased. This cannot be undone.',
+            confirmText: 'Delete Channel',
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    const res = await fetch(`/clubs/<%= club.slug %>/channels/${channelId}/delete`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showGplToast('Channel deleted successfully.', 'success');
+                        window.location.href = data.fallbackUrl || `/clubs/<%= club.slug %>`;
+                    } else {
+                        showGplToast(data.error || 'Failed to delete channel.', 'error');
+                    }
+                } catch (err) {
+                    showGplToast('An error occurred while deleting the channel.', 'error');
+                }
+            }
+        });
+    }
+
+    // Close Modals on backdrop click
     const channelSettingsModalBackdrop = document.getElementById('channelSettingsGUIModal');
     if (channelSettingsModalBackdrop) {
         channelSettingsModalBackdrop.addEventListener('click', (e) => {
             if (e.target === channelSettingsModalBackdrop) {
                 closeChannelSettingsGUI();
+            }
+        });
+    }
+
+    const uniqueInviteBackdrop = document.getElementById('uniqueInviteModal');
+    if (uniqueInviteBackdrop) {
+        uniqueInviteBackdrop.addEventListener('click', (e) => {
+            if (e.target === uniqueInviteBackdrop) {
+                closeUniqueInviteModal();
+            }
+        });
+    }
+
+    const trackedCreatorsBackdrop = document.getElementById('trackedCreatorsModal');
+    if (trackedCreatorsBackdrop) {
+        trackedCreatorsBackdrop.addEventListener('click', (e) => {
+            if (e.target === trackedCreatorsBackdrop) {
+                closeTrackedCreatorsModal();
+            }
+        });
+    }
+
+    const editRoleBackdrop = document.getElementById('editRoleModal');
+    if (editRoleBackdrop) {
+        editRoleBackdrop.addEventListener('click', (e) => {
+            if (e.target === editRoleBackdrop) {
+                closeEditRoleModal();
             }
         });
     }

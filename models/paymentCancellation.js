@@ -5,7 +5,7 @@ const PaymentCancellationSchema = new Schema({
     orderId: { type: String, index: true },
     type: { 
         type: String, 
-        enum: ['membership', 'donation', 'volunteer', 'subscription', 'other'], 
+        enum: ['membership', 'donation', 'volunteer', 'subscription', 'promote', 'promotion', 'sponsor', 'sponsorship', 'other'], 
         default: 'membership' 
     },
     user: { type: Schema.Types.ObjectId, ref: 'User', default: null },

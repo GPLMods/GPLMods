@@ -205,6 +205,56 @@
             <p>Configure which alerts you receive while visiting GPLMods, manage browser push permissions, or update your newsletter preferences.</p>
         </div>
 
+        <!-- ======== PWA INSTALLATION REQUIREMENT WARNING ======== -->
+        <div id="pwaNotifWarningBanner" class="guest-card" style="border-color: rgba(255, 193, 7, 0.5); background: linear-gradient(145deg, #1b170c 0%, #0e0d08 100%);">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 193, 7, 0.15); border: 1.5px solid #ffc107; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #ffc107; flex-shrink: 0;">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
+                        <h3 style="margin: 0; color: #ffc107; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-triangle"></i> Install App as PWA to Enable Push Notifications
+                        </h3>
+                        <span id="pwaStatusTag" style="font-size: 0.76rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.4);">
+                            PWA Required
+                        </span>
+                    </div>
+                    <p style="margin: 0 0 14px 0; color: var(--silver); font-size: 0.9rem; line-height: 1.5;">
+                        To guarantee reliable background notifications, instant mod release alerts, and lock-screen sound updates on both mobile and desktop, GPLMods must be installed to your home screen or system as a Progressive Web App (PWA). Push alerts remain locked until installed.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+                        <button type="button" id="btnInstallPwaGuest" onclick="triggerGuestPwaInstall()" class="btn-gold" style="padding: 9px 18px; font-size: 0.88rem;">
+                            <i class="fas fa-download"></i> Install GPLMods App
+                        </button>
+                        <button type="button" onclick="toggleGuestInstructions()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid #555; color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-info-circle" style="color: var(--gold);"></i> How to Install
+                        </button>
+                    </div>
+
+                    <!-- Step-by-Step Instructions Drawer -->
+                    <div id="guestPwaInstructions" style="display: none; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 16px; margin-top: 10px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 0.9rem; margin-bottom: 10px;">Step-by-Step Installation Instructions:</div>
+                        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.86rem; color: #ddd; line-height: 1.5;">
+                            <div>
+                                <strong style="color: var(--gold);"><i class="fab fa-android"></i> Android (Chrome / Edge / Firefox):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Tap the three dots (⋮) in the browser bar &rarr; Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</div>
+                            </div>
+                            <div>
+                                <strong style="color: #64b5f6;"><i class="fab fa-apple"></i> iOS / iPadOS (Safari):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Tap the <strong>Share</strong> button (<i class="fas fa-share-square"></i>) in Safari bottom toolbar &rarr; Scroll down and tap <strong>"Add to Home Screen"</strong> (<i class="fas fa-plus-square"></i>) &rarr; Open GPLMods from your Home Screen.</div>
+                            </div>
+                            <div>
+                                <strong style="color: #81c784;"><i class="fas fa-desktop"></i> Windows / Mac / Linux (Chrome / Edge / Brave):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Click the <strong>Install</strong> icon (<i class="fas fa-desktop"></i>) on the right side of the address bar &rarr; Click <strong>"Install"</strong>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 1. Site Notifications Card -->
         <div class="guest-card">
             <div class="card-head">
@@ -219,16 +269,23 @@
                 </div>
             </div>
 
-            <!-- Master Toggle -->
-            <div class="master-switch-box">
+            <!-- Master Toggle (Disabled until PWA installed) -->
+            <div class="master-switch-box" id="masterSwitchWrapper" style="position: relative;">
                 <div class="master-switch-info">
-                    <h3>Allow Site to Send Notifications</h3>
-                    <p>Master switch for Web Push, PWA alerts, and live in-app notifications.</p>
+                    <h3 style="display: flex; align-items: center; gap: 8px;">
+                        Allow Site to Send Notifications
+                        <span id="pwaLockIndicator" style="color: #ffc107; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-lock"></i> (PWA Install Required)
+                        </span>
+                    </h3>
+                    <p id="masterSwitchDesc">Master switch for Web Push, PWA alerts, and live in-app notifications.</p>
                 </div>
-                <label class="switch-ui">
-                    <input type="checkbox" id="guestMasterSwitch" onchange="handleGuestMasterToggle(this.checked)">
-                    <span class="slider-ui"></span>
-                </label>
+                <div id="switchClickBlocker" onclick="handleLockedSwitchClick(event)" style="cursor: not-allowed; display: inline-block;">
+                    <label class="switch-ui" style="pointer-events: none;">
+                        <input type="checkbox" id="guestMasterSwitch" onchange="handleGuestMasterToggle(this.checked)" disabled>
+                        <span class="slider-ui" style="opacity: 0.5;"></span>
+                    </label>
+                </div>
             </div>
 
             <div id="guestNotifSaveStatus" class="status-msg-banner" style="background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #2ecc71; margin-top: 18px;">
@@ -266,7 +323,95 @@
 <script>
     const STORAGE_KEY = 'gpl_notif_prefs';
 
+    function isPwaMode() {
+        return Boolean(
+            (typeof window.isGplPwaInstalled === 'function' && window.isGplPwaInstalled()) ||
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            document.referrer.includes('android-app://') ||
+            localStorage.getItem('gpl_pwa_installed') === 'true'
+        );
+    }
+
+    function toggleGuestInstructions() {
+        const inst = document.getElementById('guestPwaInstructions');
+        if (inst) {
+            inst.style.display = (inst.style.display === 'none' || !inst.style.display) ? 'block' : 'none';
+        }
+    }
+
+    function triggerGuestPwaInstall() {
+        if (typeof window.triggerPwaInstallPrompt === 'function') {
+            window.triggerPwaInstallPrompt('guestPwaInstructions');
+        } else {
+            toggleGuestInstructions();
+        }
+    }
+
+    function handleLockedSwitchClick(e) {
+        if (!isPwaMode()) {
+            if (e) e.preventDefault();
+            const inst = document.getElementById('guestPwaInstructions');
+            if (inst) {
+                inst.style.display = 'block';
+                inst.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            if (window.showGplToast) {
+                window.showGplToast({
+                    title: 'PWA Installation Required',
+                    body: 'Install GPLMods as PWA following the steps above to unlock device push notifications.'
+                });
+            }
+        }
+    }
+
     function loadGuestPrefs() {
+        const isInstalled = isPwaMode();
+        const masterSwitch = document.getElementById('guestMasterSwitch');
+        const lockIndicator = document.getElementById('pwaLockIndicator');
+        const blocker = document.getElementById('switchClickBlocker');
+        const pwaTag = document.getElementById('pwaStatusTag');
+        const pwaBanner = document.getElementById('pwaNotifWarningBanner');
+
+        if (!isInstalled) {
+            // Keep switch strictly OFF and DISABLED until installed properly
+            if (masterSwitch) {
+                masterSwitch.checked = false;
+                masterSwitch.disabled = true;
+            }
+            if (lockIndicator) lockIndicator.style.display = 'inline-flex';
+            if (blocker) {
+                const innerUi = blocker.querySelector('.switch-ui');
+                if (innerUi) innerUi.style.pointerEvents = 'none';
+                blocker.style.cursor = 'not-allowed';
+            }
+            if (pwaTag) {
+                pwaTag.textContent = 'PWA Required';
+                pwaTag.style.background = 'rgba(255, 193, 7, 0.2)';
+                pwaTag.style.color = '#ffc107';
+            }
+            syncHubModal(false);
+            updatePushPermBadge();
+            return;
+        }
+
+        // PWA IS INSTALLED! Unlock toggle and allow normal preference loading
+        if (pwaTag) {
+            pwaTag.innerHTML = '<i class="fas fa-check-circle"></i> PWA Active';
+            pwaTag.style.background = 'rgba(46, 204, 113, 0.2)';
+            pwaTag.style.color = '#2ecc71';
+            pwaTag.style.borderColor = 'rgba(46, 204, 113, 0.5)';
+        }
+        if (lockIndicator) lockIndicator.style.display = 'none';
+        if (blocker) {
+            const innerUi = blocker.querySelector('.switch-ui');
+            if (innerUi) innerUi.style.pointerEvents = 'auto';
+            blocker.style.cursor = 'pointer';
+        }
+        if (masterSwitch) {
+            masterSwitch.disabled = false;
+        }
+
         // Sync from gpl_push_notification_enabled as well
         const isPushEnabled = localStorage.getItem('gpl_push_notification_enabled');
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -281,7 +426,6 @@
             } catch(e) {}
         }
 
-        const masterSwitch = document.getElementById('guestMasterSwitch');
         if (masterSwitch) masterSwitch.checked = master;
 
         syncHubModal(master);

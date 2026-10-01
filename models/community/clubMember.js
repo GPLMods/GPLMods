@@ -14,10 +14,13 @@ const ClubMemberSchema = new Schema({
         required: true,
         index: true
     },
-    roles: [{
-        type: Schema.Types.ObjectId,
-        ref: 'ClubRole'
-    }],
+    roles: {
+        type: [{
+            type: Schema.Types.ObjectId,
+            ref: 'ClubRole'
+        }],
+        validate: [v => v.length <= 10, 'A member can have a maximum of 10 roles.']
+    },
     isCreator: {
         type: Boolean,
         default: false
@@ -34,6 +37,10 @@ const ClubMemberSchema = new Schema({
     invitedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User'
+    },
+    inviteCount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

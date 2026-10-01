@@ -402,6 +402,9 @@
             <% if (user) { %>
                 <a href="/clubs/create" class="btn-create-club">
                     <i class="fas fa-plus-circle"></i> Create Your Own Club
+                    <% if (typeof userCreatedCount !== 'undefined' && typeof userClubCap !== 'undefined') { %>
+                        <span style="font-size: 0.78rem; opacity: 0.9; margin-left: 6px; font-weight: 600; padding: 2px 7px; border-radius: 10px; background: rgba(0,0,0,0.3);">(<%= userCreatedCount %>/<%= userClubCap %>)</span>
+                    <% } %>
                 </a>
             <% } else { %>
                 <a href="/login?redirect=/clubs/create" class="btn-create-club">

@@ -180,17 +180,48 @@ const AIKnowledge = require('./models/aiKnowledge');
 const improvmx = require('./utils/improvmx');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Initialize Gemini Flash AI
+// Initialize Gemini Flash AI with automatic fallback
+const PRIMARY_GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const FALLBACK_GEMINI_MODEL = "gemini-1.5-flash";
+
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 const aiModel = genAI ? genAI.getGenerativeModel({ 
-    model: "gemini-3.8-flash",
+    model: PRIMARY_GEMINI_MODEL,
     systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
 }) : null;
+
+const aiFallbackModel = genAI ? genAI.getGenerativeModel({ 
+    model: FALLBACK_GEMINI_MODEL,
+    systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
+}) : null;
+
+// Robust execution wrapper that handles 503 Service Unavailable / high demand automatically
+async function executeGeminiWithFallback(operation) {
+    if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
+    try {
+        return await operation(aiModel, PRIMARY_GEMINI_MODEL);
+    } catch (primaryErr) {
+        const isHighDemandOr503 = primaryErr.message && (
+            primaryErr.message.includes('503') ||
+            primaryErr.message.includes('high demand') ||
+            primaryErr.message.includes('Service Unavailable') ||
+            primaryErr.message.includes('ResourceExhausted') ||
+            primaryErr.message.includes('429')
+        );
+        if (isHighDemandOr503 && aiFallbackModel) {
+            console.warn(`[Gemini AI] Primary model (${PRIMARY_GEMINI_MODEL}) high demand/unavailable. Switching to fallback (${FALLBACK_GEMINI_MODEL})...`);
+            await new Promise(r => setTimeout(r, 600));
+            return await operation(aiFallbackModel, FALLBACK_GEMINI_MODEL);
+        }
+        throw primaryErr;
+    }
+}
 
 // AI Diagnostics & Health State
 const aiDebuggerStatus = {
     status: process.env.GEMINI_API_KEY ? 'online' : 'offline',
-    model: 'gemini-3.8-flash',
+    model: PRIMARY_GEMINI_MODEL,
+    fallbackModel: FALLBACK_GEMINI_MODEL,
     configured: Boolean(process.env.GEMINI_API_KEY),
     lastPing: null,
     latencyMs: null,
@@ -243,6 +274,15 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
         const resolvedIcon = await getSmartImageUrl(file.iconKey || file.iconUrl);
 
         for (const club of clubs) {
+            // Check tracking preference if club is not default and not owned by uploader
+            if (!club.isDefault && String(club.creator) !== String(uploaderId)) {
+                const configItem = (club.trackedCreatorsConfig || []).find(tc => String(tc.creator) === String(uploaderId));
+                if (configItem) {
+                    if (isUpdate && configItem.trackType === 'uploads') continue; // only tracking new uploads
+                    if (!isUpdate && configItem.trackType === 'updates') continue; // only tracking updates
+                }
+            }
+
             const channel = await ClubChannel.findOne({ club: club._id, name: targetChannelName });
             if (!channel) continue;
 
@@ -283,6 +323,45 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
                         badges: []
                     }
                 });
+            }
+        }
+
+        // Notify individual users who tracked this creator with their chosen preference (uploads, updates, both)
+        if (uploaderId && uploaderUser) {
+            try {
+                const subscribedUsers = await User.find({ 'trackedCreators.creator': uploaderId });
+                for (const subUser of subscribedUsers) {
+                    if (String(subUser._id) === String(uploaderId)) continue;
+                    const subEntry = (subUser.trackedCreators || []).find(tc => String(tc.creator) === String(uploaderId));
+                    if (!subEntry) continue;
+                    const pref = subEntry.trackType || 'both';
+                    if (isUpdate && pref === 'uploads') continue; // User only wants uploads
+                    if (!isUpdate && pref === 'updates') continue; // User only wants updates
+
+                    const notifTitle = isUpdate ? `🔄 Mod Update: ${file.name} v${file.version}` : `🚀 New Mod Upload: ${file.name}`;
+                    const notifMessage = isUpdate
+                        ? `${uploaderUser.username} released an update for "${file.name}" (v${file.version})! ${whatsNew || 'Check out what is new.'}`
+                        : `${uploaderUser.username} uploaded a new mod: "${file.name}" (v${file.version}) in ${(file.category || 'mods').toUpperCase()}!`;
+
+                    await UserNotification.create({
+                        user: subUser._id,
+                        title: notifTitle,
+                        message: notifMessage,
+                        type: 'info',
+                        link: `/download/${file.slug || file._id}`,
+                        sender: uploaderId
+                    });
+
+                    if (io) {
+                        io.to(`user_${subUser._id}`).emit('new_user_notification', {
+                            title: notifTitle,
+                            message: notifMessage,
+                            link: `/download/${file.slug || file._id}`
+                        });
+                    }
+                }
+            } catch (userTrackErr) {
+                console.error('[Tracking] User subscriber notify error:', userTrackErr.message);
             }
         }
 
@@ -7473,12 +7552,19 @@ app.get('/users/:username', async (req, res, next) => {
         const profileDescription = targetUserObj.bio ? targetUserObj.bio : `Check out all the latest safe and working mods uploaded by ${targetUserObj.username} on GPL Mods Official.`;
         const profileImage = targetUserObj.signedAvatarUrl && targetUserObj.signedAvatarUrl !== '/images/default-avatar.png' ? targetUserObj.signedAvatarUrl : 'https://gplmods.webredirect.org/images/logo.png';
 
+        let currentTracking = null;
+        if (req.user && req.user.trackedCreators && Array.isArray(req.user.trackedCreators)) {
+            const foundTrack = req.user.trackedCreators.find(t => String(t.creator?._id || t.creator) === String(targetUserObj._id));
+            if (foundTrack) currentTracking = foundTrack.trackType || 'both';
+        }
+
         res.render('pages/public-profile', { 
             profileUser: targetUserObj, 
             uploads: uploadsWithUrls,
             followersList: followersWithAvatars,
             followingList: followingWithAvatars,
             isFollowing: isFollowing,
+            currentTracking: currentTracking,
             pageTitle: profileTitle,
             pageDescription: profileDescription,
             pageImage: profileImage,
@@ -11455,11 +11541,13 @@ app.get('/api/admin/ai-status', ensureSupportOrAdmin, (req, res) => {
 app.post('/api/admin/ai-ping', ensureSupportOrAdmin, async (req, res) => {
     const start = Date.now();
     try {
-        if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
-        const chat = aiModel.startChat();
-        const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+        const responseText = await executeGeminiWithFallback(async (modelToUse, modelName) => {
+            const chat = modelToUse.startChat();
+            const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+            aiDebuggerStatus.model = modelName;
+            return result.response.text();
+        });
         const latency = Date.now() - start;
-        const responseText = result.response.text();
         
         aiDebuggerStatus.status = 'online';
         aiDebuggerStatus.lastPing = new Date();
@@ -13381,10 +13469,13 @@ app.post('/api/payment/cancel-feedback', async (req, res) => {
         const sanitizedReason = validReasons.includes(reason) ? reason : "Other";
         const sanitizedNotes = typeof notes === 'string' ? notes.trim().slice(0, 500) : '';
 
+        const validTypes = ['membership', 'donation', 'volunteer', 'subscription', 'promote', 'promotion', 'sponsor', 'sponsorship', 'other'];
+        const sanitizedType = validTypes.includes(type) ? type : 'other';
+
         // Save in dedicated PaymentCancellation collection
         const cancellationRecord = new PaymentCancellation({
             orderId: orderId || `CANCEL-${Date.now()}`,
-            type: type || 'membership',
+            type: sanitizedType,
             user: req.user ? req.user._id : null,
             username: req.user ? req.user.username : 'Guest',
             reason: sanitizedReason,
@@ -14417,118 +14508,1066 @@ app.get(['/docs', '/docs/:slug', '/docs/category/:categorySlug'], async (req, re
 const SPONSORSHIP_CATALOG = [
     {
         category: 'email',
-        categoryTitle: 'SMTP & Email Delivery',
+        categoryTitle: 'SMTP Email Delivery',
+        shortName: 'SMTP',
         icon: 'fas fa-paper-plane',
         color: '#FFD700',
         items: [
-            { id: 'smtp-starter-monthly', title: 'SMTP Starter (1 Month)', priceINR: 1252.50, priceUSD: 15, period: 'Month', desc: '10,000 monthly transactional verification & alert emails via SMTP2GO' },
-            { id: 'smtp-starter-yearly', title: 'SMTP Starter (1 Year)', priceINR: 12525.00, priceUSD: 150, period: 'Year', desc: '120,000 yearly transactional emails with dedicated SPF/DKIM routing' },
-            { id: 'smtp-pro-monthly', title: 'SMTP Professional (1 Month)', priceINR: 6262.50, priceUSD: 75, period: 'Month', desc: '100,000 monthly high-priority emails with subaccount telemetry' }
+            {
+                id: 'smtp-starter-monthly',
+                title: 'SMTP Starter Plan (Monthly)',
+                planName: 'Starter Plan (Monthly Billing)',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 1252.50,
+                priceUSD: 15,
+                priceDisplay: '₹1,252.50 / month ($15/mo)',
+                limit: '10,000 emails per month',
+                badge: 'Essential',
+                badgeColor: '#FFD700',
+                desc: 'Essential transactional delivery for verification codes, password resets, and notifications.',
+                features: [
+                    '10,000 emails per month limit',
+                    'Essential email delivery features',
+                    '30 days of email reporting & logs',
+                    'Subaccount management',
+                    'Live chat & phone support'
+                ]
+            },
+            {
+                id: 'smtp-starter-annual',
+                title: 'SMTP Starter Plan (Annual)',
+                planName: 'Starter Plan (Annual Billing)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 12525.00,
+                priceUSD: 150,
+                priceDisplay: '₹1,043.75 / mo ($12.50/mo billed as ₹12,525 / $150 / yr)',
+                limit: '10,000 emails/mo (120,000 / yr)',
+                badge: '2 Months Free!',
+                badgeColor: '#2ecc71',
+                desc: 'Annual commitment saving two full months. High deliverability SPF/DKIM relay routing.',
+                features: [
+                    'Two months free ($12.50/mo vs $15/mo)',
+                    '10,000 emails per month limit',
+                    'Essential delivery features',
+                    '30 days of email reporting',
+                    'Subaccount management',
+                    'Live chat/phone support'
+                ]
+            },
+            {
+                id: 'smtp-pro-monthly',
+                title: 'SMTP Professional Plan (Monthly)',
+                planName: 'Professional Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 6262.50,
+                priceUSD: 75,
+                priceDisplay: '₹6,262.50 / month ($75/mo)',
+                limit: '100,000 emails per month',
+                badge: 'High Volume',
+                badgeColor: '#e67e22',
+                desc: 'Enterprise email capacity with dedicated IP warm-up and high throughput delivery.',
+                features: [
+                    '100,000 emails per month limit',
+                    'Dedicated IP address for peak reputation',
+                    'Advanced email testing & inbox preview tools',
+                    'Priority support routing & subaccount telemetry'
+                ]
+            }
         ]
     },
     {
         category: 'forwarding',
-        categoryTitle: 'ImprovMX Mail Forwarding',
+        categoryTitle: 'ImprovMX Mail Exchange',
+        shortName: 'ImprovMX',
         icon: 'fas fa-envelope-open-text',
         color: '#2196F3',
         items: [
-            { id: 'improv-light-yearly', title: 'ImprovMX Light (1 Year)', priceINR: 4785.00, period: 'Year', desc: 'Custom domain alias routing and inbound email protection' },
-            { id: 'improv-premium-monthly', title: 'ImprovMX Premium (1 Month)', priceINR: 860.00, period: 'Month', desc: 'High-volume MX routing with SMTP relay sending' },
-            { id: 'improv-pro-monthly', title: 'ImprovMX Pro (1 Month)', priceINR: 2298.00, period: 'Month', desc: 'Enterprise forwarding with priority throughput queue' }
+            {
+                id: 'improv-light-yearly',
+                title: 'ImprovMX Light Plan (Annual)',
+                planName: 'Light Plan',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 4785.00,
+                priceUSD: 50,
+                priceDisplay: '~$50 / year (approx. ₹4,785 / year)',
+                limit: '5 Domains • 25 Aliases / domain',
+                badge: 'Yearly Value',
+                badgeColor: '#2196F3',
+                desc: 'Lightweight domain routing for custom contact addresses and aliases.',
+                features: [
+                    'Up to 5 custom domains',
+                    '25 aliases per domain',
+                    '750 monthly SMTP email sends',
+                    'Instant MX forwarding & spam screening'
+                ]
+            },
+            {
+                id: 'improv-premium-monthly',
+                title: 'ImprovMX ⚡ Premium Plan',
+                planName: '⚡ Premium Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 860.00,
+                priceUSD: 9,
+                priceDisplay: '$9 / month (approx. ₹860 / month)',
+                limit: '30 Domains • 100 Aliases / domain',
+                badge: '⚡ Premium',
+                badgeColor: '#FFD700',
+                desc: 'High-speed mail exchange with custom SMTP relays and webhook forwarding.',
+                features: [
+                    'Up to 30 custom domains',
+                    '100 aliases per domain',
+                    '12,000 monthly SMTP sends / Send API requests',
+                    'DKIM signing and priority MX queue'
+                ]
+            },
+            {
+                id: 'improv-pro-monthly',
+                title: 'ImprovMX 🚀 Pro Plan',
+                planName: '🚀 Pro Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 2298.00,
+                priceUSD: 24,
+                priceDisplay: '$24 / month (approx. ₹2,298 / month)',
+                limit: '100 Domains • 200 Aliases / domain',
+                badge: '🚀 Pro',
+                badgeColor: '#9c27b0',
+                desc: 'Scale infrastructure for extensive subdomains, clubs, and creator aliases.',
+                features: [
+                    'Up to 100 custom domains',
+                    '200 aliases per domain',
+                    '60,000 monthly SMTP sends',
+                    'High throughput queue & team management'
+                ]
+            }
         ]
     },
     {
         category: 'storage',
         categoryTitle: 'Backblaze B2 Object Storage',
+        shortName: 'Backblaze B2',
         icon: 'fas fa-database',
         color: '#e53935',
         items: [
-            { id: 'b2-500gb-monthly', title: 'Storage B2 500GB (1 Month)', priceINR: 360.00, period: 'Month', desc: '500 GB redundant high-speed mod file hosting' },
-            { id: 'b2-500gb-yearly', title: 'Storage B2 500GB (1 Year)', priceINR: 4320.00, period: 'Year', desc: 'Annual 500 GB cloud bucket storage' },
-            { id: 'b2-1tb-monthly', title: 'Storage B2 1TB (1 Month)', priceINR: 730.00, period: 'Month', desc: '1,000 GB mod downloads with zero egress penalties' },
-            { id: 'b2-1tb-yearly', title: 'Storage B2 1TB (1 Year)', priceINR: 8760.00, period: 'Year', desc: 'Annual 1TB cloud mod repository capacity' },
-            { id: 'b2-2tb-monthly', title: 'Storage B2 2TB (1 Month)', priceINR: 1450.00, period: 'Month', desc: '2,000 GB high-capacity storage for heavy ISOs/APKs' },
-            { id: 'b2-2tb-yearly', title: 'Storage B2 2TB (1 Year)', priceINR: 17400.00, period: 'Year', desc: 'Annual 2TB cloud storage' },
-            { id: 'b2-5tb-monthly', title: 'Storage B2 5TB (1 Month)', priceINR: 3650.00, period: 'Month', desc: '5,000 GB enterprise capacity for complete GPL archive' },
-            { id: 'b2-5tb-yearly', title: 'Storage B2 5TB (1 Year)', priceINR: 43800.00, period: 'Year', desc: 'Annual 5TB full-archive preservation' }
+            {
+                id: 'b2-500gb-monthly',
+                title: 'Backblaze B2 500 GB (Monthly)',
+                planName: '500 GB Monthly Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 366.00,
+                priceINRMin: 339,
+                priceINRMax: 393,
+                priceDisplay: '₹339 to ₹393 per month',
+                limit: '500 GB Storage',
+                desc: 'High-speed redundant object storage for 500 GB of mod zips and media files.',
+                features: [
+                    '500 GB cloud object storage capacity',
+                    'Zero egress fee via Cloudflare Bandwidth Alliance',
+                    'S3-compatible API & instant CDN edge caching'
+                ]
+            },
+            {
+                id: 'b2-500gb-yearly',
+                title: 'Backblaze B2 500 GB (Approx. Yearly)',
+                planName: '500 GB (Approx. Yearly Plan)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 4392.00,
+                priceINRMin: 4068,
+                priceINRMax: 4716,
+                priceDisplay: 'Approx. ₹4,068 to ₹4,716 / year',
+                limit: '500 GB Annual Storage',
+                badge: 'Approx. Yearly',
+                badgeColor: '#2ecc71',
+                desc: 'Full 1-year coverage for 500 GB mod downloads with high durability.',
+                features: [
+                    'Annual continuous storage preservation',
+                    'Zero download transfer bandwidth penalties',
+                    'Guaranteed 99.999999999% file durability'
+                ]
+            },
+            {
+                id: 'b2-1tb-monthly',
+                title: 'Backblaze B2 1 TB (Monthly)',
+                planName: '1 TB Monthly Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 732.00,
+                priceINRMin: 678,
+                priceINRMax: 786,
+                priceDisplay: '₹678 to ₹786 per month',
+                limit: '1 TB Storage',
+                desc: '1,000 GB mod repository hosting thousands of community game enhancements.',
+                features: [
+                    '1 TB (1,000 GB) active cloud bucket storage',
+                    'Fast global CDN caching for game assets',
+                    'Automated multi-part parallel uploads'
+                ]
+            },
+            {
+                id: 'b2-1tb-yearly',
+                title: 'Backblaze B2 1 TB (Approx. Yearly)',
+                planName: '1 TB (Approx. Yearly Plan)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 8784.00,
+                priceINRMin: 8136,
+                priceINRMax: 9432,
+                priceDisplay: 'Approx. ₹8,136 to ₹9,432 / year',
+                limit: '1 TB Annual Storage',
+                badge: 'Approx. Yearly',
+                badgeColor: '#2ecc71',
+                desc: '1-year uninterrupted storage lease for 1 TB of game files and archives.',
+                features: [
+                    'Full annual 1 TB mod capacity backup',
+                    'Zero file deletion or inactivity limits',
+                    'Redundant multi-region bucket replicas'
+                ]
+            },
+            {
+                id: 'b2-2tb-monthly',
+                title: 'Backblaze B2 2 TB (Monthly)',
+                planName: '2 TB Monthly Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 1464.50,
+                priceINRMin: 1357,
+                priceINRMax: 1572,
+                priceDisplay: '₹1,357 to ₹1,572 per month',
+                limit: '2 TB Storage',
+                desc: 'Heavy-duty storage tier for large textures, total conversions, and disc images.',
+                features: [
+                    '2,000 GB storage for heavy game modifications',
+                    'Multi-threaded high-speed direct downloads',
+                    'Enterprise encryption at rest & SHA-256 validation'
+                ]
+            },
+            {
+                id: 'b2-2tb-yearly',
+                title: 'Backblaze B2 2 TB (Approx. Yearly)',
+                planName: '2 TB (Approx. Yearly Plan)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 17574.00,
+                priceINRMin: 16284,
+                priceINRMax: 18864,
+                priceDisplay: 'Approx. ₹16,284 to ₹18,864 / year',
+                limit: '2 TB Annual Storage',
+                badge: 'Approx. Yearly',
+                badgeColor: '#2ecc71',
+                desc: 'Annual sponsorship of 2 TB high-capacity mod library storage.',
+                features: [
+                    '1-year dedicated high-capacity storage volume',
+                    'Ensures long-term file preservation',
+                    'Sustains high monthly traffic peaks'
+                ]
+            },
+            {
+                id: 'b2-5tb-monthly',
+                title: 'Backblaze B2 5 TB (Monthly)',
+                planName: '5 TB Monthly Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 3659.50,
+                priceINRMin: 3391,
+                priceINRMax: 3928,
+                priceDisplay: '₹3,391 to ₹3,928 per month',
+                limit: '5 TB Storage',
+                badge: 'Master Archive',
+                badgeColor: '#e53935',
+                desc: 'Complete storage infrastructure for the whole GPL Mods catalog archive.',
+                features: [
+                    '5,000 GB enterprise cloud bucket capacity',
+                    'Supports all historical mod releases and versions',
+                    'Direct high-bandwidth pipeline to global CDNs'
+                ]
+            },
+            {
+                id: 'b2-5tb-yearly',
+                title: 'Backblaze B2 5 TB (Approx. Yearly)',
+                planName: '5 TB (Approx. Yearly Plan)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 43914.00,
+                priceINRMin: 40692,
+                priceINRMax: 47136,
+                priceDisplay: 'Approx. ₹40,692 to ₹47,136 / year',
+                limit: '5 TB Annual Storage',
+                badge: 'Full Archive Annual',
+                badgeColor: '#e53935',
+                desc: 'Full 1-year sponsorship safeguarding the entire platform mod repository archive.',
+                features: [
+                    'Permanent annual 5 TB preservation endowment',
+                    'No risk of archive pruning or lost download links',
+                    'Full community credit and prominent recognition'
+                ]
+            }
         ]
     },
     {
         category: 'database',
         categoryTitle: 'MongoDB Atlas Cloud Database',
+        shortName: 'MongoDB',
         icon: 'fas fa-server',
         color: '#4caf50',
         items: [
-            { id: 'mongo-flex-monthly', title: 'MongoDB Atlas Flex (1 Month)', priceINR: 1500.00, period: 'Month', desc: 'Scalable auto-tier database for user profiles & catalog' },
-            { id: 'mongo-flex-yearly', title: 'MongoDB Atlas Flex (1 Year)', priceINR: 18000.00, period: 'Year', desc: 'Annual high-availability replica set cluster' },
-            { id: 'mongo-m10-monthly', title: 'MongoDB Dedicated M10 (1 Month)', priceINR: 4900.00, period: 'Month', desc: 'Dedicated RAM & CPU compute with point-in-time restores' },
-            { id: 'mongo-m10-yearly', title: 'MongoDB Dedicated M10 (1 Year)', priceINR: 58800.00, period: 'Year', desc: 'Annual dedicated enterprise database tier' }
+            {
+                id: 'mongo-flex-monthly',
+                title: 'MongoDB Flex (Monthly)',
+                planName: 'Flex Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 1605.50,
+                priceINRMin: 676,
+                priceINRMax: 2535,
+                priceDisplay: '₹676 – ₹2,535 / month',
+                limit: '5 GB storage • 100 ops/sec',
+                badge: 'Auto-Scaling',
+                badgeColor: '#4caf50',
+                desc: 'Auto-scaling managed database tier for user accounts, mod metadata, and clubs.',
+                features: [
+                    '5 GB high-performance document storage',
+                    '100 operations / second read & write capacity',
+                    'Automated snapshots & encrypted storage at rest'
+                ]
+            },
+            {
+                id: 'mongo-flex-yearly',
+                title: 'MongoDB Flex (Approx. Yearly)',
+                planName: 'Flex (Approx. Yearly Plan)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 19266.00,
+                priceINRMin: 8112,
+                priceINRMax: 30420,
+                priceDisplay: 'Approx. ₹8,112 – ₹30,420 / year',
+                limit: '5 GB Storage • Annual',
+                badge: 'Approx. Yearly',
+                badgeColor: '#2ecc71',
+                desc: '1-year commitment ensuring continuous high availability database operations.',
+                features: [
+                    '12 months continuous cluster uptime',
+                    'Handles peak mod release download surges',
+                    'Automated health telemetry & index optimization'
+                ]
+            },
+            {
+                id: 'mongo-m10-monthly',
+                title: 'MongoDB Dedicated (M10) (Monthly)',
+                planName: 'Dedicated (M10)',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 4900.00,
+                priceDisplay: '₹4,900 / month upwards (single-node)',
+                limit: '10 GB+ storage • Dedicated compute',
+                badge: 'Production-Ready',
+                badgeColor: '#2ecc71',
+                desc: 'Dedicated single-node database compute with point-in-time recovery and zero noisy neighbors.',
+                features: [
+                    'Dedicated RAM and vCPU compute instance',
+                    '10 GB+ production-ready NVMe storage',
+                    'Point-in-time continuous backup & restore',
+                    '99.995% SLA and real-time performance advisor'
+                ]
+            },
+            {
+                id: 'mongo-m10-yearly',
+                title: 'MongoDB Dedicated (M10) (Approx. Yearly)',
+                planName: 'Dedicated (M10) (Approx. Yearly)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 58800.00,
+                priceDisplay: 'Approx. ₹58,800 / year upwards (single-node)',
+                limit: '10 GB+ Dedicated • Annual',
+                badge: 'Enterprise Tier',
+                badgeColor: '#2ecc71',
+                desc: '1 full year of dedicated production cluster infrastructure with guaranteed performance.',
+                features: [
+                    'Annual dedicated single-node production tier',
+                    'Custom indexes, zero contention, high IOPS',
+                    'Official lead database patron status & VIP badge'
+                ]
+            }
         ]
     },
     {
         category: 'compute',
-        categoryTitle: 'Hosting & Compute Nodes',
+        categoryTitle: 'Server Hosting & Compute Nodes',
+        shortName: 'Hosting',
         icon: 'fas fa-microchip',
         color: '#9c27b0',
         items: [
-            { id: 'host-8gb-monthly', title: 'Hosting 8GB RAM Instance (1 Month)', priceINR: 13360.00, priceUSD: 160, period: 'Month', desc: 'High-speed 8GB RAM vCPU server instance' },
-            { id: 'host-16gb-monthly', title: 'Hosting 16GB RAM Instance (1 Month)', priceINR: 18790.00, priceUSD: 225, period: 'Month', desc: 'Ultra 16GB RAM production cluster node' }
+            {
+                id: 'host-8gb-monthly',
+                title: 'Hosting 8 GB RAM Configuration (Monthly)',
+                planName: '8 GB RAM Configuration',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 13360.00,
+                priceUSD: 160,
+                priceDisplay: '$160 / month (~₹13,360 / mo)',
+                limit: '2 vCPU • 8 GB RAM • 100 GB Disk',
+                badge: 'Standard Node',
+                badgeColor: '#9c27b0',
+                desc: 'Powers our core web application, real-time WebSocket chat, and API processing.',
+                breakdown: {
+                    compute: '$135 / month (~₹11,270) • Instance: 2c-8g (2 vCPU, 8 GB RAM)',
+                    storage: '$25 / month (~₹2,090) • 100 GB Persistent Disk ($0.25/GB)',
+                    total: '$160 / month (~₹13,360)'
+                },
+                features: [
+                    'Compute Plan: $135/mo (~₹11,270) [2c-8g: 2 vCPU, 8 GB RAM]',
+                    'Storage Add-on: $25/mo (~₹2,090) [100 GB Persistent Disk]',
+                    'Total Estimated Price: $160 / month (~₹13,360)',
+                    'High-speed container runtime & automated snapshots'
+                ]
+            },
+            {
+                id: 'host-8gb-yearly',
+                title: 'Hosting 8 GB RAM Configuration (Approx. Yearly)',
+                planName: '8 GB RAM Config (Approx. Yearly)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 160320.00,
+                priceUSD: 1920,
+                priceDisplay: 'Approx. $1,920 / year (~₹1,60,320 / yr)',
+                limit: '8 GB RAM Cluster • Annual',
+                badge: 'Approx. Yearly',
+                badgeColor: '#2ecc71',
+                desc: 'Full 1-year sponsorship covering the primary web server and real-time chat socket cluster.',
+                features: [
+                    '1 full year of continuous 8 GB server operations',
+                    'Guaranteed zero server suspension or eviction',
+                    'Covers compute ($1,620) + persistent disk ($300)',
+                    'Grand Infrastructure Pillar Sponsor recognition'
+                ]
+            },
+            {
+                id: 'host-16gb-monthly',
+                title: 'Hosting 16 GB RAM Configuration (Monthly)',
+                planName: '16 GB RAM Configuration',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 18790.00,
+                priceUSD: 225,
+                priceDisplay: '$225 / month Ext. (~₹18,790 / mo)',
+                limit: '2 vCPU • 16 GB RAM • 100 GB Disk',
+                badge: 'Power Node',
+                badgeColor: '#ff9800',
+                desc: 'High-memory instance for concurrent virus scanning, zip extraction, and high traffic.',
+                breakdown: {
+                    compute: '$200 / month (~₹16,700) • Instance: 2c-16g (2 vCPU, 16 GB RAM)',
+                    storage: '$25 / month (~₹2,090) • 100 GB Persistent Disk ($0.25/GB)',
+                    total: '$225 / month Ext. (~₹18,790)'
+                },
+                features: [
+                    'Compute Plan: $200/mo (~₹16,700) [2c-16g: 2 vCPU, 16 GB RAM]',
+                    'Storage Add-on: $25/mo (~₹2,090) [100 GB Persistent Disk]',
+                    'Total Estimated Price: $225 / month Ext. (~₹18,790)',
+                    'Heavy concurrency support for 10,000+ simultaneous visitors'
+                ]
+            },
+            {
+                id: 'host-16gb-yearly',
+                title: 'Hosting 16 GB RAM Configuration (Approx. Yearly)',
+                planName: '16 GB RAM Config (Approx. Yearly)',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 225480.00,
+                priceUSD: 2700,
+                priceDisplay: 'Approx. $2,700 / year (~₹2,25,480 / yr)',
+                limit: '16 GB RAM Cluster • Annual',
+                badge: 'Supreme Tier',
+                badgeColor: '#ff9800',
+                desc: '1-year commitment for our peak-performance production cluster node.',
+                features: [
+                    'Annual power tier: 2c-16g compute + persistent disk',
+                    'Zero latency bottlenecks during major game mod drops',
+                    'Lifetime VIP patron badge & permanent site hall of fame'
+                ]
+            }
         ]
     },
     {
         category: 'domain',
-        categoryTitle: 'Domain & Registry Security',
+        categoryTitle: 'Domain Registry & DNS',
+        shortName: 'Domain Name',
         icon: 'fas fa-globe',
         color: '#00bcd4',
         items: [
-            { id: 'domain-org-yearly', title: 'Domain .org Renewal (1 Year)', priceINR: 1799.00, period: 'Year', desc: 'Official non-profit domain registry and DNSSEC protection' }
+            {
+                id: 'domain-org-yearly',
+                title: 'Domain Name .org (Annual)',
+                planName: '.org Domain Registry',
+                billingType: 'yearly',
+                period: 'Year',
+                priceINR: 1799.00,
+                priceDisplay: '1,799.00₹ / year',
+                limit: '1 Year Domain Renewal',
+                badge: 'Official TLD',
+                badgeColor: '#00bcd4',
+                desc: 'Official non-profit .org top-level domain renewal, WHOIS privacy, and DNSSEC protection.',
+                features: [
+                    'Official .org registry maintenance',
+                    'DNSSEC cryptographic tamper proofing',
+                    'WHOIS identity theft privacy protection',
+                    'Authoritative anycast global DNS routing'
+                ]
+            }
         ]
     },
     {
         category: 'ai',
-        categoryTitle: 'Gemini AI Model Tokens',
+        categoryTitle: 'Gemini API (Support Chatbot)',
+        shortName: 'Gemini AI',
         icon: 'fas fa-brain',
         color: '#ff9800',
         items: [
-            { id: 'gemini-flash-lite', title: 'Gemini Flash-Lite Token Pack', priceINR: 50.00, period: 'One-time', desc: 'Powers ~100,000 smart search & translation tokens' },
-            { id: 'gemini-flash', title: 'Gemini Flash AI Token Pack', priceINR: 150.00, period: 'One-time', desc: 'Powers ~500,000 mod analysis & scanning tokens' },
-            { id: 'gemini-pro', title: 'Gemini Pro AI Token Pack', priceINR: 500.00, period: 'One-time', desc: 'Powers comprehensive code auditing & threat analysis' }
+            {
+                id: 'gemini-2-5-flash-lite',
+                title: 'Gemini 2.5 Flash-Lite Token Pack',
+                planName: 'Gemini 2.5 Flash-Lite',
+                billingType: 'one_time',
+                period: 'Per 1M Tokens',
+                priceINR: 33.60,
+                priceINRMin: 8.40,
+                priceINRMax: 33.60,
+                priceUSD: 0.40,
+                priceDisplay: '~₹8.40 ( $0.10 ) – ~₹33.60 ( $0.40 )',
+                limit: 'Lightweight AI Assistant',
+                desc: 'Ultra-fast lightweight responses for basic user queries and download instructions.',
+                features: [
+                    'Cost: ~₹8.40 ($0.10) to ~₹33.60 ($0.40) per million tokens',
+                    'Powers instant community chatbot responses',
+                    'High throughput, low-latency FAQ resolution'
+                ]
+            },
+            {
+                id: 'gemini-3-1-flash-lite',
+                title: 'Gemini 3.1 Flash-Lite Token Pack',
+                planName: 'Gemini 3.1 Flash-Lite',
+                billingType: 'one_time',
+                period: 'Per 1M Tokens',
+                priceINR: 126.00,
+                priceINRMin: 21.00,
+                priceINRMax: 126.00,
+                priceUSD: 1.50,
+                priceDisplay: '~₹21.00 ( $0.25 ) – ~₹126.00 ( $1.50 )',
+                limit: 'High Efficiency Intelligence',
+                desc: 'Enhanced conversational intelligence with sub-second response times.',
+                features: [
+                    'Cost: ~₹21.00 ($0.25) to ~₹126.00 ($1.50) per million tokens',
+                    'Multi-turn support chatbot dialogs',
+                    'Accurate game compatibility assistance'
+                ]
+            },
+            {
+                id: 'gemini-3-flash',
+                title: 'Gemini 3 Flash Token Pack',
+                planName: 'Gemini 3 Flash',
+                billingType: 'one_time',
+                period: 'Per 1M Tokens',
+                priceINR: 252.00,
+                priceINRMin: 42.00,
+                priceINRMax: 252.00,
+                priceUSD: 3.00,
+                priceDisplay: '~₹42.00 ( $0.50 ) – ~₹252.00 ( $3.00 )',
+                limit: 'General Reasoning AI',
+                badge: 'Popular AI',
+                badgeColor: '#ff9800',
+                desc: 'Balanced speed and deep problem-solving accuracy for complex gamer troubleshooting.',
+                features: [
+                    'Cost: ~₹42.00 ($0.50) to ~₹252.00 ($3.00) per million tokens',
+                    'Diagnoses mod installation crashes and load-order conflicts',
+                    'Multilingual support across 30+ languages'
+                ]
+            },
+            {
+                id: 'gemini-3-5-flash',
+                title: 'Gemini 3.5 / 3.7 / 3.8 Flash Token Pack',
+                planName: 'Gemini 3.5 / 3.7 / 3.8 Flash',
+                billingType: 'one_time',
+                period: 'Per 1M Tokens',
+                priceINR: 630.00,
+                priceINRMin: 126.00,
+                priceINRMax: 630.00,
+                priceUSD: 7.50,
+                priceDisplay: '~₹126.00 ( $1.50 ) – ~₹630.00 ( $7.50 )',
+                limit: 'Next-Gen Multimodal',
+                badge: 'Next-Gen Flash',
+                badgeColor: '#ff5722',
+                desc: 'State-of-the-art reasoning for reverse engineering and automated script auditing.',
+                features: [
+                    'Cost: ~₹126.00 ($1.50) to ~₹630.00 ($7.50) per million tokens',
+                    'Handles crash logs, Lua scripts, and memory dumps',
+                    'Self-correcting troubleshooting advice'
+                ]
+            },
+            {
+                id: 'gemini-3-1-pro',
+                title: 'Gemini 3.1 Pro (<200k context) Token Pack',
+                planName: 'Gemini 3.1 Pro (<200k context)',
+                billingType: 'one_time',
+                period: 'Per 1M Tokens',
+                priceINR: 1008.00,
+                priceINRMin: 168.00,
+                priceINRMax: 1008.00,
+                priceUSD: 12.00,
+                priceDisplay: '~₹168.00 ( $2.00 ) – ~₹1,008.00 ( $12.00 )',
+                limit: '<200k Context Window',
+                badge: 'Deep Intelligence',
+                badgeColor: '#9c27b0',
+                desc: 'Massive 200,000 token context window for full codebase audits and security verification.',
+                features: [
+                    'Cost: ~₹168.00 ($2.00) to ~₹1,008.00 ($12.00) per million tokens',
+                    'Deep context ingestion for comprehensive mod safety reports',
+                    'In-depth decompiled bytecode analysis'
+                ]
+            }
         ]
     },
     {
         category: 'security',
-        categoryTitle: 'VPNAPI.io & Threat Protection',
+        categoryTitle: 'Vpnapi.io Threat Protection',
+        shortName: 'Vpnapi.io',
         icon: 'fas fa-shield-alt',
         color: '#f44336',
         items: [
-            { id: 'vpnapi-basic-monthly', title: 'VPNAPI Threat Basic (1 Month)', priceINR: 1586.50, priceUSD: 19, period: 'Month', desc: 'Real-time proxy/Tor/VPN bot mitigation' },
-            { id: 'vpnapi-premium-monthly', title: 'VPNAPI Threat Premium (1 Month)', priceINR: 2421.50, priceUSD: 29, period: 'Month', desc: 'High-throughput threat intelligence firewall' },
-            { id: 'vpnapi-pro-monthly', title: 'VPNAPI Threat Pro (1 Month)', priceINR: 8266.50, priceUSD: 99, period: 'Month', desc: 'Enterprise DDoS and malicious subnet blocker' }
+            {
+                id: 'vpnapi-basic',
+                title: 'Vpnapi.io Basic Plan',
+                planName: 'Basic Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 1587.00,
+                priceUSD: 19,
+                priceDisplay: '$19 per month (~₹1,587/mo)',
+                limit: '10,000 daily queries',
+                desc: 'Mitigates automated scrapers, malicious proxies, and credential stuffers.',
+                features: [
+                    '10,000 daily queries allowance',
+                    'City-level Data lookup',
+                    'Network Information (ASNs, ISP, CIDR)',
+                    'Real-time VPN and proxy screening'
+                ]
+            },
+            {
+                id: 'vpnapi-premium',
+                title: 'Vpnapi.io Premium Plan (Popular)',
+                planName: 'Premium Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 2422.00,
+                priceUSD: 29,
+                priceDisplay: '$29 per month (~₹2,422/mo)',
+                limit: '50,000 daily queries',
+                badge: 'Popular',
+                badgeColor: '#f44336',
+                desc: 'High-throughput threat intelligence protecting member clubs and voting polls.',
+                features: [
+                    '50,000 daily queries allowance',
+                    'City-level Data lookup',
+                    'Network Information (ASNs, ISP, CIDR)',
+                    'Tor exit node & malicious crawler mitigation'
+                ]
+            },
+            {
+                id: 'vpnapi-pro',
+                title: 'Vpnapi.io Pro Plan',
+                planName: 'Pro Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 8267.00,
+                priceUSD: 99,
+                priceDisplay: '$99 per month (~₹8,267/mo)',
+                limit: '200,000 daily queries',
+                badge: 'Enterprise Shield',
+                badgeColor: '#e91e63',
+                desc: 'Maximum capacity network defense against distributed botnets and DDoS attempts.',
+                features: [
+                    '200,000 daily queries allowance',
+                    'City-level Data lookup',
+                    'Network Information (ASNs, ISP, CIDR)',
+                    'High concurrency enterprise threat feed'
+                ]
+            }
         ]
     },
     {
         category: 'translation',
-        categoryTitle: 'DeepL Pro & TempMail APIs',
+        categoryTitle: 'DeepL Translation Service',
+        shortName: 'DeepL API',
         icon: 'fas fa-language',
         color: '#009688',
         items: [
-            { id: 'deepl-pro-monthly', title: 'DeepL Pro Translation (1 Month)', priceINR: 2180.00, period: 'Month', desc: 'Neural AI translation for 30+ language localized mod pages' },
-            { id: 'tempmail-1k-monthly', title: 'TempMail Detector 1K Lookups', priceINR: 418.00, period: 'Month', desc: 'Disposable email detection for 1,000 user registrations' },
-            { id: 'tempmail-5k-monthly', title: 'TempMail Detector 5K Lookups', priceINR: 2088.00, period: 'Month', desc: 'Disposable email detection for 5,000 user registrations' }
+            {
+                id: 'deepl-free-developer',
+                title: 'DeepL API Free / Developer',
+                planName: 'DeepL API Free / Developer',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 100.00,
+                priceDisplay: 'Costs ₹0 per month (Allowance Support)',
+                limit: '500,000 characters / month',
+                badge: 'Free Tier',
+                badgeColor: '#009688',
+                desc: 'Free recurring allowance of 500,000 characters per month to test and build prototypes.',
+                features: [
+                    'Costs ₹0 per month developer allowance',
+                    'Recurring allowance of 500,000 characters/mo',
+                    'Build and test prototype translations',
+                    'Supports 30+ European and Asian languages'
+                ]
+            },
+            {
+                id: 'deepl-growth-pro',
+                title: 'DeepL API Growth / Pro',
+                planName: 'DeepL API Growth / Pro',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 2180.00,
+                priceUSD: 26,
+                priceDisplay: 'Costs ~₹2,180 per month ($26 USD base rate)',
+                limit: '12 Million Characters / Year',
+                badge: 'Pro Translation',
+                badgeColor: '#2ecc71',
+                desc: 'Industry-leading neural translation translating mod manuals and pages worldwide.',
+                features: [
+                    'Base subscription fee of ~₹2,180 / month ($26 USD)',
+                    'Annual-equivalent allowance of 12 million characters',
+                    'No data retention / strict privacy compliance',
+                    'Custom glossaries & tone adaptation'
+                ]
+            }
         ]
     },
     {
-        category: 'cdn',
-        categoryTitle: 'CDNs, Workers & Developer Tools',
-        icon: 'fas fa-bolt',
-        color: '#ffc107',
+        category: 'tempmail',
+        categoryTitle: 'TempMail Detector API',
+        shortName: 'TempMail API',
+        icon: 'fas fa-user-shield',
+        color: '#607d8b',
         items: [
-            { id: 'cdn-super-premium-monthly', title: 'InfinityFree Fallback CDN Super Premium', priceINR: 500.00, priceUSD: 5.99, period: 'Month', desc: 'Global high-availability asset mirror' },
-            { id: 'cdn-ultimate-monthly', title: 'InfinityFree Fallback CDN Ultimate', priceINR: 750.00, priceUSD: 8.99, period: 'Month', desc: 'Unmetered edge distribution for scripts' },
-            { id: 'cf-pro-monthly', title: 'Cloudflare Pro CDN (1 Month)', priceINR: 2100.00, period: 'Month', desc: 'WAF rules, image optimization, edge caching' },
-            { id: 'cf-workers-monthly', title: 'Cloudflare Workers Paid (1 Month)', priceINR: 420.00, period: 'Month', desc: 'Serverless low-latency edge functions' },
-            { id: 'github-team-monthly', title: 'GitHub Team Seat (1 Month)', priceINR: 334.00, period: 'Month', desc: 'CI/CD runner minutes & repo collaboration' },
-            { id: 'github-copilot-monthly', title: 'GitHub Copilot Pro (1 Month)', priceINR: 835.00, period: 'Month', desc: 'AI code assistant seat for core platform engineering' }
+            {
+                id: 'tempmail-payg',
+                title: 'TempMail Detector Pay-as-you-go',
+                planName: 'Pay-as-you-go',
+                billingType: 'pay_as_you_go',
+                period: 'Per Lookup',
+                priceINR: 50.00,
+                priceDisplay: '$0.005 (approx. ₹0.42) per lookup',
+                limit: 'Lookups Never Expire',
+                desc: 'Flexible credit pack for detecting disposable email providers in real-time.',
+                features: [
+                    'Cost: $0.005 (approx. ₹0.42) per lookup',
+                    'Credits never expire',
+                    'Instant detection of 10,000+ disposable domains'
+                ]
+            },
+            {
+                id: 'tempmail-1k',
+                title: 'TempMail Detector 1,000 lookups/mo',
+                planName: '1,000 lookups/mo Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 418.00,
+                priceUSD: 5,
+                priceDisplay: '$5/month (approx. ₹418/month)',
+                limit: '1,000 lookups / month',
+                desc: 'Shields 1,000 new registrations each month from fake spam bots.',
+                features: [
+                    '1,000 lookups per month allowance',
+                    'Sub-millisecond API response times',
+                    'Blocks throwaway inbox abuse'
+                ]
+            },
+            {
+                id: 'tempmail-2k',
+                title: 'TempMail Detector 2,000 lookups/mo',
+                planName: '2,000 lookups/mo Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 835.00,
+                priceUSD: 10,
+                priceDisplay: '$10/month (approx. ₹835/month)',
+                limit: '2,000 lookups / month',
+                desc: 'Comfortable allowance for active community signups and newsletter subscriptions.',
+                features: [
+                    '2,000 lookups per month allowance',
+                    'Live updated temporary domain database',
+                    'Guarantees legitimate member retention'
+                ]
+            },
+            {
+                id: 'tempmail-5k',
+                title: 'TempMail Detector 5,000 lookups/mo',
+                planName: '5,000 lookups/mo Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 2088.00,
+                priceUSD: 25,
+                priceDisplay: '$25/month (approx. ₹2,088/month)',
+                limit: '5,000 lookups / month',
+                badge: 'Recommended',
+                badgeColor: '#607d8b',
+                desc: 'Ideal during viral mod releases when thousands of new gamers join daily.',
+                features: [
+                    '5,000 lookups per month allowance',
+                    'High concurrency support',
+                    'Comprehensive protection against bot raids'
+                ]
+            },
+            {
+                id: 'tempmail-10k',
+                title: 'TempMail Detector 10,000 lookups/mo',
+                planName: '10,000 lookups/mo Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 4175.00,
+                priceUSD: 50,
+                priceDisplay: '$50/month (approx. ₹4,175/month)',
+                limit: '10,000 lookups / month',
+                badge: 'Enterprise',
+                badgeColor: '#e91e63',
+                desc: 'Full platform-wide coverage preventing fraudulent multi-accounting.',
+                features: [
+                    '10,000 lookups per month allowance',
+                    'Priority support & dedicated API endpoint',
+                    'Zero false-positive algorithmic filtering'
+                ]
+            }
+        ]
+    },
+    {
+        category: 'fallback_cdn',
+        categoryTitle: 'Failback JS CDN (InfinityFree / iFastNet)',
+        shortName: 'Fallback CDN',
+        icon: 'fas fa-network-wired',
+        color: '#3f51b5',
+        items: [
+            {
+                id: 'cdn-super-premium',
+                title: 'Fallback CDN Super Premium',
+                planName: 'Super Premium',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 500.00,
+                priceUSD: 5.99,
+                priceDisplay: '$5.99 / month (~₹500 / mo)',
+                limit: '250 GB Bandwidth • 6 Domains',
+                desc: 'Redundant fallback static file mirror ensuring scripts never fail to load.',
+                features: [
+                    'Super fast NVMe powered servers',
+                    '250 GB global bandwidth',
+                    'Free SSL Certificates',
+                    '6 Free Domains included!*',
+                    'Latest cPanel with Softaculous'
+                ]
+            },
+            {
+                id: 'cdn-ultimate-premium',
+                title: 'Fallback CDN Ultimate Premium',
+                planName: 'Ultimate Premium',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 750.00,
+                priceUSD: 8.99,
+                priceDisplay: '$8.99 / month (~₹750 / mo)',
+                limit: 'Unlimited Bandwidth • 21 Domains',
+                badge: 'Unlimited Bandwidth',
+                badgeColor: '#3f51b5',
+                desc: 'Unmetered edge distribution for CSS, JavaScript libraries, and icon assets.',
+                features: [
+                    'Super fast NVMe powered servers',
+                    'Unlimited Bandwidth',
+                    'Free SSL Certificates',
+                    '21 Free Domains included!*',
+                    'Latest cPanel with Softaculous'
+                ]
+            },
+            {
+                id: 'cdn-ultimate-vps',
+                title: 'Fallback CDN Ultimate Premium VPS',
+                planName: 'Ultimate Premium VPS',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 750.00,
+                priceUSD: 8.99,
+                priceDisplay: '$8.99 / month (~₹750 / mo)',
+                limit: '30 GB NVMe • Full Root Access',
+                badge: 'Full Root Access',
+                badgeColor: '#673ab7',
+                desc: 'Custom reverse proxy edge cache server with full administrative control.',
+                features: [
+                    '30 GB NVMe Storage',
+                    '125 GB Bandwidth',
+                    'Full root access',
+                    'Accelerated Apache Web Server',
+                    'Latest Webmin panel pre-installed'
+                ]
+            }
+        ]
+    },
+    {
+        category: 'cloudflare',
+        categoryTitle: 'Cloudflare CDN & Workers',
+        shortName: 'Cloudflare',
+        icon: 'fas fa-cloud',
+        color: '#f38020',
+        items: [
+            {
+                id: 'cf-pro-plan',
+                title: 'Cloudflare Pro Plan',
+                planName: 'Pro Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 2100.00,
+                priceUSD: 25,
+                priceDisplay: '~₹2,100 / month (billed monthly at $25 USD)',
+                limit: 'Advanced WAF • Polish™ Image Optimization',
+                badge: 'Security & Speed',
+                badgeColor: '#f38020',
+                desc: 'Adds advanced Web Application Firewall, image compression, and mobile acceleration.',
+                features: [
+                    'Advanced Web Application Firewall (WAF)',
+                    'Automatic lossless image optimization (Polish™)',
+                    'Mobile page acceleration (Mirage™)',
+                    'Enhanced HTTP/3 edge caching & DDoS defense'
+                ]
+            },
+            {
+                id: 'cf-business-plan',
+                title: 'Cloudflare Business Plan',
+                planName: 'Business Plan',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 21000.00,
+                priceUSD: 250,
+                priceDisplay: '~₹21,000 / month (billed monthly at $250 USD)',
+                limit: 'Custom SSL • 100% Uptime SLA',
+                badge: 'Enterprise SLA',
+                badgeColor: '#e65100',
+                desc: 'Mission-critical enterprise infrastructure for 100% uptime SLA and bot analytics.',
+                features: [
+                    'Custom SSL certificate uploading',
+                    '100% uptime Service Level Agreement (SLA)',
+                    'Basic bot analytics & automated mitigation',
+                    'PCI DSS 3.2 compliance protection'
+                ]
+            },
+            {
+                id: 'cf-workers-paid',
+                title: 'Cloudflare Workers Paid',
+                planName: 'Workers Paid',
+                billingType: 'monthly',
+                period: 'Month',
+                priceINR: 420.00,
+                priceUSD: 5,
+                priceDisplay: '~₹420 / month ($5 USD)',
+                limit: '10M Requests • 30M CPU ms',
+                badge: 'Edge Serverless',
+                badgeColor: '#f38020',
+                desc: 'Serverless functions executing at hundreds of edge data centers worldwide.',
+                features: [
+                    '10 million requests / month included',
+                    '30 million CPU ms / month included',
+                    '~₹25.20 per 1 million extra requests',
+                    '~₹1.68 per 1 million extra CPU ms'
+                ]
+            }
+        ]
+    },
+    {
+        category: 'github',
+        categoryTitle: 'GitHub & Developer Tooling',
+        shortName: 'GitHub',
+        icon: 'fab fa-github',
+        color: '#ffffff',
+        items: [
+            {
+                id: 'github-team',
+                title: '📈 GitHub Team Seat',
+                planName: '📈 GitHub Team',
+                billingType: 'monthly',
+                period: 'Per User / Mo',
+                priceINR: 334.00,
+                priceUSD: 4,
+                priceDisplay: '$4 per user (~₹334 per user)',
+                limit: 'Per User / Month',
+                desc: 'Enables private repository collaboration, code reviews, and CI/CD actions.',
+                features: [
+                    'Cost: $4 per user (~₹334 per user / month)',
+                    '3,000 GitHub Actions runner minutes / month',
+                    'Protected branches, draft PRs, and team discussions',
+                    'Auto-deploy pipelines on code merges'
+                ]
+            },
+            {
+                id: 'github-enterprise',
+                title: '🏢 GitHub Enterprise Seat',
+                planName: '🏢 GitHub Enterprise',
+                billingType: 'monthly',
+                period: 'Per User / Mo',
+                priceINR: 1754.00,
+                priceUSD: 21,
+                priceDisplay: '$21 per user (~₹1,754 per user)',
+                limit: 'Enterprise Seat / Month',
+                badge: 'Enterprise',
+                badgeColor: '#9c27b0',
+                desc: 'Advanced security, SAML single sign-on, and enterprise audit logging.',
+                features: [
+                    'Cost: $21 per user (~₹1,754 per user / month)',
+                    '50,000 GitHub Actions runner minutes',
+                    'Advanced code security & secret scanning',
+                    'SAML single sign-on & 99.9% uptime SLA'
+                ]
+            },
+            {
+                id: 'github-copilot-pro',
+                title: '🤖 Copilot Pro Seat',
+                planName: '🤖 Copilot Pro',
+                billingType: 'monthly',
+                period: 'Base / Month',
+                priceINR: 835.00,
+                priceUSD: 10,
+                priceDisplay: '$10 base (~₹835 base)',
+                limit: 'AI Developer Assistant',
+                badge: 'AI Pair Programmer',
+                badgeColor: '#2ecc71',
+                desc: 'AI coding companion speeding up bug fixes, mod inspection tools, and API integrations.',
+                features: [
+                    'Cost: $10 base (~₹835 base / month)',
+                    'Real-time AI code completions in VS Code & IDEs',
+                    'Natural language chat for debugging crash dumps',
+                    'Automated unit test generation for new features'
+                ]
+            },
+            {
+                id: 'github-copilot-business',
+                title: '💼 Copilot Business Seat',
+                planName: '💼 Copilot Business',
+                billingType: 'monthly',
+                period: 'Per User / Mo',
+                priceINR: 1587.00,
+                priceUSD: 19,
+                priceDisplay: '$19 per user (~₹1,587 per user)',
+                limit: 'Org AI Intelligence',
+                badge: 'Org Intelligence',
+                badgeColor: '#2196F3',
+                desc: 'Organization-wide AI programming assistant with policy management and privacy guard.',
+                features: [
+                    'Cost: $19 per user (~₹1,587 per user / month)',
+                    'Organization-wide policy management & code filters',
+                    'Commercial data privacy (code never used for training)',
+                    'Multi-repo reasoning and team productivity boost'
+                ]
+            }
         ]
     }
 ];
@@ -17780,8 +18819,22 @@ const startServer = async () => {
                     const isStaff = ['owner', 'admin'].includes(user.role);
                     const isCreator = String(club.creator) === String(user._id);
 
+                    const membership = await ClubMember.findOne({ club: clubId, user: user._id }).populate('roles');
+                    if (!membership && !isStaff) {
+                        return socket.emit('club_message_error', { message: 'You must be a member of this club to send messages.' });
+                    }
+
                     if (channel.isReadOnly && !isStaff && !isCreator) {
-                        return socket.emit('club_message_error', { message: `Channel #${channel.name} is read-only.` });
+                        return socket.emit('club_message_error', { message: `Channel #${channel.name} is in read-only mode.` });
+                    }
+
+                    const mode = channel.accessMode || (channel.isPrivate ? 'role_private' : 'open');
+                    if (!isStaff && !isCreator && (mode === 'public_view' || mode === 'role_private')) {
+                        const userRoleIds = (membership && membership.roles) ? membership.roles.map(r => String(r._id || r)) : [];
+                        const hasAllowedRole = channel.allowedRoles && channel.allowedRoles.some(r => userRoleIds.includes(String(r._id || r)));
+                        if (!hasAllowedRole) {
+                            return socket.emit('club_message_error', { message: `You do not have the required role to send messages in #${channel.name}.` });
+                        }
                     }
 
                     // 3. Profanity filtering
@@ -17799,7 +18852,6 @@ const startServer = async () => {
                         attachments: attachments || []
                     });
 
-                    const membership = await ClubMember.findOne({ club: clubId, user: user._id }).populate('roles');
                     const avatar = await resolveUserAvatar(user);
 
                     const payload = {
@@ -18230,11 +19282,13 @@ const startServer = async () => {
             socket.on('test_ai_connection', async () => {
                 const start = Date.now();
                 try {
-                    if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
-                    const chat = aiModel.startChat();
-                    const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+                    const responseText = await executeGeminiWithFallback(async (modelToUse, modelName) => {
+                        const chat = modelToUse.startChat();
+                        const result = await chat.sendMessage("Respond with exactly: 'OK - Gemini AI is operational'");
+                        aiDebuggerStatus.model = modelName;
+                        return result.response.text();
+                    });
                     const latency = Date.now() - start;
-                    const responseText = result.response.text();
                     
                     aiDebuggerStatus.status = 'online';
                     aiDebuggerStatus.lastPing = new Date();
@@ -18552,28 +19606,28 @@ const startServer = async () => {
                                 console.warn("Could not load AIKnowledge for chat prompt:", kbErr.message);
                             }
 
-                            const chat = aiModel.startChat({
-                                history: [
-                                    {
-                                        role: "user",
-                                        parts: [{ text: systemKnowledgePrompt + "\nAcknowledge you understand your role." }]
-                                    },
-                                    {
-                                        role: "model",
-                                        parts: [{ text: "Understood. I am the GPL AI Support Assistant ready to assist members." }]
-                                    }
-                                ]
+                            const aiResponseText = await executeGeminiWithFallback(async (modelToUse) => {
+                                try {
+                                    const chat = modelToUse.startChat({
+                                        history: [
+                                            {
+                                                role: "user",
+                                                parts: [{ text: systemKnowledgePrompt + "\nAcknowledge you understand your role." }]
+                                            },
+                                            {
+                                                role: "model",
+                                                parts: [{ text: "Understood. I am the GPL AI Support Assistant ready to assist members." }]
+                                            }
+                                        ]
+                                    });
+                                    const aiResult = await chat.sendMessage(text || "Sent an attachment.");
+                                    return aiResult.response.text();
+                                } catch (chatSendErr) {
+                                    console.warn(`[Gemini AI] chat.sendMessage failed on model, trying generateContent fallback:`, chatSendErr.message);
+                                    const fallbackResult = await modelToUse.generateContent(`${systemKnowledgePrompt}\n\nUser Question: ${text || "Sent an attachment."}`);
+                                    return fallbackResult.response.text();
+                                }
                             });
-
-                            let aiResponseText = '';
-                            try {
-                                const aiResult = await chat.sendMessage(text || "Sent an attachment.");
-                                aiResponseText = aiResult.response.text();
-                            } catch (chatSendErr) {
-                                console.warn("Gemini chat.sendMessage failed, trying generateContent fallback:", chatSendErr.message);
-                                const fallbackResult = await aiModel.generateContent(`${systemKnowledgePrompt}\n\nUser Question: ${text || "Sent an attachment."}`);
-                                aiResponseText = fallbackResult.response.text();
-                            }
 
                             const botMsg = { sender: 'bot', text: aiResponseText };
                             session.messages.push(botMsg);
@@ -18589,7 +19643,18 @@ const startServer = async () => {
                             broadcastOnlineStats();
 
                         } catch (error) {
-                            console.error("Gemini Error:", error.message || error);
+                            const isHighDemandOr503 = error.message && (
+                                error.message.includes('503') ||
+                                error.message.includes('high demand') ||
+                                error.message.includes('Service Unavailable') ||
+                                error.message.includes('ResourceExhausted') ||
+                                error.message.includes('429')
+                            );
+                            if (isHighDemandOr503) {
+                                console.warn("[Gemini Notice] Google Gemini AI is temporarily experiencing high demand/503. User notified with friendly fallback.");
+                            } else {
+                                console.error("Gemini Error:", error.message || error);
+                            }
                             
                             aiDebuggerStatus.totalErrors++;
                             aiDebuggerStatus.lastError = {
@@ -18597,13 +19662,14 @@ const startServer = async () => {
                                 time: new Date()
                             };
                             // Only mark permanently offline if unconfigured or missing API key
-                            if (!process.env.GEMINI_API_KEY) {
-                                aiDebuggerStatus.status = 'offline';
-                            } else {
-                                aiDebuggerStatus.status = 'online';
-                            }
+                            aiDebuggerStatus.status = process.env.GEMINI_API_KEY ? 'online' : 'offline';
 
-                            const errMsg = { sender: 'system', text: "I'm experiencing a brief connection delay. Please try again or type 'human' to speak directly with our support team." };
+                            const errMsg = { 
+                                sender: 'system', 
+                                text: isHighDemandOr503 
+                                    ? "Our AI is currently experiencing high demand. Please try asking again in a moment, or type 'human' to speak directly with our team! 🤖" 
+                                    : "I'm experiencing a brief connection delay. Please try again or type 'human' to speak directly with our support team."
+                            };
                             session.messages.push(errMsg);
                             await session.save();
                             io.to(`support_${session._id}`).emit('new_support_message', errMsg);
@@ -19010,6 +20076,98 @@ app.use('/clubs', clubsRoutes);
 // ===================================
 const notificationsRoutes = require('./routes/notifications');
 app.use('/api/notifications', notificationsRoutes);
+
+// ===================================
+// USER CREATOR TRACKING & SUBSCRIPTIONS API
+// ===================================
+app.get('/api/user/tracking', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const user = await User.findById(req.user._id).populate({
+            path: 'trackedCreators.creator',
+            select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
+        });
+        return res.json({ success: true, trackedCreators: user.trackedCreators || [] });
+    } catch (err) {
+        console.error('[Tracking API] Get error:', err);
+        return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
+    }
+});
+
+app.post('/api/user/tracking/add', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { username, creatorId, trackType } = req.body;
+        let targetCreator = null;
+        if (creatorId) {
+            targetCreator = await User.findById(creatorId);
+        } else if (username) {
+            targetCreator = await User.findOne({ username: username.trim() });
+        }
+        if (!targetCreator) {
+            return res.status(404).json({ error: 'Creator not found.' });
+        }
+        if (String(targetCreator._id) === String(req.user._id)) {
+            return res.status(400).json({ error: 'You cannot track your own profile.' });
+        }
+
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+        const user = await User.findById(req.user._id);
+        if (!user.trackedCreators) user.trackedCreators = [];
+
+        const existingIdx = user.trackedCreators.findIndex(tc => String(tc.creator) === String(targetCreator._id));
+        if (existingIdx > -1) {
+            user.trackedCreators[existingIdx].trackType = validTrackType;
+        } else {
+            user.trackedCreators.push({
+                creator: targetCreator._id,
+                trackType: validTrackType,
+                trackedAt: new Date()
+            });
+        }
+        await user.save();
+        return res.json({ success: true, message: `Now tracking ${targetCreator.username} (${validTrackType})` });
+    } catch (err) {
+        console.error('[Tracking API] Add error:', err);
+        return res.status(500).json({ error: 'Failed to track creator.' });
+    }
+});
+
+app.post('/api/user/tracking/update', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { creatorId, trackType } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+
+        const user = await User.findById(req.user._id);
+        const item = (user.trackedCreators || []).find(tc => String(tc.creator) === String(creatorId));
+        if (item) {
+            item.trackType = validTrackType;
+            await user.save();
+        }
+        return res.json({ success: true, trackType: validTrackType });
+    } catch (err) {
+        console.error('[Tracking API] Update error:', err);
+        return res.status(500).json({ error: 'Failed to update tracking preference.' });
+    }
+});
+
+app.post('/api/user/tracking/remove', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { creatorId } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+
+        const user = await User.findById(req.user._id);
+        user.trackedCreators = (user.trackedCreators || []).filter(tc => String(tc.creator) !== String(creatorId));
+        await user.save();
+        return res.json({ success: true, message: 'Creator removed from tracked list.' });
+    } catch (err) {
+        console.error('[Tracking API] Remove error:', err);
+        return res.status(500).json({ error: 'Failed to remove tracked creator.' });
+    }
+});
 
 // ✅ START THE SERVER
 startServer(); 

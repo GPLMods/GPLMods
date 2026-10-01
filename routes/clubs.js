@@ -10,6 +10,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 
 // Models
@@ -19,6 +20,7 @@ const ClubRole = require('../models/community/clubRole');
 const ClubMember = require('../models/community/clubMember');
 const ClubMessage = require('../models/community/clubMessage');
 const ClubJoinRequest = require('../models/community/clubJoinRequest');
+const ClubInvite = require('../models/community/clubInvite');
 const User = require('../models/user');
 const UserNotification = require('../models/userNotification');
 
@@ -166,6 +168,16 @@ router.get('/', async (req, res) => {
             c.bannerUrl = c.bannerUrl || '/images/default-banner.jpg';
         });
 
+        let userCreatedCount = 0;
+        let userClubCap = 3;
+        let isHigherTierUser = false;
+        if (req.user) {
+            userCreatedCount = await Club.countDocuments({ creator: req.user._id });
+            const capInfo = getClubCreationCap(req.user);
+            userClubCap = capInfo.cap;
+            isHigherTierUser = capInfo.isHigherTier;
+        }
+
         res.render('pages/clubs/index', {
             pageTitle: 'Clubs & Communities',
             pageDescription: 'Discover and join creator clubs, distributor communities, and modding channels on GPLMods.',
@@ -173,6 +185,9 @@ router.get('/', async (req, res) => {
             totalClubs: clubs.length,
             joinedClubIds,
             popularTags,
+            userCreatedCount,
+            userClubCap,
+            isHigherTierUser,
             filters: {
                 q: q || '',
                 tag: tag || '',
@@ -188,15 +203,40 @@ router.get('/', async (req, res) => {
     }
 });
 
+// Helper to determine club creation cap: 3 for Free, 5 for GPLLite, GPLPlus, Owner, Distributor, Admin, Support
+function getClubCreationCap(user) {
+    if (!user) return { cap: 0, isHigherTier: false };
+    const higherTierMemberships = ['GPLLite', 'GPLPlus', 'lite', 'plus', 'premium'];
+    const staffRoles = ['owner', 'distributor', 'admin', 'support'];
+    const isHigherTier = higherTierMemberships.includes(user.membership) || staffRoles.includes(user.role);
+    return {
+        cap: isHigherTier ? 5 : 3,
+        isHigherTier
+    };
+}
+
 // ============================================================================
 // 2. CREATE A NEW CLUB
 // ============================================================================
 router.get('/create', ensureAuth, async (req, res) => {
-    res.render('pages/clubs/create', {
-        pageTitle: 'Create a Club',
-        error: null,
-        formData: {}
-    });
+    try {
+        const userCreatedCount = await Club.countDocuments({ creator: req.user._id });
+        const { cap: maxClubsAllowed, isHigherTier } = getClubCreationCap(req.user);
+        const limitReached = userCreatedCount >= maxClubsAllowed;
+
+        res.render('pages/clubs/create', {
+            pageTitle: 'Create a Club',
+            error: limitReached ? `You have reached your limit of ${maxClubsAllowed} clubs (${isHigherTier ? 'GPLLite, GPLPlus, and Staff members can create up to 5 clubs' : 'Free users can create up to 3 clubs. Upgrade to GPLLite or GPLPlus to create up to 5 clubs'}).` : null,
+            formData: {},
+            userCreatedCount,
+            maxClubsAllowed,
+            isHigherTier,
+            limitReached
+        });
+    } catch (err) {
+        console.error("Error loading club create page:", err);
+        res.redirect('/clubs');
+    }
 });
 
 router.post('/create', ensureAuth, uploadClubMedia.fields([
@@ -208,16 +248,20 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
 
         const formData = { name, description, tags, primaryLanguage, country, aboutAdmin, rules, isPrivate };
 
-        // Check user's created club count (3 max for free, 5 max for Lite/Plus/Staff)
+        // Check user's created club count (3 max for free, 5 max for GPLLite, GPLPlus, Owner, Distributor, Admin, Support)
         const userCreatedCount = await Club.countDocuments({ creator: req.user._id });
-        const isPlusOrLite = req.user.membership === 'plus' || req.user.membership === 'lite' || req.user.membership === 'premium' || ['owner', 'admin', 'distributor', 'support'].includes(req.user.role);
-        const maxClubsAllowed = isPlusOrLite ? 5 : 3;
+        const { cap: maxClubsAllowed, isHigherTier } = getClubCreationCap(req.user);
+        const limitReached = userCreatedCount >= maxClubsAllowed;
 
-        if (userCreatedCount >= maxClubsAllowed) {
+        if (limitReached) {
             return res.render('pages/clubs/create', {
                 pageTitle: 'Create a Club',
-                error: `You have reached your limit of ${maxClubsAllowed} clubs (${isPlusOrLite ? 'GPL Lite/Plus limit is 5' : 'Free user limit is 3, upgrade to Lite or Plus to create up to 5'}).`,
-                formData
+                error: `You have reached your limit of ${maxClubsAllowed} clubs (${isHigherTier ? 'GPLLite, GPLPlus, and Staff members can create up to 5 clubs max' : 'Free users can create up to 3 clubs max. Upgrade to GPLLite or GPLPlus to create up to 5 clubs'}).`,
+                formData,
+                userCreatedCount,
+                maxClubsAllowed,
+                isHigherTier,
+                limitReached: true
             });
         }
 
@@ -226,7 +270,11 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
             return res.render('pages/clubs/create', {
                 pageTitle: 'Create a Club',
                 error: 'Club name must be at least 3 characters long.',
-                formData
+                formData,
+                userCreatedCount,
+                maxClubsAllowed,
+                isHigherTier,
+                limitReached: false
             });
         }
 
@@ -234,7 +282,11 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
             return res.render('pages/clubs/create', {
                 pageTitle: 'Create a Club',
                 error: 'Club name cannot exceed 60 characters.',
-                formData
+                formData,
+                userCreatedCount,
+                maxClubsAllowed,
+                isHigherTier,
+                limitReached: false
             });
         }
 
@@ -243,7 +295,11 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
             return res.render('pages/clubs/create', {
                 pageTitle: 'Create a Club',
                 error: 'This club name is reserved for official GPLMods communities. Please choose another name.',
-                formData
+                formData,
+                userCreatedCount,
+                maxClubsAllowed,
+                isHigherTier,
+                limitReached: false
             });
         }
 
@@ -253,7 +309,11 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
             return res.render('pages/clubs/create', {
                 pageTitle: 'Create a Club',
                 error: 'A club with this name already exists. Please choose a unique name.',
-                formData
+                formData,
+                userCreatedCount,
+                maxClubsAllowed,
+                isHigherTier,
+                limitReached: false
             });
         }
 
@@ -463,10 +523,16 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
         return res.redirect(`/clubs/${newClub.slug}`);
     } catch (err) {
         console.error('[Clubs] Club creation error:', err);
+        const userCreatedCount = await Club.countDocuments({ creator: req.user._id }).catch(() => 0);
+        const { cap: maxClubsAllowed, isHigherTier } = getClubCreationCap(req.user);
         return res.render('pages/clubs/create', {
             pageTitle: 'Create a Club',
             error: 'An unexpected error occurred while creating your club. Please try again.',
-            formData: req.body || {}
+            formData: req.body || {},
+            userCreatedCount,
+            maxClubsAllowed,
+            isHigherTier,
+            limitReached: false
         });
     }
 });
@@ -523,8 +589,18 @@ router.get('/:slugOrId', async (req, res) => {
             club.bannerUrl = club.bannerUrl || '/images/default-banner.jpg';
         }
 
+        // Check if user visited via a unique invite code (?invite=CODE)
+        let inviteCodeUsed = req.query.invite ? String(req.query.invite).trim().toUpperCase() : null;
+        let validInvite = null;
+        if (inviteCodeUsed) {
+            validInvite = await ClubInvite.findOne({ club: club._id, code: inviteCodeUsed }).populate('inviter', 'username');
+        }
+
         // If user is guest
         if (!req.user) {
+            if (inviteCodeUsed) {
+                return res.redirect(`/login?redirect=${encodeURIComponent(req.originalUrl)}`);
+            }
             return res.redirect(`/clubs/${club.slug}/preview`);
         }
 
@@ -540,47 +616,7 @@ router.get('/:slugOrId', async (req, res) => {
             membership = await ClubMember.findOne({ club: club._id, user: req.user._id });
         }
 
-        // If user is not member and not site staff
-        if (!membership && !isStaff) {
-            if (club.isPrivate) {
-                return res.redirect(`/clubs/${club.slug}/preview`);
-            } else {
-                // Auto-join public club upon direct visit if logged in
-                const defaultRole = await ClubRole.findOne({ club: club._id, isDefault: true });
-                membership = await ClubMember.create({
-                    club: club._id,
-                    user: req.user._id,
-                    roles: defaultRole ? [defaultRole._id] : [],
-                    status: 'active'
-                });
-                await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
-            }
-        }
-
-        // Fetch all channels for this club sorted by position, deduplicate in DB if duplicates exist
-        const rawChannels = await ClubChannel.find({ club: club._id }).sort({ position: 1, createdAt: 1 });
-        const seenChanMap = new Map();
-        const channels = [];
-        const duplicateChanIdsToDelete = [];
-
-        for (const chan of rawChannels) {
-            const normName = String(chan.name || '').toLowerCase().trim();
-            if (!seenChanMap.has(normName)) {
-                seenChanMap.set(normName, chan);
-                channels.push(chan.toObject ? chan.toObject() : chan);
-            } else {
-                const keeperChan = seenChanMap.get(normName);
-                await ClubMessage.updateMany({ channel: chan._id }, { $set: { channel: keeperChan._id } });
-                duplicateChanIdsToDelete.push(chan._id);
-            }
-        }
-
-        if (duplicateChanIdsToDelete.length > 0) {
-            await ClubChannel.deleteMany({ _id: { $in: duplicateChanIdsToDelete } });
-            await Club.findByIdAndUpdate(club._id, { channelCount: channels.length });
-        }
-
-        // Ensure default role is 'everyone'
+        // Ensure default role exists
         let defaultRole = await ClubRole.findOne({ club: club._id, isDefault: true });
         if (defaultRole && defaultRole.name === 'Member') {
             defaultRole.name = 'everyone';
@@ -607,13 +643,164 @@ router.get('/:slugOrId', async (req, res) => {
             });
         }
 
-        // Determine active channel (from query `?channel=...` or defaults to `#general` or first available)
+        // Process Joining via Unique Invite Code if not already active member
+        let justJoinedViaInvite = false;
+        if (validInvite && (!membership || membership.status !== 'active')) {
+            if (!membership) {
+                membership = await ClubMember.create({
+                    club: club._id,
+                    user: req.user._id,
+                    roles: defaultRole ? [defaultRole._id] : [],
+                    status: 'active',
+                    invitedBy: validInvite.inviter ? validInvite.inviter._id : null
+                });
+                await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
+            } else {
+                membership.status = 'active';
+                if (validInvite.inviter) membership.invitedBy = validInvite.inviter._id;
+                await membership.save();
+                await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
+            }
+            justJoinedViaInvite = true;
+
+            // Increment invite uses
+            validInvite.uses = (validInvite.uses || 0) + 1;
+            await validInvite.save();
+
+            // Increment inviter's total invite count
+            if (validInvite.inviter) {
+                const inviterMember = await ClubMember.findOneAndUpdate(
+                    { club: club._id, user: validInvite.inviter._id },
+                    { $inc: { inviteCount: 1 } },
+                    { new: true }
+                );
+                const newInviteCount = inviterMember ? (inviterMember.inviteCount || 1) : 1;
+
+                // Post announcement welcome message to club
+                const welcomeChan = await ClubChannel.findOne({ club: club._id, name: { $in: ['general', 'announcements'] } }) || await ClubChannel.findOne({ club: club._id });
+                if (welcomeChan) {
+                    const welcomeMsg = await ClubMessage.create({
+                        club: club._id,
+                        channel: welcomeChan._id,
+                        sender: validInvite.inviter._id,
+                        content: `🎉 **@${req.user.username}** joined the club via **@${validInvite.inviter.username}**'s invite link! (@${validInvite.inviter.username} now has **${newInviteCount}** invites 🏆)`,
+                        isSystemMessage: true
+                    });
+                    const io = req.app.get('io');
+                    if (io) {
+                        io.to(`club_${club._id}_chan_${welcomeChan._id}`).emit('club_new_message', {
+                            _id: welcomeMsg._id,
+                            channel: welcomeChan._id,
+                            club: club._id,
+                            content: welcomeMsg.content,
+                            isSystemMessage: true,
+                            createdAt: welcomeMsg.createdAt,
+                            sender: {
+                                username: 'GPL Community',
+                                signedAvatarUrl: '/images/team-logo.png',
+                                role: 'admin',
+                                badges: []
+                            }
+                        });
+                    }
+                }
+
+                // In-App Notification to Inviter
+                await UserNotification.create({
+                    user: validInvite.inviter._id,
+                    title: 'New Club Invite Accepted! 🏆',
+                    message: `${req.user.username} accepted your invitation and joined "${club.name}"! You now have ${newInviteCount} total invites.`,
+                    type: 'success',
+                    link: `/clubs/${club.slug}`
+                });
+            }
+        }
+
+        // If user is not member and not site staff
+        if (!membership && !isStaff) {
+            if (club.isPrivate) {
+                return res.redirect(`/clubs/${club.slug}/preview`);
+            } else {
+                // Auto-join public club upon direct visit if logged in
+                membership = await ClubMember.create({
+                    club: club._id,
+                    user: req.user._id,
+                    roles: defaultRole ? [defaultRole._id] : [],
+                    status: 'active'
+                });
+                await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
+            }
+        }
+
+        // Fetch all channels for this club sorted by position, deduplicate in DB if duplicates exist
+        const rawChannels = await ClubChannel.find({ club: club._id }).sort({ position: 1, createdAt: 1 });
+        const seenChanMap = new Map();
+        const allChannels = [];
+        const duplicateChanIdsToDelete = [];
+
+        for (const chan of rawChannels) {
+            const normName = String(chan.name || '').toLowerCase().trim();
+            if (!seenChanMap.has(normName)) {
+                seenChanMap.set(normName, chan);
+                allChannels.push(chan.toObject ? chan.toObject() : chan);
+            } else {
+                const keeperChan = seenChanMap.get(normName);
+                await ClubMessage.updateMany({ channel: chan._id }, { $set: { channel: keeperChan._id } });
+                duplicateChanIdsToDelete.push(chan._id);
+            }
+        }
+
+        if (duplicateChanIdsToDelete.length > 0) {
+            await ClubChannel.deleteMany({ _id: { $in: duplicateChanIdsToDelete } });
+            await Club.findByIdAndUpdate(club._id, { channelCount: allChannels.length });
+        }
+
+        // Filter visible channels based on Role-Specific channel permissions
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (req.user && (req.user.role === 'owner' || (club.isDefault && req.user.role === 'admin')));
+        const userClubRoles = membership ? (membership.roles || []) : [];
+        const userClubRoleIds = userClubRoles.map(r => String(r._id || r));
+        const hasManageClubPerm = isStaff || isClubCreator || userClubRoles.some(r => r && r.permissions && r.permissions.canManageClub);
+
+        const channels = allChannels.filter(chan => {
+            const mode = chan.accessMode || (chan.isPrivate ? 'role_private' : 'open');
+            if (mode === 'open' || mode === 'public_view') {
+                return true;
+            }
+            if (mode === 'role_private') {
+                if (isStaff || isClubCreator) return true;
+                if (!chan.allowedRoles || chan.allowedRoles.length === 0) return false;
+                return chan.allowedRoles.some(r => userClubRoleIds.includes(String(r._id || r)));
+            }
+            return true;
+        });
+
+        // Determine active channel (from query `?channel=...` or defaults to `#general` or first visible)
         let activeChannel = null;
         if (req.query.channel) {
             activeChannel = channels.find(c => String(c._id) === req.query.channel || c.name === req.query.channel);
         }
         if (!activeChannel) {
-            activeChannel = channels.find(c => c.name === 'general') || channels[0];
+            activeChannel = channels.find(c => c.name === 'general') || channels[0] || null;
+        }
+
+        // Calculate if user can chat in the active channel
+        let canUserChatInActiveChannel = false;
+        if (activeChannel) {
+            if (isStaff || isClubCreator) {
+                canUserChatInActiveChannel = true;
+            } else if (activeChannel.isReadOnly) {
+                canUserChatInActiveChannel = false;
+            } else {
+                const mode = activeChannel.accessMode || (activeChannel.isPrivate ? 'role_private' : 'open');
+                if (mode === 'open') {
+                    canUserChatInActiveChannel = true;
+                } else if (mode === 'public_view' || mode === 'role_private') {
+                    // Only allowed roles can chat
+                    canUserChatInActiveChannel = Boolean(activeChannel.allowedRoles && activeChannel.allowedRoles.some(r => userClubRoleIds.includes(String(r._id || r))));
+                } else {
+                    canUserChatInActiveChannel = true;
+                }
+            }
         }
 
         // Fetch recent messages for active channel
@@ -701,10 +888,17 @@ router.get('/:slugOrId', async (req, res) => {
             .lean();
         const joinedClubs = userMemberships.map(m => m.club).filter(Boolean);
 
-        // Check if user has management permissions in this club (Site Owner has full authority)
-        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (req.user && (req.user.role === 'owner' || (club.isDefault && req.user.role === 'admin')));
-        const userClubRoles = membership ? (membership.roles || []) : [];
-        const hasManageClubPerm = isStaff || isClubCreator || userClubRoles.some(r => r && r.permissions && r.permissions.canManageClub);
+        // Fetch or create logged-in user's unique invite code
+        let myInvite = await ClubInvite.findOne({ club: club._id, inviter: req.user._id });
+        if (!myInvite) {
+            const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+            myInvite = await ClubInvite.create({
+                club: club._id,
+                inviter: req.user._id,
+                code: code
+            });
+        }
+        const myInviteCount = membership ? (membership.inviteCount || 0) : 0;
 
         // Check pending join requests count (for badge in settings)
         let pendingRequestsCount = 0;
@@ -717,6 +911,10 @@ router.get('/:slugOrId', async (req, res) => {
             club,
             channels,
             activeChannel,
+            canUserChatInActiveChannel,
+            myInviteCode: myInvite ? myInvite.code : '',
+            myInviteCount,
+            userClubRoleIds,
             messages,
             roles,
             members,
@@ -735,19 +933,25 @@ router.get('/:slugOrId', async (req, res) => {
 });
 
 // ============================================================================
-// 5. JOIN / LEAVE CLUB
+// 5. JOIN / LEAVE CLUB & UNIQUE INVITES
 // ============================================================================
 router.post('/:slugOrId/join', ensureAuth, async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) return res.status(404).json({ error: 'Club not found' });
 
+        const inviteCode = (req.body.invite || req.query.invite || '').trim().toUpperCase();
+        let validInvite = null;
+        if (inviteCode) {
+            validInvite = await ClubInvite.findOne({ club: club._id, code: inviteCode }).populate('inviter', 'username');
+        }
+
         const existing = await ClubMember.findOne({ club: club._id, user: req.user._id });
         if (existing && existing.status === 'active') {
             return res.redirect(`/clubs/${club.slug}`);
         }
 
-        if (club.isPrivate && !club.isDefault) {
+        if (club.isPrivate && !club.isDefault && !validInvite) {
             return res.redirect(`/clubs/${club.slug}/preview?req=1`);
         }
 
@@ -755,15 +959,65 @@ router.post('/:slugOrId/join', ensureAuth, async (req, res) => {
 
         if (existing) {
             existing.status = 'active';
+            if (validInvite && validInvite.inviter) existing.invitedBy = validInvite.inviter._id;
             await existing.save();
         } else {
             await ClubMember.create({
                 club: club._id,
                 user: req.user._id,
                 roles: defaultRole ? [defaultRole._id] : [],
-                status: 'active'
+                status: 'active',
+                invitedBy: validInvite && validInvite.inviter ? validInvite.inviter._id : null
             });
             await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
+        }
+
+        if (validInvite && validInvite.inviter) {
+            validInvite.uses = (validInvite.uses || 0) + 1;
+            await validInvite.save();
+
+            const inviterMember = await ClubMember.findOneAndUpdate(
+                { club: club._id, user: validInvite.inviter._id },
+                { $inc: { inviteCount: 1 } },
+                { new: true }
+            );
+            const newInviteCount = inviterMember ? (inviterMember.inviteCount || 1) : 1;
+
+            const welcomeChan = await ClubChannel.findOne({ club: club._id, name: { $in: ['general', 'announcements'] } }) || await ClubChannel.findOne({ club: club._id });
+            if (welcomeChan) {
+                const welcomeMsg = await ClubMessage.create({
+                    club: club._id,
+                    channel: welcomeChan._id,
+                    sender: validInvite.inviter._id,
+                    content: `🎉 **@${req.user.username}** joined the club via **@${validInvite.inviter.username}**'s invite link! (@${validInvite.inviter.username} now has **${newInviteCount}** invites 🏆)`,
+                    isSystemMessage: true
+                });
+                const io = req.app.get('io');
+                if (io) {
+                    io.to(`club_${club._id}_chan_${welcomeChan._id}`).emit('club_new_message', {
+                        _id: welcomeMsg._id,
+                        channel: welcomeChan._id,
+                        club: club._id,
+                        content: welcomeMsg.content,
+                        isSystemMessage: true,
+                        createdAt: welcomeMsg.createdAt,
+                        sender: {
+                            username: 'GPL Community',
+                            signedAvatarUrl: '/images/team-logo.png',
+                            role: 'admin',
+                            badges: []
+                        }
+                    });
+                }
+            }
+
+            await UserNotification.create({
+                user: validInvite.inviter._id,
+                title: 'New Club Invite Accepted! 🏆',
+                message: `${req.user.username} joined "${club.name}" using your invite link! You now have ${newInviteCount} total invites.`,
+                type: 'success',
+                link: `/clubs/${club.slug}`
+            });
         }
 
         saveClubMetadata(club);
@@ -774,17 +1028,50 @@ router.post('/:slugOrId/join', ensureAuth, async (req, res) => {
     }
 });
 
+// Get or Generate Unique Member Invite Link & Stats
+router.get('/:slugOrId/my-invite', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        let invite = await ClubInvite.findOne({ club: club._id, inviter: req.user._id });
+        if (!invite) {
+            const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+            invite = await ClubInvite.create({
+                club: club._id,
+                inviter: req.user._id,
+                code: code
+            });
+        }
+
+        const member = await ClubMember.findOne({ club: club._id, user: req.user._id });
+        const totalInvites = member ? (member.inviteCount || 0) : 0;
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const inviteUrl = `${protocol}://${host}/clubs/${club.slug}?invite=${invite.code}`;
+
+        return res.json({
+            success: true,
+            code: invite.code,
+            inviteUrl: inviteUrl,
+            uses: invite.uses || 0,
+            totalInvites: totalInvites
+        });
+    } catch (err) {
+        console.error('[Clubs] My invite error:', err);
+        return res.status(500).json({ error: 'Failed to retrieve invite link.' });
+    }
+});
+
 router.post('/:slugOrId/leave', ensureAuth, async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) return res.status(404).json({ error: 'Club not found' });
 
-        // Default club cannot be left
         if (club.isDefault) {
             return res.status(400).send('You cannot leave the default GPL Community club.');
         }
 
-        // Club creator cannot leave without transferring ownership
         if (String(club.creator._id || club.creator) === String(req.user._id)) {
             return res.status(400).send('Club creators cannot leave their own club.');
         }
@@ -826,7 +1113,6 @@ router.post('/:slugOrId/request-join', ensureAuth, async (req, res) => {
             });
         }
 
-        // Notify club creator
         await UserNotification.create({
             user: club.creator._id || club.creator,
             title: `New Join Request: ${club.name}`,
@@ -861,7 +1147,6 @@ router.post('/:slugOrId/requests/:requestId/approve', ensureAuth, async (req, re
         joinReq.reviewedAt = new Date();
         await joinReq.save();
 
-        // Enroll member
         const defaultRole = await ClubRole.findOne({ club: club._id, isDefault: true });
         const existingMember = await ClubMember.findOne({ club: club._id, user: joinReq.user });
 
@@ -878,7 +1163,6 @@ router.post('/:slugOrId/requests/:requestId/approve', ensureAuth, async (req, re
             await Club.findByIdAndUpdate(club._id, { $inc: { memberCount: 1 } });
         }
 
-        // Notify user in notification hub
         await UserNotification.create({
             user: joinReq.user,
             title: `Join Request Approved!`,
@@ -943,7 +1227,7 @@ router.post('/:slugOrId/channels', ensureAuth, async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized to create channels.' });
         }
 
-        const { name, topic, type, isPrivate } = req.body;
+        const { name, topic, type, accessMode, isPrivate, allowedRoles, isReadOnly } = req.body;
         if (!name || name.trim().length < 2) {
             return res.status(400).json({ error: 'Channel name is required.' });
         }
@@ -956,12 +1240,25 @@ router.post('/:slugOrId/channels', ensureAuth, async (req, res) => {
 
         const totalChannels = await ClubChannel.countDocuments({ club: club._id });
 
+        const finalAccessMode = ['open', 'public_view', 'role_private'].includes(accessMode)
+            ? accessMode
+            : ((isPrivate === 'on' || isPrivate === 'true' || isPrivate === true) ? 'role_private' : 'open');
+        const finalIsPrivate = (finalAccessMode === 'role_private');
+
+        let parsedAllowedRoles = [];
+        if (allowedRoles) {
+            parsedAllowedRoles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+        }
+
         const newChannel = await ClubChannel.create({
             club: club._id,
             name: cleanName,
             topic: topic ? topic.trim() : '',
-            type: ['text', 'polls'].includes(type) ? type : 'text',
-            isPrivate: isPrivate === 'on' || isPrivate === 'true',
+            type: ['text', 'polls', 'announcements'].includes(type) ? type : 'text',
+            accessMode: finalAccessMode,
+            isPrivate: finalIsPrivate,
+            allowedRoles: parsedAllowedRoles,
+            isReadOnly: isReadOnly === 'on' || isReadOnly === 'true' || isReadOnly === true,
             position: totalChannels + 1
         });
 
@@ -998,7 +1295,7 @@ router.post('/:slugOrId/channels/:channelId/edit', ensureAuth, async (req, res) 
         const channel = await ClubChannel.findById(req.params.channelId);
         if (!channel) return res.status(404).json({ error: 'Channel not found.' });
 
-        const { name, topic, type, isPrivate, isReadOnly, allowedRoles } = req.body;
+        const { name, topic, type, accessMode, isPrivate, isReadOnly, allowedRoles, allowedRolesCleared } = req.body;
 
         if (name && name.trim()) {
             channel.name = slugify(name.trim());
@@ -1009,14 +1306,23 @@ router.post('/:slugOrId/channels/:channelId/edit', ensureAuth, async (req, res) 
         if (type && ['text', 'polls', 'announcements'].includes(type) && !['rules', 'new-uploads', 'new-updates'].includes(channel.type)) {
             channel.type = type;
         }
-        if (typeof isPrivate !== 'undefined') {
+
+        if (accessMode && ['open', 'public_view', 'role_private'].includes(accessMode)) {
+            channel.accessMode = accessMode;
+            channel.isPrivate = (accessMode === 'role_private');
+        } else if (typeof isPrivate !== 'undefined') {
             channel.isPrivate = isPrivate === true || isPrivate === 'true' || isPrivate === 'on';
+            if (channel.isPrivate) channel.accessMode = 'role_private';
         }
+
         if (typeof isReadOnly !== 'undefined') {
             channel.isReadOnly = isReadOnly === true || isReadOnly === 'true' || isReadOnly === 'on';
         }
+
         if (allowedRoles) {
             channel.allowedRoles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+        } else if (allowedRolesCleared === 'true' || allowedRolesCleared === true) {
+            channel.allowedRoles = [];
         }
 
         await channel.save();
@@ -1052,7 +1358,6 @@ router.post('/:slugOrId/channels/:channelId/delete', ensureAuth, async (req, res
         const channel = await ClubChannel.findById(req.params.channelId);
         if (!channel) return res.status(404).json({ error: 'Channel not found.' });
 
-        // Protected system channels
         if (['rules', 'announcements', 'new-uploads', 'new-updates'].includes(channel.type)) {
             return res.status(400).json({ error: 'Default system channels cannot be deleted.' });
         }
@@ -1078,6 +1383,7 @@ router.post('/:slugOrId/channels/:channelId/delete', ensureAuth, async (req, res
     }
 });
 
+// Create New Role
 router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
@@ -1090,9 +1396,9 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
             return res.status(403).json({ error: 'Unauthorized to create roles.' });
         }
 
-        const { name, color, badgeIcon, canManageChannels, canKickMembers, canPostPolls } = req.body;
+        const { name, color, badgeIcon, canManageChannels, canKickMembers, canPostPolls, canManageClub } = req.body;
         if (!name || name.trim().length < 2) {
-            return res.status(400).json({ error: 'Role name is required.' });
+            return res.status(400).json({ error: 'Role name is required (at least 2 characters).' });
         }
 
         const newRole = await ClubRole.create({
@@ -1102,7 +1408,7 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
             badgeIcon: badgeIcon || '🛡️',
             position: 20,
             permissions: {
-                canManageClub: false,
+                canManageClub: canManageClub === 'on' || canManageClub === 'true' || canManageClub === true,
                 canManageChannels: canManageChannels === 'on' || canManageChannels === 'true' || canManageChannels === true,
                 canManageRoles: false,
                 canKickMembers: canKickMembers === 'on' || canKickMembers === 'true' || canKickMembers === true,
@@ -1125,7 +1431,89 @@ router.post('/:slugOrId/roles', ensureAuth, async (req, res) => {
     }
 });
 
-// Role Assignment to Members (Add / Remove)
+// Edit Role
+router.post('/:slugOrId/roles/:roleId/edit', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+
+        if (!isClubCreator && !isStaff) {
+            return res.status(403).json({ error: 'Unauthorized to edit roles.' });
+        }
+
+        const role = await ClubRole.findOne({ _id: req.params.roleId, club: club._id });
+        if (!role) return res.status(404).json({ error: 'Role not found.' });
+
+        const { name, color, badgeIcon, canManageChannels, canKickMembers, canPostPolls, canManageClub } = req.body;
+        if (name && name.trim()) role.name = name.trim();
+        if (color && color.trim()) role.color = color.trim();
+        if (badgeIcon && badgeIcon.trim()) role.badgeIcon = badgeIcon.trim();
+
+        if (!role.permissions) role.permissions = {};
+        if (typeof canManageChannels !== 'undefined') {
+            role.permissions.canManageChannels = canManageChannels === true || canManageChannels === 'true' || canManageChannels === 'on';
+        }
+        if (typeof canKickMembers !== 'undefined') {
+            role.permissions.canKickMembers = canKickMembers === true || canKickMembers === 'true' || canKickMembers === 'on';
+        }
+        if (typeof canPostPolls !== 'undefined') {
+            role.permissions.canPostPolls = canPostPolls === true || canPostPolls === 'true' || canPostPolls === 'on';
+        }
+        if (typeof canManageClub !== 'undefined') {
+            role.permissions.canManageClub = canManageClub === true || canManageClub === 'true' || canManageClub === 'on';
+        }
+
+        await role.save();
+        const allRoles = await ClubRole.find({ club: club._id }).lean();
+        saveClubRolesArchive(club.name, allRoles);
+
+        return res.json({ success: true, role });
+    } catch (err) {
+        console.error('[Clubs] Role edit error:', err);
+        return res.status(500).json({ error: 'Failed to edit role.' });
+    }
+});
+
+// Delete Role
+router.post('/:slugOrId/roles/:roleId/delete', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+
+        if (!isClubCreator && !isStaff) {
+            return res.status(403).json({ error: 'Unauthorized to delete roles.' });
+        }
+
+        const role = await ClubRole.findOne({ _id: req.params.roleId, club: club._id });
+        if (!role) return res.status(404).json({ error: 'Role not found.' });
+
+        if (role.isDefault || role.name === 'everyone') {
+            return res.status(400).json({ error: 'The default @everyone role cannot be deleted.' });
+        }
+
+        // Remove from members
+        await ClubMember.updateMany({ club: club._id, roles: role._id }, { $pull: { roles: role._id } });
+        // Remove from channels
+        await ClubChannel.updateMany({ club: club._id, allowedRoles: role._id }, { $pull: { allowedRoles: role._id } });
+        await ClubRole.findByIdAndDelete(role._id);
+
+        const allRoles = await ClubRole.find({ club: club._id }).lean();
+        saveClubRolesArchive(club.name, allRoles);
+
+        return res.json({ success: true, deletedRoleId: req.params.roleId });
+    } catch (err) {
+        console.error('[Clubs] Role delete error:', err);
+        return res.status(500).json({ error: 'Failed to delete role.' });
+    }
+});
+
+// Role Assignment to Members (Add / Remove) - Enforces 10 Role Max
 router.post('/:slugOrId/roles/assign', ensureAuth, async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
@@ -1151,6 +1539,10 @@ router.post('/:slugOrId/roles/assign', ensureAuth, async (req, res) => {
         } else {
             if (!member.roles) member.roles = [];
             if (!member.roles.some(r => String(r) === String(roleId))) {
+                // Strict Max 10 Roles Validation
+                if (member.roles.length >= 10) {
+                    return res.status(400).json({ error: 'A member can have a maximum of 10 roles.' });
+                }
                 member.roles.push(roleId);
             }
         }
@@ -1161,41 +1553,157 @@ router.post('/:slugOrId/roles/assign', ensureAuth, async (req, res) => {
         return res.json({ success: true, member });
     } catch (err) {
         console.error('[Clubs] Role assignment error:', err);
-        return res.status(500).json({ error: 'Failed to update member role.' });
+        return res.status(500).json({ error: err.message || 'Failed to update member role.' });
     }
 });
 
-// Assign Tracked Creator Profiles to Track Mod Uploads & Updates
-router.post('/:slugOrId/tracked-creators', ensureAuth, async (req, res) => {
+// Bulk Member Roles Update (Enforces 10 Role Max)
+router.post('/:slugOrId/members/:memberId/roles', ensureAuth, async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) return res.status(404).json({ error: 'Club not found' });
 
-        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id);
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
         const isStaff = ['owner', 'admin'].includes(req.user.role);
 
         if (!isClubCreator && !isStaff) {
-            return res.status(403).json({ error: 'Unauthorized.' });
+            return res.status(403).json({ error: 'Unauthorized to manage member roles.' });
         }
 
-        const { username } = req.body;
-        if (!username || !username.trim()) {
-            return res.status(400).json({ error: 'Username required.' });
+        const member = await ClubMember.findById(req.params.memberId);
+        if (!member) return res.status(404).json({ error: 'Member not found.' });
+
+        let { roleIds } = req.body;
+        if (!Array.isArray(roleIds)) roleIds = roleIds ? [roleIds] : [];
+
+        // Strict Max 10 Roles Validation
+        if (roleIds.length > 10) {
+            return res.status(400).json({ error: 'A member can have a maximum of 10 roles.' });
         }
+
+        member.roles = roleIds;
+        await member.save();
+        await member.populate('roles');
+
+        return res.json({ success: true, member });
+    } catch (err) {
+        console.error('[Clubs] Bulk member roles error:', err);
+        return res.status(500).json({ error: err.message || 'Failed to update member roles.' });
+    }
+});
+
+// ============================================================================
+// CLUB TRACKED CREATORS (UPLOAD & UPDATE PREFERENCES)
+// ============================================================================
+router.get('/:slugOrId/tracked-creators', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const populatedClub = await Club.findById(club._id).populate({
+            path: 'trackedCreatorsConfig.creator',
+            select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
+        }).populate('trackedCreators', 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar');
+
+        const config = populatedClub.trackedCreatorsConfig || [];
+        return res.json({ success: true, trackedCreators: config });
+    } catch (err) {
+        console.error('[Clubs] Get tracked creators error:', err);
+        return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
+    }
+});
+
+router.post('/:slugOrId/tracked-creators/add', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        if (!isClubCreator && !isStaff) return res.status(403).json({ error: 'Unauthorized.' });
+
+        const { username, trackType } = req.body;
+        if (!username || !username.trim()) return res.status(400).json({ error: 'Username is required.' });
 
         const targetUser = await User.findOne({ username: username.trim() });
-        if (!targetUser) {
-            return res.status(404).json({ error: `User "${username}" was not found.` });
+        if (!targetUser) return res.status(404).json({ error: `User "${username}" was not found.` });
+
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+
+        const clubDoc = await Club.findById(club._id);
+        if (!clubDoc.trackedCreatorsConfig) clubDoc.trackedCreatorsConfig = [];
+
+        const existingIndex = clubDoc.trackedCreatorsConfig.findIndex(tc => String(tc.creator) === String(targetUser._id));
+        if (existingIndex > -1) {
+            clubDoc.trackedCreatorsConfig[existingIndex].trackType = validTrackType;
+        } else {
+            clubDoc.trackedCreatorsConfig.push({
+                creator: targetUser._id,
+                trackType: validTrackType
+            });
         }
 
-        await Club.findByIdAndUpdate(club._id, {
-            $addToSet: { trackedCreators: targetUser._id }
-        });
+        if (!clubDoc.trackedCreators) clubDoc.trackedCreators = [];
+        if (!clubDoc.trackedCreators.some(id => String(id) === String(targetUser._id))) {
+            clubDoc.trackedCreators.push(targetUser._id);
+        }
 
-        return res.redirect(`/clubs/${club.slug}`);
+        await clubDoc.save();
+        return res.json({ success: true, message: `Now tracking ${targetUser.username} (${validTrackType})` });
     } catch (err) {
-        console.error('[Clubs] Tracked creator error:', err);
+        console.error('[Clubs] Add tracked creator error:', err);
         return res.status(500).json({ error: 'Failed to add tracked creator.' });
+    }
+});
+
+router.post('/:slugOrId/tracked-creators/update', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        if (!isClubCreator && !isStaff) return res.status(403).json({ error: 'Unauthorized.' });
+
+        const { creatorId, trackType } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+        const clubDoc = await Club.findById(club._id);
+
+        const item = clubDoc.trackedCreatorsConfig.find(tc => String(tc.creator) === String(creatorId));
+        if (item) {
+            item.trackType = validTrackType;
+            await clubDoc.save();
+        }
+        return res.json({ success: true, trackType: validTrackType });
+    } catch (err) {
+        console.error('[Clubs] Update tracked creator error:', err);
+        return res.status(500).json({ error: 'Failed to update tracking preference.' });
+    }
+});
+
+router.post('/:slugOrId/tracked-creators/remove', ensureAuth, async (req, res) => {
+    try {
+        const club = await resolveClub(req.params.slugOrId);
+        if (!club) return res.status(404).json({ error: 'Club not found' });
+
+        const isClubCreator = String(club.creator._id || club.creator) === String(req.user._id) || (club.isDefault && req.user.role === 'admin');
+        const isStaff = ['owner', 'admin'].includes(req.user.role);
+        if (!isClubCreator && !isStaff) return res.status(403).json({ error: 'Unauthorized.' });
+
+        const { creatorId } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+
+        const clubDoc = await Club.findById(club._id);
+        clubDoc.trackedCreatorsConfig = (clubDoc.trackedCreatorsConfig || []).filter(tc => String(tc.creator) !== String(creatorId));
+        clubDoc.trackedCreators = (clubDoc.trackedCreators || []).filter(id => String(id) !== String(creatorId));
+        await clubDoc.save();
+
+        return res.json({ success: true, message: 'Creator removed from club tracking.' });
+    } catch (err) {
+        console.error('[Clubs] Remove tracked creator error:', err);
+        return res.status(500).json({ error: 'Failed to remove tracked creator.' });
     }
 });
 

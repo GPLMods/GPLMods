@@ -90,6 +90,18 @@ const ClubSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],
+    trackedCreatorsConfig: [{
+        creator: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        trackType: {
+            type: String,
+            enum: ['uploads', 'updates', 'both'],
+            default: 'both'
+        }
+    }],
     memberCount: {
         type: Number,
         default: 1

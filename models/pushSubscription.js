@@ -26,8 +26,7 @@ const PushSubscriptionSchema = new Schema({
     lastNotifiedAt: { type: Date, default: null }
 }, { timestamps: true });
 
-// Index endpoint for ultra-fast lookup
-PushSubscriptionSchema.index({ endpoint: 1 });
+// Index user for lookup (endpoint already has unique index from schema definition)
 PushSubscriptionSchema.index({ user: 1 });
 
 module.exports = mongoose.model('PushSubscription', PushSubscriptionSchema);

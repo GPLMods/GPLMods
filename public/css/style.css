@@ -832,6 +832,12 @@ a.overlay-btn-primary:hover {
 .music-controls button.music-btn:active {
     transform: scale(0.9);
 }
+
+.music-controls button.music-btn.active {
+    color: var(--gold);
+    text-shadow: 0 0 8px var(--glow-gold);
+    transform: scale(1.08);
+}
 /* --- Volume Slider & Custom Input Styles --- */
 .volume-container {
     display: flex;

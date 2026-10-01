@@ -59,16 +59,14 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
             }
         }
 
-        // Capture-phase listener: Block popunder triggers completely on ANY popup/modal interactions
+        // Safe bubbling listener: Prevent popunders from triggering on modal clicks without blocking inner button interactions
         document.addEventListener('click', (e) => {
             const isPopupClick = e.target.closest('#video-ad-modal, #newsletter-popup, #pwa-install-banner, #policy-modal-container, #deployment-notice-modal, #globalNotificationModal, .modal, .gpl-modal-backdrop, .policy-modal, .gpl-chat-window, .gpl-chat-confirm-modal, .header-notif-dropdown, .club-header-dropdown');
             const isAnyPopupActive = (window.GPLPopupCoordinator && window.GPLPopupCoordinator.isAnyActive()) || window._gplmodsVideoAdActive;
             if (isPopupClick || isAnyPopupActive) {
-                if (typeof e.stopImmediatePropagation === 'function') {
-                    e.stopImmediatePropagation();
-                }
+                e.stopPropagation();
             }
-        }, true);
+        }, false);
 
         function injectPopunderScriptAndTriggers() {
             if (window._popunderInjected) return;

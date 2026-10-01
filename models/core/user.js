@@ -116,6 +116,22 @@ const UserSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'User'
     }],
+    trackedCreators: [{
+        creator: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        trackType: {
+            type: String,
+            enum: ['uploads', 'updates', 'both'],
+            default: 'both'
+        },
+        trackedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     isVerified: {
         type: Boolean,
         default: false
@@ -215,6 +231,22 @@ const UserSchema = new Schema({
         adminMessages: { type: Boolean, default: true },
         soundEnabled: { type: Boolean, default: true }
     },
+    trackedCreators: [{
+        creator: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        trackType: {
+            type: String,
+            enum: ['uploads', 'updates', 'both'],
+            default: 'both'
+        },
+        trackedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     failedLoginAttempts: {
         type: Number,
         default: 0

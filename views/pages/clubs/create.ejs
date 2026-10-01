@@ -508,7 +508,40 @@
             <p class="create-card-subtitle">
                 Establish your community hub on GPLMods. You will receive dedicated Discord-like channels including #rules, #announcements, #new-uploads, #new-updates, and text channels.
             </p>
+        <!-- Club Cap Status -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+            <span style="background: <%= (typeof limitReached !== 'undefined' && limitReached) ? 'rgba(231, 76, 60, 0.15)' : 'rgba(255, 215, 0, 0.12)' %>; border: 1.5px solid <%= (typeof limitReached !== 'undefined' && limitReached) ? '#e74c3c' : 'var(--gold)' %>; color: <%= (typeof limitReached !== 'undefined' && limitReached) ? '#ff6b6b' : 'var(--gold)' %>; padding: 7px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-users"></i> Clubs Created: <%= typeof userCreatedCount !== 'undefined' ? userCreatedCount : 0 %> / <%= typeof maxClubsAllowed !== 'undefined' ? maxClubsAllowed : (typeof isHigherTier !== 'undefined' && isHigherTier ? 5 : 3) %> Max
+            </span>
+            <span style="font-size: 0.85rem; color: var(--silver);">
+                <%= (typeof isHigherTier !== 'undefined' && isHigherTier) ? '🌟 GPLLite, GPLPlus & Staff Tier (Max 5 Clubs)' : '👤 Free Tier: 3 Clubs Max' %>
+            </span>
         </div>
+
+        <% if (typeof limitReached !== 'undefined' && limitReached) { %>
+            <div style="background: linear-gradient(145deg, #221212 0%, #140808 100%); border: 1.5px solid #e74c3c; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 28px; box-shadow: 0 10px 30px rgba(231, 76, 60, 0.2);">
+                <i class="fas fa-ban" style="font-size: 2.4rem; color: #e74c3c; margin-bottom: 12px;"></i>
+                <h3 style="color: #fff; margin: 0 0 10px 0; font-size: 1.3rem;">Club Creation Limit Reached</h3>
+                <p style="color: var(--silver); margin: 0 0 18px 0; font-size: 0.95rem; line-height: 1.6; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    You have created <strong><%= typeof userCreatedCount !== 'undefined' ? userCreatedCount : 0 %></strong> of your maximum <strong><%= typeof maxClubsAllowed !== 'undefined' ? maxClubsAllowed : 3 %></strong> allowed clubs.
+                    <% if (typeof isHigherTier !== 'undefined' && !isHigherTier) { %>
+                        Free users can create up to 3 clubs. Upgrade to <strong>GPLLite</strong> or <strong>GPLPlus</strong> to unlock up to 5 clubs!
+                    <% } else { %>
+                        You have reached the maximum allowed limit of 5 clubs for premium and staff members.
+                    <% } %>
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <% if (typeof isHigherTier !== 'undefined' && !isHigherTier) { %>
+                        <a href="/membership" style="background: var(--gold); color: #000; font-weight: 700; padding: 10px 22px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-crown"></i> Upgrade to GPLLite / GPLPlus
+                        </a>
+                    <% } %>
+                    <a href="/clubs" style="background: rgba(255,255,255,0.08); border: 1px solid #555; color: #fff; padding: 10px 20px; border-radius: 8px; font-weight: 600; text-decoration: none;">
+                        <i class="fas fa-arrow-left"></i> Back to Clubs
+                    </a>
+                </div>
+            </div>
+        <% } %>
 
         <% if (error) { %>
             <div class="error-alert-banner">
@@ -782,9 +815,15 @@
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit-club">
-                <i class="fas fa-rocket"></i> Launch Community Club
-            </button>
+            <% if (typeof limitReached !== 'undefined' && limitReached) { %>
+                <button type="button" class="btn-submit-club" disabled style="opacity: 0.5; cursor: not-allowed; background: #333; color: #888; box-shadow: none;">
+                    <i class="fas fa-lock"></i> Club Creation Cap Reached (<%= userCreatedCount %>/<%= maxClubsAllowed %>)
+                </button>
+            <% } else { %>
+                <button type="submit" class="btn-submit-club">
+                    <i class="fas fa-rocket"></i> Launch Community Club
+                </button>
+            <% } %>
         </form>
     </div>
 </div>

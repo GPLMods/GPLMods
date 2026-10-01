@@ -37,6 +37,11 @@ const ClubChannelSchema = new Schema({
         type: Boolean,
         default: false
     },
+    accessMode: {
+        type: String,
+        enum: ['open', 'public_view', 'role_private'],
+        default: 'open'
+    },
     position: {
         type: Number,
         default: 0

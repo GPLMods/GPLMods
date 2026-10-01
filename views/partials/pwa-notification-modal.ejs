@@ -10,13 +10,19 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 12px; max-height: 70vh; overflow-y: auto; padding-right: 4px;">
+            <!-- PWA Requirement Notice -->
+            <div id="modalPwaWarning" style="background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.35); border-radius: 10px; padding: 10px 14px; font-size: 0.84rem; color: #ffc107; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <span><i class="fas fa-lock"></i> Install GPLMods as PWA to enable push notifications.</span>
+                <button type="button" onclick="if(window.triggerPwaInstallPrompt) window.triggerPwaInstallPrompt();" style="background: var(--gold); color: #000; font-weight: bold; border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; white-space: nowrap;">Install App</button>
+            </div>
+
             <!-- Master Control Row -->
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.35); border-radius: 12px;">
                 <div>
                     <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Allow Web Push Alerts</div>
                     <div style="font-size: 0.76em; color: var(--silver); margin-top: 2px;">Master device push authorization</div>
                 </div>
-                <button type="button" onclick="enablePushNotifications()" class="btn" style="background: var(--gold); color: #000; font-weight: 700; padding: 7px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px;">
+                <button type="button" id="modalEnablePushBtn" onclick="if(!isModalPwaMode()){if(window.triggerPwaInstallPrompt) window.triggerPwaInstallPrompt();}else{enablePushNotifications();}" class="btn" style="background: var(--gold); color: #000; font-weight: 700; padding: 7px 16px; border-radius: 8px; font-size: 0.85em; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px;">
                     <i class="fas fa-check-circle"></i> Enable Push
                 </button>
             </div>
@@ -102,10 +108,39 @@
 </div>
 
 <script>
+    function isModalPwaMode() {
+        return Boolean(
+            (typeof window.isGplPwaInstalled === 'function' && window.isGplPwaInstalled()) ||
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            document.referrer.includes('android-app://') ||
+            localStorage.getItem('gpl_pwa_installed') === 'true'
+        );
+    }
+
     function openGlobalNotificationModal() {
         const modal = document.getElementById('globalNotificationModal');
         if (modal) {
-            const isEnabled = localStorage.getItem('gpl_push_notification_enabled') !== 'false';
+            const isInstalled = isModalPwaMode();
+            const pwaWarning = document.getElementById('modalPwaWarning');
+            const enableBtn = document.getElementById('modalEnablePushBtn');
+
+            if (pwaWarning) pwaWarning.style.display = isInstalled ? 'none' : 'flex';
+            if (enableBtn) {
+                if (!isInstalled) {
+                    enableBtn.disabled = true;
+                    enableBtn.style.opacity = '0.5';
+                    enableBtn.style.cursor = 'not-allowed';
+                    enableBtn.title = 'Install as PWA to enable push alerts';
+                } else {
+                    enableBtn.disabled = false;
+                    enableBtn.style.opacity = '1';
+                    enableBtn.style.cursor = 'pointer';
+                    enableBtn.title = 'Enable Push Alerts';
+                }
+            }
+
+            const isEnabled = isInstalled && (localStorage.getItem('gpl_push_notification_enabled') !== 'false');
             const u = document.getElementById('modal_newUploads');
             const c = document.getElementById('modal_clubUpdates');
             const a = document.getElementById('modal_adminMessages');

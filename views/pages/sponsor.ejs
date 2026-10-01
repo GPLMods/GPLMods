@@ -135,33 +135,113 @@
         color: var(--gold);
     }
 
-    /* Infrastructure Catalog Cards */
+    /* Infrastructure Catalog Upgraded Cards & Toolbar */
+    .catalog-toolbar-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 25px;
+    }
+    .catalog-search-bar {
+        position: relative;
+        width: 100%;
+    }
+    .catalog-search-input {
+        width: 100%;
+        background: rgba(18, 20, 26, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--white);
+        padding: 12px 18px 12px 42px;
+        border-radius: 30px;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.25s ease;
+        box-sizing: border-box;
+    }
+    .catalog-search-input:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+    }
+    .catalog-search-icon {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--silver);
+        font-size: 1rem;
+        pointer-events: none;
+    }
+    .catalog-filter-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .catalog-cycle-group {
+        display: inline-flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        background: rgba(18, 20, 26, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 25px;
+        padding: 4px;
+    }
+    .catalog-cycle-btn {
+        background: transparent;
+        border: none;
+        color: var(--silver);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .catalog-cycle-btn:hover {
+        color: var(--white);
+    }
+    .catalog-cycle-btn.active {
+        background: var(--gold);
+        color: var(--black);
+        font-weight: 700;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+    .filter-count {
+        font-size: 0.78em;
+        opacity: 0.75;
+        margin-left: 4px;
+    }
+
     .catalog-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 22px;
         margin-bottom: 50px;
     }
     .catalog-item-card {
-        background: var(--dark-gray);
-        border: 1px solid #333;
-        border-radius: 16px;
-        padding: 26px;
+        background: rgba(18, 20, 26, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
-        transition: all 0.3s ease;
+        transition: all 0.25s ease;
         position: relative;
+        backdrop-filter: blur(8px);
+        box-sizing: border-box;
     }
     .catalog-item-card:hover {
         transform: translateY(-5px);
         border-color: var(--gold);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+        box-shadow: 0 14px 35px rgba(0,0,0,0.55);
     }
     .item-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 15px;
+        margin-bottom: 12px;
+        gap: 10px;
     }
     .item-icon-pill {
         width: 44px;
@@ -171,52 +251,174 @@
         align-items: center;
         justify-content: center;
         font-size: 1.3em;
+        flex-shrink: 0;
+    }
+    .item-badges-wrapper {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
     }
     .period-badge {
-        font-size: 0.75em;
+        font-size: 0.72rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         padding: 4px 10px;
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.08);
         color: var(--silver);
-        font-weight: 600;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .plan-tag-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 12px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
     .item-title {
         color: var(--white);
-        font-size: 1.25em;
-        margin-bottom: 8px;
+        font-size: 1.22rem;
+        margin-bottom: 4px;
         font-weight: 700;
+        line-height: 1.3;
     }
-    .item-desc {
+    .item-plan-name {
+        color: #aaa;
+        font-size: 0.85rem;
+        margin-bottom: 12px;
+        font-weight: 500;
+    }
+    .item-limit-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 215, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.22);
+        color: var(--gold);
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 14px;
+        width: fit-content;
+    }
+    .item-pricing-container {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+    }
+    .item-primary-price {
+        font-size: 1.18rem;
+        font-weight: 800;
+        color: var(--white);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .item-cur-convert {
+        font-size: 0.78rem;
         color: var(--silver);
-        font-size: 0.9em;
-        line-height: 1.5;
-        margin-bottom: 20px;
-        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        gap: 4px;
     }
-    .item-pricing-bar {
+    .item-price-val {
+        font-weight: 700;
+        color: var(--gold);
+    }
+    .item-breakdown-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font-size: 0.82rem;
+    }
+    .breakdown-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        border-top: 1px solid #2a2a2a;
+        padding: 3px 0;
+        color: var(--silver);
+        gap: 10px;
+    }
+    .breakdown-row.breakdown-total {
+        border-top: 1px dashed rgba(255, 255, 255, 0.15);
+        margin-top: 5px;
+        padding-top: 6px;
+        font-weight: 700;
+        color: var(--gold);
+    }
+    .item-desc {
+        color: var(--silver);
+        font-size: 0.88rem;
+        line-height: 1.5;
+        margin-bottom: 14px;
+    }
+    .catalog-features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        flex-grow: 1;
+    }
+    .catalog-features-list li {
+        color: #d1d5db;
+        font-size: 0.83rem;
+        line-height: 1.4;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .catalog-features-list li i {
+        color: #2ecc71;
+        font-size: 0.88rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .item-action-footer {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
         padding-top: 15px;
         margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
     }
-    .item-price-val {
-        font-size: 1.4em;
-        font-weight: 800;
-        color: var(--white);
+    .sponsor-secure-tag {
+        font-size: 0.75rem;
+        color: #888;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
     }
-    .item-usd-sub {
-        font-size: 0.75em;
-        color: #777;
-        display: block;
+    .catalog-empty-notice {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 50px 20px;
+        background: rgba(18, 20, 26, 0.5);
+        border: 1px dashed #444;
+        border-radius: 16px;
+        color: var(--silver);
     }
     .sponsor-btn {
         background: var(--gold);
         color: var(--black);
-        padding: 8px 18px;
+        padding: 9px 20px;
         border-radius: 20px;
         font-weight: 700;
         font-size: 0.9em;
@@ -224,6 +426,9 @@
         cursor: pointer;
         transition: all 0.2s ease;
         box-shadow: 0 0 10px var(--glow-gold);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
     }
     .sponsor-btn:hover {
         transform: scale(1.05);
@@ -726,7 +931,7 @@
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
                 <div>
                     <h2 style="color: var(--white); font-size: 2em; margin-bottom: 6px;">
-                        <i class="fas fa-server" style="color: var(--gold); margin-right: 8px;"></i> Sponsor A <span style="color: var(--gold);">Component</span>
+                        <i class="fas fa-server" style="color: var(--gold); margin-right: 8px;"></i> Buy Site <span style="color: var(--gold);">Components</span>
                     </h2>
                     <p style="color: var(--silver); margin: 0; font-size: 0.95em;">
                         Choose an exact operational component to cover for 1 month or 1 year. Your name will be featured as the official sponsor.
@@ -734,28 +939,53 @@
                 </div>
             </div>
 
-            <!-- Filter & Sort Bar -->
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 25px;">
-                <!-- Category Filter Pills -->
-                <div class="catalog-filter-bar" id="catalogFilters" style="margin-bottom: 0;">
-                    <button class="catalog-filter-btn active" data-cat="all">All Infrastructure</button>
-                    <% (catalog || []).forEach(cat => { %>
-                        <button class="catalog-filter-btn" data-cat="<%= cat.category %>">
-                            <i class="<%= cat.icon %>" style="color: <%= cat.color %>;"></i> <%= cat.categoryTitle.split(' ')[0] %>
-                        </button>
-                    <% }) %>
+            <!-- Toolbar: Search + Cycle + Sort + Category Filters -->
+            <div class="catalog-toolbar-wrapper">
+                <!-- Search Bar -->
+                <div class="catalog-search-bar">
+                    <i class="fas fa-search catalog-search-icon"></i>
+                    <input type="text" id="catalogSearchInput" class="catalog-search-input" placeholder="Search components, plans, and features (e.g. MongoDB, Gemini, Backblaze B2, Hosting, Cloudflare, SMTP)...">
                 </div>
 
-                <!-- Price Sorting Control -->
-                <div class="price-sort-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
-                        <i class="fas fa-sort"></i> Price:
-                    </span>
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                        <button type="button" class="catalog-sort-btn active" data-sort="default">Default</button>
-                        <button type="button" class="catalog-sort-btn" data-sort="asc"><i class="fas fa-sort-amount-up-alt"></i> Low to High</button>
-                        <button type="button" class="catalog-sort-btn" data-sort="desc"><i class="fas fa-sort-amount-down"></i> High to Low</button>
+                <!-- Secondary Filter Controls Row -->
+                <div class="catalog-filter-row">
+                    <!-- Billing Cycle Filter Pills -->
+                    <div class="catalog-cycle-group" id="cycleFilters">
+                        <button type="button" class="catalog-cycle-btn active" data-cycle="all">All Cycles</button>
+                        <button type="button" class="catalog-cycle-btn" data-cycle="monthly">Monthly Plans</button>
+                        <button type="button" class="catalog-cycle-btn" data-cycle="yearly">Yearly / Annual</button>
+                        <button type="button" class="catalog-cycle-btn" data-cycle="one_time">Pay-as-you-go / Tokens</button>
                     </div>
+
+                    <!-- Price Sorting Control -->
+                    <div class="price-sort-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-sort"></i> Price:
+                        </span>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" class="catalog-sort-btn active" data-sort="default">Default</button>
+                            <button type="button" class="catalog-sort-btn" data-sort="asc"><i class="fas fa-sort-amount-up-alt"></i> Low to High</button>
+                            <button type="button" class="catalog-sort-btn" data-sort="desc"><i class="fas fa-sort-amount-down"></i> High to Low</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Filter Pills -->
+                <% 
+                    let totalItemsCount = 0;
+                    (catalog || []).forEach(cat => { totalItemsCount += (cat.items || []).length; });
+                %>
+                <div class="catalog-filter-bar" id="catalogFilters" style="margin-bottom: 0;">
+                    <button type="button" class="catalog-filter-btn active" data-cat="all">
+                        <i class="fas fa-layer-group"></i> All Components <span class="filter-count">(<%= totalItemsCount %>)</span>
+                    </button>
+                    <% (catalog || []).forEach(cat => { %>
+                        <button type="button" class="catalog-filter-btn" data-cat="<%= cat.category %>">
+                            <i class="<%= cat.icon %>" style="color: <%= cat.color %>;"></i> 
+                            <%= cat.shortName || cat.categoryTitle.split(' ')[0] %> 
+                            <span class="filter-count">(<%= (cat.items || []).length %>)</span>
+                        </button>
+                    <% }) %>
                 </div>
             </div>
 
@@ -763,29 +993,110 @@
             <div class="catalog-grid" id="catalogGrid">
                 <% (catalog || []).forEach(cat => { %>
                     <% (cat.items || []).forEach(item => { %>
-                        <div class="catalog-item-card" data-cat="<%= cat.category %>" data-inr-price="<%= item.priceINR %>">
+                        <%
+                            const searchTerms = [
+                                item.title,
+                                item.planName || '',
+                                cat.categoryTitle,
+                                cat.shortName || '',
+                                item.limit || '',
+                                item.desc || '',
+                                (item.features || []).join(' ')
+                            ].join(' ').toLowerCase();
+                        %>
+                        <div class="catalog-item-card" 
+                             data-cat="<%= cat.category %>" 
+                             data-cycle="<%= item.billingType || 'monthly' %>" 
+                             data-sort-price="<%= item.priceINR %>" 
+                             data-search="<%= searchTerms %>">
+                            
                             <div class="item-header">
                                 <div class="item-icon-pill" style="background: <%= cat.color %>22; color: <%= cat.color %>;">
                                     <i class="<%= cat.icon %>"></i>
                                 </div>
-                                <span class="period-badge"><%= item.period %></span>
+                                <div class="item-badges-wrapper">
+                                    <% if (item.badge) { %>
+                                        <span class="plan-tag-badge" style="background: <%= item.badgeColor || cat.color %>25; color: <%= item.badgeColor || cat.color %>; border: 1px solid <%= item.badgeColor || cat.color %>50;">
+                                            <i class="fas fa-tag"></i> <%= item.badge %>
+                                        </span>
+                                    <% } %>
+                                    <span class="period-badge"><%= item.period %></span>
+                                </div>
                             </div>
+
                             <h3 class="item-title"><%= item.title %></h3>
-                            <p class="item-desc"><%= item.desc %></p>
-                            <div class="item-pricing-bar">
-                                <div>
-                                    <div class="item-price-val" data-inr-price="<%= item.priceINR %>">₹<%= item.priceINR.toLocaleString('en-IN') %></div>
+                            <% if (item.planName && item.planName !== item.title) { %>
+                                <div class="item-plan-name"><%= item.planName %></div>
+                            <% } %>
+
+                            <% if (item.limit) { %>
+                                <div class="item-limit-box">
+                                    <i class="fas fa-bolt"></i> <%= item.limit %>
+                                </div>
+                            <% } %>
+
+                            <div class="item-pricing-container">
+                                <div class="item-primary-price">
+                                    <%= item.priceDisplay %>
+                                </div>
+                                <div class="item-cur-convert">
+                                    <i class="fas fa-coins" style="color: var(--gold);"></i> 
+                                    <span>Live:</span> 
+                                    <span class="item-price-val" data-inr-price="<%= item.priceINR %>">₹<%= item.priceINR.toLocaleString('en-IN') %></span>
                                     <% if (item.priceUSD) { %>
-                                        <span class="item-usd-sub">~$<%= item.priceUSD %> USD</span>
+                                        <span class="item-usd-sub" style="margin-left: 5px; color: #888;">(~$<%= item.priceUSD %> USD)</span>
                                     <% } %>
                                 </div>
-                                <button class="sponsor-btn" onclick="openSponsorModal('<%= item.title %>', '<%= cat.category %>', <%= item.priceINR %>)">
-                                    Sponsor
+                            </div>
+
+                            <% if (item.breakdown) { %>
+                                <div class="item-breakdown-box">
+                                    <div class="breakdown-row">
+                                        <span>Compute Plan:</span>
+                                        <strong style="color: #fff;"><%= item.breakdown.compute %></strong>
+                                    </div>
+                                    <div class="breakdown-row">
+                                        <span>Storage Add-on:</span>
+                                        <strong style="color: #fff;"><%= item.breakdown.storage %></strong>
+                                    </div>
+                                    <div class="breakdown-row breakdown-total">
+                                        <span>Total:</span>
+                                        <strong><%= item.breakdown.total %></strong>
+                                    </div>
+                                </div>
+                            <% } %>
+
+                            <p class="item-desc"><%= item.desc %></p>
+
+                            <% if (item.features && item.features.length > 0) { %>
+                                <ul class="catalog-features-list">
+                                    <% item.features.forEach(feat => { %>
+                                        <li>
+                                            <i class="fas fa-check-circle"></i>
+                                            <span><%= feat %></span>
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            <% } %>
+
+                            <div class="item-action-footer">
+                                <span class="sponsor-secure-tag">
+                                    <i class="fas fa-lock" style="color: #2ecc71;"></i> Verified
+                                </span>
+                                <button type="button" class="sponsor-btn" onclick="openSponsorModal('<%= item.title.replace(/'/g, "\\'") %>', '<%= cat.category %>', <%= item.priceINR %>, <%= item.priceINRMin || item.priceINR %>, <%= item.priceINRMax || item.priceINR %>, '<%= (item.priceDisplay || '').replace(/'/g, "\\'") %>')">
+                                    <i class="fas fa-heart"></i> Sponsor
                                 </button>
                             </div>
                         </div>
                     <% }) %>
                 <% }) %>
+
+                <!-- Empty Search Notice -->
+                <div class="catalog-empty-notice" id="catalogEmptyNotice" style="display: none;">
+                    <i class="fas fa-search" style="font-size: 2.2rem; color: var(--gold); opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+                    <h3 style="color: var(--white); margin: 0 0 6px 0;">No matching components found</h3>
+                    <p style="margin: 0; font-size: 0.9rem;">Try adjusting your search terms, billing cycle, or category filter.</p>
+                </div>
             </div>
         </section>
 
@@ -855,6 +1166,8 @@
             <input type="hidden" id="modalCategory" value="infrastructure">
             <input type="hidden" id="modalItem" value="">
 
+            <div id="modalPriceSuggestion" style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.88rem; color: var(--gold); display: none; line-height: 1.4;"></div>
+
             <div class="modal-form-group">
                 <label>Amount (₹ INR)*</label>
                 <input type="number" id="modalAmount" required min="1" step="any">
@@ -898,19 +1211,22 @@
         return cashfreeInstance;
     }
 
-    // Category Filtering & Price Sorting Logic
+    // Category Filtering, Billing Cycle, Search & Price Sorting Logic
     let currentCategory = 'all';
+    let currentCycle = 'all';
     let currentSort = 'default';
+    let currentSearch = '';
 
     function applyCatalogFilterAndSort() {
         const grid = document.getElementById('catalogGrid');
         if (!grid) return;
         const cards = Array.from(grid.querySelectorAll('.catalog-item-card'));
+        const emptyNotice = document.getElementById('catalogEmptyNotice');
 
-        // Sort items
+        // Sort items by data-sort-price (never collides with currency converter)
         cards.sort((a, b) => {
-            const priceA = parseFloat(a.getAttribute('data-inr-price')) || 0;
-            const priceB = parseFloat(b.getAttribute('data-inr-price')) || 0;
+            const priceA = parseFloat(a.getAttribute('data-sort-price')) || 0;
+            const priceB = parseFloat(b.getAttribute('data-sort-price')) || 0;
             const indexA = parseInt(a.getAttribute('data-original-index')) || 0;
             const indexB = parseInt(b.getAttribute('data-original-index')) || 0;
 
@@ -922,21 +1238,37 @@
             return indexA - indexB;
         });
 
+        let visibleCount = 0;
+
         // Filter and re-append in sorted order
         cards.forEach(card => {
-            const cat = card.getAttribute('data-cat');
-            if (currentCategory === 'all' || cat === currentCategory) {
+            const cat = card.getAttribute('data-cat') || '';
+            const cycle = card.getAttribute('data-cycle') || '';
+            const searchData = (card.getAttribute('data-search') || '').toLowerCase();
+
+            const matchCat = (currentCategory === 'all' || cat === currentCategory);
+            const matchCycle = (currentCycle === 'all' || cycle === currentCycle);
+            const matchSearch = (!currentSearch || searchData.includes(currentSearch));
+
+            if (matchCat && matchCycle && matchSearch) {
                 card.style.display = 'flex';
+                visibleCount++;
             } else {
                 card.style.display = 'none';
             }
             grid.appendChild(card);
         });
+
+        if (emptyNotice) {
+            emptyNotice.style.display = (visibleCount === 0) ? 'block' : 'none';
+        }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         const filterBtns = document.querySelectorAll('.catalog-filter-btn');
+        const cycleBtns = document.querySelectorAll('.catalog-cycle-btn');
         const sortBtns = document.querySelectorAll('.catalog-sort-btn');
+        const searchInput = document.getElementById('catalogSearchInput');
         const cards = document.querySelectorAll('.catalog-item-card');
 
         // Save original indices
@@ -944,12 +1276,30 @@
             card.setAttribute('data-original-index', idx);
         });
 
+        // Search Input filter
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                currentSearch = (e.target.value || '').trim().toLowerCase();
+                applyCatalogFilterAndSort();
+            });
+        }
+
         // Category filter click
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 filterBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentCategory = btn.getAttribute('data-cat');
+                applyCatalogFilterAndSort();
+            });
+        });
+
+        // Billing cycle filter click
+        cycleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                cycleBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCycle = btn.getAttribute('data-cycle');
                 applyCatalogFilterAndSort();
             });
         });
@@ -966,12 +1316,23 @@
     });
 
     // Modal Control
-    function openSponsorModal(title, category, amount) {
+    function openSponsorModal(title, category, amount, minAmount, maxAmount, priceDisplay) {
         document.getElementById('modalItemTitle').textContent = title;
         document.getElementById('modalItem').value = title;
         document.getElementById('modalCategory').value = category;
         document.getElementById('modalAmount').value = amount;
         document.getElementById('modalAmount').readOnly = false;
+
+        const suggestionEl = document.getElementById('modalPriceSuggestion');
+        if (suggestionEl) {
+            if (priceDisplay) {
+                suggestionEl.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Plan Rate:</strong> ${priceDisplay}<br><span style="font-size: 0.8rem; color: #ccc;">You may sponsor this exact amount or customize your contribution.</span>`;
+                suggestionEl.style.display = 'block';
+            } else {
+                suggestionEl.style.display = 'none';
+            }
+        }
+
         document.getElementById('modalError').style.display = 'none';
         document.getElementById('sponsorModal').style.display = 'flex';
         updateModalCurrencyHint();

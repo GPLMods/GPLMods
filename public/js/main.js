@@ -983,6 +983,57 @@ function initializePolicyBanner() {
         return;
     }
 
+    window.acceptGplPolicy = function() {
+        localStorage.setItem('gplmods_policy_accepted', 'true');
+        localStorage.setItem('gplmods_policy_accepted_at', Date.now().toString());
+        if (window.GPLPopupCoordinator) {
+            window.GPLPopupCoordinator.unregister('policy');
+        }
+        window.dispatchEvent(new CustomEvent('gplmods:policy-accepted'));
+        document.body.style.overflow = '';
+        if (policyModal) {
+            const contentBox = policyModal.querySelector('.policy-modal-content');
+            if (contentBox) contentBox.classList.remove('active');
+            setTimeout(() => {
+                policyModal.classList.remove('show');
+                policyModal.style.display = 'none';
+                startEngagementSequence();
+            }, 200);
+        }
+    };
+
+    window.declineGplPolicy = function() {
+        if (policyModal) {
+            const contentBox = policyModal.querySelector('.policy-modal-content');
+            if (contentBox) {
+                contentBox.innerHTML = `
+                    <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
+                    <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
+                        To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy.
+                    </p>
+                    <button type="button" onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
+                        Refresh Page
+                    </button>
+                `;
+            }
+        }
+    };
+
+    // Attach robust direct listeners
+    acceptBtn.onclick = window.acceptGplPolicy;
+    declineBtn.onclick = window.declineGplPolicy;
+
+    // Delegated click listener to catch clicks anytime
+    document.addEventListener('click', (e) => {
+        if (e.target && (e.target.id === 'acceptPolicy' || e.target.closest('#acceptPolicy'))) {
+            e.preventDefault();
+            window.acceptGplPolicy();
+        } else if (e.target && (e.target.id === 'declinePolicy' || e.target.closest('#declinePolicy'))) {
+            e.preventDefault();
+            window.declineGplPolicy();
+        }
+    });
+
     const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
     if (!hasAcceptedTOS) {
@@ -991,7 +1042,9 @@ function initializePolicyBanner() {
             if (localStorage.getItem('gplmods_policy_accepted') === 'true') return;
             policyModal.style.display = 'flex';
             policyModal.classList.add('show');
-            window.GPLPopupCoordinator.register('policy');
+            if (window.GPLPopupCoordinator) {
+                window.GPLPopupCoordinator.register('policy');
+            }
             document.body.style.overflow = 'hidden';
 
             setTimeout(() => {
@@ -1021,39 +1074,6 @@ function initializePolicyBanner() {
         } else {
             showPolicyModal();
         }
-
-        acceptBtn.addEventListener('click', () => {
-            localStorage.setItem('gplmods_policy_accepted', 'true');
-            localStorage.setItem('gplmods_policy_accepted_at', Date.now().toString());
-            window.GPLPopupCoordinator.unregister('policy');
-            window.dispatchEvent(new CustomEvent('gplmods:policy-accepted'));
-            document.body.style.overflow = '';
-            const contentBox = policyModal.querySelector('.policy-modal-content');
-            if (contentBox) contentBox.classList.remove('active');
-            
-            setTimeout(() => {
-                policyModal.classList.remove('show');
-                policyModal.style.display = 'none';
-                
-                // --- PHASE 2: Start the PWA/Newsletter Sequence ---
-                startEngagementSequence();
-            }, 300);
-        }, { once: true });
-
-        declineBtn.addEventListener('click', () => {
-            const contentBox = policyModal.querySelector('.policy-modal-content');
-            if (contentBox) {
-                contentBox.innerHTML = `
-                    <h2 style="color: var(--red); margin-bottom: 15px; font-size: 1.8em;">Policies Declined</h2>
-                    <p style="color: var(--silver); margin-bottom: 25px; font-size: 1em;">
-                        To continue using GPL Mods, you must accept our Terms of Service and Privacy Policy.
-                    </p>
-                    <button onclick="location.reload()" style="background-color: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: bold; border: none; cursor: pointer; font-size: 1.1em; box-shadow: 0 0 15px var(--glow-gold);">
-                        Refresh Page
-                    </button>
-                `;
-            }
-        }, { once: true });
 
     } else {
         // They already accepted TOS previously. Just run the sequence logic.
@@ -1108,8 +1128,42 @@ function startEngagementSequence() {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            window.gplDeferredPrompt = e;
+            window.dispatchEvent(new CustomEvent('gplmods:pwa-installable'));
             setTimeout(tryShowPwa, pwaDelay);
         });
+
+    window.isGplPwaInstalled = function() {
+        return Boolean(
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            document.referrer.includes('android-app://') ||
+            localStorage.getItem('gpl_pwa_installed') === 'true'
+        );
+    };
+
+    window.triggerPwaInstallPrompt = async function(instructionsId) {
+        if (window.gplDeferredPrompt) {
+            try {
+                window.gplDeferredPrompt.prompt();
+                const choice = await window.gplDeferredPrompt.userChoice;
+                if (choice && choice.outcome === 'accepted') {
+                    localStorage.setItem('gpl_pwa_installed', 'true');
+                    window.dispatchEvent(new CustomEvent('gplmods:pwa-installed'));
+                }
+                window.gplDeferredPrompt = null;
+                return;
+            } catch(e) {}
+        }
+        const inst = instructionsId ? document.getElementById(instructionsId) : document.querySelector('.pwa-install-guide');
+        if (inst) {
+            const isHidden = window.getComputedStyle(inst).display === 'none';
+            inst.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                inst.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    };
 
         if (installBtn) {
             installBtn.addEventListener('click', async () => {
@@ -1256,7 +1310,14 @@ function initializeMusicPlayer() {
     }
 
     function onPlayerStateChange(event) {
-        if (event.data === 0 && ytPlayer && typeof ytPlayer.playVideo === 'function') ytPlayer.playVideo();
+        if (event.data === 0) {
+            if (isSingleTrackLoop && ytPlayer && typeof ytPlayer.playVideo === 'function') {
+                ytPlayer.seekTo(0, true);
+                ytPlayer.playVideo();
+            } else if (nextBtn) {
+                nextBtn.click();
+            }
+        }
         if (event.data === 1 && currentSource === 'youtube') {
             const videoData = (ytPlayer && typeof ytPlayer.getVideoData === 'function') ? ytPlayer.getVideoData() : null;
             if (videoData && videoData.title) trackNameDisplay.textContent = "YT: " + videoData.title;
@@ -1281,6 +1342,7 @@ function initializeMusicPlayer() {
         const track = playlist[index];
         if (!track) return;
         audioPlayer.src = track.src;
+        audioPlayer.loop = isSingleTrackLoop;
         const total = playlist.length;
         const trackTitle = track.title || `Track ${index + 1}`;
         trackNameDisplay.textContent = total > 1 ? `(${index + 1}/${total}) ${trackTitle}` : trackTitle;
@@ -1367,6 +1429,37 @@ function initializeMusicPlayer() {
         else playMusic();
     });
 
+    const loopBtn = document.getElementById('music-loop-btn');
+    const loopIcon = document.getElementById('music-loop-icon');
+    let isSingleTrackLoop = localStorage.getItem('musicLoopMode') === 'single';
+
+    function updateLoopUI() {
+        if (!loopBtn) return;
+        if (isSingleTrackLoop) {
+            loopBtn.classList.add('active');
+            loopBtn.title = "Single Track Loop: ON (Click for Auto Next)";
+        } else {
+            loopBtn.classList.remove('active');
+            loopBtn.title = "Single Track Loop: OFF (Auto Next Enabled)";
+        }
+        audioPlayer.loop = isSingleTrackLoop;
+    }
+    updateLoopUI();
+
+    if (loopBtn) {
+        loopBtn.addEventListener('click', () => {
+            isSingleTrackLoop = !isSingleTrackLoop;
+            localStorage.setItem('musicLoopMode', isSingleTrackLoop ? 'single' : 'all');
+            updateLoopUI();
+            if (window.showGplToast) {
+                window.showGplToast({
+                    title: isSingleTrackLoop ? 'Single Track Loop: ON' : 'Single Track Loop: OFF',
+                    body: isSingleTrackLoop ? 'The current track will repeat continuously.' : 'The player will auto-play the next track.'
+                });
+            }
+        });
+    }
+
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
             if (!playlist || !playlist.length) return;
@@ -1386,7 +1479,12 @@ function initializeMusicPlayer() {
     }
 
     audioPlayer.addEventListener('ended', () => {
-        if (nextBtn) nextBtn.click();
+        if (isSingleTrackLoop) {
+            audioPlayer.currentTime = 0;
+            audioPlayer.play().catch(() => {});
+        } else if (nextBtn) {
+            nextBtn.click();
+        }
     });
     if (volumeSlider) {
         volumeSlider.addEventListener('input', (e) => setGlobalVolume(e.target.value));

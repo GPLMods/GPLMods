@@ -99,8 +99,9 @@
     function updatePagePrices(code) {
         const targetCurrency = code || getSavedCurrency();
         
-        // Find all elements with data-inr-price
+        // Find all elements with data-inr-price (excluding container cards!)
         document.querySelectorAll('[data-inr-price]').forEach(el => {
+            if (el.classList.contains('catalog-item-card') || el.classList.contains('coffee-card')) return;
             const inr = parseFloat(el.getAttribute('data-inr-price'));
             if (isNaN(inr)) return;
 

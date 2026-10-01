@@ -94,6 +94,63 @@
     
     /* Hide the global badge initially, JS will show it if needed */
     #global-badge { display: none; }
+
+    /* Switch UI */
+    .switch-ui {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+        flex-shrink: 0;
+    }
+    .switch-ui input { opacity: 0; width: 0; height: 0; }
+    .slider-ui {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: #2a2c38;
+        transition: 0.3s;
+        border-radius: 26px;
+        border: 1px solid #444;
+    }
+    .slider-ui:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: #fff;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+    input:checked + .slider-ui {
+        background-color: var(--gold);
+        border-color: var(--gold);
+    }
+    input:checked + .slider-ui:before {
+        transform: translateX(24px);
+        background-color: #000;
+    }
+    .btn-gold {
+        background: var(--gold);
+        color: #000;
+        font-weight: 700;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 18px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+        font-size: 0.88rem;
+    }
+    .btn-gold:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
 </style>
 
 <main class="container">
@@ -103,6 +160,97 @@
     <div class="hub-container" style="margin-top: 1rem;">
         <h1>Your <span>Notifications</span></h1>
         <p>Select a category below to view your alerts and updates.</p>
+
+        <!-- ======== PWA INSTALLATION REQUIREMENT WARNING ======== -->
+        <div id="regPwaNotifWarningBanner" style="border: 1px solid rgba(255, 193, 7, 0.5); background: linear-gradient(145deg, #1b170c 0%, #0e0d08 100%); border-radius: 16px; padding: 24px; text-align: left; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);">
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 193, 7, 0.15); border: 1.5px solid #ffc107; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #ffc107; flex-shrink: 0;">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 6px;">
+                        <h3 style="margin: 0; color: #ffc107; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-exclamation-triangle"></i> Install App as PWA to Enable Push Notifications
+                        </h3>
+                        <span id="regPwaStatusTag" style="font-size: 0.76rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.4);">
+                            PWA Required
+                        </span>
+                    </div>
+                    <p style="margin: 0 0 14px 0; color: var(--silver); font-size: 0.9rem; line-height: 1.5;">
+                        To guarantee reliable background push notifications, mod release sound alerts, and lock-screen updates on both mobile and desktop, install GPLMods as a Progressive Web App (PWA). Push notifications remain disabled until the app is installed.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+                        <button type="button" id="btnInstallPwaReg" onclick="triggerRegPwaInstall()" class="btn-gold">
+                            <i class="fas fa-download"></i> Install GPLMods App
+                        </button>
+                        <button type="button" onclick="toggleRegInstructions()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid #555; color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-info-circle" style="color: var(--gold);"></i> How to Install
+                        </button>
+                    </div>
+
+                    <!-- Step-by-Step Instructions Drawer -->
+                    <div id="regPwaInstructions" style="display: none; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 16px; margin-top: 10px;">
+                        <div style="font-weight: 700; color: #fff; font-size: 0.9rem; margin-bottom: 10px;">Step-by-Step Installation Instructions:</div>
+                        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.86rem; color: #ddd; line-height: 1.5;">
+                            <div>
+                                <strong style="color: var(--gold);"><i class="fab fa-android"></i> Android (Chrome / Edge / Firefox):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Tap the three dots (⋮) in the browser bar &rarr; Select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</div>
+                            </div>
+                            <div>
+                                <strong style="color: #64b5f6;"><i class="fab fa-apple"></i> iOS / iPadOS (Safari):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Tap the <strong>Share</strong> button (<i class="fas fa-share-square"></i>) in Safari bottom toolbar &rarr; Scroll down and tap <strong>"Add to Home Screen"</strong> (<i class="fas fa-plus-square"></i>) &rarr; Open GPLMods from your Home Screen.</div>
+                            </div>
+                            <div>
+                                <strong style="color: #81c784;"><i class="fas fa-desktop"></i> Windows / Mac / Linux (Chrome / Edge / Brave):</strong>
+                                <div style="color: var(--silver); margin-left: 20px;">Click the <strong>Install</strong> icon (<i class="fas fa-desktop"></i>) on the right side of the address bar &rarr; Click <strong>"Install"</strong>.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== DEVICE & PUSH ALERTS CONTROL CARD ======== -->
+        <div style="background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; padding: 22px 26px; margin-bottom: 24px; text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-bell" style="color: var(--gold); font-size: 1.3rem;"></i>
+                    <h2 style="color: #fff; font-size: 1.2rem; margin: 0; font-weight: 700;">Device Push Notifications</h2>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span id="regPushPermBadge" style="font-size: 0.78rem; padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.06); color: var(--silver); border: 1px solid #444;">
+                        Status: Checking...
+                    </span>
+                    <button type="button" class="btn btn-secondary" onclick="openGlobalNotificationModal()" style="border-color: var(--gold); color: var(--gold); padding: 5px 12px; font-size: 0.82rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; background: rgba(255,215,0,0.08);">
+                        <i class="fas fa-sliders-h"></i> Notification Hub &amp; Preferences
+                    </button>
+                </div>
+            </div>
+
+            <!-- Master Toggle Row (Disabled until PWA installed) -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255, 215, 0, 0.06); border: 1.5px solid rgba(255, 215, 0, 0.35); border-radius: 12px; padding: 14px 18px;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; color: #fff; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        Allow Site to Send Notifications
+                        <span id="regPwaLockIndicator" style="color: #ffc107; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-lock"></i> (PWA Install Required)
+                        </span>
+                    </h3>
+                    <p style="margin: 0; color: var(--silver); font-size: 0.84rem;">Master switch for Web Push, PWA alerts, and background audio chimes.</p>
+                </div>
+                <div id="regSwitchClickBlocker" onclick="handleRegLockedSwitchClick(event)" style="cursor: not-allowed; display: inline-block;">
+                    <label class="switch-ui" style="pointer-events: none;">
+                        <input type="checkbox" id="regMasterSwitch" onchange="handleRegMasterToggle(this.checked)" disabled>
+                        <span class="slider-ui" style="opacity: 0.5;"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="regNotifSaveStatus" style="display: none; background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; color: #2ecc71; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-top: 14px;">
+                <i class="fas fa-check-circle"></i> Notification preferences saved to your account and device.
+            </div>
+        </div>
 
         <!-- ALL CARDS MUST BE INSIDE THIS DIV -->
         <div class="notification-categories">
@@ -268,10 +416,171 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', refreshHubBadges);
-        window.addEventListener('pageshow', refreshHubBadges);
-        window.addEventListener('focus', refreshHubBadges);
-    })();
+    // PWA & Notification Hub Controls for Registered Users
+    function isRegPwaMode() {
+        return Boolean(
+            (typeof window.isGplPwaInstalled === 'function' && window.isGplPwaInstalled()) ||
+            window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true ||
+            document.referrer.includes('android-app://') ||
+            localStorage.getItem('gpl_pwa_installed') === 'true'
+        );
+    }
+
+    function toggleRegInstructions() {
+        const inst = document.getElementById('regPwaInstructions');
+        if (inst) {
+            inst.style.display = (inst.style.display === 'none' || !inst.style.display) ? 'block' : 'none';
+        }
+    }
+
+    function triggerRegPwaInstall() {
+        if (typeof window.triggerPwaInstallPrompt === 'function') {
+            window.triggerPwaInstallPrompt('regPwaInstructions');
+        } else {
+            toggleRegInstructions();
+        }
+    }
+
+    function handleRegLockedSwitchClick(e) {
+        if (!isRegPwaMode()) {
+            if (e) e.preventDefault();
+            const inst = document.getElementById('regPwaInstructions');
+            if (inst) {
+                inst.style.display = 'block';
+                inst.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            if (window.showGplToast) {
+                window.showGplToast({
+                    title: 'PWA Installation Required',
+                    body: 'Install GPLMods as PWA following the steps above to unlock device push notifications.'
+                });
+            }
+        }
+    }
+
+    function loadRegNotifPrefs() {
+        const isInstalled = isRegPwaMode();
+        const masterSwitch = document.getElementById('regMasterSwitch');
+        const lockIndicator = document.getElementById('regPwaLockIndicator');
+        const blocker = document.getElementById('regSwitchClickBlocker');
+        const pwaTag = document.getElementById('regPwaStatusTag');
+        const badge = document.getElementById('regPushPermBadge');
+
+        if (!isInstalled) {
+            if (masterSwitch) {
+                masterSwitch.checked = false;
+                masterSwitch.disabled = true;
+            }
+            if (lockIndicator) lockIndicator.style.display = 'inline-flex';
+            if (blocker) {
+                const innerUi = blocker.querySelector('.switch-ui');
+                if (innerUi) innerUi.style.pointerEvents = 'none';
+                blocker.style.cursor = 'not-allowed';
+            }
+            if (pwaTag) {
+                pwaTag.textContent = 'PWA Required';
+                pwaTag.style.background = 'rgba(255, 193, 7, 0.2)';
+                pwaTag.style.color = '#ffc107';
+            }
+            if (badge) {
+                badge.innerHTML = '<i class="fas fa-lock" style="color: #ffc107;"></i> Locked: PWA Required';
+                badge.style.color = '#ffc107';
+                badge.style.borderColor = 'rgba(255, 193, 7, 0.4)';
+            }
+            return;
+        }
+
+        // PWA Installed!
+        if (pwaTag) {
+            pwaTag.innerHTML = '<i class="fas fa-check-circle"></i> PWA Active';
+            pwaTag.style.background = 'rgba(46, 204, 113, 0.2)';
+            pwaTag.style.color = '#2ecc71';
+            pwaTag.style.borderColor = 'rgba(46, 204, 113, 0.5)';
+        }
+        if (lockIndicator) lockIndicator.style.display = 'none';
+        if (blocker) {
+            const innerUi = blocker.querySelector('.switch-ui');
+            if (innerUi) innerUi.style.pointerEvents = 'auto';
+            blocker.style.cursor = 'pointer';
+        }
+        if (masterSwitch) {
+            masterSwitch.disabled = false;
+            const isEnabled = localStorage.getItem('gpl_push_notification_enabled') === 'true';
+            masterSwitch.checked = isEnabled;
+        }
+
+        if (badge) {
+            if (!('Notification' in window)) {
+                badge.textContent = 'Push: Unsupported';
+                badge.style.color = '#888';
+            } else if (Notification.permission === 'granted') {
+                badge.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71;"></i> Push: Granted';
+                badge.style.color = '#2ecc71';
+                badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
+            } else if (Notification.permission === 'denied') {
+                badge.innerHTML = '<i class="fas fa-ban" style="color: #e74c3c;"></i> Push: Blocked';
+                badge.style.color = '#e74c3c';
+                badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
+            } else {
+                const isEnabled = localStorage.getItem('gpl_push_notification_enabled') === 'true';
+                badge.innerHTML = isEnabled 
+                    ? '<i class="fas fa-info-circle" style="color: var(--gold);"></i> Enabled (In-App)' 
+                    : '<i class="fas fa-times-circle" style="color: var(--silver);"></i> Disabled';
+                badge.style.color = isEnabled ? 'var(--gold)' : 'var(--silver)';
+                badge.style.borderColor = isEnabled ? 'rgba(255, 215, 0, 0.4)' : '#444';
+            }
+        }
+    }
+
+    async function handleRegMasterToggle(isChecked) {
+        localStorage.setItem('gpl_push_notification_enabled', isChecked ? 'true' : 'false');
+        localStorage.setItem('gpl_push_notification_sound', isChecked ? 'true' : 'false');
+
+        if (isChecked) {
+            if (window.enablePushNotifications) {
+                try {
+                    await window.enablePushNotifications();
+                } catch(e) {}
+            }
+        } else {
+            if (window.disablePushNotifications) {
+                try {
+                    await window.disablePushNotifications();
+                } catch(e) {}
+            }
+        }
+
+        loadRegNotifPrefs();
+
+        const banner = document.getElementById('regNotifSaveStatus');
+        if (banner) {
+            banner.style.display = 'block';
+            banner.innerHTML = isChecked 
+                ? '<i class="fas fa-check-circle"></i> Site notifications enabled successfully.' 
+                : '<i class="fas fa-check-circle"></i> Site notifications disabled.';
+            setTimeout(() => { banner.style.display = 'none'; }, 3000);
+        }
+
+        fetch('/settings/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                notificationsEnabled: isChecked,
+                newUploads: isChecked,
+                clubUpdates: isChecked,
+                adminMessages: isChecked,
+                soundEnabled: isChecked
+            })
+        }).catch(() => {});
+    }
+
+    document.addEventListener('DOMContentLoaded', loadRegNotifPrefs);
+    window.addEventListener('pageshow', loadRegNotifPrefs);
+    window.addEventListener('focus', loadRegNotifPrefs);
+    window.addEventListener('gplmods:pwa-installed', loadRegNotifPrefs);
 </script>
+
+<%- include('../partials/pwa-notification-modal') %>
 
 <%- include('../partials/footer') %>
