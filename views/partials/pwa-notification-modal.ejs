@@ -169,9 +169,18 @@
         const anyChecked = (u && u.checked) || (c && c.checked) || (a && a.checked) || (s && s.checked);
         const isMasterEnabled = anyChecked || (localStorage.getItem('gpl_push_notification_enabled') !== 'false');
 
-        // Sync on-page master switch if present
+        // Sync on-page master switch and channel switches if present
         const masterOnPage = document.getElementById('masterNotifSwitch') || document.getElementById('guestMasterSwitch');
         if (masterOnPage) masterOnPage.checked = isMasterEnabled;
+
+        const pageU = document.getElementById('setting_newUploads');
+        const pageC = document.getElementById('setting_clubUpdates');
+        const pageA = document.getElementById('setting_adminMessages');
+        const pageS = document.getElementById('setting_soundEnabled');
+        if (pageU && u) pageU.checked = u.checked;
+        if (pageC && c) pageC.checked = c.checked;
+        if (pageA && a) pageA.checked = a.checked;
+        if (pageS && s) pageS.checked = s.checked;
 
         localStorage.setItem('gpl_push_notification_enabled', isMasterEnabled ? 'true' : 'false');
         if (s) localStorage.setItem('gpl_push_notification_sound', s.checked ? 'true' : 'false');

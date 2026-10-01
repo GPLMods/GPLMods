@@ -208,6 +208,26 @@
     // 5. Subscribe to Web Push
     window.enablePushNotifications = async function () {
         try {
+            // STRICT PWA GUARD: Device Web Push requires PWA standalone installation
+            const isPwaInstalled = (typeof window.isGplPwaInstalled === 'function' && window.isGplPwaInstalled()) ||
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.navigator.standalone === true ||
+                localStorage.getItem('gpl_pwa_installed') === 'true' ||
+                document.referrer.includes('android-app://');
+
+            if (!isPwaInstalled) {
+                if (window.showGplToast) {
+                    window.showGplToast({
+                        title: 'PWA Installation Required',
+                        body: 'Please install GPLMods as an app to enable background push notifications on your device.'
+                    });
+                }
+                if (typeof window.triggerPwaInstallPrompt === 'function') {
+                    window.triggerPwaInstallPrompt();
+                }
+                return false;
+            }
+
             if (!('Notification' in window) || !('serviceWorker' in navigator)) {
                 if (window.showGplToast) window.showGplToast({ title: 'Push Not Supported', body: 'Your browser or device does not support Web Push notifications.' });
                 return false;

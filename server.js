@@ -180,41 +180,72 @@ const AIKnowledge = require('./models/aiKnowledge');
 const improvmx = require('./utils/improvmx');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// Initialize Gemini Flash AI with automatic fallback
-const PRIMARY_GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-const FALLBACK_GEMINI_MODEL = "gemini-1.5-flash";
+// Initialize Gemini Flash AI with multi-tier automatic fallback
+const GEMINI_MODELS = [
+    process.env.GEMINI_MODEL,
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash"
+].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+
+const PRIMARY_GEMINI_MODEL = GEMINI_MODELS[0] || "gemini-3.8-flash";
+const FALLBACK_GEMINI_MODEL = GEMINI_MODELS[1] || "gemini-3.6-flash";
 
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
-const aiModel = genAI ? genAI.getGenerativeModel({ 
-    model: PRIMARY_GEMINI_MODEL,
-    systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
-}) : null;
+const geminiModelCache = new Map();
 
-const aiFallbackModel = genAI ? genAI.getGenerativeModel({ 
-    model: FALLBACK_GEMINI_MODEL,
-    systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
-}) : null;
-
-// Robust execution wrapper that handles 503 Service Unavailable / high demand automatically
-async function executeGeminiWithFallback(operation) {
-    if (!aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
-    try {
-        return await operation(aiModel, PRIMARY_GEMINI_MODEL);
-    } catch (primaryErr) {
-        const isHighDemandOr503 = primaryErr.message && (
-            primaryErr.message.includes('503') ||
-            primaryErr.message.includes('high demand') ||
-            primaryErr.message.includes('Service Unavailable') ||
-            primaryErr.message.includes('ResourceExhausted') ||
-            primaryErr.message.includes('429')
-        );
-        if (isHighDemandOr503 && aiFallbackModel) {
-            console.warn(`[Gemini AI] Primary model (${PRIMARY_GEMINI_MODEL}) high demand/unavailable. Switching to fallback (${FALLBACK_GEMINI_MODEL})...`);
-            await new Promise(r => setTimeout(r, 600));
-            return await operation(aiFallbackModel, FALLBACK_GEMINI_MODEL);
-        }
-        throw primaryErr;
+function getGeminiModel(modelName) {
+    if (!genAI) return null;
+    if (!geminiModelCache.has(modelName)) {
+        geminiModelCache.set(modelName, genAI.getGenerativeModel({ 
+            model: modelName,
+            systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
+        }));
     }
+    return geminiModelCache.get(modelName);
+}
+
+const aiModel = getGeminiModel(PRIMARY_GEMINI_MODEL);
+const aiFallbackModel = getGeminiModel(FALLBACK_GEMINI_MODEL);
+
+// Robust execution wrapper that cycles through available models on 503 / 429 / 404 / high demand
+async function executeGeminiWithFallback(operation) {
+    if (!genAI || !aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
+    
+    let lastError = null;
+    for (let i = 0; i < GEMINI_MODELS.length; i++) {
+        const modelName = GEMINI_MODELS[i];
+        const model = getGeminiModel(modelName);
+        if (!model) continue;
+
+        try {
+            return await operation(model, modelName);
+        } catch (err) {
+            lastError = err;
+            const errMsg = String(err && (err.message || err));
+            const isRetryable = (
+                errMsg.includes('503') ||
+                errMsg.includes('high demand') ||
+                errMsg.includes('Service Unavailable') ||
+                errMsg.includes('ResourceExhausted') ||
+                errMsg.includes('429') ||
+                errMsg.includes('404') ||
+                errMsg.includes('no longer available') ||
+                errMsg.includes('not found')
+            );
+
+            if (isRetryable && i < GEMINI_MODELS.length - 1) {
+                const nextModel = GEMINI_MODELS[i + 1];
+                console.warn(`[Gemini AI] Model (${modelName}) unavailable or overloaded. Automatically switching to fallback (${nextModel})...`);
+                await new Promise(r => setTimeout(r, 400));
+                continue;
+            } else {
+                throw err;
+            }
+        }
+    }
+    throw lastError;
 }
 
 // AI Diagnostics & Health State
@@ -19606,7 +19637,8 @@ const startServer = async () => {
                                 console.warn("Could not load AIKnowledge for chat prompt:", kbErr.message);
                             }
 
-                            const aiResponseText = await executeGeminiWithFallback(async (modelToUse) => {
+                            const aiResponseText = await executeGeminiWithFallback(async (modelToUse, modelName) => {
+                                aiDebuggerStatus.model = modelName;
                                 try {
                                     const chat = modelToUse.startChat({
                                         history: [
@@ -19623,7 +19655,7 @@ const startServer = async () => {
                                     const aiResult = await chat.sendMessage(text || "Sent an attachment.");
                                     return aiResult.response.text();
                                 } catch (chatSendErr) {
-                                    console.warn(`[Gemini AI] chat.sendMessage failed on model, trying generateContent fallback:`, chatSendErr.message);
+                                    console.warn(`[Gemini AI] chat.sendMessage failed on ${modelName}, trying generateContent fallback:`, chatSendErr.message);
                                     const fallbackResult = await modelToUse.generateContent(`${systemKnowledgePrompt}\n\nUser Question: ${text || "Sent an attachment."}`);
                                     return fallbackResult.response.text();
                                 }

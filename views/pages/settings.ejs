@@ -243,7 +243,7 @@
                 soundEnabled: true
             };
         %>
-        <div class="settings-section" style="flex-direction: column; align-items: stretch;">
+        <div class="settings-section" id="notifications" style="flex-direction: column; align-items: stretch;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; width: 100%;">
                 <div class="settings-info" style="max-width: 580px;">
                     <h3><i class="fas fa-bell" style="color: var(--gold);"></i> Dynamic &amp; PWA Notifications</h3>
@@ -251,12 +251,64 @@
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     <button type="button" class="btn btn-secondary" onclick="openGlobalNotificationModal()" id="btn-open-global-notif" style="border-color: var(--gold); color: var(--gold); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-sliders-h"></i> Global Notifications UI
+                        <i class="fas fa-sliders-h"></i> Notification Hub &amp; Channels
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="enablePushNotifications()" id="btn-request-push" style="border-color: #555; color: var(--silver); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-mobile-alt"></i> Sync PWA Push
+                    <button type="button" class="btn btn-secondary" onclick="handleSyncPwaPushClick()" id="btn-request-push" style="border-color: #555; color: var(--silver); padding: 8px 14px; font-size: 0.85em; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-mobile-alt"></i> Sync Device Push
                     </button>
                 </div>
+            </div>
+
+            <!-- ======== PWA REQUIREMENT NOTICE FOR DEVICE PUSH ======== -->
+            <div id="settingsPwaNotice" style="margin-top: 18px; border: 1px solid rgba(255, 193, 7, 0.45); background: linear-gradient(145deg, #1b170c 0%, #0e0d08 100%); border-radius: 14px; padding: 18px 20px;">
+                <div style="display: flex; align-items: flex-start; gap: 14px;">
+                    <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(255, 193, 7, 0.15); border: 1px solid #ffc107; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #ffc107; flex-shrink: 0;">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 4px;">
+                            <h4 style="margin: 0; color: #ffc107; font-size: 0.98rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-exclamation-triangle"></i> Install App as PWA to Enable Device Push Notifications
+                            </h4>
+                            <span id="settingsPwaTag" style="font-size: 0.74rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.4);">
+                                PWA Required
+                            </span>
+                        </div>
+                        <p style="margin: 0 0 12px 0; color: var(--silver); font-size: 0.86rem; line-height: 1.45;">
+                            In-app notifications and site updates work directly in your browser. To unlock background push notifications, device lock-screen alerts, and audio chimes, GPLMods must be installed as a Progressive Web App (PWA).
+                        </p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button type="button" onclick="if(window.triggerPwaInstallPrompt) window.triggerPwaInstallPrompt('settingsPwaInstructions'); else toggleSettingsPwaInstructions();" style="background: var(--gold); color: #000; font-weight: 700; border: none; border-radius: 6px; padding: 7px 14px; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-download"></i> Install GPLMods App
+                            </button>
+                            <button type="button" onclick="toggleSettingsPwaInstructions()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid #555; color: #fff; padding: 7px 14px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-info-circle" style="color: var(--gold);"></i> How to Install
+                            </button>
+                        </div>
+
+                        <!-- Step-by-Step Instructions Drawer -->
+                        <div id="settingsPwaInstructions" style="display: none; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 14px; margin-top: 12px;">
+                            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: #ddd; line-height: 1.45;">
+                                <div>
+                                    <strong style="color: var(--gold);"><i class="fab fa-android"></i> Android (Chrome / Edge):</strong>
+                                    <span style="color: var(--silver); margin-left: 6px;">Tap browser menu (⋮) &rarr; "Install app" or "Add to Home screen".</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #64b5f6;"><i class="fab fa-apple"></i> iOS / iPadOS (Safari):</strong>
+                                    <span style="color: var(--silver); margin-left: 6px;">Tap Share button (<i class="fas fa-share-square"></i>) &rarr; "Add to Home Screen" (<i class="fas fa-plus-square"></i>).</span>
+                                </div>
+                                <div>
+                                    <strong style="color: #81c784;"><i class="fas fa-desktop"></i> Desktop (Chrome / Edge / Brave):</strong>
+                                    <span style="color: var(--silver); margin-left: 6px;">Click the Install icon (<i class="fas fa-desktop"></i>) on the right of the address bar &rarr; "Install".</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settingsPwaSuccessBadge" style="display: none; margin-top: 14px; padding: 10px 14px; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 10px; color: #2ecc71; font-size: 0.86rem; align-items: center; gap: 8px;">
+                <i class="fas fa-check-circle"></i> GPLMods PWA installed on this device. Background Web Push notifications are fully supported.
             </div>
 
             <form action="/settings/notifications" method="POST" id="notif-settings-form" style="margin-top: 18px; width: 100%;">
@@ -268,7 +320,7 @@
                         </div>
                         <div>
                             <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Allow Site to Send Notifications</div>
-                            <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Master switch for Web Push, PWA alerts, and live in-app notifications</div>
+                            <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Master authorization for Web Push alerts and device sound chimes</div>
                         </div>
                     </div>
                     <label class="switch">
@@ -276,26 +328,168 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
+
+                <!-- Alert Channels Sub-settings -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px;">
+                    <!-- Channel 1: New Uploads -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-cloud-upload-alt" style="color: #64b5f6; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">New Mod Uploads</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Instant alerts when fresh mods are published</div>
+                            </div>
+                        </div>
+                        <label class="switch" style="margin: 0;">
+                            <input type="checkbox" id="setting_newUploads" name="newUploads" onchange="handleSubSettingChange()" <%= notifSettings.newUploads !== false ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 2: Club Updates -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-users" style="color: #81c784; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Club Discussions</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Notifications from clubs and communities you joined</div>
+                            </div>
+                        </div>
+                        <label class="switch" style="margin: 0;">
+                            <input type="checkbox" id="setting_clubUpdates" name="clubUpdates" onchange="handleSubSettingChange()" <%= notifSettings.clubUpdates !== false ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 3: Admin Messages -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Admin Announcements</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Official patch notes, security alerts, and replies</div>
+                            </div>
+                        </div>
+                        <label class="switch" style="margin: 0;">
+                            <input type="checkbox" id="setting_adminMessages" name="adminMessages" onchange="handleSubSettingChange()" <%= notifSettings.adminMessages !== false ? 'checked' : '' %>>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 4: Sound Chime -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Audio Chimes</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Play sound effect on new notifications</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button type="button" onclick="if(window.testNotificationSound) window.testNotificationSound();" style="background: rgba(255,255,255,0.06); border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.74em; cursor: pointer;">
+                                <i class="fas fa-play" style="color: var(--gold);"></i> Test
+                            </button>
+                            <label class="switch" style="margin: 0;">
+                                <input type="checkbox" id="setting_soundEnabled" name="soundEnabled" onchange="handleSubSettingChange()" <%= notifSettings.soundEnabled !== false ? 'checked' : '' %>>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </form>
         </div>
 
         <script>
-            function syncHubModalWithMaster(isEnabled) {
-                const u = document.getElementById('modal_newUploads');
-                const c = document.getElementById('modal_clubUpdates');
-                const a = document.getElementById('modal_adminMessages');
-                const s = document.getElementById('modal_soundEnabled');
-                [u, c, a, s].forEach(el => {
-                    if (el) {
-                        el.disabled = !isEnabled;
-                        el.checked = isEnabled;
-                    }
+            function isSettingsPwaMode() {
+                return Boolean(
+                    (typeof window.isGplPwaInstalled === 'function' && window.isGplPwaInstalled()) ||
+                    window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true ||
+                    document.referrer.includes('android-app://') ||
+                    localStorage.getItem('gpl_pwa_installed') === 'true'
+                );
+            }
+
+            function toggleSettingsPwaInstructions() {
+                const el = document.getElementById('settingsPwaInstructions');
+                if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+            }
+
+            function syncHubModalWithSettings(payload) {
+                const modal_u = document.getElementById('modal_newUploads');
+                const modal_c = document.getElementById('modal_clubUpdates');
+                const modal_a = document.getElementById('modal_adminMessages');
+                const modal_s = document.getElementById('modal_soundEnabled');
+
+                if (modal_u) modal_u.checked = payload.newUploads;
+                if (modal_c) modal_c.checked = payload.clubUpdates;
+                if (modal_a) modal_a.checked = payload.adminMessages;
+                if (modal_s) modal_s.checked = payload.soundEnabled;
+
+                [modal_u, modal_c, modal_a, modal_s].forEach(el => {
+                    if (el) el.disabled = !payload.notificationsEnabled;
                 });
             }
 
+            async function handleSyncPwaPushClick() {
+                if (!isSettingsPwaMode()) {
+                    toggleSettingsPwaInstructions();
+                    if (window.showGplToast) {
+                        window.showGplToast({
+                            title: 'PWA Installation Required',
+                            body: 'Please install GPLMods as an app to enable background push notifications on your device.'
+                        });
+                    }
+                    if (typeof window.triggerPwaInstallPrompt === 'function') {
+                        window.triggerPwaInstallPrompt('settingsPwaInstructions');
+                    }
+                    return;
+                }
+
+                if (window.enablePushNotifications) {
+                    await window.enablePushNotifications();
+                    const master = document.getElementById('masterNotifSwitch');
+                    if (master) {
+                        master.checked = true;
+                        handleMasterNotifChange(master);
+                    }
+                }
+            }
+
             async function handleMasterNotifChange(checkbox) {
+                const isInstalled = isSettingsPwaMode();
+                
+                // If trying to enable push notifications without PWA installed:
+                if (checkbox.checked && !isInstalled) {
+                    checkbox.checked = false; // Revert
+                    const instructions = document.getElementById('settingsPwaInstructions');
+                    if (instructions) instructions.style.display = 'block';
+                    
+                    if (window.showGplToast) {
+                        window.showGplToast({
+                            title: 'PWA Installation Required',
+                            body: 'Install GPLMods as an app on your home screen or PC to enable device push alerts. In-app alerts remain active.'
+                        });
+                    }
+                    if (typeof window.triggerPwaInstallPrompt === 'function') {
+                        window.triggerPwaInstallPrompt('settingsPwaInstructions');
+                    }
+                    return;
+                }
+
                 const isEnabled = checkbox.checked;
-                syncHubModalWithMaster(isEnabled);
+                const u = document.getElementById('setting_newUploads');
+                const c = document.getElementById('setting_clubUpdates');
+                const a = document.getElementById('setting_adminMessages');
+                const s = document.getElementById('setting_soundEnabled');
+
+                [u, c, a, s].forEach(el => {
+                    if (el) {
+                        el.disabled = !isEnabled;
+                        if (!isEnabled) el.checked = false;
+                        else el.checked = true;
+                    }
+                });
 
                 const payload = {
                     notificationsEnabled: isEnabled,
@@ -305,7 +499,8 @@
                     soundEnabled: isEnabled
                 };
 
-                // Persist locally for immediate feedback across site
+                syncHubModalWithSettings(payload);
+
                 try {
                     localStorage.setItem('gpl_push_notification_enabled', isEnabled ? 'true' : 'false');
                     localStorage.setItem('gpl_push_notification_sound', isEnabled ? 'true' : 'false');
@@ -320,27 +515,20 @@
 
                 if (isEnabled) {
                     if (window.enablePushNotifications) {
-                        try {
-                            await window.enablePushNotifications();
-                        } catch (err) {
-                            console.log('[WebPush] Push permission prompt dismissed or unavailable, in-app alerts active.');
-                        }
+                        try { await window.enablePushNotifications(); } catch (err) {}
                     }
                 } else {
                     if (window.disablePushNotifications) {
-                        try {
-                            await window.disablePushNotifications();
-                        } catch (err) {}
+                        try { await window.disablePushNotifications(); } catch (err) {}
                     }
                 }
 
                 try {
-                    const res = await fetch('/settings/notifications', {
+                    await fetch('/settings/notifications', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    const data = await res.json();
                     if (window.showGplToast) {
                         window.showGplToast({
                             title: isEnabled ? 'Notifications Enabled' : 'Notifications Disabled',
@@ -352,10 +540,81 @@
                 }
             }
 
-            document.addEventListener('DOMContentLoaded', () => {
+            async function handleSubSettingChange() {
+                const u = document.getElementById('setting_newUploads');
+                const c = document.getElementById('setting_clubUpdates');
+                const a = document.getElementById('setting_adminMessages');
+                const s = document.getElementById('setting_soundEnabled');
+
+                const anyChecked = (u && u.checked) || (c && c.checked) || (a && a.checked) || (s && s.checked);
                 const master = document.getElementById('masterNotifSwitch');
-                if (master) syncHubModalWithMaster(master.checked);
-            });
+                if (master) master.checked = Boolean(anyChecked);
+
+                const payload = {
+                    notificationsEnabled: Boolean(anyChecked),
+                    newUploads: u ? u.checked : false,
+                    clubUpdates: c ? c.checked : false,
+                    adminMessages: a ? a.checked : false,
+                    soundEnabled: s ? s.checked : false
+                };
+
+                syncHubModalWithSettings(payload);
+
+                try {
+                    localStorage.setItem('gpl_push_notification_enabled', anyChecked ? 'true' : 'false');
+                    if (s) localStorage.setItem('gpl_push_notification_sound', s.checked ? 'true' : 'false');
+                    localStorage.setItem('gpl_notif_prefs', JSON.stringify({
+                        master: Boolean(anyChecked),
+                        newUploads: payload.newUploads,
+                        clubUpdates: payload.clubUpdates,
+                        adminMessages: payload.adminMessages,
+                        soundEnabled: payload.soundEnabled
+                    }));
+
+                    await fetch('/settings/notifications', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (window.showGplToast) {
+                        window.showGplToast({ title: 'Preferences Saved', body: 'Notification channels updated.' });
+                    }
+                } catch(e) {}
+            }
+
+            function syncSettingsUiState() {
+                const isInstalled = isSettingsPwaMode();
+                const notice = document.getElementById('settingsPwaNotice');
+                const successBadge = document.getElementById('settingsPwaSuccessBadge');
+
+                if (notice) notice.style.display = isInstalled ? 'none' : 'block';
+                if (successBadge) successBadge.style.display = isInstalled ? 'flex' : 'none';
+
+                // Check local storage for existing device preference
+                try {
+                    const localPref = localStorage.getItem('gpl_notif_prefs');
+                    if (localPref) {
+                        const parsed = JSON.parse(localPref);
+                        const master = document.getElementById('masterNotifSwitch');
+                        const u = document.getElementById('setting_newUploads');
+                        const c = document.getElementById('setting_clubUpdates');
+                        const a = document.getElementById('setting_adminMessages');
+                        const s = document.getElementById('setting_soundEnabled');
+
+                        if (master && typeof parsed.master === 'boolean') master.checked = parsed.master;
+                        if (u && typeof parsed.newUploads === 'boolean') u.checked = parsed.newUploads;
+                        if (c && typeof parsed.clubUpdates === 'boolean') c.checked = parsed.clubUpdates;
+                        if (a && typeof parsed.adminMessages === 'boolean') a.checked = parsed.adminMessages;
+                        if (s && typeof parsed.soundEnabled === 'boolean') s.checked = parsed.soundEnabled;
+                    }
+                } catch(e) {}
+            }
+
+            document.addEventListener('DOMContentLoaded', syncSettingsUiState);
+            window.addEventListener('pageshow', syncSettingsUiState);
+            window.addEventListener('focus', syncSettingsUiState);
+            window.addEventListener('gplmods:pwa-installed', syncSettingsUiState);
         </script>
 
         <div class="settings-section">

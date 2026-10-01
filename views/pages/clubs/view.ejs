@@ -2023,6 +2023,8 @@
             <% 
                 const canChatInChannel = typeof canUserChatInActiveChannel !== 'undefined' ? canUserChatInActiveChannel : true;
                 const isPublicViewRestricted = activeChannel && activeChannel.accessMode === 'public_view' && !canChatInChannel;
+                const isChanLocked = Boolean(activeChannel && (activeChannel.isLocked || activeChannel.isReadOnly));
+                const canPostWhenLocked = Boolean(typeof hasManageClubPerm !== 'undefined' && hasManageClubPerm);
             %>
             <div id="channelLockedChatOverlay" style="display: <%= canChatInChannel ? 'none' : 'flex' %>;" class="chat-locked-full-box">
                 <i class="fas fa-lock" style="color: var(--gold); font-size: 1.3rem;"></i>
@@ -2397,7 +2399,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; font-size: 0.84rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px;">
                     <div>
                         <span style="color: var(--silver); display: block;">Channel Type:</span>
-                        <strong style="color: #fff;"><%= activeChannel ? activeChannel.type.toUpperCase() : 'TEXT' %> Channel</strong>
+                        <strong style="color: #fff;"><%= (activeChannel && activeChannel.type) ? activeChannel.type.toUpperCase() : 'TEXT' %> Channel</strong>
                     </div>
                     <div>
                         <span style="color: var(--silver); display: block;">Who Can Chat:</span>
