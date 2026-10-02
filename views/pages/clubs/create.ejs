@@ -604,11 +604,11 @@
                 <input type="text" id="clubTags" name="tags" class="form-control-input" placeholder="e.g. Android, IPA, Gaming, Tools, Tweaks, Windows" value="<%= formData.tags || 'Gaming, Modding, Community' %>">
             </div>
 
-            <!-- Language & Country/Region Dropdowns (Dynamic Flag Emojis) -->
+            <!-- Language & Country/Region Dropdowns -->
             <div class="form-row-2col">
                 <!-- Custom Primary Language Dropdown -->
                 <div class="form-group-block dropdown-block" style="z-index: 50;">
-                    <label>Primary Language</label>
+                    <label><i class="fas fa-language" style="color: var(--gold); margin-right: 6px;"></i> Primary Language</label>
                     <div class="custom-select-wrapper" id="wrapper-primaryLanguage">
                         <% 
                             const languagesList = [
@@ -648,49 +648,293 @@
                     </div>
                 </div>
 
-                <!-- Custom Country / Region Dropdown -->
+                <!-- Custom Country / Region Dropdown (Reused from profile) -->
                 <div class="form-group-block dropdown-block" style="z-index: 50;">
-                    <label>Country / Region</label>
+                    <label><i class="fas fa-globe-americas" style="color: var(--gold); margin-right: 6px;"></i> Country / Region</label>
+                    <% 
+                        const countriesList = `
+GLOBAL|Earth
+AF|Afghanistan
+AX|Åland Islands
+AL|Albania
+DZ|Algeria
+AS|American Samoa
+AD|Andorra
+AO|Angola
+AI|Anguilla
+AQ|Antarctica
+AG|Antigua and Barbuda
+AR|Argentina
+AM|Armenia
+AW|Aruba
+AU|Australia
+AT|Austria
+AZ|Azerbaijan
+BS|Bahamas
+BH|Bahrain
+BD|Bangladesh
+BB|Barbados
+BY|Belarus
+BE|Belgium
+BZ|Belize
+BJ|Benin
+BM|Bermuda
+BT|Bhutan
+BO|Bolivia (Plurinational State of)
+BQ|Bonaire, Sint Eustatius and Saba
+BA|Bosnia and Herzegovina
+BW|Botswana
+BV|Bouvet Island
+BR|Brazil
+IO|British Indian Ocean Territory
+BN|Brunei Darussalam
+BG|Bulgaria
+BF|Burkina Faso
+BI|Burundi
+CV|Cabo Verde
+KH|Cambodia
+CM|Cameroon
+CA|Canada
+KY|Cayman Islands
+CF|Central African Republic
+TD|Chad
+CL|Chile
+CN|China
+CX|Christmas Island
+CC|Cocos (Keeling) Islands
+CO|Colombia
+KM|Comoros
+CG|Congo
+CD|Congo (Democratic Republic of the)
+CK|Cook Islands
+CR|Costa Rica
+CI|Côte d'Ivoire
+HR|Croatia
+CU|Cuba
+CW|Curaçao
+CY|Cyprus
+CZ|Czechia
+DK|Denmark
+DJ|Djibouti
+DM|Dominica
+DO|Dominican Republic
+EC|Ecuador
+EG|Egypt
+SV|El Salvador
+GQ|Equatorial Guinea
+ER|Eritrea
+EE|Estonia
+SZ|Eswatini
+ET|Ethiopia
+FK|Falkland Islands (Malvinas)
+FO|Faroe Islands
+FJ|Fiji
+FI|Finland
+FR|France
+GF|French Guiana
+PF|French Polynesia
+TF|French Southern Territories
+GA|Gabon
+GM|Gambia
+GE|Georgia
+DE|Germany
+GH|Ghana
+GI|Gibraltar
+GR|Greece
+GL|Greenland
+GD|Grenada
+GP|Guadeloupe
+GU|Guam
+GT|Guatemala
+GG|Guernsey
+GN|Guinea
+GW|Guinea-Bissau
+GY|Guyana
+HT|Haiti
+HM|Heard Island and McDonald Islands
+VA|Holy See
+HN|Honduras
+HK|Hong Kong
+HU|Hungary
+IS|Iceland
+IN|India
+ID|Indonesia
+IR|Iran (Islamic Republic of)
+IQ|Iraq
+IE|Ireland
+IM|Isle of Man
+IL|Israel
+IT|Italy
+JM|Jamaica
+JP|Japan
+JE|Jersey
+JO|Jordan
+KZ|Kazakhstan
+KE|Kenya
+KI|Kiribati
+KP|Korea (Democratic People's Republic of)
+KR|Korea (Republic of)
+KW|Kuwait
+KG|Kyrgyzstan
+LA|Lao People's Democratic Republic
+LV|Latvia
+LB|Lebanon
+LS|Lesotho
+LR|Liberia
+LY|Libya
+LI|Liechtenstein
+LT|Lithuania
+LU|Luxembourg
+MO|Macao
+MG|Madagascar
+MW|Malawi
+MY|Malaysia
+MV|Maldives
+ML|Mali
+MT|Malta
+MH|Marshall Islands
+MQ|Martinique
+MR|Mauritania
+MU|Mauritius
+YT|Mayotte
+MX|Mexico
+FM|Micronesia (Federated States of)
+MD|Moldova (Republic of)
+MC|Monaco
+MN|Mongolia
+ME|Montenegro
+MS|Montserrat
+MA|Morocco
+MZ|Mozambique
+MM|Myanmar
+NA|Namibia
+NR|Nauru
+NP|Nepal
+NL|Netherlands
+NC|New Caledonia
+NZ|New Zealand
+NI|Nicaragua
+NE|Niger
+NG|Nigeria
+NU|Niue
+NF|Norfolk Island
+MK|North Macedonia
+MP|Northern Mariana Islands
+NO|Norway
+OM|Oman
+PK|Pakistan
+PW|Palau
+PS|Palestine, State of
+PA|Panama
+PG|Papua New Guinea
+PY|Paraguay
+PE|Peru
+PH|Philippines
+PN|Pitcairn
+PL|Poland
+PT|Portugal
+PR|Puerto Rico
+QA|Qatar
+RE|Réunion
+RO|Romania
+RU|Russian Federation
+RW|Rwanda
+BL|Saint Barthélemy
+SH|Saint Helena, Ascension and Tristan da Cunha
+KN|Saint Kitts and Nevis
+LC|Saint Lucia
+MF|Saint Martin (French part)
+PM|Saint Pierre and Miquelon
+VC|Saint Vincent and the Grenadines
+WS|Samoa
+SM|San Marino
+ST|Sao Tome and Principe
+SA|Saudi Arabia
+SN|Senegal
+RS|Serbia
+SC|Seychelles
+SL|Sierra Leone
+SG|Singapore
+SX|Sint Maarten (Dutch part)
+SK|Slovakia
+SI|Slovenia
+SB|Solomon Islands
+SO|Somalia
+ZA|South Africa
+GS|South Georgia and the South Sandwich Islands
+SS|South Sudan
+ES|Spain
+LK|Sri Lanka
+SD|Sudan
+SR|Suriname
+SJ|Svalbard and Jan Mayen
+SE|Sweden
+CH|Switzerland
+SY|Syrian Arab Republic
+TW|Taiwan, Province of China
+TJ|Tajikistan
+TZ|Tanzania, United Republic of
+TH|Thailand
+TL|Timor-Leste
+TG|Togo
+TK|Tokelau
+TO|Tonga
+TT|Trinidad and Tobago
+TN|Tunisia
+TR|Turkey
+TM|Turkmenistan
+TC|Turks and Caicos Islands
+TV|Tuvalu
+UG|Uganda
+UA|Ukraine
+AE|United Arab Emirates
+GB|United Kingdom of Great Britain and Northern Ireland
+US|United States of America
+UM|United States Minor Outlying Islands
+UY|Uruguay
+UZ|Uzbekistan
+VU|Vanuatu
+VE|Venezuela (Bolivarian Republic of)
+VN|Viet Nam
+VG|Virgin Islands (British)
+VI|Virgin Islands (U.S.)
+WF|Wallis and Futuna
+EH|Western Sahara
+YE|Yemen
+ZM|Zambia
+ZW|Zimbabwe
+                        `.trim().split('\n').map(line => {
+                            const [code, name] = line.split('|');
+                            return { code: code.trim(), name: name.trim() };
+                        });
+                        const curCountry = formData.country || 'GLOBAL';
+                        const curCountryObj = countriesList.find(r => r.code === curCountry || r.name === curCountry) || countriesList[0];
+                    %>
                     <div class="custom-select-wrapper" id="wrapper-country">
-                        <% 
-                            const regionsList = [
-                                { code: 'GLOBAL', label: 'Worldwide / Global', flag: '🌐' },
-                                { code: 'United States', label: 'United States', flag: '🇺🇸' },
-                                { code: 'India', label: 'India', flag: '🇮🇳' },
-                                { code: 'United Kingdom', label: 'United Kingdom', flag: '🇬🇧' },
-                                { code: 'Canada', label: 'Canada', flag: '🇨🇦' },
-                                { code: 'Germany', label: 'Germany', flag: '🇩🇪' },
-                                { code: 'France', label: 'France', flag: '🇫🇷' },
-                                { code: 'Brazil', label: 'Brazil', flag: '🇧🇷' },
-                                { code: 'Russia', label: 'Russia', flag: '🇷🇺' },
-                                { code: 'Indonesia', label: 'Indonesia', flag: '🇮🇩' },
-                                { code: 'Japan', label: 'Japan', flag: '🇯🇵' },
-                                { code: 'South Korea', label: 'South Korea', flag: '🇰🇷' },
-                                { code: 'Australia', label: 'Australia', flag: '🇦🇺' },
-                                { code: 'Spain', label: 'Spain', flag: '🇪🇸' },
-                                { code: 'Mexico', label: 'Mexico', flag: '🇲🇽' },
-                                { code: 'Italy', label: 'Italy', flag: '🇮🇹' },
-                                { code: 'Turkey', label: 'Turkey', flag: '🇹🇷' }
-                            ];
-                            const curCountry = formData.country || 'GLOBAL';
-                            const curCountryObj = regionsList.find(r => r.code === curCountry) || regionsList[0];
-                        %>
                         <div class="custom-select">
                             <span class="custom-select-text">
-                                <span class="custom-select-flag" style="font-size: 1.25rem; line-height: 1;"><%= curCountryObj.flag %></span>
-                                <span class="text-label"><%= curCountryObj.label %></span>
+                                <% if (curCountryObj.code !== 'GLOBAL') { %>
+                                    <span class="fi fi-<%= curCountryObj.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                <% } else { %>
+                                    <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                <% } %>
+                                <span class="text-label"><%= curCountryObj.name %></span>
                             </span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
                         <div class="custom-options">
-                            <% regionsList.forEach(reg => { %>
-                                <div class="custom-option <%= (curCountry === reg.code) ? 'selected' : '' %>" data-value="<%= reg.code %>">
-                                    <span class="opt-flag" style="font-size: 1.25rem; line-height: 1;"><%= reg.flag %></span>
-                                    <span class="opt-label"><%= reg.label %></span>
+                            <% countriesList.forEach(country => { %>
+                                <div class="custom-option <%= (curCountry === country.code || curCountry === country.name) ? 'selected' : '' %>" data-value="<%= country.code %>">
+                                    <% if (country.code !== 'GLOBAL') { %>
+                                        <span class="fi fi-<%= country.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                    <% } else { %>
+                                        <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                    <% } %>
+                                    <span class="opt-label"><%= country.name %></span>
                                 </div>
                             <% }); %>
                         </div>
-                        <input type="hidden" id="country" name="country" value="<%= curCountry %>">
+                        <input type="hidden" id="country" name="country" value="<%= curCountryObj.code %>">
                     </div>
                 </div>
             </div>
@@ -807,8 +1051,18 @@
                                 <span class="preview-tag-pill">#Modding</span>
                             </div>
                             <div class="preview-footer-meta">
-                                <span id="liveCardCountry"><span class="preview-flag">🌐</span> GLOBAL</span>
-                                <span id="liveCardLang"><span class="preview-flag">🇬🇧</span> English</span>
+                                <span id="liveCardCountry" style="display: inline-flex; align-items: center; gap: 6px; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <% if (curCountryObj.code !== 'GLOBAL') { %>
+                                        <span class="fi fi-<%= curCountryObj.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                    <% } else { %>
+                                        <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                    <% } %>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= curCountryObj.name %></span>
+                                </span>
+                                <span id="liveCardLang" style="display: inline-flex; align-items: center; gap: 6px; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <span class="preview-flag" style="flex-shrink: 0;"><%= curLangObj.flag %></span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= curLangObj.label %></span>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -857,20 +1111,8 @@
                 wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
 
-                // Dynamic emoji flag and label update
-                const optFlag = opt.querySelector('.opt-flag') || opt.querySelector('span:first-child');
-                const optLabel = opt.querySelector('.opt-label') || opt.querySelector('span:nth-child(2)');
-                const targetFlag = selectText.querySelector('.custom-select-flag');
-                const targetLabel = selectText.querySelector('.text-label');
-
-                if (optFlag && optLabel && targetFlag && targetLabel) {
-                    targetFlag.innerHTML = optFlag.innerHTML;
-                    targetLabel.textContent = optLabel.textContent.trim();
-                } else if (targetLabel) {
-                    targetLabel.textContent = val;
-                } else {
-                    selectText.innerHTML = opt.innerHTML;
-                }
+                // Dynamic icon/flag and label update
+                selectText.innerHTML = opt.innerHTML;
 
                 hiddenInput.value = val;
                 hiddenInput.dispatchEvent(new Event('change'));
@@ -898,21 +1140,17 @@
 
         // 2. Primary Language Dropdown
         initCustomSelect('wrapper-primaryLanguage', 'primaryLanguage', (val, opt) => {
-            const flag = opt.querySelector('.opt-flag')?.textContent || '🌐';
-            const label = opt.querySelector('.opt-label')?.textContent || val;
             const liveLang = document.getElementById('liveCardLang');
             if (liveLang) {
-                liveLang.innerHTML = `<span class="preview-flag">${flag}</span> ${val}`;
+                liveLang.innerHTML = opt.innerHTML;
             }
         });
 
         // 3. Country / Region Dropdown
         initCustomSelect('wrapper-country', 'country', (val, opt) => {
-            const flag = opt.querySelector('.opt-flag')?.textContent || '🌐';
-            const label = opt.querySelector('.opt-label')?.textContent || val;
             const liveCountry = document.getElementById('liveCardCountry');
             if (liveCountry) {
-                liveCountry.innerHTML = `<span class="preview-flag">${flag}</span> ${val}`;
+                liveCountry.innerHTML = opt.innerHTML;
             }
         });
 

@@ -16,21 +16,41 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
 
         const POLICY_GRACE_PERIOD_MS = 30000; // 30 seconds delay after accepting policy
 
+        // 0. GLOBAL WINDOW.OPEN & TRIGGER INTERCEPTORS: Strictly block any popunder/popup while video ad modal is visible
+        if (!window._popunderWindowOpenGuarded) {
+            window._popunderWindowOpenGuarded = true;
+            const _origWindowOpen = window.open;
+            window.open = function(url, target, features) {
+                const videoModal = document.getElementById('video-ad-modal');
+                const isVideoActive = Boolean(
+                    window._gplmodsVideoAdActive || 
+                    (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')))
+                );
+                if (isVideoActive) {
+                    console.log('[Popunder Interceptor] Suppressed popunder window.open while video ad modal is active.');
+                    return null;
+                }
+                return _origWindowOpen.apply(this, arguments);
+            };
+
+            const _origAnchorClick = HTMLAnchorElement.prototype.click;
+            HTMLAnchorElement.prototype.click = function() {
+                const videoModal = document.getElementById('video-ad-modal');
+                const isVideoActive = Boolean(
+                    window._gplmodsVideoAdActive || 
+                    (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')))
+                );
+                if (isVideoActive && !this.closest('#video-ad-modal')) {
+                    console.log('[Popunder Interceptor] Suppressed background anchor click while video ad modal is active.');
+                    return;
+                }
+                return _origAnchorClick.apply(this, arguments);
+            };
+        }
+
         // --- 1. CONSENT CHECK ---
         // Check if the user has accepted the policies via the banner
         function initPopunderAds() {
-            // Block popunders completely on video ad modal interactions during capturing phase
-            document.addEventListener('click', (e) => {
-                const videoModal = document.getElementById('video-ad-modal');
-                const isVideoActive = window._gplmodsVideoAdActive || (videoModal && (videoModal.style.display === 'flex' || videoModal.classList.contains('show')));
-                if (isVideoActive && (e.target.closest('#video-ad-modal') || e.target.closest('#watch-video-btn') || e.target.closest('#ad-player-container'))) {
-                    e.stopPropagation();
-                    if (typeof e.stopImmediatePropagation === 'function') {
-                        e.stopImmediatePropagation();
-                    }
-                }
-            }, true); // Capture phase ensures popunder script never receives this click
-
             const hasAcceptedTOS = localStorage.getItem('gplmods_policy_accepted') === 'true';
 
             // ONLY run the ad scripts if they have accepted the terms
@@ -60,13 +80,19 @@ const isPrivilegedUser = typeof user !== 'undefined' && user && (
         }
 
         // Safe bubbling listener: Prevent popunders from triggering on modal clicks without blocking inner button interactions
-        document.addEventListener('click', (e) => {
-            const isPopupClick = e.target.closest('#video-ad-modal, #newsletter-popup, #pwa-install-banner, #policy-modal-container, #deployment-notice-modal, #globalNotificationModal, .modal, .gpl-modal-backdrop, .policy-modal, .gpl-chat-window, .gpl-chat-confirm-modal, .header-notif-dropdown, .club-header-dropdown');
-            const isAnyPopupActive = (window.GPLPopupCoordinator && window.GPLPopupCoordinator.isAnyActive()) || window._gplmodsVideoAdActive;
-            if (isPopupClick || isAnyPopupActive) {
-                e.stopPropagation();
-            }
-        }, false);
+        ['click', 'mousedown', 'pointerdown', 'touchstart'].forEach(evtName => {
+            document.addEventListener(evtName, (e) => {
+                const isVideoModalClick = Boolean(e.target.closest('#video-ad-modal, #watch-video-btn, #ad-player-container, #manual-close-btn'));
+                const isPopupClick = isVideoModalClick || Boolean(e.target.closest('#newsletter-popup, #pwa-install-banner, #policy-modal-container, #deployment-notice-modal, #globalNotificationModal, .modal, .gpl-modal-backdrop, .policy-modal, .gpl-chat-window, .gpl-chat-confirm-modal, .header-notif-dropdown, .club-header-dropdown'));
+                const isAnyPopupActive = (window.GPLPopupCoordinator && window.GPLPopupCoordinator.isAnyActive()) || window._gplmodsVideoAdActive;
+                
+                if (isVideoModalClick && !e.target.closest('#hilltopads-link')) {
+                    e.stopPropagation();
+                } else if (isPopupClick || isAnyPopupActive) {
+                    e.stopPropagation();
+                }
+            }, false);
+        });
 
         function injectPopunderScriptAndTriggers() {
             if (window._popunderInjected) return;

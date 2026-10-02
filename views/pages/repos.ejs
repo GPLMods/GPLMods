@@ -157,6 +157,10 @@
             const fullRepoUrl = baseUrl;
             // Strip http:// or https:// for F-Droid schemes if necessary
             const rawDomain = baseUrl.replace(/^https?:\/\//, ''); 
+            const fp = (typeof fdroidFingerprint !== 'undefined' && fdroidFingerprint) ? fdroidFingerprint : '';
+            const formattedFp = (typeof fdroidFormattedFingerprint !== 'undefined' && fdroidFormattedFingerprint) ? fdroidFormattedFingerprint : fp;
+            const fullRepoUrlWithFp = fp ? (fullRepoUrl + '/fdroid/repo?fingerprint=' + fp) : (fullRepoUrl + '/fdroid/repo');
+            const clientIntentUrl = fp ? ('fdroidrepos://' + rawDomain + '/fdroid/repo?fingerprint=' + fp) : ('fdroidrepos://' + rawDomain + '/fdroid/repo');
         %>
 
 
@@ -264,28 +268,44 @@
                         <%= fullRepoUrl %>/fdroid/repo
                     </div>
 
+                    <% if (fp) { %>
+                    <div style="margin: 15px auto 20px auto; max-width: 650px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 12px 16px; text-align: left;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                            <span style="color: var(--android-color); font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
+                                <i class="fas fa-fingerprint"></i> SHA-256 Signing Fingerprint
+                            </span>
+                            <button type="button" onclick="copyRepoUrl('<%= formattedFp %>', this)" style="background: none; border: 1px solid #444; color: var(--silver); padding: 2px 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer;">
+                                <i class="fas fa-copy"></i> Copy Fingerprint
+                            </button>
+                        </div>
+                        <div style="font-family: monospace; font-size: 0.85em; color: #a0aec0; word-break: break-all; line-height: 1.4;">
+                            <%= formattedFp %>
+                        </div>
+                    </div>
+                    <% } %>
+
                     <!-- ✅ Buttons Grid with Direct Client Integration & Copy -->
                     <div class="repo-buttons-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
 
-                        <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn"
+                        <a href="<%= clientIntentUrl %>" class="repo-btn"
                             style="border-color: var(--android-color);">
                             <img src="<%= cdnUrl %>/images/icons/droidify.png" alt="Droid-ify" class="repo-icon"> Add to
                             Droid-ify
                         </a>
 
-                        <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn"
+                        <a href="<%= clientIntentUrl %>" class="repo-btn"
                             style="border-color: var(--android-color);">
                             <img src="<%= cdnUrl %>/images/icons/neostore.png" alt="Neo Store" class="repo-icon"> Add to
                             Neo Store
                         </a>
 
-                        <a href="fdroidrepos://<%= rawDomain %>/fdroid/repo" class="repo-btn"
+                        <a href="<%= clientIntentUrl %>" class="repo-btn"
                             style="border-color: var(--android-color);">
                             <i class="fab fa-android" style="color: var(--android-color); font-size: 1.3em;"></i> Add to
                             F-Droid
                         </a>
 
-                        <button type="button" class="repo-btn" id="copy-android-repo-btn" onclick="copyRepoUrl('<%= fullRepoUrl %>/fdroid/repo', this)"
+                        <button type="button" class="repo-btn" id="copy-android-repo-btn" onclick="copyRepoUrl('<%= fullRepoUrlWithFp %>', this)"
                             style="border-color: #555; background: #222; cursor: pointer;">
                             <i class="fas fa-copy" style="color: var(--silver);"></i> <span id="copy-btn-text">Copy Repo URL</span>
                         </button>

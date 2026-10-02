@@ -46,11 +46,25 @@
         width: 100%;
     }
 
-    /* Left Drawer Container (Combines Rail + Channels on Mobile) */
+    /* Left Drawer Container (Combines Rail + Channels on Mobile & Desktop Floating) */
     .discord-left-pane-wrapper {
-        display: flex;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 322px;
+        max-width: 86vw;
         height: 100%;
-        flex-shrink: 0;
+        z-index: 1100;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        box-shadow: 6px 0 30px rgba(0, 0, 0, 0.8);
+        background: rgba(15, 16, 21, 0.75);
+        backdrop-filter: blur(12px);
+    }
+    .discord-left-pane-wrapper.open {
+        transform: translateX(0);
     }
 
     /* Mobile Backdrop for off-canvas drawers */
@@ -74,7 +88,7 @@
 
     /* Mobile Drawer Toggle & Close Buttons */
     .mobile-channels-toggle-btn {
-        display: none;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 36px;
@@ -95,7 +109,7 @@
         border-color: var(--gold);
     }
     .mobile-drawer-close-btn {
-        display: none;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 30px;
@@ -114,7 +128,7 @@
         border-color: #ff5252;
     }
     .members-mobile-header {
-        display: none;
+        display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 12px 14px;
@@ -146,8 +160,9 @@
         top: 52px;
         left: 8px;
         right: 8px;
-        background: #12131b;
-        border: 1px solid var(--gold);
+        background: rgba(18, 19, 27, 0.75);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 215, 0, 0.4);
         border-radius: 12px;
         padding: 6px;
         display: none;
@@ -198,7 +213,7 @@
     /* 1. LEFTMOST VERTICAL RAIL (CLUBS NAV) */
     .discord-rail {
         width: 72px;
-        background: #090a0d;
+        background: transparent;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -257,7 +272,7 @@
     /* 2. CHANNELS SIDEBAR (2ND COLUMN) */
     .discord-channels-col {
         width: 250px;
-        background: #14151c;
+        background: transparent;
         display: flex;
         flex-direction: column;
         border-right: 1px solid #20222c;
@@ -358,8 +373,8 @@
     /* User Profile Footer */
     .discord-user-footer {
         height: 58px;
-        background: #111218;
-        border-top: 1px solid #1c1d25;
+        background: rgba(0, 0, 0, 0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
         padding: 0 10px;
         display: flex;
         align-items: center;
@@ -409,14 +424,16 @@
         min-width: 0;
     }
     .chat-topbar {
-        height: 52px;
+        min-height: 52px;
         background: #181922;
         border-bottom: 1px solid #222430;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 18px;
+        padding: 8px 18px;
         flex-shrink: 0;
+        flex-wrap: wrap;
+        gap: 8px;
     }
     .topbar-channel-info {
         display: flex;
@@ -425,6 +442,7 @@
         font-size: 1.05rem;
         font-weight: 700;
         color: #fff;
+        flex-wrap: wrap;
     }
     .topbar-topic {
         color: #8e9297;
@@ -442,6 +460,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
     }
     .topbar-btn {
         background: transparent;
@@ -710,14 +729,27 @@
         transform: scale(1.05);
     }
 
-    /* 4. RIGHT SIDEBAR (MEMBERS LIST) */
+    /* 4. RIGHT SIDEBAR (MEMBERS LIST) Floating */
     .discord-members-col {
-        width: 240px;
-        background: #14151c;
-        border-left: 1px solid #20222c;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 280px;
+        max-width: 85vw;
+        height: 100%;
+        z-index: 1100;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        background: rgba(15, 16, 21, 0.75);
+        backdrop-filter: blur(12px);
+        border-left: 1px solid rgba(255, 215, 0, 0.15);
+        box-shadow: -6px 0 30px rgba(0, 0, 0, 0.8);
         display: flex;
         flex-direction: column;
-        flex-shrink: 0;
+    }
+    .discord-members-col.open {
+        transform: translateX(0);
     }
     .members-scroll-area {
         flex: 1;
@@ -987,6 +1019,7 @@
 
     /* RESPONSIVE MOBILE STYLING (Discord / Telegram Mobile Experience) */
     @media (max-width: 992px) {
+        .hide-mobile { display: none !important; }
         .discord-left-pane-wrapper {
             position: fixed;
             top: 0;
@@ -1312,7 +1345,7 @@
         inset: 0;
         background: rgba(0, 0, 0, 0.78);
         backdrop-filter: blur(6px);
-        z-index: 1050;
+        z-index: 9999;
         align-items: center;
         justify-content: center;
         padding: 16px;
@@ -1642,6 +1675,12 @@
             </div>
             <% if (hasManageClubPerm) { %>
                 <div class="club-menu-divider"></div>
+                <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
+                    <div class="club-menu-item" onclick="openEditClubModal(); toggleClubMenu();">
+                        <i class="fas fa-cog" style="color: var(--silver);"></i>
+                        <span>Club Settings</span>
+                    </div>
+                <% } %>
                 <div class="club-menu-item" onclick="openCreateChannelModal(); toggleClubMenu();">
                     <i class="fas fa-plus-circle"></i>
                     <span>Create Text Channel</span>
@@ -1662,6 +1701,15 @@
                 <i class="fas fa-compass"></i>
                 <span>Explore Other Clubs</span>
             </a>
+            <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
+                <% if (!club.isDefault) { %>
+                    <div class="club-menu-divider"></div>
+                    <div class="club-menu-item" onclick="openDeleteClubModal(); toggleClubMenu();" style="color: #ff5252;">
+                        <i class="fas fa-trash-alt" style="color: #ff5252;"></i>
+                        <span>Delete Club</span>
+                    </div>
+                <% } %>
+            <% } %>
             <% if (!club.isDefault && membership && !isClubCreator) { %>
                 <form id="leaveClubForm" action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;">
                     <button type="button" class="club-menu-item" onclick="confirmLeaveClub(event)" style="color: #ff5252; background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
@@ -2214,6 +2262,64 @@
 <!-- ========================================== -->
 <!-- MODALS (CREATE CHANNEL, POLL, SHARE, ETC)  -->
 <!-- ========================================== -->
+
+<!-- Edit Club Modal -->
+<div class="gpl-modal-backdrop" id="editClubModal">
+    <div class="gpl-modal-box">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-cog" style="color: var(--gold);"></i> Club Settings</h3>
+        <form action="/clubs/<%= club.slug %>/edit" method="POST" enctype="multipart/form-data">
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Name</label>
+                <input type="text" name="name" value="<%= club.name %>" required <%= club.isDefault ? 'readonly' : '' %> style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
+                <% if (club.isDefault) { %>
+                    <span style="font-size: 0.75rem; color: #ff5252; margin-top: 4px; display: block;">Official community name cannot be changed.</span>
+                <% } %>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Description</label>
+                <textarea name="description" rows="3" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box; resize: vertical;"><%= club.description %></textarea>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Icon (Optional)</label>
+                <input type="file" name="icon" accept="image/png, image/jpeg, image/gif, image/webp" style="color: #fff;">
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Banner (Optional)</label>
+                <input type="file" name="banner" accept="image/png, image/jpeg, image/gif, image/webp" style="color: #fff;">
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Visibility</label>
+                <select name="isPrivate" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px;">
+                    <option value="false" <%= !club.isPrivate ? 'selected' : '' %>>Public (Anyone can instantly join)</option>
+                    <% if (!club.isDefault) { %>
+                        <option value="true" <%= club.isPrivate ? 'selected' : '' %>>Private (Requires approval to join)</option>
+                    <% } %>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeEditClubModal()">Cancel</button>
+                <button type="submit" class="gpl-btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Club Modal -->
+<div class="gpl-modal-backdrop" id="deleteClubModal">
+    <div class="gpl-modal-box">
+        <h3 style="color: #ff5252; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-exclamation-triangle"></i> Delete Club</h3>
+        <p style="color: #dcddde; font-size: 0.95rem; margin-bottom: 20px;">
+            Are you absolutely sure you want to delete <strong><%= club.name %></strong>?<br>
+            This action <strong>CANNOT</strong> be undone. All channels, messages, and roles will be permanently lost.
+        </p>
+        <form action="/clubs/<%= club.slug %>/delete" method="POST">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeDeleteClubModal()">Cancel</button>
+                <button type="submit" class="gpl-btn-primary" style="background: #ff5252; color: #fff; border: none;">Yes, Delete Club</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Create Channel Modal (With Custom Dropdown GUI & 3 Access Modes) -->
 <div class="gpl-modal-backdrop" id="createChannelModal">
@@ -4292,6 +4398,26 @@
 
     function closeChannelSettingsGUI() {
         const modal = document.getElementById('channelSettingsGUIModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function openEditClubModal() {
+        const modal = document.getElementById('editClubModal');
+        if (modal) modal.style.display = 'flex';
+    }
+    
+    function closeEditClubModal() {
+        const modal = document.getElementById('editClubModal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    function openDeleteClubModal() {
+        const modal = document.getElementById('deleteClubModal');
+        if (modal) modal.style.display = 'flex';
+    }
+    
+    function closeDeleteClubModal() {
+        const modal = document.getElementById('deleteClubModal');
         if (modal) modal.style.display = 'none';
     }
 

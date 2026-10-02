@@ -1193,6 +1193,7 @@ function startEngagementSequence() {
             localStorage.setItem('pwaDismissed', 'true');
             localStorage.setItem('gpl_pwa_installed', 'true');
             deferredPrompt = null;
+            window.dispatchEvent(new CustomEvent('gplmods:pwa-installed'));
         });
     }
 

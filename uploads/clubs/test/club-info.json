@@ -1,0 +1,24 @@
+{
+  "id": "6abf4a6c44e73131385cd521",
+  "name": "test",
+  "slug": "test",
+  "description": "",
+  "tags": [
+    "Gaming",
+    "Modding",
+    "Community"
+  ],
+  "isDefault": false,
+  "isPrivate": false,
+  "primaryLanguage": "English",
+  "country": "GLOBAL",
+  "aboutAdmin": "",
+  "rules": [
+    "Be respectful to all members and staff.",
+    "Only official GPLMods site links are allowed in the chat.",
+    "No spam, scamming, or abusive language.",
+    "Follow platform community safety guidelines."
+  ],
+  "memberCount": 1,
+  "updatedAt": "2026-10-02T06:08:45.418Z"
+}

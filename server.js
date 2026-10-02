@@ -58,6 +58,7 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
 const { mirrorToFTP, deleteFromFTP, shouldMirrorToFTP } = require('./utils/ftpSync'); // <--- ADD THIS LINE
+const fdroidSigner = require('./utils/fdroidSigner');
 const { normalizeSingleValue } = require('./utils/formHelpers');
 const { getSubmissionValidationErrors } = require('./utils/uploadValidation');
 const { analyzeFileDetails } = require('./utils/platformDetector');
@@ -1346,7 +1347,6 @@ app.get('/api/check-vpn', async (req, res) => {
             { new: true }
         );
         if (existingCache) {
-            console.log(`[VPN API] DB Cache HIT for IP: ${clientIp} (isVpn: ${existingCache.isVpn})`);
             return res.json({
                 success: true,
                 ip: existingCache.ip,
@@ -1360,7 +1360,6 @@ app.get('/api/check-vpn', async (req, res) => {
         }
 
         // 2. Not in DB -> Query vpnapi.io API
-        console.log(`[VPN API] DB Cache MISS for IP: ${clientIp}. Querying vpnapi.io...`);
         const apiKey = process.env.VPNAPI_KEY || '58919de8ab5d4a5cbdb0604e31efc9bd';
         const quota = await reserveApiQuota({ service: 'vpnapi.io', metric: 'requests', period: 'daily', amount: 1 });
         if (!quota.allowed) {
@@ -1420,7 +1419,6 @@ app.get('/api/check-vpn', async (req, res) => {
                 { new: true }
             );
         }
-        console.log(`[VPN API] Saved IP ${clientIp} to DB cache (isVpn: ${isVpn}).`);
 
         return res.json({
             success: true,
@@ -1434,7 +1432,6 @@ app.get('/api/check-vpn', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[VPN API Error]:', error.response ? error.response.data : error.message);
         // Fail-open strategy: return isVpn: false on error so user experience isn't broken
         return res.status(500).json({
             success: false,
@@ -5728,7 +5725,9 @@ app.get('/repos', async (req, res) => {
         res.render('pages/repos', { 
             androidFiles: androidFiles,
             iosFiles: iosFiles,
-            baseUrl: baseUrl // <-- Pass baseUrl to EJS
+            baseUrl: baseUrl, // <-- Pass baseUrl to EJS
+            fdroidFingerprint: fdroidSigner.fingerprint || '',
+            fdroidFormattedFingerprint: fdroidSigner.formattedFingerprint || ''
         });
 
     } catch (e) {
@@ -6902,7 +6901,7 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
 });
 
 // Dedicated guest notification & newsletter settings page
-app.get(['/guest/notifications', '/notifications/guest'], (req, res) => {
+app.get(['/guest/notifications', '/notifications/guest', '/guest-notifications'], (req, res) => {
     res.render('pages/guest-notifications', {
         pageTitle: 'Guest Notification & Newsletter Settings | GPLMods',
         pageDescription: 'Manage device alerts, browser push notifications, and newsletter subscriptions on GPLMods.'
@@ -16591,8 +16590,10 @@ async function getOrBuildFDroidRepoData(req) {
     const repoBaseUrl = getRepoBaseUrl(req);
     const now = Date.now();
 
-    // Cache valid for 60 seconds unless base URL changes
-    if (fdroidCache.timestamp > 0 && (now - fdroidCache.timestamp < 60000) && fdroidCache.baseUrl === repoBaseUrl) {
+    const bypassCache = req && req.query && (req.query.refresh === '1' || req.query.nocache === '1');
+
+    // Cache valid for 5 minutes unless base URL changes or cache bypass is requested
+    if (!bypassCache && fdroidCache.timestamp > 0 && (now - fdroidCache.timestamp < 300000) && fdroidCache.baseUrl === repoBaseUrl) {
         return fdroidCache;
     }
 
@@ -16613,7 +16614,7 @@ async function getOrBuildFDroidRepoData(req) {
             address: `${repoBaseUrl}/fdroid/repo`,
             icon: {
                 "en-US": {
-                    name: `${repoBaseUrl}/images/icon-512x512.png`,
+                    name: "/icons/icon-512x512.png",
                     sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                     size: 512
                 }
@@ -16651,7 +16652,7 @@ async function getOrBuildFDroidRepoData(req) {
     const formatDate = (date) => new Date(date).toISOString().split('T')[0];
     let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
     xml += '<fdroid>\n';
-    xml += `  <repo icon="icon-512x512.png" name="GPL Mods Android" pubkey="" timestamp="${repoTimestamp}" url="${escapeXml(repoBaseUrl)}/fdroid/repo" version="17">\n`;
+    xml += `  <repo icon="icon-512x512.png" name="GPL Mods Android" pubkey="${fdroidSigner.pubkeyHex || ''}" timestamp="${repoTimestamp}" url="${escapeXml(repoBaseUrl)}/fdroid/repo" version="17">\n`;
     xml += `    <description>The ultimate source for 100% safe, verified, and working Android mods.</description>\n`;
     xml += `  </repo>\n`;
 
@@ -16823,26 +16824,21 @@ async function getOrBuildFDroidRepoData(req) {
 
     const indexV1String = JSON.stringify(indexV1Obj, null, 2);
 
-    const jarManifest = Buffer.from("Manifest-Version: 1.0\r\nCreated-By: GPLMods F-Droid Engine\r\n\r\n", "utf8");
-
-    // Create entry.jar
+    // Create and cryptographically sign entry.jar (contains entry.json)
     const entryZip = new AdmZip();
-    entryZip.addFile("META-INF/MANIFEST.MF", jarManifest);
     entryZip.addFile("entry.json", Buffer.from(entryJsonString, "utf8"));
-    const entryJarBuffer = entryZip.toBuffer();
+    const entryJarBuffer = fdroidSigner.signZip(entryZip);
 
-    // Create index-v1.jar
+    // Create and cryptographically sign index-v1.jar (contains index-v1.json)
     const indexV1Zip = new AdmZip();
-    indexV1Zip.addFile("META-INF/MANIFEST.MF", jarManifest);
     indexV1Zip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
-    const indexV1JarBuffer = indexV1Zip.toBuffer();
+    const indexV1JarBuffer = fdroidSigner.signZip(indexV1Zip);
 
-    // Create index.jar
+    // Create and cryptographically sign index.jar (contains index.xml & index-v1.json)
     const indexJarZip = new AdmZip();
-    indexJarZip.addFile("META-INF/MANIFEST.MF", jarManifest);
     indexJarZip.addFile("index.xml", Buffer.from(xml, "utf8"));
     indexJarZip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
-    const indexJarBuffer = indexJarZip.toBuffer();
+    const indexJarBuffer = fdroidSigner.signZip(indexJarZip);
 
     // Save to cache
     fdroidCache = {

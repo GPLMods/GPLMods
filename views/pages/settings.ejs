@@ -307,8 +307,13 @@
                 </div>
             </div>
 
-            <div id="settingsPwaSuccessBadge" style="display: none; margin-top: 14px; padding: 10px 14px; background: rgba(46, 204, 113, 0.12); border: 1px solid rgba(46, 204, 113, 0.4); border-radius: 10px; color: #2ecc71; font-size: 0.86rem; align-items: center; gap: 8px;">
-                <i class="fas fa-check-circle"></i> GPLMods PWA installed on this device. Background Web Push notifications are fully supported.
+            <!-- Dynamic PWA / Notification Status Display -->
+            <div id="settingsNotifStatusCard" style="display: none; align-items: center; justify-content: space-between; padding: 12px 18px; border-radius: 10px; margin-top: 14px; font-size: 0.92rem; font-weight: 600; transition: all 0.3s ease;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="settingsStatusIcon"><i class="fas fa-info-circle"></i></span>
+                    <span id="settingsStatusText">PWA installed successfully, enable notification</span>
+                </div>
+                <span id="settingsStatusPill" style="font-size: 0.78rem; padding: 3px 10px; border-radius: 12px; font-weight: 700;">Status</span>
             </div>
 
             <form action="/settings/notifications" method="POST" id="notif-settings-form" style="margin-top: 18px; width: 100%;">
@@ -329,71 +334,89 @@
                     </label>
                 </div>
 
-                <!-- Alert Channels Sub-settings -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 14px;">
-                    <!-- Channel 1: New Uploads -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-cloud-upload-alt" style="color: #64b5f6; width: 18px;"></i>
-                            <div>
-                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">New Mod Uploads</div>
-                                <div style="font-size: 0.75em; color: var(--silver);">Instant alerts when fresh mods are published</div>
+                <!-- Alert Channels & Test Notification Container (Shown when notifications are enabled) -->
+                <div id="settingsOtherOptions" style="display: none; margin-top: 14px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+                        <!-- Channel 1: New Uploads -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-cloud-upload-alt" style="color: #64b5f6; width: 18px;"></i>
+                                <div>
+                                    <div style="font-size: 0.88em; color: #fff; font-weight: 600;">New Mod Uploads</div>
+                                    <div style="font-size: 0.75em; color: var(--silver);">Instant alerts when fresh mods are published</div>
+                                </div>
                             </div>
-                        </div>
-                        <label class="switch" style="margin: 0;">
-                            <input type="checkbox" id="setting_newUploads" name="newUploads" onchange="handleSubSettingChange()" <%= notifSettings.newUploads !== false ? 'checked' : '' %>>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-
-                    <!-- Channel 2: Club Updates -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-users" style="color: #81c784; width: 18px;"></i>
-                            <div>
-                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Club Discussions</div>
-                                <div style="font-size: 0.75em; color: var(--silver);">Notifications from clubs and communities you joined</div>
-                            </div>
-                        </div>
-                        <label class="switch" style="margin: 0;">
-                            <input type="checkbox" id="setting_clubUpdates" name="clubUpdates" onchange="handleSubSettingChange()" <%= notifSettings.clubUpdates !== false ? 'checked' : '' %>>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-
-                    <!-- Channel 3: Admin Messages -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
-                            <div>
-                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Admin Announcements</div>
-                                <div style="font-size: 0.75em; color: var(--silver);">Official patch notes, security alerts, and replies</div>
-                            </div>
-                        </div>
-                        <label class="switch" style="margin: 0;">
-                            <input type="checkbox" id="setting_adminMessages" name="adminMessages" onchange="handleSubSettingChange()" <%= notifSettings.adminMessages !== false ? 'checked' : '' %>>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-
-                    <!-- Channel 4: Sound Chime -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
-                            <div>
-                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Audio Chimes</div>
-                                <div style="font-size: 0.75em; color: var(--silver);">Play sound effect on new notifications</div>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <button type="button" onclick="if(window.testNotificationSound) window.testNotificationSound();" style="background: rgba(255,255,255,0.06); border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.74em; cursor: pointer;">
-                                <i class="fas fa-play" style="color: var(--gold);"></i> Test
-                            </button>
                             <label class="switch" style="margin: 0;">
-                                <input type="checkbox" id="setting_soundEnabled" name="soundEnabled" onchange="handleSubSettingChange()" <%= notifSettings.soundEnabled !== false ? 'checked' : '' %>>
+                                <input type="checkbox" id="setting_newUploads" name="newUploads" onchange="handleSubSettingChange()" <%= notifSettings.newUploads !== false ? 'checked' : '' %>>
                                 <span class="slider round"></span>
                             </label>
                         </div>
+
+                        <!-- Channel 2: Club Updates -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users" style="color: #81c784; width: 18px;"></i>
+                                <div>
+                                    <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Club Discussions</div>
+                                    <div style="font-size: 0.75em; color: var(--silver);">Notifications from clubs and communities you joined</div>
+                                </div>
+                            </div>
+                            <label class="switch" style="margin: 0;">
+                                <input type="checkbox" id="setting_clubUpdates" name="clubUpdates" onchange="handleSubSettingChange()" <%= notifSettings.clubUpdates !== false ? 'checked' : '' %>>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <!-- Channel 3: Admin Messages -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
+                                <div>
+                                    <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Admin Announcements</div>
+                                    <div style="font-size: 0.75em; color: var(--silver);">Official patch notes, security alerts, and replies</div>
+                                </div>
+                            </div>
+                            <label class="switch" style="margin: 0;">
+                                <input type="checkbox" id="setting_adminMessages" name="adminMessages" onchange="handleSubSettingChange()" <%= notifSettings.adminMessages !== false ? 'checked' : '' %>>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <!-- Channel 4: Sound Chime -->
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
+                                <div>
+                                    <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Audio Chimes</div>
+                                    <div style="font-size: 0.75em; color: var(--silver);">Play sound effect on new notifications</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button type="button" onclick="if(window.testNotificationSound) window.testNotificationSound();" style="background: rgba(255,255,255,0.06); border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.74em; cursor: pointer;">
+                                    <i class="fas fa-play" style="color: var(--gold);"></i> Test
+                                </button>
+                                <label class="switch" style="margin: 0;">
+                                    <input type="checkbox" id="setting_soundEnabled" name="soundEnabled" onchange="handleSubSettingChange()" <%= notifSettings.soundEnabled !== false ? 'checked' : '' %>>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Notification Button Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: rgba(33, 150, 243, 0.08); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 10px; margin-top: 14px; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(33, 150, 243, 0.15); border: 1px solid #2196F3; display: flex; align-items: center; justify-content: center; color: #64b5f6; font-size: 1.1rem; flex-shrink: 0;">
+                                <i class="fas fa-paper-plane"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Test Push Notification</div>
+                                <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Send an instant test alert to this device</div>
+                            </div>
+                        </div>
+                        <button type="button" id="btnSettingsTestNotif" onclick="triggerSettingsTestNotif()" class="btn btn-primary" style="background: var(--gold); color: #000; font-weight: 700; border: none; border-radius: 8px; padding: 8px 18px; font-size: 0.85em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-bell"></i> Send Test Notification
+                        </button>
                     </div>
                 </div>
             </form>
@@ -456,6 +479,17 @@
                 }
             }
 
+            async function triggerSettingsTestNotif() {
+                if (typeof window.sendTestNotification === 'function') {
+                    await window.sendTestNotification();
+                } else if (typeof window.testNotificationSound === 'function') {
+                    window.testNotificationSound();
+                    if (window.showGplToast) {
+                        window.showGplToast({ title: 'Test Alert', body: 'Notification sound chime played.' });
+                    }
+                }
+            }
+
             async function handleMasterNotifChange(checkbox) {
                 const isInstalled = isSettingsPwaMode();
                 
@@ -474,6 +508,7 @@
                     if (typeof window.triggerPwaInstallPrompt === 'function') {
                         window.triggerPwaInstallPrompt('settingsPwaInstructions');
                     }
+                    syncSettingsUiState();
                     return;
                 }
 
@@ -523,6 +558,8 @@
                     }
                 }
 
+                syncSettingsUiState();
+
                 try {
                     await fetch('/settings/notifications', {
                         method: 'POST',
@@ -532,7 +569,7 @@
                     if (window.showGplToast) {
                         window.showGplToast({
                             title: isEnabled ? 'Notifications Enabled' : 'Notifications Disabled',
-                            body: isEnabled ? 'Site notifications and push alerts are now active.' : 'All site notifications have been disabled.'
+                            body: isEnabled ? 'Notification enabled, PWA installed.' : 'All site notifications have been disabled.'
                         });
                     }
                 } catch (e) {
@@ -586,29 +623,99 @@
             function syncSettingsUiState() {
                 const isInstalled = isSettingsPwaMode();
                 const notice = document.getElementById('settingsPwaNotice');
-                const successBadge = document.getElementById('settingsPwaSuccessBadge');
+                const statusCard = document.getElementById('settingsNotifStatusCard');
+                const statusIcon = document.getElementById('settingsStatusIcon');
+                const statusText = document.getElementById('settingsStatusText');
+                const statusPill = document.getElementById('settingsStatusPill');
+                const otherOptions = document.getElementById('settingsOtherOptions');
+                const master = document.getElementById('masterNotifSwitch');
 
-                if (notice) notice.style.display = isInstalled ? 'none' : 'block';
-                if (successBadge) successBadge.style.display = isInstalled ? 'flex' : 'none';
+                // 1. If PWA not installed: show notice, hide status card & other options
+                if (!isInstalled) {
+                    if (notice) notice.style.display = 'block';
+                    if (statusCard) statusCard.style.display = 'none';
+                    if (otherOptions) otherOptions.style.display = 'none';
+                    if (master) master.checked = false;
+                    return;
+                }
 
-                // Check local storage for existing device preference
+                // 2. PWA IS INSTALLED: completely hide notice!
+                if (notice) notice.style.display = 'none';
+
+                // Check notification enablement
+                const pushPref = localStorage.getItem('gpl_push_notification_enabled');
+                const hasPushGranted = ('Notification' in window) && Notification.permission === 'granted';
+                let isEnabled = false;
+
+                if (pushPref !== null) {
+                    isEnabled = pushPref === 'true';
+                } else if (hasPushGranted) {
+                    isEnabled = true;
+                } else {
+                    try {
+                        const localPref = localStorage.getItem('gpl_notif_prefs');
+                        if (localPref) {
+                            const parsed = JSON.parse(localPref);
+                            if (typeof parsed.master === 'boolean') isEnabled = parsed.master;
+                        }
+                    } catch(e) {}
+                }
+
+                if (master) master.checked = isEnabled;
+
+                // Sync channel sub-checkboxes
                 try {
                     const localPref = localStorage.getItem('gpl_notif_prefs');
                     if (localPref) {
                         const parsed = JSON.parse(localPref);
-                        const master = document.getElementById('masterNotifSwitch');
                         const u = document.getElementById('setting_newUploads');
                         const c = document.getElementById('setting_clubUpdates');
                         const a = document.getElementById('setting_adminMessages');
                         const s = document.getElementById('setting_soundEnabled');
 
-                        if (master && typeof parsed.master === 'boolean') master.checked = parsed.master;
                         if (u && typeof parsed.newUploads === 'boolean') u.checked = parsed.newUploads;
                         if (c && typeof parsed.clubUpdates === 'boolean') c.checked = parsed.clubUpdates;
                         if (a && typeof parsed.adminMessages === 'boolean') a.checked = parsed.adminMessages;
                         if (s && typeof parsed.soundEnabled === 'boolean') s.checked = parsed.soundEnabled;
                     }
                 } catch(e) {}
+
+                // State 2: PWA installed successfully, enable notification
+                if (!isEnabled) {
+                    if (statusCard) {
+                        statusCard.style.display = 'flex';
+                        statusCard.style.background = 'rgba(255, 193, 7, 0.12)';
+                        statusCard.style.border = '1px solid rgba(255, 193, 7, 0.4)';
+                        statusCard.style.color = '#ffc107';
+                    }
+                    if (statusIcon) statusIcon.innerHTML = '<i class="fas fa-info-circle" style="color: var(--gold); font-size: 1.1rem;"></i>';
+                    if (statusText) statusText.textContent = 'PWA installed successfully, enable notification';
+                    if (statusPill) {
+                        statusPill.textContent = 'PWA Installed';
+                        statusPill.style.background = 'rgba(255, 193, 7, 0.2)';
+                        statusPill.style.color = '#ffc107';
+                        statusPill.style.border = '1px solid rgba(255, 193, 7, 0.4)';
+                    }
+                    if (otherOptions) otherOptions.style.display = 'none';
+                } else {
+                    // State 3: Notification enabled, PWA installed
+                    if (statusCard) {
+                        statusCard.style.display = 'flex';
+                        statusCard.style.background = 'rgba(46, 204, 113, 0.12)';
+                        statusCard.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+                        statusCard.style.color = '#2ecc71';
+                    }
+                    if (statusIcon) statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.1rem;"></i>';
+                    if (statusText) statusText.textContent = 'Notification enabled, PWA installed';
+                    if (statusPill) {
+                        statusPill.textContent = 'Active & Synced';
+                        statusPill.style.background = 'rgba(46, 204, 113, 0.2)';
+                        statusPill.style.color = '#2ecc71';
+                        statusPill.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+                    }
+                    // Test notification button with other settings appear as usual!
+                    if (otherOptions) otherOptions.style.display = 'block';
+                }
             }
 
             document.addEventListener('DOMContentLoaded', syncSettingsUiState);

@@ -194,6 +194,79 @@
         margin-top: 14px;
         display: none;
     }
+
+    .guest-unsubscribe-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        width: 100%;
+    }
+
+    .guest-unsubscribe-url-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .guest-unsub-label {
+        font-size: 0.72rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+    }
+
+    .guest-unsub-url {
+        color: var(--gold);
+        font-size: 0.85rem;
+        text-decoration: underline;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        max-width: 100%;
+        line-height: 1.4;
+        display: inline-block;
+        transition: color 0.2s;
+    }
+
+    .guest-unsub-url:hover {
+        color: #fff;
+    }
+
+    @media (max-width: 600px) {
+        .guest-unsubscribe-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+        }
+        .guest-unsubscribe-actions .btn-gold {
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .guest-unsubscribe-url-wrap {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            box-sizing: border-box;
+        }
+        .guest-unsub-url {
+            font-size: 0.82rem;
+            word-break: break-all !important;
+            overflow-wrap: anywhere !important;
+            text-align: center;
+            display: block;
+        }
+        .guest-unsub-label {
+            text-align: center;
+        }
+    }
 </style>
 
 <main class="guest-notif-page">
@@ -269,7 +342,16 @@
                 </div>
             </div>
 
-            <!-- Master Toggle (Disabled until PWA installed) -->
+            <!-- Dynamic PWA / Notification Status Banner -->
+            <div id="guestNotifStatusBanner" style="display: none; align-items: center; justify-content: space-between; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px; font-size: 0.92rem; font-weight: 600; transition: all 0.3s ease;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="guestStatusIcon"><i class="fas fa-info-circle"></i></span>
+                    <span id="guestStatusText">PWA installed successfully, enable notification</span>
+                </div>
+                <span id="guestStatusPill" style="font-size: 0.78rem; padding: 3px 10px; border-radius: 12px; font-weight: 700;">Status</span>
+            </div>
+
+            <!-- Master Toggle -->
             <div class="master-switch-box" id="masterSwitchWrapper" style="position: relative;">
                 <div class="master-switch-info">
                     <h3 style="display: flex; align-items: center; gap: 8px;">
@@ -285,6 +367,97 @@
                         <input type="checkbox" id="guestMasterSwitch" onchange="handleGuestMasterToggle(this.checked)" disabled>
                         <span class="slider-ui" style="opacity: 0.5;"></span>
                     </label>
+                </div>
+            </div>
+
+            <!-- Other Settings & Channels (Shown When Notifications are Enabled) -->
+            <div id="guestOtherSettings" style="display: none; margin-top: 18px;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-sliders-h"></i> Notification Channels &amp; Preferences
+                </div>
+
+                <!-- Alert Channels Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                    <!-- Channel 1: New Uploads -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-cloud-upload-alt" style="color: #64b5f6; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">New Mod Uploads</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Instant alerts when fresh mods are published</div>
+                            </div>
+                        </div>
+                        <label class="switch-ui" style="margin: 0; width: 44px; height: 24px;">
+                            <input type="checkbox" id="guest_newUploads" onchange="handleGuestSubSettingChange()" checked>
+                            <span class="slider-ui"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 2: Club Discussions -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-users" style="color: #81c784; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Club Discussions</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Notifications from clubs and communities</div>
+                            </div>
+                        </div>
+                        <label class="switch-ui" style="margin: 0; width: 44px; height: 24px;">
+                            <input type="checkbox" id="guest_clubUpdates" onchange="handleGuestSubSettingChange()" checked>
+                            <span class="slider-ui"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 3: Admin Announcements -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-shield-alt" style="color: #ba68c8; width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Admin Announcements</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Official patch notes and platform updates</div>
+                            </div>
+                        </div>
+                        <label class="switch-ui" style="margin: 0; width: 44px; height: 24px;">
+                            <input type="checkbox" id="guest_adminMessages" onchange="handleGuestSubSettingChange()" checked>
+                            <span class="slider-ui"></span>
+                        </label>
+                    </div>
+
+                    <!-- Channel 4: Sound Chimes -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid #333; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-volume-up" style="color: var(--gold); width: 18px;"></i>
+                            <div>
+                                <div style="font-size: 0.88em; color: #fff; font-weight: 600;">Audio Chimes</div>
+                                <div style="font-size: 0.75em; color: var(--silver);">Play sound on new notifications</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <button type="button" onclick="if(window.testNotificationSound) window.testNotificationSound();" style="background: rgba(255,255,255,0.08); border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.74em; cursor: pointer;">
+                                <i class="fas fa-play" style="color: var(--gold);"></i> Test
+                            </button>
+                            <label class="switch-ui" style="margin: 0; width: 44px; height: 24px;">
+                                <input type="checkbox" id="guest_soundEnabled" onchange="handleGuestSubSettingChange()" checked>
+                                <span class="slider-ui"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Notification Action Row -->
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: rgba(33, 150, 243, 0.08); border: 1px solid rgba(33, 150, 243, 0.3); border-radius: 12px; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(33, 150, 243, 0.15); border: 1px solid #2196F3; display: flex; align-items: center; justify-content: center; color: #64b5f6; font-size: 1.1rem; flex-shrink: 0;">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.95em;">Test Push Notification</div>
+                            <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Dispatch a live test notification to verify your device push connection</div>
+                        </div>
+                    </div>
+                    <button type="button" id="btnTestNotifGuest" onclick="triggerGuestTestNotification()" class="btn-gold" style="padding: 9px 20px; font-size: 0.88rem;">
+                        <i class="fas fa-bell"></i> Send Test Notification
+                    </button>
                 </div>
             </div>
 
@@ -304,13 +477,16 @@
                     We send periodic mod releases, developer highlights, and platform security bulletins. If you wish to stop receiving updates or manage your email subscriptions, you can unsubscribe at any time via our official portal.
                 </p>
 
-                <div style="display: flex; align-items: center; justify-content: flex-start; gap: 15px; flex-wrap: wrap; margin-top: 8px;">
+                <div class="guest-unsubscribe-actions">
                     <a href="/unsubscribe" class="btn-gold">
                         <i class="fas fa-user-minus"></i> Unsubscribe Newsletter
                     </a>
-                    <a href="https://gplmods.webredirect.org/unsubscribe" target="_blank" style="color: var(--silver); font-size: 0.85rem; text-decoration: underline;">
-                        https://gplmods.webredirect.org/unsubscribe
-                    </a>
+                    <div class="guest-unsubscribe-url-wrap">
+                        <span class="guest-unsub-label">Direct portal URL:</span>
+                        <a href="https://gplmods.webredirect.org/unsubscribe" target="_blank" class="guest-unsub-url">
+                            https://gplmods.webredirect.org/unsubscribe
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -362,16 +538,24 @@
         }
     }
 
-    function loadGuestPrefs() {
+    function updateGuestNotificationUi() {
         const isInstalled = isPwaMode();
+        const pwaBanner = document.getElementById('pwaNotifWarningBanner');
+        const statusBanner = document.getElementById('guestNotifStatusBanner');
+        const statusIcon = document.getElementById('guestStatusIcon');
+        const statusText = document.getElementById('guestStatusText');
+        const statusPill = document.getElementById('guestStatusPill');
+        const pushBadge = document.getElementById('pushPermBadge');
         const masterSwitch = document.getElementById('guestMasterSwitch');
         const lockIndicator = document.getElementById('pwaLockIndicator');
         const blocker = document.getElementById('switchClickBlocker');
-        const pwaTag = document.getElementById('pwaStatusTag');
-        const pwaBanner = document.getElementById('pwaNotifWarningBanner');
+        const otherSettings = document.getElementById('guestOtherSettings');
 
+        // 1. If PWA is NOT installed:
         if (!isInstalled) {
-            // Keep switch strictly OFF and DISABLED until installed properly
+            if (pwaBanner) pwaBanner.style.display = 'block';
+            if (statusBanner) statusBanner.style.display = 'none';
+            if (otherSettings) otherSettings.style.display = 'none';
             if (masterSwitch) {
                 masterSwitch.checked = false;
                 masterSwitch.disabled = true;
@@ -382,23 +566,19 @@
                 if (innerUi) innerUi.style.pointerEvents = 'none';
                 blocker.style.cursor = 'not-allowed';
             }
-            if (pwaTag) {
-                pwaTag.textContent = 'PWA Required';
-                pwaTag.style.background = 'rgba(255, 193, 7, 0.2)';
-                pwaTag.style.color = '#ffc107';
+            if (pushBadge) {
+                pushBadge.innerHTML = '<i class="fas fa-lock" style="color: #ffc107;"></i> PWA Required';
+                pushBadge.style.color = '#ffc107';
+                pushBadge.style.borderColor = 'rgba(255, 193, 7, 0.4)';
             }
             syncHubModal(false);
-            updatePushPermBadge();
             return;
         }
 
-        // PWA IS INSTALLED! Unlock toggle and allow normal preference loading
-        if (pwaTag) {
-            pwaTag.innerHTML = '<i class="fas fa-check-circle"></i> PWA Active';
-            pwaTag.style.background = 'rgba(46, 204, 113, 0.2)';
-            pwaTag.style.color = '#2ecc71';
-            pwaTag.style.borderColor = 'rgba(46, 204, 113, 0.5)';
-        }
+        // 2. PWA IS INSTALLED: Hide banner completely!
+        if (pwaBanner) pwaBanner.style.display = 'none';
+
+        // Unlock toggle
         if (lockIndicator) lockIndicator.style.display = 'none';
         if (blocker) {
             const innerUi = blocker.querySelector('.switch-ui');
@@ -409,24 +589,91 @@
             masterSwitch.disabled = false;
         }
 
-        // Sync from gpl_push_notification_enabled as well
-        const isPushEnabled = localStorage.getItem('gpl_push_notification_enabled');
-        const raw = localStorage.getItem(STORAGE_KEY);
-        let master = true;
+        // Check whether notification is enabled
+        const isPushPermGranted = ('Notification' in window) && Notification.permission === 'granted';
+        const savedPushPref = localStorage.getItem('gpl_push_notification_enabled');
+        let isEnabled = false;
 
-        if (isPushEnabled !== null) {
-            master = isPushEnabled === 'true';
-        } else if (raw) {
+        if (savedPushPref !== null) {
+            isEnabled = savedPushPref === 'true';
+        } else if (isPushPermGranted) {
+            isEnabled = true;
+        } else {
             try {
-                const parsed = JSON.parse(raw);
-                if (typeof parsed.master !== 'undefined') master = Boolean(parsed.master);
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (typeof parsed.master === 'boolean') isEnabled = parsed.master;
+                }
             } catch(e) {}
         }
 
-        if (masterSwitch) masterSwitch.checked = master;
+        if (masterSwitch) masterSwitch.checked = isEnabled;
 
-        syncHubModal(master);
-        updatePushPermBadge();
+        // Sync channel checkboxes from storage
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                const u = document.getElementById('guest_newUploads');
+                const c = document.getElementById('guest_clubUpdates');
+                const a = document.getElementById('guest_adminMessages');
+                const s = document.getElementById('guest_soundEnabled');
+                if (u && typeof parsed.newUploads === 'boolean') u.checked = parsed.newUploads;
+                if (c && typeof parsed.clubUpdates === 'boolean') c.checked = parsed.clubUpdates;
+                if (a && typeof parsed.adminMessages === 'boolean') a.checked = parsed.adminMessages;
+                if (s && typeof parsed.soundEnabled === 'boolean') s.checked = parsed.soundEnabled;
+            }
+        } catch(e) {}
+
+        // State 2: PWA installed successfully, enable notification
+        if (!isEnabled) {
+            if (statusBanner) {
+                statusBanner.style.display = 'flex';
+                statusBanner.style.background = 'rgba(255, 193, 7, 0.12)';
+                statusBanner.style.border = '1px solid rgba(255, 193, 7, 0.4)';
+                statusBanner.style.color = '#ffc107';
+            }
+            if (statusIcon) statusIcon.innerHTML = '<i class="fas fa-info-circle" style="color: var(--gold); font-size: 1.1rem;"></i>';
+            if (statusText) statusText.textContent = 'PWA installed successfully, enable notification';
+            if (statusPill) {
+                statusPill.textContent = 'PWA Installed';
+                statusPill.style.background = 'rgba(255, 193, 7, 0.2)';
+                statusPill.style.color = '#ffc107';
+                statusPill.style.border = '1px solid rgba(255, 193, 7, 0.4)';
+            }
+            if (pushBadge) {
+                pushBadge.innerHTML = '<i class="fas fa-info-circle" style="color: var(--gold);"></i> PWA installed successfully, enable notification';
+                pushBadge.style.color = 'var(--gold)';
+                pushBadge.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+            }
+            if (otherSettings) otherSettings.style.display = 'none';
+            syncHubModal(false);
+        } else {
+            // State 3: Notification enabled, PWA installed
+            if (statusBanner) {
+                statusBanner.style.display = 'flex';
+                statusBanner.style.background = 'rgba(46, 204, 113, 0.12)';
+                statusBanner.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+                statusBanner.style.color = '#2ecc71';
+            }
+            if (statusIcon) statusIcon.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71; font-size: 1.1rem;"></i>';
+            if (statusText) statusText.textContent = 'Notification enabled, PWA installed';
+            if (statusPill) {
+                statusPill.textContent = 'Notification Enabled';
+                statusPill.style.background = 'rgba(46, 204, 113, 0.2)';
+                statusPill.style.color = '#2ecc71';
+                statusPill.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+            }
+            if (pushBadge) {
+                pushBadge.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71;"></i> Notification enabled, PWA installed';
+                pushBadge.style.color = '#2ecc71';
+                pushBadge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
+            }
+            // Test notification button and other settings appear as usual!
+            if (otherSettings) otherSettings.style.display = 'block';
+            syncHubModal(true);
+        }
     }
 
     function syncHubModal(isEnabled) {
@@ -442,49 +689,102 @@
         });
     }
 
-    async function handleGuestMasterToggle(isChecked) {
-        syncHubModal(isChecked);
+    async function handleGuestSubSettingChange() {
+        const u = document.getElementById('guest_newUploads');
+        const c = document.getElementById('guest_clubUpdates');
+        const a = document.getElementById('guest_adminMessages');
+        const s = document.getElementById('guest_soundEnabled');
 
-        // Store across all notification keys used by site
-        localStorage.setItem('gpl_push_notification_enabled', isChecked ? 'true' : 'false');
-        localStorage.setItem('gpl_push_notification_sound', isChecked ? 'true' : 'false');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-            master: isChecked,
-            newUploads: isChecked,
-            clubUpdates: isChecked,
-            adminMessages: isChecked,
-            soundEnabled: isChecked
-        }));
+        const prefs = {
+            master: true,
+            newUploads: u ? u.checked : true,
+            clubUpdates: c ? c.checked : true,
+            adminMessages: a ? a.checked : true,
+            soundEnabled: s ? s.checked : true
+        };
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+        if (s) localStorage.setItem('gpl_push_notification_sound', s.checked ? 'true' : 'false');
+
+        // Sync with global modal if open
+        const mu = document.getElementById('modal_newUploads');
+        const mc = document.getElementById('modal_clubUpdates');
+        const ma = document.getElementById('modal_adminMessages');
+        const ms = document.getElementById('modal_soundEnabled');
+        if (mu && u) mu.checked = u.checked;
+        if (mc && c) mc.checked = c.checked;
+        if (ma && a) ma.checked = a.checked;
+        if (ms && s) ms.checked = s.checked;
+
+        // Send to backend
+        fetch('/settings/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+                notificationsEnabled: true,
+                newUploads: prefs.newUploads,
+                clubUpdates: prefs.clubUpdates,
+                adminMessages: prefs.adminMessages,
+                soundEnabled: prefs.soundEnabled
+            })
+        }).catch(() => {});
+
+        const banner = document.getElementById('guestNotifSaveStatus');
+        if (banner) {
+            banner.style.display = 'block';
+            banner.innerHTML = '<i class="fas fa-check-circle"></i> Channel preferences updated.';
+            setTimeout(() => { banner.style.display = 'none'; }, 2500);
+        }
+    }
+
+    async function handleGuestMasterToggle(isChecked) {
+        if (!isPwaMode()) {
+            handleLockedSwitchClick();
+            return;
+        }
 
         if (isChecked) {
             if (window.enablePushNotifications) {
                 try {
                     await window.enablePushNotifications();
                 } catch (e) {
-                    console.log('[GuestPush] In-app alerts enabled, push prompt unavailable:', e);
+                    console.log('[GuestPush] Notification prompt error:', e);
                 }
             }
+            localStorage.setItem('gpl_push_notification_enabled', 'true');
+            localStorage.setItem('gpl_push_notification_sound', 'true');
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                master: true,
+                newUploads: true,
+                clubUpdates: true,
+                adminMessages: true,
+                soundEnabled: true
+            }));
         } else {
             if (window.disablePushNotifications) {
-                try {
-                    await window.disablePushNotifications();
-                } catch (e) {}
+                try { await window.disablePushNotifications(); } catch (e) {}
             }
+            localStorage.setItem('gpl_push_notification_enabled', 'false');
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                master: false,
+                newUploads: false,
+                clubUpdates: false,
+                adminMessages: false,
+                soundEnabled: false
+            }));
         }
 
-        updatePushPermBadge();
+        updateGuestNotificationUi();
 
-        // Show brief save indicator
         const banner = document.getElementById('guestNotifSaveStatus');
         if (banner) {
             banner.style.display = 'block';
             banner.innerHTML = isChecked 
-                ? '<i class="fas fa-check-circle"></i> Site notifications enabled successfully.' 
-                : '<i class="fas fa-check-circle"></i> Site notifications disabled.';
+                ? '<i class="fas fa-check-circle"></i> Notification enabled, PWA installed.' 
+                : '<i class="fas fa-info-circle"></i> Notifications turned off.';
             setTimeout(() => { banner.style.display = 'none'; }, 3000);
         }
 
-        // Sync with backend API
         fetch('/settings/notifications', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -498,33 +798,21 @@
         }).catch(() => {});
     }
 
-    function updatePushPermBadge() {
-        const badge = document.getElementById('pushPermBadge');
-        if (!badge) return;
-        if (!('Notification' in window)) {
-            badge.textContent = 'Push: Unsupported';
-            badge.style.color = '#888';
-            return;
-        }
-        if (Notification.permission === 'granted') {
-            badge.innerHTML = '<i class="fas fa-check-circle" style="color: #2ecc71;"></i> Push: Granted';
-            badge.style.color = '#2ecc71';
-            badge.style.borderColor = 'rgba(46, 204, 113, 0.4)';
-        } else if (Notification.permission === 'denied') {
-            badge.innerHTML = '<i class="fas fa-ban" style="color: #e74c3c;"></i> Push: Blocked';
-            badge.style.color = '#e74c3c';
-            badge.style.borderColor = 'rgba(231, 76, 60, 0.4)';
-        } else {
-            const isEnabled = localStorage.getItem('gpl_push_notification_enabled') === 'true';
-            badge.innerHTML = isEnabled 
-                ? '<i class="fas fa-info-circle" style="color: var(--gold);"></i> Enabled (In-App)' 
-                : '<i class="fas fa-times-circle" style="color: var(--silver);"></i> Disabled';
-            badge.style.color = isEnabled ? 'var(--gold)' : 'var(--silver)';
-            badge.style.borderColor = isEnabled ? 'rgba(255, 215, 0, 0.4)' : '#444';
+    async function triggerGuestTestNotification() {
+        if (typeof window.sendTestNotification === 'function') {
+            await window.sendTestNotification();
+        } else if (typeof window.testNotificationSound === 'function') {
+            window.testNotificationSound();
+            if (window.showGplToast) {
+                window.showGplToast({ title: 'Test Alert', body: 'Test sound chime played.' });
+            }
         }
     }
 
-    document.addEventListener('DOMContentLoaded', loadGuestPrefs);
+    document.addEventListener('DOMContentLoaded', updateGuestNotificationUi);
+    window.addEventListener('pageshow', updateGuestNotificationUi);
+    window.addEventListener('focus', updateGuestNotificationUi);
+    window.addEventListener('gplmods:pwa-installed', updateGuestNotificationUi);
 </script>
 
 <%- include('../partials/footer') %>

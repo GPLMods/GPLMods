@@ -2020,4 +2020,95 @@ router.post('/:slugOrId/messages/:messageId/react', ensureAuth, async (req, res)
     }
 });
 
+// ==========================================
+// CLUB MANAGEMENT (EDIT / DELETE)
+// ==========================================
+
+// Edit Club Settings
+router.post('/:slugOrId/edit', ensureAuth, uploadClubMedia.fields([{ name: 'icon', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), async (req, res) => {
+    try {
+        const club = await Club.findOne({
+            $or: [{ slug: req.params.slugOrId }, { _id: req.params.slugOrId.match(/^[0-9a-fA-F]{24}$/) ? req.params.slugOrId : null }]
+        });
+        if (!club) return res.status(404).json({ error: 'Club not found.' });
+
+        const isOwner = String(club.creator) === String(req.user._id) || req.user.role === 'owner';
+        if (!isOwner) return res.status(403).json({ error: 'Permission denied. Only the club owner can edit the club.' });
+
+        if (req.body.name && req.body.name.trim() !== club.name) {
+            if (club.isDefault) {
+                return res.status(403).json({ error: 'Cannot rename the official community.' });
+            }
+            const reserved = isClubNameReserved(req.body.name);
+            if (reserved) return res.status(400).json({ error: 'This club name is reserved.' });
+            
+            const existing = await Club.findOne({ name: { $regex: new RegExp(`^${req.body.name.trim()}$`, 'i') } });
+            if (existing && String(existing._id) !== String(club._id)) {
+                return res.status(400).json({ error: 'A club with this name already exists.' });
+            }
+            
+            club.name = req.body.name.trim();
+        }
+
+        if (req.body.description !== undefined) {
+            club.description = req.body.description.trim();
+        }
+
+        if (req.body.isPrivate !== undefined) {
+            if (club.isDefault) {
+                return res.status(403).json({ error: 'Cannot change visibility of the official community.' });
+            }
+            club.isPrivate = (req.body.isPrivate === 'true' || req.body.isPrivate === true);
+        }
+
+        // Handle file uploads
+        if (req.files && req.files.icon && req.files.icon[0]) {
+            const finalIconPath = `/uploads/clubs/${req.files.icon[0].filename}`;
+            fs.renameSync(req.files.icon[0].path, path.join(__dirname, '..', 'public', finalIconPath));
+            club.iconUrl = finalIconPath;
+        }
+        if (req.files && req.files.banner && req.files.banner[0]) {
+            const finalBannerPath = `/uploads/clubs/${req.files.banner[0].filename}`;
+            fs.renameSync(req.files.banner[0].path, path.join(__dirname, '..', 'public', finalBannerPath));
+            club.bannerUrl = finalBannerPath;
+        }
+
+        await club.save();
+        return res.json({ success: true, club, redirectUrl: `/clubs/${club.slug}` });
+    } catch (err) {
+        console.error('[Clubs] Edit club error:', err);
+        return res.status(500).json({ error: 'Failed to update club settings.' });
+    }
+});
+
+// Delete Club
+router.post('/:slugOrId/delete', ensureAuth, async (req, res) => {
+    try {
+        const club = await Club.findOne({
+            $or: [{ slug: req.params.slugOrId }, { _id: req.params.slugOrId.match(/^[0-9a-fA-F]{24}$/) ? req.params.slugOrId : null }]
+        });
+        if (!club) return res.status(404).json({ error: 'Club not found.' });
+
+        if (club.isDefault) return res.status(403).json({ error: 'The official GPLMods community cannot be deleted.' });
+
+        const isOwner = String(club.creator) === String(req.user._id) || req.user.role === 'owner';
+        if (!isOwner) return res.status(403).json({ error: 'Permission denied. Only the club owner can delete the club.' });
+
+        // Delete associated channels, messages, members
+        await ClubChannel.deleteMany({ club: club._id });
+        await ClubMessage.deleteMany({ club: club._id });
+        await ClubMember.deleteMany({ club: club._id });
+        await ClubRole.deleteMany({ club: club._id });
+        await ClubJoinRequest.deleteMany({ club: club._id });
+        await ClubInvite.deleteMany({ club: club._id });
+        
+        await club.deleteOne();
+        
+        return res.json({ success: true, redirectUrl: '/clubs' });
+    } catch (err) {
+        console.error('[Clubs] Delete club error:', err);
+        return res.status(500).json({ error: 'Failed to delete club.' });
+    }
+});
+
 module.exports = router;

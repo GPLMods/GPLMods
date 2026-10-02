@@ -164,12 +164,22 @@
                 }, 300);
             }
 
+            // Prevent all popunders from hijacking video modal interactions
+            const modalEvents = ['click', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'touchstart', 'touchend'];
+            modalEvents.forEach(evt => {
+                videoModal.addEventListener(evt, (e) => {
+                    if (e.target.closest('#hilltopads-link')) {
+                        return; // Let user visit Hilltopads attribution link if clicked directly
+                    }
+                    e.stopPropagation();
+                }, false);
+            });
+
             manualCloseBtn.addEventListener('click', closeAdModal);
 
             // --- 4. HANDLE "PLAY VIDEO" CLICK & SMART TIMERS ---
             watchBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
                 
                 introScreen.style.display = 'none';
                 playerContainer.style.display = 'block';
@@ -217,77 +227,106 @@
                     }
                 }
 
-                // 🔴 120-SECOND FALLBACK TIMER
-                // If ad blockers break the player entirely and it never plays, unlock after 2 minutes
+                // 🔴 15-SECOND FALLBACK TIMER
+                // If ad network or blockers prevent ad from starting, unlock gracefully after 15s
                 const fallbackTimer = setTimeout(() => {
                     if (!adStarted) {
-                        console.log("Ad failed to load. Fallback triggered.");
+                        console.log("[Video Ad] Ad failed to load. Fallback triggered.");
                         enableCloseButton();
                     }
-                }, 120000);
+                }, 15000);
 
-                try {
-                    myFP = fluidPlayer('fluid-video-id', {
-                        "layoutControls": {
-                            "controlBar": { "autoHideTimeout": 3, "animated": true, "autoHide": true },
-                            "autoPlay": true, 
-                            "mute": false,
-                            "allowTheatre": false,
-                            "playPauseAnimation": false,
-                            "playbackRateEnabled": false,
-                            "allowDownload": false,
-                            "playButtonShowing": false,
-                            "fillToContainer": true, 
-                            "primaryColor": "#FFD700" 
-                        },
-                        "vastOptions": {
-                            "adList":[
-                                {
-                                    "roll": "preRoll",
-                                    "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
-                                    "adText": ""
-                                }
-                            ],
-                            "adCTAText": false,
-                            "vastAdvanced": {
-                                "vastLoadedCallback": function() {
-                                    console.log("HilltopAds VAST tag loaded");
-                                },
-                                "vastVideoStartedCallback": function() {
-                                    console.log("HilltopAds VAST video started");
-                                    handleAdStarted();
-                                },
-                                "vastVideoEndedCallback": function() {
-                                    console.log("HilltopAds VAST video ended");
-                                    enableCloseButton();
-                                },
-                                "vastVideoSkippedCallback": function() {
-                                    console.log("HilltopAds VAST video skipped");
-                                    enableCloseButton();
-                                },
-                                "noVastVideoCallback": function() {
-                                    console.warn("HilltopAds: No VAST ad returned or ad network error");
-                                    enableCloseButton();
-                                }
-                            }
+                function playNativeVideoFallback() {
+                    if (videoEl) {
+                        videoEl.style.display = 'block';
+                        videoEl.muted = true;
+                        videoEl.controls = true;
+                        const p = videoEl.play();
+                        if (p !== undefined) {
+                            p.then(() => handleAdStarted()).catch(() => {
+                                enableCloseButton();
+                            });
+                        } else {
+                            handleAdStarted();
                         }
-                    });
-
-                    // Also bind to Fluid Player instance events if available
-                    if (myFP && typeof myFP.on === 'function') {
-                        try {
-                            myFP.on('adPlay', handleAdStarted);
-                            myFP.on('adEnded', enableCloseButton);
-                            myFP.on('adSkip', enableCloseButton);
-                            myFP.on('adError', enableCloseButton);
-                        } catch(e) {}
+                    } else {
+                        enableCloseButton();
                     }
-                } catch(err) {
-                    console.error("FluidPlayer init error:", err);
-                    enableCloseButton();
                 }
 
-                // If the player throws a hard error during loading
+                if (typeof fluidPlayer === 'function') {
+                    try {
+                        myFP = fluidPlayer('fluid-video-id', {
+                            "layoutControls": {
+                                "controlBar": { "autoHideTimeout": 3, "animated": true, "autoHide": true },
+                                "autoPlay": true, 
+                                "mute": true, // Muted autoplay ensures mobile & desktop browsers allow playback immediately
+                                "allowTheatre": false,
+                                "playPauseAnimation": true,
+                                "playbackRateEnabled": false,
+                                "allowDownload": false,
+                                "playButtonShowing": true,
+                                "fillToContainer": true, 
+                                "primaryColor": "#FFD700" 
+                            },
+                            "vastOptions": {
+                                "adList":[
+                                    {
+                                        "roll": "preRoll",
+                                        "vastTag": "https://fluffy-management.com/dmmOF.zmdUG/N/vCZFGAUZ/NeWmc9Au/Z/UclMkGPATyYa5_N/jOgK5/M/jTkdtHN/jok/2/OGDzkhzrMbwZ",
+                                        "adText": ""
+                                    }
+                                ],
+                                "adCTAText": false,
+                                "vastAdvanced": {
+                                    "vastLoadedCallback": function() {
+                                        console.log("HilltopAds VAST tag loaded");
+                                    },
+                                    "vastVideoStartedCallback": function() {
+                                        console.log("HilltopAds VAST video started");
+                                        handleAdStarted();
+                                    },
+                                    "vastVideoEndedCallback": function() {
+                                        console.log("HilltopAds VAST video ended");
+                                        enableCloseButton();
+                                    },
+                                    "vastVideoSkippedCallback": function() {
+                                        console.log("HilltopAds VAST video skipped");
+                                        enableCloseButton();
+                                    },
+                                    "noVastVideoCallback": function() {
+                                        console.warn("HilltopAds: No VAST ad returned or ad network error");
+                                        playNativeVideoFallback();
+                                    }
+                                }
+                            }
+                        });
+
+                        // Also bind to Fluid Player instance events if available
+                        if (myFP && typeof myFP.on === 'function') {
+                            try {
+                                myFP.on('adPlay', handleAdStarted);
+                                myFP.on('adEnded', enableCloseButton);
+                                myFP.on('adSkip', enableCloseButton);
+                                myFP.on('adError', () => {
+                                    console.warn("FluidPlayer adError: playing fallback");
+                                    playNativeVideoFallback();
+                                });
+                            } catch(e) {}
+                        }
+
+                        if (myFP && typeof myFP.play === 'function') {
+                            try { myFP.play(); } catch(e) {}
+                        }
+                    } catch(err) {
+                        console.error("FluidPlayer init error:", err);
+                        playNativeVideoFallback();
+                    }
+                } else {
+                    playNativeVideoFallback();
+                }
+
+                // If the player video element throws an error
                 if (videoEl) {
                     videoEl.addEventListener('error', () => {
                         if (!adStarted) {
@@ -299,7 +338,6 @@
 
                 playerContainer.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
                 });
             });
         });

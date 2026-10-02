@@ -1,20 +1,265 @@
 <%- include('../../partials/header') %>
+<%
+    const countryDataRaw = `
+GLOBAL|Earth
+AF|Afghanistan
+AX|Åland Islands
+AL|Albania
+DZ|Algeria
+AS|American Samoa
+AD|Andorra
+AO|Angola
+AI|Anguilla
+AQ|Antarctica
+AG|Antigua and Barbuda
+AR|Argentina
+AM|Armenia
+AW|Aruba
+AU|Australia
+AT|Austria
+AZ|Azerbaijan
+BS|Bahamas
+BH|Bahrain
+BD|Bangladesh
+BB|Barbados
+BY|Belarus
+BE|Belgium
+BZ|Belize
+BJ|Benin
+BM|Bermuda
+BT|Bhutan
+BO|Bolivia (Plurinational State of)
+BQ|Bonaire, Sint Eustatius and Saba
+BA|Bosnia and Herzegovina
+BW|Botswana
+BV|Bouvet Island
+BR|Brazil
+IO|British Indian Ocean Territory
+BN|Brunei Darussalam
+BG|Bulgaria
+BF|Burkina Faso
+BI|Burundi
+CV|Cabo Verde
+KH|Cambodia
+CM|Cameroon
+CA|Canada
+KY|Cayman Islands
+CF|Central African Republic
+TD|Chad
+CL|Chile
+CN|China
+CX|Christmas Island
+CC|Cocos (Keeling) Islands
+CO|Colombia
+KM|Comoros
+CG|Congo
+CD|Congo (Democratic Republic of the)
+CK|Cook Islands
+CR|Costa Rica
+CI|Côte d'Ivoire
+HR|Croatia
+CU|Cuba
+CW|Curaçao
+CY|Cyprus
+CZ|Czechia
+DK|Denmark
+DJ|Djibouti
+DM|Dominica
+DO|Dominican Republic
+EC|Ecuador
+EG|Egypt
+SV|El Salvador
+GQ|Equatorial Guinea
+ER|Eritrea
+EE|Estonia
+SZ|Eswatini
+ET|Ethiopia
+FK|Falkland Islands (Malvinas)
+FO|Faroe Islands
+FJ|Fiji
+FI|Finland
+FR|France
+GF|French Guiana
+PF|French Polynesia
+TF|French Southern Territories
+GA|Gabon
+GM|Gambia
+GE|Georgia
+DE|Germany
+GH|Ghana
+GI|Gibraltar
+GR|Greece
+GL|Greenland
+GD|Grenada
+GP|Guadeloupe
+GU|Guam
+GT|Guatemala
+GG|Guernsey
+GN|Guinea
+GW|Guinea-Bissau
+GY|Guyana
+HT|Haiti
+HM|Heard Island and McDonald Islands
+VA|Holy See
+HN|Honduras
+HK|Hong Kong
+HU|Hungary
+IS|Iceland
+IN|India
+ID|Indonesia
+IR|Iran (Islamic Republic of)
+IQ|Iraq
+IE|Ireland
+IM|Isle of Man
+IL|Israel
+IT|Italy
+JM|Jamaica
+JP|Japan
+JE|Jersey
+JO|Jordan
+KZ|Kazakhstan
+KE|Kenya
+KI|Kiribati
+KP|Korea (Democratic People's Republic of)
+KR|Korea (Republic of)
+KW|Kuwait
+KG|Kyrgyzstan
+LA|Lao People's Democratic Republic
+LV|Latvia
+LB|Lebanon
+LS|Lesotho
+LR|Liberia
+LY|Libya
+LI|Liechtenstein
+LT|Lithuania
+LU|Luxembourg
+MO|Macao
+MG|Madagascar
+MW|Malawi
+MY|Malaysia
+MV|Maldives
+ML|Mali
+MT|Malta
+MH|Marshall Islands
+MQ|Martinique
+MR|Mauritania
+MU|Mauritius
+YT|Mayotte
+MX|Mexico
+FM|Micronesia (Federated States of)
+MD|Moldova (Republic of)
+MC|Monaco
+MN|Mongolia
+ME|Montenegro
+MS|Montserrat
+MA|Morocco
+MZ|Mozambique
+MM|Myanmar
+NA|Namibia
+NR|Nauru
+NP|Nepal
+NL|Netherlands
+NC|New Caledonia
+NZ|New Zealand
+NI|Nicaragua
+NE|Niger
+NG|Nigeria
+NU|Niue
+NF|Norfolk Island
+MK|North Macedonia
+MP|Northern Mariana Islands
+NO|Norway
+OM|Oman
+PK|Pakistan
+PW|Palau
+PS|Palestine, State of
+PA|Panama
+PG|Papua New Guinea
+PY|Paraguay
+PE|Peru
+PH|Philippines
+PN|Pitcairn
+PL|Poland
+PT|Portugal
+PR|Puerto Rico
+QA|Qatar
+RE|Réunion
+RO|Romania
+RU|Russian Federation
+RW|Rwanda
+BL|Saint Barthélemy
+SH|Saint Helena, Ascension and Tristan da Cunha
+KN|Saint Kitts and Nevis
+LC|Saint Lucia
+MF|Saint Martin (French part)
+PM|Saint Pierre and Miquelon
+VC|Saint Vincent and the Grenadines
+WS|Samoa
+SM|San Marino
+ST|Sao Tome and Principe
+SA|Saudi Arabia
+SN|Senegal
+RS|Serbia
+SC|Seychelles
+SL|Sierra Leone
+SG|Singapore
+SX|Sint Maarten (Dutch part)
+SK|Slovakia
+SI|Slovenia
+SB|Solomon Islands
+SO|Somalia
+ZA|South Africa
+GS|South Georgia and the South Sandwich Islands
+SS|South Sudan
+ES|Spain
+LK|Sri Lanka
+SD|Sudan
+SR|Suriname
+SJ|Svalbard and Jan Mayen
+SE|Sweden
+CH|Switzerland
+SY|Syrian Arab Republic
+TW|Taiwan, Province of China
+TJ|Tajikistan
+TZ|Tanzania, United Republic of
+TH|Thailand
+TL|Timor-Leste
+TG|Togo
+TK|Tokelau
+TO|Tonga
+TT|Trinidad and Tobago
+TN|Tunisia
+TR|Turkey
+TM|Turkmenistan
+TC|Turks and Caicos Islands
+TV|Tuvalu
+UG|Uganda
+UA|Ukraine
+AE|United Arab Emirates
+GB|United Kingdom of Great Britain and Northern Ireland
+US|United States of America
+UM|United States Minor Outlying Islands
+UY|Uruguay
+UZ|Uzbekistan
+VU|Vanuatu
+VE|Venezuela (Bolivarian Republic of)
+VN|Viet Nam
+VG|Virgin Islands (British)
+VI|Virgin Islands (U.S.)
+WF|Wallis and Futuna
+EH|Western Sahara
+YE|Yemen
+ZM|Zambia
+ZW|Zimbabwe
+`.trim().split('\n').map(line => {
+    const [code, name] = line.split('|');
+    return { code: code.trim(), name: name.trim() };
+});
+%>
 
 <style>
     #floating-music-player {
         display: none !important;
-    }
-    .filter-input-group select {
-        appearance: none;
-        -webkit-appearance: none;
-        background: #0d0e12 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 14px center !important;
-        cursor: pointer;
-        padding-right: 36px !important;
-    }
-    .filter-input-group select option {
-        background: #14151b;
-        color: #fff;
-        padding: 10px;
     }
     .clubs-page-hero {
         background: radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.12) 0%, rgba(20, 20, 25, 0.95) 75%), #0c0d12;
@@ -91,8 +336,8 @@
     }
     .clubs-filter-form {
         display: grid;
-        grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr auto;
-        gap: 16px;
+        grid-template-columns: 2fr 1.1fr 1.2fr 1.3fr 1.2fr auto;
+        gap: 14px;
         align-items: flex-end;
     }
     .filter-input-group label {
@@ -113,38 +358,145 @@
         padding: 11px 14px;
         font-size: 0.95rem;
         outline: none;
+        height: 44px;
+        box-sizing: border-box;
         transition: border-color 0.25s ease;
     }
-    .filter-input-group select {
-        width: 100%;
-        background-color: #0e0f16;
-        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.2) 100%),
-            url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2214%22%20height%3D%2214%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23ffd700%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
-        background-repeat: no-repeat, no-repeat;
-        background-position: right 14px center, right 14px center;
-        background-size: auto, 12px 12px;
-        border: 1.5px solid #333648;
-        border-radius: 10px;
-        color: #fff;
-        padding: 11px 36px 11px 14px;
-        font-size: 0.95rem;
-        outline: none;
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-    }
-    .filter-input-group input:focus,
-    .filter-input-group select:focus {
+    .filter-input-group input:focus {
         border-color: var(--gold);
         box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
     }
-    .filter-input-group select option {
-        background-color: #12131b;
+
+    /* Custom Dropdown UI (Reused from Club Creation) */
+    .filter-input-group.dropdown-group {
+        position: relative;
+    }
+    .custom-select-wrapper {
+        position: relative;
+        user-select: none;
+        width: 100%;
+    }
+    .custom-select-wrapper.open {
+        z-index: 1050 !important;
+    }
+    .filter-input-group.dropdown-group.is-open {
+        z-index: 1050 !important;
+    }
+    .custom-select {
+        background-color: rgba(18, 19, 27, 0.85);
+        border: 1.5px solid rgba(255, 215, 0, 0.25);
+        border-radius: 10px;
+        padding: 0 14px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4);
+        box-sizing: border-box;
+    }
+    .custom-select:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    .custom-select-wrapper.open .custom-select {
+        border-color: var(--gold);
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+    .custom-select-text {
         color: #fff;
-        padding: 10px;
+        font-size: 0.92rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+    }
+    .custom-select-text span,
+    .custom-select-text .opt-label,
+    .custom-select-text .text-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .custom-select-arrow {
+        color: var(--silver);
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .custom-select-wrapper.open .custom-select-arrow {
+        transform: rotate(180deg);
+        color: var(--gold);
+    }
+    .custom-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #14151e;
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.85);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px);
+        transition: all 0.25s ease;
+        z-index: 1100;
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .custom-select-wrapper.open .custom-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    .custom-option {
+        padding: 10px 14px;
+        color: var(--silver);
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: background 0.2s, color 0.2s;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+    .custom-option:hover {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .custom-option.selected {
+        background-color: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        font-weight: 700;
+    }
+    .custom-option i {
+        width: 18px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+    .custom-option .fi {
+        flex-shrink: 0;
+    }
+    .custom-option span.opt-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .filter-submit-btn {
         background: var(--gold);
@@ -217,7 +569,6 @@
         height: 120px;
         background-color: #1f2029;
         position: relative;
-        overflow: hidden;
     }
     .club-card-banner-img {
         position: absolute;
@@ -372,12 +723,17 @@
         transform: translateY(-2px);
     }
 
-    @media (max-width: 992px) {
+    @media (max-width: 1200px) {
+        .clubs-filter-form {
+            grid-template-columns: 1.5fr 1fr 1fr;
+        }
+    }
+    @media (max-width: 768px) {
         .clubs-filter-form {
             grid-template-columns: 1fr 1fr;
         }
     }
-    @media (max-width: 600px) {
+    @media (max-width: 520px) {
         .clubs-filter-form {
             grid-template-columns: 1fr;
         }
@@ -433,22 +789,112 @@
                 <input type="text" id="filter-tag" name="tag" placeholder="e.g. Gaming, Android" value="<%= filters.tag %>">
             </div>
 
-            <div class="filter-input-group">
-                <label for="filter-access"><i class="fas fa-lock"></i> Access</label>
-                <select id="filter-access" name="access">
-                    <option value="all" <%= filters.access === 'all' ? 'selected' : '' %>>All Clubs</option>
-                    <option value="public" <%= filters.access === 'public' ? 'selected' : '' %>>Public (Instant Join)</option>
-                    <option value="private" <%= filters.access === 'private' ? 'selected' : '' %>>Private (Approval Needed)</option>
-                </select>
+            <div class="filter-input-group dropdown-group">
+                <label><i class="fas fa-lock"></i> Access</label>
+                <div class="custom-select-wrapper" id="wrapper-filter-access">
+                    <% 
+                        const accessOptions = [
+                            { value: 'all', label: 'All Clubs', icon: 'fa-layer-group', color: 'var(--gold)' },
+                            { value: 'public', label: 'Public (Instant Join)', icon: 'fa-globe', color: '#69f0ae' },
+                            { value: 'private', label: 'Private (Approval Needed)', icon: 'fa-lock', color: '#ff8a80' }
+                        ];
+                        const curAccess = filters.access || 'all';
+                        const curAccessObj = accessOptions.find(o => o.value === curAccess) || accessOptions[0];
+                    %>
+                    <div class="custom-select">
+                        <span class="custom-select-text">
+                            <i class="fas <%= curAccessObj.icon %>" style="color: <%= curAccessObj.color %>;"></i>
+                            <span class="text-label"><%= curAccessObj.label %></span>
+                        </span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <% accessOptions.forEach(opt => { %>
+                            <div class="custom-option <%= (curAccess === opt.value) ? 'selected' : '' %>" data-value="<%= opt.value %>">
+                                <i class="fas <%= opt.icon %>" style="color: <%= opt.color %>;"></i>
+                                <span class="opt-label"><%= opt.label %></span>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <input type="hidden" id="filter-access" name="access" value="<%= curAccess %>">
+                </div>
             </div>
 
-            <div class="filter-input-group">
-                <label for="filter-sort"><i class="fas fa-sort"></i> Sort By</label>
-                <select id="filter-sort" name="sort">
-                    <option value="members" <%= filters.sort === 'members' ? 'selected' : '' %>>Most Members</option>
-                    <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Newest Created</option>
-                    <option value="name" <%= filters.sort === 'name' ? 'selected' : '' %>>Alphabetical</option>
-                </select>
+            <div class="filter-input-group dropdown-group">
+                <label><i class="fas fa-globe-americas"></i> Country</label>
+                <div class="custom-select-wrapper" id="wrapper-filter-country">
+                    <% 
+                        const curCountryFilter = filters.country || 'all';
+                        let curCountryFilterObj = null;
+                        if (curCountryFilter !== 'all') {
+                            curCountryFilterObj = countryDataRaw.find(c => c.code === curCountryFilter || c.name === curCountryFilter);
+                        }
+                    %>
+                    <div class="custom-select">
+                        <span class="custom-select-text">
+                            <% if (curCountryFilterObj) { %>
+                                <% if (curCountryFilterObj.code !== 'GLOBAL') { %>
+                                    <span class="fi fi-<%= curCountryFilterObj.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                <% } else { %>
+                                    <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                <% } %>
+                                <span class="text-label"><%= curCountryFilterObj.name %></span>
+                            <% } else { %>
+                                <i class="fas fa-globe-americas" style="color: var(--gold); flex-shrink: 0;"></i>
+                                <span class="text-label">All Regions</span>
+                            <% } %>
+                        </span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <div class="custom-option <%= (curCountryFilter === 'all') ? 'selected' : '' %>" data-value="all">
+                            <i class="fas fa-globe-americas" style="color: var(--gold); flex-shrink: 0;"></i>
+                            <span class="opt-label">All Regions</span>
+                        </div>
+                        <% countryDataRaw.forEach(country => { %>
+                            <div class="custom-option <%= (curCountryFilter === country.code || curCountryFilter === country.name) ? 'selected' : '' %>" data-value="<%= country.code %>">
+                                <% if (country.code !== 'GLOBAL') { %>
+                                    <span class="fi fi-<%= country.code.toLowerCase() %>" style="border-radius: 2px; flex-shrink: 0;"></span>
+                                <% } else { %>
+                                    <i class="fas fa-globe" style="color: var(--gold); flex-shrink: 0;"></i>
+                                <% } %>
+                                <span class="opt-label"><%= country.name %></span>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <input type="hidden" id="filter-country" name="country" value="<%= curCountryFilter %>">
+                </div>
+            </div>
+
+            <div class="filter-input-group dropdown-group">
+                <label><i class="fas fa-sort"></i> Sort By</label>
+                <div class="custom-select-wrapper" id="wrapper-filter-sort">
+                    <% 
+                        const sortOptions = [
+                            { value: 'members', label: 'Most Members', icon: 'fa-users', color: 'var(--gold)' },
+                            { value: 'newest', label: 'Newest Created', icon: 'fa-clock', color: '#64b5f6' },
+                            { value: 'name', label: 'Alphabetical', icon: 'fa-sort-alpha-down', color: '#b388ff' }
+                        ];
+                        const curSort = filters.sort || 'members';
+                        const curSortObj = sortOptions.find(o => o.value === curSort) || sortOptions[0];
+                    %>
+                    <div class="custom-select">
+                        <span class="custom-select-text">
+                            <i class="fas <%= curSortObj.icon %>" style="color: <%= curSortObj.color %>;"></i>
+                            <span class="text-label"><%= curSortObj.label %></span>
+                        </span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-options">
+                        <% sortOptions.forEach(opt => { %>
+                            <div class="custom-option <%= (curSort === opt.value) ? 'selected' : '' %>" data-value="<%= opt.value %>">
+                                <i class="fas <%= opt.icon %>" style="color: <%= opt.color %>;"></i>
+                                <span class="opt-label"><%= opt.label %></span>
+                            </div>
+                        <% }); %>
+                    </div>
+                    <input type="hidden" id="filter-sort" name="sort" value="<%= curSort %>">
+                </div>
             </div>
 
             <button type="submit" class="filter-submit-btn">
@@ -464,7 +910,7 @@
                     #<%= t %>
                 </a>
             <% }) %>
-            <% if (filters.tag || filters.q || filters.access !== 'all') { %>
+            <% if (filters.tag || filters.q || filters.access !== 'all' || (filters.country && filters.country !== 'all') || filters.sort !== 'members') { %>
                 <a href="/clubs" class="tag-chip" style="color: #ff6b6b; border-color: rgba(255, 107, 107, 0.4);">
                     <i class="fas fa-times"></i> Clear Filters
                 </a>
@@ -577,8 +1023,68 @@
     <% } %>
 </main>
 
-<!-- Share System Modal (Unified from download.ejs) -->
+<!-- Custom Dropdown Controller & Share System Modal -->
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function initCustomSelect(wrapperId, hiddenInputId, onSelectCallback) {
+            const wrapper = document.getElementById(wrapperId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            if (!wrapper || !hiddenInput) return;
+
+            const selectBtn = wrapper.querySelector('.custom-select');
+            const selectText = wrapper.querySelector('.custom-select-text');
+            const optionsContainer = wrapper.querySelector('.custom-options');
+
+            selectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const willOpen = !wrapper.classList.contains('open');
+                // Close other open wrappers
+                document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                    w.classList.remove('open');
+                    w.closest('.dropdown-group')?.classList.remove('is-open');
+                });
+                if (willOpen) {
+                    wrapper.classList.add('open');
+                    wrapper.closest('.dropdown-group')?.classList.add('is-open');
+                }
+            });
+
+            optionsContainer.addEventListener('click', (e) => {
+                const opt = e.target.closest('.custom-option');
+                if (!opt) return;
+
+                const val = opt.getAttribute('data-value');
+                wrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                // Update trigger text with exact HTML from selected option
+                selectText.innerHTML = opt.innerHTML;
+
+                hiddenInput.value = val;
+                hiddenInput.dispatchEvent(new Event('change'));
+                wrapper.classList.remove('open');
+                wrapper.closest('.dropdown-group')?.classList.remove('is-open');
+
+                if (typeof onSelectCallback === 'function') {
+                    onSelectCallback(val, opt);
+                }
+            });
+        }
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(w => {
+                w.classList.remove('open');
+                w.closest('.dropdown-group')?.classList.remove('is-open');
+            });
+        });
+
+        // Initialize Filter Dropdowns
+        initCustomSelect('wrapper-filter-access', 'filter-access');
+        initCustomSelect('wrapper-filter-country', 'filter-country');
+        initCustomSelect('wrapper-filter-sort', 'filter-sort');
+    });
+
     function handleClubShare(btn) {
         const clubId = btn.getAttribute('data-club-id');
         const clubName = btn.getAttribute('data-club-name');
