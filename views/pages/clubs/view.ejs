@@ -1724,7 +1724,7 @@
         <div class="channels-scroll-area">
             <!-- 1. INFORMATION CHANNELS -->
             <div class="channel-category-label">
-                <span>📌 Information</span>
+                <span><i class="fas fa-thumbtack" style="margin-right: 4px; color: var(--gold);"></i> Information</span>
             </div>
             <% channels.filter(c => ['rules', 'announcements'].includes(c.type)).forEach(chan => { %>
                 <a href="/clubs/<%= club.slug %>?channel=<%= chan._id %>" class="channel-item-link <%= (activeChannel && String(activeChannel._id) === String(chan._id)) ? 'active' : '' %>">
@@ -1735,7 +1735,7 @@
 
             <!-- 2. MOD FEEDS (Automated uploader/distributor feeds) -->
             <div class="channel-category-label" style="margin-top: 8px;">
-                <span>🚀 Mod Feeds</span>
+                <span><i class="fas fa-rocket" style="margin-right: 4px; color: #64b5f6;"></i> Mod Feeds</span>
             </div>
             <% channels.filter(c => ['new-uploads', 'new-updates'].includes(c.type)).forEach(chan => { %>
                 <a href="/clubs/<%= club.slug %>?channel=<%= chan._id %>" class="channel-item-link <%= (activeChannel && String(activeChannel._id) === String(chan._id)) ? 'active' : '' %>">
@@ -1746,7 +1746,7 @@
 
             <!-- 3. TEXT & POLL CHANNELS -->
             <div class="channel-category-label" style="margin-top: 8px;">
-                <span>💬 Text Channels</span>
+                <span><i class="fas fa-comments" style="margin-right: 4px; color: #81c784;"></i> Text Channels</span>
                 <% if (hasManageClubPerm) { %>
                     <button type="button" onclick="openCreateChannelModal()" title="Create Channel" style="background: none; border: none; color: #8e9297; cursor: pointer;">
                         <i class="fas fa-plus"></i>
@@ -2246,7 +2246,7 @@
                                         <% } %>
                                     <% } else { %>
                                         <span class="discord-sidebar-role-pill" style="color: #99aab5; background: #99aab518; border: 1px solid #99aab540;">
-                                            🌐 everyone
+                                            <i class="fas fa-globe" style="margin-right: 3px;"></i> everyone
                                         </span>
                                     <% } %>
                                 </div>
@@ -3055,13 +3055,13 @@
 <!-- ============================================================== -->
 <!-- UNIQUE MEMBER INVITE MODAL                                     -->
 <!-- ============================================================== -->
-<div class="gpl-modal-backdrop" id="uniqueInviteModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+<div class="gpl-modal-backdrop" id="uniqueInviteModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 12px; box-sizing: border-box; overflow-y: auto;">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 20px 18px; width: 100%; max-width: 480px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-trophy" style="color: var(--gold);"></i> Your Unique Club Invite
             </h3>
-            <button type="button" onclick="closeUniqueInviteModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+            <button type="button" onclick="closeUniqueInviteModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer; padding: 0 4px;">&times;</button>
         </div>
 
         <!-- Invite Stats Banner -->
@@ -3072,16 +3072,16 @@
             </div>
             <div style="background: rgba(100,181,246,0.08); border: 1px solid rgba(100,181,246,0.25); border-radius: 10px; padding: 12px; text-align: center;">
                 <span style="display: block; font-size: 0.75rem; color: var(--silver); text-transform: uppercase;">Total Invites</span>
-                <strong style="color: #64b5f6; font-size: 1.15rem;" id="myInviteStatNum"><%= myInviteCount %> Invited 🏆</strong>
+                <strong style="color: #64b5f6; font-size: 1.15rem; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" id="myInviteStatNum"><%= myInviteCount %> Invited <i class="fas fa-trophy" style="color: var(--gold);"></i></strong>
             </div>
         </div>
 
         <!-- Link Copy Box -->
         <div style="margin-bottom: 16px;">
             <label style="display: block; font-size: 0.8rem; color: var(--silver); margin-bottom: 6px;">Your Personal Invite Link:</label>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="myUniqueInviteInput" readonly style="flex: 1; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;" value="">
-                <button type="button" onclick="copyMyUniqueInviteLink()" id="btnCopyMyInvite" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 18px; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box;">
+                <input type="text" id="myUniqueInviteInput" readonly style="flex: 1 1 auto; min-width: 0; width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; box-sizing: border-box;" value="">
+                <button type="button" onclick="copyMyUniqueInviteLink()" id="btnCopyMyInvite" style="flex-shrink: 0; background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
                     <i class="fas fa-copy"></i> <span>Copy</span>
                 </button>
             </div>
@@ -3090,30 +3090,30 @@
         <!-- Announcement Explanation Card -->
         <div style="background: rgba(255,255,255,0.03); border: 1px solid #282a36; border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.82rem; color: var(--silver); line-height: 1.45;">
             <div style="color: #69f0ae; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                <i class="fas fa-sparkles"></i> Automated Invite Rewards &amp; Announcements
+                <i class="fas fa-magic"></i> Automated Invite Rewards &amp; Announcements
             </div>
             When a friend opens your link and joins <strong><%= club.name %></strong>:
             <ul style="margin: 6px 0 0 16px; padding: 0;">
                 <li>An automated celebratory announcement is posted in the club chat mentioning your invite!</li>
-                <li>Your total invite count increases and displays on your member card 🏆</li>
+                <li>Your total invite count increases and displays on your member card <i class="fas fa-trophy" style="color: var(--gold);"></i></li>
                 <li>You receive an in-app notification confirming the accepted invite!</li>
             </ul>
         </div>
 
         <!-- Social Share Quick Buttons -->
         <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 8px;">Share Instantly:</label>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-            <a href="#" id="shareInviteWhatsApp" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 8px; color: #25d366; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
-                <i class="fab fa-whatsapp" style="font-size: 1.2rem;"></i> WhatsApp
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px;">
+            <a href="#" id="shareInviteWhatsApp" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 9px 4px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 8px; color: #25d366; text-decoration: none; font-size: 0.74rem; font-weight: 600; min-width: 0;">
+                <i class="fab fa-whatsapp" style="font-size: 1.25rem;"></i> WhatsApp
             </a>
-            <a href="#" id="shareInviteTelegram" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); border-radius: 8px; color: #0088cc; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
-                <i class="fab fa-telegram-plane" style="font-size: 1.2rem;"></i> Telegram
+            <a href="#" id="shareInviteTelegram" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 9px 4px; background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); border-radius: 8px; color: #0088cc; text-decoration: none; font-size: 0.74rem; font-weight: 600; min-width: 0;">
+                <i class="fab fa-telegram-plane" style="font-size: 1.25rem;"></i> Telegram
             </a>
-            <a href="#" id="shareInviteTwitter" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); border-radius: 8px; color: #1da1f2; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
-                <i class="fab fa-x-twitter" style="font-size: 1.2rem;"></i> Twitter
+            <a href="#" id="shareInviteTwitter" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 9px 4px; background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); border-radius: 8px; color: #1da1f2; text-decoration: none; font-size: 0.74rem; font-weight: 600; min-width: 0;">
+                <i class="fab fa-x-twitter" style="font-size: 1.25rem;"></i> Twitter
             </a>
-            <a href="#" id="shareInviteReddit" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 8px; color: #ff4500; text-decoration: none; font-size: 0.74rem; font-weight: 600;">
-                <i class="fab fa-reddit-alien" style="font-size: 1.2rem;"></i> Reddit
+            <a href="#" id="shareInviteReddit" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 9px 4px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 8px; color: #ff4500; text-decoration: none; font-size: 0.74rem; font-weight: 600; min-width: 0;">
+                <i class="fab fa-reddit-alien" style="font-size: 1.25rem;"></i> Reddit
             </a>
         </div>
     </div>
@@ -4516,7 +4516,7 @@
                     btn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy</span>';
                 }, 2500);
             }
-            showGplToast('Your personal club invite link was copied! Share it with friends 🏆', 'success');
+            showGplToast('Your personal club invite link was copied! Share it with friends', 'success');
         };
 
         if (navigator.clipboard) {

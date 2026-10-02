@@ -752,12 +752,13 @@ a.overlay-btn-primary:hover {
     
     /* Start hidden - only the button (50px) is visible */
     transform: translateX(calc(-100% + 50px));
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    will-change: transform;
 }
 
 .floating-music-player.open {
     transform: translateX(0);
-    box-shadow: 0 0 20px var(--glow-gold);
+    box-shadow: 0 0 25px var(--glow-gold), 5px 5px 25px rgba(0,0,0,0.7);
 }
 
 /* The Music Icon Button and content */
@@ -779,21 +780,29 @@ a.overlay-btn-primary:hover {
 }
 .music-toggle-btn:hover {
     color: var(--white);
-    text-shadow: 0 0 4px var(--glow-gold);
+    text-shadow: 0 0 6px var(--glow-gold);
+    transform: scale(1.08);
+}
+.floating-music-player.open .music-toggle-btn {
+    color: var(--gold);
 }
 
-/* Content wrapper - now always visible or hidden by media query */
+/* Content wrapper - kept in layout for buttery smooth close transition */
 .music-player-content {
-    display: none;
+    display: flex;
     flex-direction: column;
     align-items: center;
     padding: 10px 15px;
     background: var(--dark-gray);
     border-radius: 30px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .floating-music-player.open .music-player-content {
-    display: flex;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .music-player-content .track-name {
@@ -2422,6 +2431,26 @@ a.overlay-btn-primary:hover {
 .pwa-install-btn:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
 .pwa-dismiss-btn { background-color: transparent; color: var(--silver); border: 1px solid #444; }
 .pwa-dismiss-btn:hover { border-color: var(--silver); color: var(--white); }
+
+/* Force hide PWA Banner inside PWA Standalone Mode */
+@media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+    #pwa-install-banner,
+    .pwa-banner {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+        transform: translateY(300%) !important;
+    }
+}
+.is-pwa-standalone #pwa-install-banner,
+.is-pwa-standalone .pwa-banner {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    transform: translateY(300%) !important;
+}
 
 @media (min-width: 768px) {
     .pwa-buttons { flex-direction: row; }

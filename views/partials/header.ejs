@@ -1100,13 +1100,13 @@
                                                         <div class="avatar-placeholder"
                                                             style="cursor: default; pointer-events: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);"
                                                             title="Pending 2FA: <%= user.username %>">
-                                                            <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>"
+                                                            <img src="<%= (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') ? userAvatar : ((user && (user.signedAvatarUrl || user.cardAvatarUrl || user.avatarUrl || user.avatar)) || '/images/default-avatar.png') %>"
                                                                 alt="User Avatar"
                                                                 onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                                                         </div>
                                                         <% } else { %>
                                                             <a href="/dashboard" class="avatar-placeholder">
-                                                                <img src="<%= (user && user.signedAvatarUrl) ? user.signedAvatarUrl : '/images/default-avatar.png' %>"
+                                                                <img src="<%= (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') ? userAvatar : ((user && (user.signedAvatarUrl || user.cardAvatarUrl || user.avatarUrl || user.avatar)) || '/images/default-avatar.png') %>"
                                                                     alt="User Avatar"
                                                                     onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                                                             </a>

@@ -269,10 +269,63 @@
         color: var(--white);
         font-weight: 700;
         font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+    }
+    .active-tier-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #fff;
+    }
+    .active-banner-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        background: rgba(255, 215, 0, 0.18);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.45);
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.15);
+    }
+    .active-banner-tag i {
+        font-size: 0.85em;
+        color: var(--gold);
     }
     .active-banner-sub {
         color: var(--silver);
         font-size: 0.88rem;
+    }
+    @media (max-width: 600px) {
+        .active-membership-banner {
+            padding: 16px 14px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .active-banner-info {
+            align-items: flex-start;
+        }
+        .active-banner-info > i {
+            margin-top: 2px;
+            font-size: 1.5rem;
+        }
+        .active-banner-title {
+            font-size: 0.98rem;
+        }
+        .btn-manage-active {
+            width: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+        }
     }
     .btn-manage-active {
         background: var(--gold);
@@ -490,11 +543,11 @@
                     <i class="<%= (hasLiteMembership && !isOwnerOrAdmin) ? 'fas fa-bolt' : 'fas fa-crown' %>"></i>
                     <div>
                         <div class="active-banner-title">
-                            Active Membership: <%= hasPlusMembership ? 'GPL Plus' : (hasLiteMembership ? 'GPL Lite' : 'Premium') %>
+                            <span class="active-tier-name">Active Membership: <strong><%= hasPlusMembership ? 'GPL Plus' : (hasLiteMembership ? 'GPL Lite' : 'Premium') %></strong></span>
                             <% if (isOwnerOrAdmin) { %>
-                                <span style="background: rgba(255, 215, 0, 0.2); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.4); padding: 2px 9px; border-radius: 12px; font-size: 0.78em; margin-left: 8px;"><i class="fas fa-shield-alt"></i> <%= user.role.toUpperCase() %> VIP ACCESS</span>
+                                <span class="active-banner-tag"><i class="fas fa-shield-alt"></i> <%= user.role.toUpperCase() %> VIP</span>
                             <% } else if (user.membershipExpiresAt) { %>
-                                &bull; Valid until <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                                <span class="active-banner-tag" style="background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); color: var(--silver);"><i class="fas fa-clock"></i> Valid until <%= new Date(user.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
                             <% } %>
                         </div>
                         <div class="active-banner-sub">

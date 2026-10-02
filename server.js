@@ -13700,6 +13700,12 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             } catch (e) {}
         }
 
+        user.signedAvatarUrl = userAvatar;
+        user.cardAvatarUrl = userAvatar;
+        if (req.user) {
+            req.user.signedAvatarUrl = userAvatar;
+        }
+
         const tierQuotaConfig = getTierQuotaConfig(user);
 
         res.render('pages/my-membership', {

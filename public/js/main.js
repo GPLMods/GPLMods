@@ -1096,8 +1096,36 @@ function startEngagementSequence() {
     const installBtn = document.getElementById('pwa-install');
     const dismissBtn = document.getElementById('pwa-dismiss');
     
-    const isPwaDismissed = localStorage.getItem('pwaDismissed') === 'true';
-    const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    // Globally accessible PWA installed detector
+    window.isGplPwaInstalled = function() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            return Boolean(
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.matchMedia('(display-mode: fullscreen)').matches ||
+                window.matchMedia('(display-mode: minimal-ui)').matches ||
+                window.navigator.standalone === true ||
+                (document.referrer && document.referrer.includes('android-app://')) ||
+                localStorage.getItem('gpl_pwa_installed') === 'true' ||
+                urlParams.get('source') === 'pwa' ||
+                urlParams.get('mode') === 'pwa'
+            );
+        } catch(e) {
+            return false;
+        }
+    };
+
+    const isPwaInstalled = window.isGplPwaInstalled();
+    if (isPwaInstalled) {
+        document.documentElement.classList.add('is-pwa-standalone');
+        localStorage.setItem('gpl_pwa_installed', 'true');
+        localStorage.setItem('pwaDismissed', 'true');
+        if (pwaBanner) {
+            pwaBanner.classList.remove('show');
+            pwaBanner.remove();
+        }
+    }
+    const isPwaDismissed = isPwaInstalled || localStorage.getItem('pwaDismissed') === 'true';
 
     // We set a fallback timer for the newsletter in case the PWA prompt NEVER fires
     let newsletterTimer = setTimeout(() => {
@@ -1105,6 +1133,11 @@ function startEngagementSequence() {
     }, newsletterFallbackDelay);
 
     function tryShowPwa() {
+        if (window.isGplPwaInstalled() || isPwaDismissed) {
+            if (pwaBanner) pwaBanner.remove();
+            return;
+        }
+
         if (!window.GPLPopupCoordinator.canShow('pwa')) {
             const onPopupClosed = () => {
                 if (window.GPLPopupCoordinator.canShow('pwa')) {
@@ -1132,15 +1165,6 @@ function startEngagementSequence() {
             window.dispatchEvent(new CustomEvent('gplmods:pwa-installable'));
             setTimeout(tryShowPwa, pwaDelay);
         });
-
-    window.isGplPwaInstalled = function() {
-        return Boolean(
-            window.matchMedia('(display-mode: standalone)').matches ||
-            window.navigator.standalone === true ||
-            document.referrer.includes('android-app://') ||
-            localStorage.getItem('gpl_pwa_installed') === 'true'
-        );
-    };
 
     window.triggerPwaInstallPrompt = async function(instructionsId) {
         if (window.gplDeferredPrompt) {
@@ -1268,7 +1292,29 @@ function initializeMusicPlayer() {
     if (!audioPlayer || !playPauseBtn || !trackNameDisplay) return;
 
     if (toggleBtn && playerContainer) {
-        toggleBtn.addEventListener('click', () => playerContainer.classList.toggle('open'));
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playerContainer.classList.toggle('open');
+        });
+
+        // Prevent clicks inside the music player from closing it
+        playerContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Close when clicking anywhere else on the screen
+        document.addEventListener('click', (e) => {
+            if (playerContainer.classList.contains('open') && !playerContainer.contains(e.target)) {
+                playerContainer.classList.remove('open');
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && playerContainer.classList.contains('open')) {
+                playerContainer.classList.remove('open');
+            }
+        });
     }
 
     let playlist = [];
@@ -1809,55 +1855,52 @@ function initializeSocialCarousels() {
     const carouselContainers = document.querySelectorAll('.social-carousel-container');
 
     carouselContainers.forEach(container => {
-        // We find the specific elements INSIDE this specific container
         const track = container.querySelector('.social-icons-track');
         const prevBtn = container.querySelector('.social-nav-btn[title="Previous"]');
         const nextBtn = container.querySelector('.social-nav-btn[title="Next"]');
+        const windowEl = container.querySelector('.social-icons-window');
         
         if (!track || !prevBtn || !nextBtn) return;
 
         const icons = track.querySelectorAll('a');
         const totalIcons = icons.length;
         
-        // If 3 or fewer icons, hide arrows and disable carousel logic
-        if (totalIcons <= 3) {
+        const visibleIconsCount = 4;
+        const iconPitch = 48; // 32px icon + 16px gap
+
+        // If 4 or fewer icons, hide arrows and disable carousel logic
+        if (totalIcons <= visibleIconsCount) {
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
             return; 
         }
 
         let currentIndex = 0;
-        const visibleIconsCount = 3;
-        const slideAmount = 48; // Approx width (28px) + gap (20px)
+        const maxIndex = totalIcons - visibleIconsCount;
 
         function updateCarousel() {
-            track.style.transform = `translateX(-${currentIndex * slideAmount}px)`;
+            const maxTranslate = Math.max(0, track.scrollWidth - (windowEl ? windowEl.clientWidth : 176));
+            const targetTranslate = Math.min(currentIndex * iconPitch, maxTranslate);
+            track.style.transform = `translateX(-${targetTranslate}px)`;
 
-            if (currentIndex === 0) {
-                prevBtn.disabled = true;
-                prevBtn.style.opacity = '0.3';
-            } else {
-                prevBtn.disabled = false;
-                prevBtn.style.opacity = '1';
-            }
+            prevBtn.disabled = (currentIndex === 0);
+            prevBtn.style.opacity = (currentIndex === 0) ? '0.25' : '1';
 
-            if (currentIndex >= (totalIcons - visibleIconsCount)) {
-                nextBtn.disabled = true;
-                nextBtn.style.opacity = '0.3';
-            } else {
-                nextBtn.disabled = false;
-                nextBtn.style.opacity = '1';
-            }
+            const atEnd = (currentIndex >= maxIndex) || (targetTranslate >= maxTranslate && maxTranslate > 0);
+            nextBtn.disabled = atEnd;
+            nextBtn.style.opacity = atEnd ? '0.25' : '1';
         }
 
-        nextBtn.addEventListener('click', () => {
-            if (currentIndex < totalIcons - visibleIconsCount) {
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (currentIndex < maxIndex) {
                 currentIndex++;
                 updateCarousel();
             }
         });
 
-        prevBtn.addEventListener('click', () => {
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             if (currentIndex > 0) {
                 currentIndex--;
                 updateCarousel();
