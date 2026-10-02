@@ -19886,6 +19886,116 @@ const startServer = async () => {
             });
         });
 
+// ===================================
+// CLUBS & COMMUNITIES ROUTES
+// ===================================
+const clubsRoutes = require('./routes/clubs');
+app.use('/clubs', clubsRoutes);
+
+// ===================================
+// DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES
+// ===================================
+const notificationsRoutes = require('./routes/notifications');
+app.use('/api/notifications', notificationsRoutes);
+
+// ===================================
+// OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
+// ===================================
+const ownerRoutes = require('./routes/owner');
+app.use('/', ownerRoutes);
+
+// ===================================
+// USER CREATOR TRACKING & SUBSCRIPTIONS API
+// ===================================
+app.get('/api/user/tracking', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const user = await User.findById(req.user._id).populate({
+            path: 'trackedCreators.creator',
+            select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
+        });
+        return res.json({ success: true, trackedCreators: user.trackedCreators || [] });
+    } catch (err) {
+        console.error('[Tracking API] Get error:', err);
+        return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
+    }
+});
+
+app.post('/api/user/tracking/add', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { username, creatorId, trackType } = req.body;
+        let targetCreator = null;
+        if (creatorId) {
+            targetCreator = await User.findById(creatorId);
+        } else if (username) {
+            targetCreator = await User.findOne({ username: username.trim() });
+        }
+        if (!targetCreator) {
+            return res.status(404).json({ error: 'Creator not found.' });
+        }
+        if (String(targetCreator._id) === String(req.user._id)) {
+            return res.status(400).json({ error: 'You cannot track your own profile.' });
+        }
+
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+        const user = await User.findById(req.user._id);
+        if (!user.trackedCreators) user.trackedCreators = [];
+
+        const existingIdx = user.trackedCreators.findIndex(tc => String(tc.creator) === String(targetCreator._id));
+        if (existingIdx > -1) {
+            user.trackedCreators[existingIdx].trackType = validTrackType;
+        } else {
+            user.trackedCreators.push({
+                creator: targetCreator._id,
+                trackType: validTrackType,
+                trackedAt: new Date()
+            });
+        }
+        await user.save();
+        return res.json({ success: true, message: `Now tracking ${targetCreator.username} (${validTrackType})` });
+    } catch (err) {
+        console.error('[Tracking API] Add error:', err);
+        return res.status(500).json({ error: 'Failed to track creator.' });
+    }
+});
+
+app.post('/api/user/tracking/update', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { creatorId, trackType } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+
+        const user = await User.findById(req.user._id);
+        const item = (user.trackedCreators || []).find(tc => String(tc.creator) === String(creatorId));
+        if (item) {
+            item.trackType = validTrackType;
+            await user.save();
+        }
+        return res.json({ success: true, trackType: validTrackType });
+    } catch (err) {
+        console.error('[Tracking API] Update error:', err);
+        return res.status(500).json({ error: 'Failed to update tracking preference.' });
+    }
+});
+
+app.post('/api/user/tracking/remove', async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const { creatorId } = req.body;
+        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+
+        const user = await User.findById(req.user._id);
+        user.trackedCreators = (user.trackedCreators || []).filter(tc => String(tc.creator) !== String(creatorId));
+        await user.save();
+        return res.json({ success: true, message: 'Creator removed from tracked list.' });
+    } catch (err) {
+        console.error('[Tracking API] Remove error:', err);
+        return res.status(500).json({ error: 'Failed to remove tracked creator.' });
+    }
+});
+
 // ===============================================
 // 17. GLOBAL ERROR HANDLERS (MUST BE LAST)
 // ===============================================
@@ -20084,116 +20194,6 @@ cron.schedule('* * * * *', async () => {
 
     } catch (error) {
         console.error("Cron Job Automation Error:", error);
-    }
-});
-
-// ===================================
-// OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
-// ===================================
-const ownerRoutes = require('./routes/owner');
-app.use('/', ownerRoutes);
-
-// ===================================
-// CLUBS & COMMUNITIES ROUTES
-// ===================================
-const clubsRoutes = require('./routes/clubs');
-app.use('/clubs', clubsRoutes);
-
-// ===================================
-// DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES
-// ===================================
-const notificationsRoutes = require('./routes/notifications');
-app.use('/api/notifications', notificationsRoutes);
-
-// ===================================
-// USER CREATOR TRACKING & SUBSCRIPTIONS API
-// ===================================
-app.get('/api/user/tracking', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const user = await User.findById(req.user._id).populate({
-            path: 'trackedCreators.creator',
-            select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
-        });
-        return res.json({ success: true, trackedCreators: user.trackedCreators || [] });
-    } catch (err) {
-        console.error('[Tracking API] Get error:', err);
-        return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
-    }
-});
-
-app.post('/api/user/tracking/add', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { username, creatorId, trackType } = req.body;
-        let targetCreator = null;
-        if (creatorId) {
-            targetCreator = await User.findById(creatorId);
-        } else if (username) {
-            targetCreator = await User.findOne({ username: username.trim() });
-        }
-        if (!targetCreator) {
-            return res.status(404).json({ error: 'Creator not found.' });
-        }
-        if (String(targetCreator._id) === String(req.user._id)) {
-            return res.status(400).json({ error: 'You cannot track your own profile.' });
-        }
-
-        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
-        const user = await User.findById(req.user._id);
-        if (!user.trackedCreators) user.trackedCreators = [];
-
-        const existingIdx = user.trackedCreators.findIndex(tc => String(tc.creator) === String(targetCreator._id));
-        if (existingIdx > -1) {
-            user.trackedCreators[existingIdx].trackType = validTrackType;
-        } else {
-            user.trackedCreators.push({
-                creator: targetCreator._id,
-                trackType: validTrackType,
-                trackedAt: new Date()
-            });
-        }
-        await user.save();
-        return res.json({ success: true, message: `Now tracking ${targetCreator.username} (${validTrackType})` });
-    } catch (err) {
-        console.error('[Tracking API] Add error:', err);
-        return res.status(500).json({ error: 'Failed to track creator.' });
-    }
-});
-
-app.post('/api/user/tracking/update', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { creatorId, trackType } = req.body;
-        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
-        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
-
-        const user = await User.findById(req.user._id);
-        const item = (user.trackedCreators || []).find(tc => String(tc.creator) === String(creatorId));
-        if (item) {
-            item.trackType = validTrackType;
-            await user.save();
-        }
-        return res.json({ success: true, trackType: validTrackType });
-    } catch (err) {
-        console.error('[Tracking API] Update error:', err);
-        return res.status(500).json({ error: 'Failed to update tracking preference.' });
-    }
-});
-
-app.post('/api/user/tracking/remove', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { creatorId } = req.body;
-        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
-
-        const user = await User.findById(req.user._id);
-        user.trackedCreators = (user.trackedCreators || []).filter(tc => String(tc.creator) !== String(creatorId));
-        await user.save();
-        return res.json({ success: true, message: 'Creator removed from tracked list.' });
-    } catch (err) {
-        console.error('[Tracking API] Remove error:', err);
-        return res.status(500).json({ error: 'Failed to remove tracked creator.' });
     }
 });
 

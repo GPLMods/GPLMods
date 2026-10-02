@@ -32,9 +32,12 @@ const ensureOwner = (req, res, next) => {
     });
 };
 
-// Apply owner protection to all owner routes in this router
+// Apply owner protection only to owner routes in this router
 router.use((req, res, next) => {
-    return ensureOwner(req, res, next);
+    if (req.path === '/owner' || req.path.startsWith('/owner/') || req.path.startsWith('/api/owner')) {
+        return ensureOwner(req, res, next);
+    }
+    next();
 });
 
 // ==========================================
