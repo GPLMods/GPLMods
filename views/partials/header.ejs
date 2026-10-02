@@ -1094,21 +1094,43 @@
                                             <div class="header-mobile-actions"
                                                 style="display: flex; align-items: center; gap: 12px;">
                                                 <% if (user) { %>
+                                                    <%
+                                                        const defaultHeaderAvatar = (user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png';
+                                                        let resolvedHeaderAvatar = (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png' && !userAvatar.startsWith('card-avatars/') && !userAvatar.startsWith('avatars/')) ? userAvatar : null;
+                                                        if (!resolvedHeaderAvatar && user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png' && !user.signedAvatarUrl.startsWith('card-avatars/') && !user.signedAvatarUrl.startsWith('avatars/')) {
+                                                            resolvedHeaderAvatar = user.signedAvatarUrl;
+                                                        }
+                                                        if (!resolvedHeaderAvatar && user.cardAvatarDataUrl) {
+                                                            resolvedHeaderAvatar = user.cardAvatarDataUrl;
+                                                        }
+                                                        if (!resolvedHeaderAvatar && user.cardAvatarUrl && (user.cardAvatarUrl.startsWith('http') || user.cardAvatarUrl.startsWith('data:') || user.cardAvatarUrl.startsWith('/'))) {
+                                                            resolvedHeaderAvatar = user.cardAvatarUrl;
+                                                        }
+                                                        if (!resolvedHeaderAvatar && user.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('/'))) {
+                                                            resolvedHeaderAvatar = user.avatarUrl;
+                                                        }
+                                                        if (!resolvedHeaderAvatar && user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('/'))) {
+                                                            resolvedHeaderAvatar = user.avatar;
+                                                        }
+                                                        if (!resolvedHeaderAvatar) {
+                                                            resolvedHeaderAvatar = defaultHeaderAvatar;
+                                                        }
+                                                    %>
                                                     <% if (typeof is2FAVerification !=='undefined' && is2FAVerification)
                                                         { %>
                                                         <!-- In 2FA Security Lockdown: Display avatar clearly, non-clickable -->
                                                         <div class="avatar-placeholder"
                                                             style="cursor: default; pointer-events: none; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);"
                                                             title="Pending 2FA: <%= user.username %>">
-                                                            <img src="<%= (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') ? userAvatar : ((user && (user.signedAvatarUrl || user.cardAvatarUrl || user.avatarUrl || user.avatar)) || '/images/default-avatar.png') %>"
+                                                            <img src="<%= resolvedHeaderAvatar %>"
                                                                 alt="User Avatar"
-                                                                onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                                                onerror="this.onerror=null; this.src=(this.alt==='GPLMods'||'<%= user.username %>'==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                                                         </div>
                                                         <% } else { %>
                                                             <a href="/dashboard" class="avatar-placeholder">
-                                                                <img src="<%= (typeof userAvatar !== 'undefined' && userAvatar && userAvatar !== '/images/default-avatar.png') ? userAvatar : ((user && (user.signedAvatarUrl || user.cardAvatarUrl || user.avatarUrl || user.avatar)) || '/images/default-avatar.png') %>"
+                                                                <img src="<%= resolvedHeaderAvatar %>"
                                                                     alt="User Avatar"
-                                                                    onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                                                    onerror="this.onerror=null; this.src=(this.alt==='GPLMods'||'<%= user.username %>'==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
                                                             </a>
                                                             <% } %>
                                                                 <% } %>

@@ -1,0 +1,24 @@
+{
+  "id": "6abf9277732606136728bfdb",
+  "name": "ColaMods",
+  "slug": "colamods",
+  "description": "",
+  "tags": [
+    "Gaming",
+    "Modding",
+    "Community"
+  ],
+  "isDefault": false,
+  "isPrivate": false,
+  "primaryLanguage": "English",
+  "country": "GLOBAL",
+  "aboutAdmin": "",
+  "rules": [
+    "Be respectful to all members and staff.",
+    "Only official GPLMods site links are allowed in the chat.",
+    "No spam, scamming, or abusive language.",
+    "Follow platform community safety guidelines."
+  ],
+  "memberCount": 1,
+  "updatedAt": "2026-10-02T11:16:08.509Z"
+}

@@ -199,7 +199,7 @@ router.get('/', async (req, res) => {
         });
     } catch (err) {
         console.error('[Clubs] Index error:', err);
-        res.status(500).render('pages/500');
+        res.status(500).render('pages/error', { errorCode: '500', errorTitle: 'Server Error', errorMessage: 'Failed to load clubs. Please try again later.' });
     }
 });
 
@@ -544,7 +544,7 @@ router.get('/:slugOrId/preview', async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) {
-            return res.status(404).render('pages/404');
+            return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Club Not Found', errorMessage: 'The club you are looking for does not exist.' });
         }
 
         let isMember = false;
@@ -572,7 +572,7 @@ router.get('/:slugOrId/preview', async (req, res) => {
         });
     } catch (err) {
         console.error('[Clubs] Preview error:', err);
-        res.status(500).render('pages/500');
+        res.status(500).render('pages/error', { errorCode: '500', errorTitle: 'Server Error', errorMessage: 'Failed to load club preview.' });
     }
 });
 
@@ -583,7 +583,7 @@ router.get('/:slugOrId', async (req, res) => {
     try {
         const club = await resolveClub(req.params.slugOrId);
         if (!club) {
-            return res.status(404).render('pages/404');
+            return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Club Not Found', errorMessage: 'The club you are looking for does not exist.' });
         }
         if (!club.bannerUrl || club.isDefault || club.slug === 'gpl-community') {
             club.bannerUrl = club.bannerUrl || '/images/default-banner.jpg';
@@ -928,7 +928,7 @@ router.get('/:slugOrId', async (req, res) => {
         });
     } catch (err) {
         console.error('[Clubs] View club error:', err);
-        res.status(500).render('pages/500');
+        res.status(500).render('pages/error', { errorCode: '500', errorTitle: 'Server Error', errorMessage: 'Failed to load club interface.' });
     }
 });
 

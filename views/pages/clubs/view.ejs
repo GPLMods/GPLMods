@@ -157,19 +157,20 @@
     }
     .club-header-dropdown {
         position: absolute;
-        top: 52px;
+        top: 56px;
         left: 8px;
         right: 8px;
-        background: rgba(18, 19, 27, 0.75);
-        backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 215, 0, 0.4);
+        background: rgba(18, 19, 27, 0.95);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 215, 0, 0.35);
         border-radius: 12px;
-        padding: 6px;
+        padding: 8px;
         display: none;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
         z-index: 1200;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.12);
     }
     .club-header-dropdown.active {
         display: flex;
@@ -178,36 +179,39 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 9px 12px;
+        padding: 10px 14px;
         border-radius: 8px;
         color: #dcddde;
         font-size: 0.88rem;
         font-weight: 500;
         text-decoration: none;
         cursor: pointer;
-        transition: background 0.15s, color 0.15s;
-        border: none;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
         background: transparent;
         width: 100%;
         text-align: left;
         box-sizing: border-box;
     }
     .club-menu-item:hover {
-        background: #232532;
+        background: rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.3);
         color: #fff;
+        transform: translateX(3px);
     }
     .club-menu-item i {
         width: 18px;
         text-align: center;
         color: var(--silver);
+        transition: color 0.2s ease;
     }
     .club-menu-item:hover i {
         color: var(--gold);
     }
     .club-menu-divider {
         height: 1px;
-        background: #222430;
-        margin: 4px 6px;
+        background: rgba(255, 255, 255, 0.08);
+        margin: 5px 6px;
     }
 
     /* 1. LEFTMOST VERTICAL RAIL (CLUBS NAV) */
@@ -1011,10 +1015,253 @@
         background: #14151c;
         border: 1px solid var(--gold);
         border-radius: 18px;
-        padding: 28px;
+        padding: 26px;
         width: 90%;
-        max-width: 480px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        max-width: 520px;
+        max-height: 88vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.12);
+    }
+
+    /* Universal GPL Button Textures */
+    .gpl-btn-primary {
+        background: linear-gradient(135deg, var(--gold) 0%, #d4af37 100%) !important;
+        color: #000 !important;
+        font-weight: 700 !important;
+        font-size: 0.9rem !important;
+        padding: 10px 22px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        cursor: pointer !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3) !important;
+        text-decoration: none !important;
+        line-height: 1.2 !important;
+    }
+    .gpl-btn-primary:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 22px rgba(255, 215, 0, 0.5) !important;
+        filter: brightness(1.08) !important;
+    }
+    .gpl-btn-secondary {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        color: var(--silver) !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 10px 18px !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        transition: all 0.25s ease !important;
+        text-decoration: none !important;
+        line-height: 1.2 !important;
+    }
+    .gpl-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(255, 215, 0, 0.4) !important;
+        color: #fff !important;
+        transform: translateY(-1px) !important;
+    }
+    .gpl-btn-danger {
+        background: linear-gradient(135deg, #ff5252 0%, #d32f2f 100%) !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+        font-size: 0.9rem !important;
+        padding: 10px 22px !important;
+        border-radius: 8px !important;
+        border: none !important;
+        cursor: pointer !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 4px 15px rgba(244, 67, 54, 0.35) !important;
+        text-decoration: none !important;
+        line-height: 1.2 !important;
+    }
+    .gpl-btn-danger:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 22px rgba(244, 67, 54, 0.5) !important;
+        filter: brightness(1.08) !important;
+    }
+
+    /* Modal Form Controls Texture */
+    .gpl-modal-box input[type="text"],
+    .gpl-modal-box textarea,
+    .gui-input {
+        background: #0d0e14 !important;
+        border: 1px solid #2e3142 !important;
+        border-radius: 8px !important;
+        color: #fff !important;
+        padding: 10px 14px !important;
+        font-family: inherit;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    .gpl-modal-box input[type="text"]:focus,
+    .gpl-modal-box textarea:focus,
+    .gui-input:focus {
+        border-color: var(--gold) !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+        outline: none;
+    }
+    .gpl-modal-box select,
+    .channel-menu-gui-box select,
+    .gui-select {
+        width: 100%;
+        background-color: #0d0e14 !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffd700' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 14px center !important;
+        background-size: 14px !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        border: 1px solid #2e3142 !important;
+        border-radius: 8px !important;
+        color: #fff !important;
+        padding: 10px 38px 10px 14px !important;
+        font-size: 0.9rem !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .gpl-modal-box select:hover,
+    .gpl-modal-box select:focus,
+    .channel-menu-gui-box select:hover,
+    .channel-menu-gui-box select:focus,
+    .gui-select:hover,
+    .gui-select:focus {
+        border-color: var(--gold) !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+        outline: none;
+    }
+    .gpl-modal-box select option,
+    .channel-menu-gui-box select option,
+    .gui-select option {
+        background: #14151e !important;
+        color: #fff !important;
+        padding: 8px 12px;
+    }
+
+    .topbar-btn.active {
+        background: rgba(255, 215, 0, 0.18) !important;
+        border-color: var(--gold) !important;
+        color: var(--gold) !important;
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.35);
+    }
+
+    /* Modal Close Icon Button */
+    .gpl-modal-close-btn {
+        background: transparent;
+        border: none;
+        color: var(--silver);
+        font-size: 1.4rem;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        line-height: 1;
+        padding: 0;
+    }
+    .gpl-modal-close-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+        transform: rotate(90deg);
+    }
+
+    /* Vanished Mode Toggle Button */
+    .vanish-toggle-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        color: #888;
+        padding: 5px 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .vanish-toggle-btn:hover {
+        border-color: var(--gold);
+        background: rgba(255, 215, 0, 0.1);
+        color: var(--gold) !important;
+        transform: translateY(-1px);
+    }
+    .vanish-toggle-btn.active {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: var(--gold);
+        color: var(--gold) !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+    }
+
+    /* Channel Category Plus Button */
+    .channel-category-label button {
+        background: transparent;
+        border: none;
+        color: #8e9297;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    .channel-category-label button:hover {
+        color: var(--gold);
+        background: rgba(255, 215, 0, 0.12);
+        transform: scale(1.15);
+    }
+
+    /* Role Action Buttons (Edit / Delete) */
+    .btn-role-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-role-action.edit {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid #3a3d4d;
+        color: #dcddde;
+    }
+    .btn-role-action.edit:hover {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: var(--gold);
+        color: var(--gold);
+        transform: translateY(-1px);
+    }
+    .btn-role-action.delete {
+        background: rgba(231, 76, 60, 0.12);
+        border: 1px solid rgba(231, 76, 60, 0.35);
+        color: #ff8a80;
+    }
+    .btn-role-action.delete:hover {
+        background: rgba(231, 76, 60, 0.25);
+        border-color: #ff5252;
+        color: #fff;
+        transform: translateY(-1px);
     }
 
     /* RESPONSIVE MOBILE STYLING (Discord / Telegram Mobile Experience) */
@@ -1186,6 +1433,8 @@
             width: 44px;
             height: 44px;
         }
+    }
+
     /* Custom Select for Channel Modals */
     .chan-custom-select-wrapper {
         position: relative;
@@ -1196,10 +1445,10 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px 14px;
+        padding: 11px 14px;
         border-radius: 8px;
-        border: 1px solid #333645;
-        background-color: #0d0e12;
+        border: 1.5px solid #2e3142;
+        background-color: #0d0e14;
         cursor: pointer;
         transition: all 0.25s ease;
         min-height: 44px;
@@ -1210,35 +1459,39 @@
     }
     .chan-custom-select-wrapper.open .chan-custom-select {
         border-color: var(--gold);
-        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    .chan-custom-select .fa-chevron-down {
+        transition: transform 0.25s ease, color 0.2s ease;
+    }
+    .chan-custom-select-wrapper.open .chan-custom-select .fa-chevron-down {
+        transform: rotate(180deg);
+        color: var(--gold);
     }
     .chan-custom-select-text {
         color: #fff;
         font-size: 0.9rem;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
     }
     .chan-custom-options {
         position: absolute;
-        top: 100%;
+        top: calc(100% + 5px);
         left: 0;
         right: 0;
         background: #14151e;
         border: 1px solid var(--gold);
-        border-top: none;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+        border-radius: 10px;
+        box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.15);
         opacity: 0;
         visibility: hidden;
         transform: translateY(-6px);
         transition: all 0.25s ease;
-        z-index: 1005;
-        max-height: 220px;
+        z-index: 1050;
+        max-height: 240px;
         overflow-y: auto;
+        padding: 6px;
     }
     .chan-custom-select-wrapper.open .chan-custom-options {
         opacity: 1;
@@ -1246,22 +1499,27 @@
         transform: translateY(0);
     }
     .chan-custom-option {
-        padding: 10px 14px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 2px;
         color: var(--silver);
         font-size: 0.88rem;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 10px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        transition: background 0.2s, color 0.2s;
+        gap: 12px;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
     }
     .chan-custom-option:hover {
-        background-color: rgba(255, 215, 0, 0.12);
-        color: var(--gold);
+        background-color: rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.3);
+        color: #fff;
+        transform: translateX(2px);
     }
     .chan-custom-option.selected {
-        background-color: rgba(255, 215, 0, 0.18);
+        background-color: rgba(255, 215, 0, 0.16);
+        border-color: rgba(255, 215, 0, 0.45);
         color: var(--gold);
         font-weight: 700;
     }
@@ -1435,45 +1693,77 @@
     .access-mode-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-        margin-bottom: 14px;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    @media (max-width: 600px) {
+        .access-mode-grid {
+            grid-template-columns: 1fr;
+        }
     }
     .access-mode-card {
-        background: #14151b;
+        background: #0f1015;
         border: 1.5px solid #282a36;
-        border-radius: 10px;
-        padding: 12px 10px;
+        border-radius: 12px;
+        padding: 14px 10px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.25s ease;
         text-align: center;
         user-select: none;
+        position: relative;
     }
     .access-mode-card:hover {
         border-color: rgba(255, 215, 0, 0.4);
-        background: #181a24;
+        background: #14151e;
+        transform: translateY(-2px);
     }
     .access-mode-card.selected {
         border-color: var(--gold);
         background: rgba(255, 215, 0, 0.08);
-        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+        box-shadow: 0 0 16px rgba(255, 215, 0, 0.18);
     }
-    .access-mode-card i {
-        font-size: 1.25rem;
-        margin-bottom: 6px;
-        display: block;
+    .mode-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        font-size: 1.15rem;
+        transition: all 0.25s ease;
+    }
+    .mode-icon.open {
+        background: rgba(105, 240, 174, 0.12);
+        color: #69f0ae;
+        border: 1.5px solid rgba(105, 240, 174, 0.35);
+    }
+    .mode-icon.public-view {
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1.5px solid rgba(255, 215, 0, 0.35);
+    }
+    .mode-icon.role-private {
+        background: rgba(186, 104, 200, 0.15);
+        color: #ba68c8;
+        border: 1.5px solid rgba(186, 104, 200, 0.4);
+    }
+    .access-mode-card.selected .mode-icon {
+        transform: scale(1.08);
+        box-shadow: 0 0 12px currentColor;
     }
     .access-mode-card .mode-title {
         display: block;
         font-weight: 700;
-        font-size: 0.82rem;
+        font-size: 0.88rem;
         color: #fff;
-        margin-bottom: 2px;
+        margin-bottom: 4px;
     }
     .access-mode-card .mode-desc {
         display: block;
-        font-size: 0.68rem;
+        font-size: 0.72rem;
         color: var(--silver);
-        line-height: 1.3;
+        line-height: 1.35;
     }
 
     /* Role Counter & Badges */
@@ -1777,7 +2067,7 @@
 
             <!-- Vanished Mode Toggle (Site Owner & Admin Only) -->
             <% if (isStaff) { %>
-                <button type="button" id="vanishToggleBtn" onclick="toggleVanishedMode()" title="Vanished Mode (Ghost Audit Mode: Visit without showing online or increasing count)" style="background: none; border: 1px solid #444; border-radius: 8px; color: <%= vanishedModeDefault ? 'var(--gold)' : '#777' %>; padding: 4px 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.75rem;">
+                <button type="button" id="vanishToggleBtn" class="vanish-toggle-btn <%= vanishedModeDefault ? 'active' : '' %>" onclick="toggleVanishedMode()" title="Vanished Mode (Ghost Audit Mode: Visit without showing online or increasing count)">
                     <i class="fas fa-ghost"></i>
                     <span id="vanishStatusText"><%= vanishedModeDefault ? 'Ghost ON' : 'Ghost' %></span>
                 </button>
@@ -1860,8 +2150,8 @@
                     <% } %>
                 </button>
 
-                <!-- Tracked Creators Quick Button -->
-                <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
+                <!-- Tracked Creators Quick Button (Desktop only, mobile has it in drawer menu) -->
+                <button type="button" class="topbar-btn hide-mobile" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
                     <i class="fas fa-rss"></i>
                 </button>
 
@@ -1872,7 +2162,7 @@
                 </button>
 
                 <!-- Toggle Members Sidebar on Mobile/Desktop -->
-                <button type="button" class="topbar-btn" onclick="toggleMembersSidebar()" title="Toggle Members List">
+                <button type="button" class="topbar-btn" id="topbarMembersBtn" onclick="toggleMembersSidebar()" title="Toggle Members List">
                     <i class="fas fa-users"></i>
                 </button>
             </div>
@@ -2289,16 +2579,20 @@
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Visibility</label>
-                <select name="isPrivate" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px;">
+                <select name="isPrivate" class="gui-select" style="width: 100%;">
                     <option value="false" <%= !club.isPrivate ? 'selected' : '' %>>Public (Anyone can instantly join)</option>
                     <% if (!club.isDefault) { %>
                         <option value="true" <%= club.isPrivate ? 'selected' : '' %>>Private (Requires approval to join)</option>
                     <% } %>
                 </select>
             </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="gpl-btn-secondary" onclick="closeEditClubModal()">Cancel</button>
-                <button type="submit" class="gpl-btn-primary">Save Changes</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeEditClubModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="gpl-btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </form>
     </div>
@@ -2313,9 +2607,13 @@
             This action <strong>CANNOT</strong> be undone. All channels, messages, and roles will be permanently lost.
         </p>
         <form action="/clubs/<%= club.slug %>/delete" method="POST">
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" class="gpl-btn-secondary" onclick="closeDeleteClubModal()">Cancel</button>
-                <button type="submit" class="gpl-btn-primary" style="background: #ff5252; color: #fff; border: none;">Yes, Delete Club</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeDeleteClubModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="gpl-btn-danger">
+                    <i class="fas fa-trash-alt"></i> Yes, Delete Club
+                </button>
             </div>
         </form>
     </div>
@@ -2410,10 +2708,10 @@
                 </label>
                 <div style="display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto;">
                     <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { %>
-                        <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.84rem; cursor: pointer;">
+                        <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.84rem; cursor: pointer; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid #282a38; border-radius: 8px;">
                             <input type="checkbox" name="allowedRoles" value="<%= r._id %>">
                             <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
-                            <span><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                            <span><i class="fas fa-shield-alt" style="color: <%= r.color || 'var(--gold)' %>; margin-right: 4px;"></i> <%= r.name %></span>
                         </label>
                     <% }); %>
                     <% if ((roles || []).filter(r => r.name !== 'everyone').length === 0) { %>
@@ -2422,9 +2720,13 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="closeCreateChannelModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Create Channel</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeCreateChannelModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="gpl-btn-primary">
+                    <i class="fas fa-plus-circle"></i> Create Channel
+                </button>
             </div>
         </form>
     </div>
@@ -2440,7 +2742,7 @@
                 <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
                 <span>#<%= activeChannel ? activeChannel.name : 'general' %> — Settings</span>
             </h3>
-            <button type="button" onclick="closeChannelSettingsGUI()" style="background: none; border: none; color: var(--silver); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+            <button type="button" class="gpl-modal-close-btn" onclick="closeChannelSettingsGUI()" title="Close Settings">&times;</button>
         </div>
 
         <!-- Navigation Tabs Bar -->
@@ -2526,8 +2828,8 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="copyActiveChannelLink()" style="background: rgba(255,215,0,0.15); border: 1px solid var(--gold); color: #fff; padding: 8px 18px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+                <button type="button" class="gpl-btn-secondary" onclick="copyActiveChannelLink()">
                     <i class="fas fa-copy" style="color: var(--gold); margin-right: 6px;"></i> Copy Channel Link
                 </button>
             </div>
@@ -2539,7 +2841,7 @@
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Direct Channel Invite Link</label>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="directChannelInviteInput" readonly style="flex: 1; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 0.9rem;" value="">
-                    <button type="button" id="btnCopyChannelInvite" onclick="copyChannelInviteDirect()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 0 18px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <button type="button" id="btnCopyChannelInvite" class="gpl-btn-primary" onclick="copyChannelInviteDirect()">
                         <i class="fas fa-copy"></i> <span>Copy</span>
                     </button>
                 </div>
@@ -2639,8 +2941,8 @@
                         </div>
 
                         <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-                            <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
-                                Save Access Settings
+                            <button type="submit" class="gpl-btn-primary">
+                                <i class="fas fa-shield-alt"></i> Save Access Settings
                             </button>
                         </div>
                     </div>
@@ -2686,9 +2988,9 @@
                             <input type="hidden" name="type" id="editChannelTypeInput" value="<%= editCurType %>">
                         </div>
                     </div>
-                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                        <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-                            Save Channel Information
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                        <button type="submit" class="gpl-btn-primary">
+                            <i class="fas fa-save"></i> Save Channel Information
                         </button>
                     </div>
                 </form>
@@ -2728,7 +3030,7 @@
                             </label>
                         </div>
 
-                        <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                        <button type="submit" class="gpl-btn-primary">
                             <i class="fas fa-magic"></i> Make Role
                         </button>
                     </form>
@@ -2753,10 +3055,10 @@
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <% if (r.name !== 'everyone') { %>
-                                        <button type="button" onclick="openEditRoleModal('<%= r._id %>', '<%= r.name %>', '<%= r.badgeIcon || "🛡️" %>', '<%= r.color || "#FFD700" %>', <%= r.permissions?.canManageChannels || false %>, <%= r.permissions?.canKickMembers || false %>, <%= r.permissions?.canPostPolls || false %>)" style="background: rgba(255,255,255,0.06); border: 1px solid #3a3d4d; color: var(--silver); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;" title="Edit Role">
+                                        <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('<%= r._id %>', '<%= r.name %>', '<%= r.badgeIcon || "🛡️" %>', '<%= r.color || "#FFD700" %>', <%= r.permissions?.canManageChannels || false %>, <%= r.permissions?.canKickMembers || false %>, <%= r.permissions?.canPostPolls || false %>)" title="Edit Role">
                                             <i class="fas fa-pencil-alt"></i> Edit
                                         </button>
-                                        <button type="button" onclick="confirmDeleteRole('<%= r._id %>', '<%= r.name %>')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;" title="Delete Role">
+                                        <button type="button" class="btn-role-action delete" onclick="confirmDeleteRole('<%= r._id %>', '<%= r.name %>')" title="Delete Role">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     <% } %>
@@ -2779,7 +3081,7 @@
 
                     <div style="margin-bottom: 14px;">
                         <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Select Member</label>
-                        <select id="assignTargetMember" onchange="onSelectMemberForRoles(this.value)" style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                        <select id="assignTargetMember" class="gui-select" onchange="onSelectMemberForRoles(this.value)" style="width: 100%;">
                             <option value="">-- Choose Member --</option>
                             <% (members || []).forEach(m => { %>
                                 <% if (m.user) { %>
@@ -2806,7 +3108,7 @@
                             <% }); %>
                         </div>
                         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                            <button type="button" onclick="saveMemberAssignedRoles()" id="btnSaveMemberRoles" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">
+                            <button type="button" class="gpl-btn-primary" onclick="saveMemberAssignedRoles()" id="btnSaveMemberRoles">
                                 <i class="fas fa-save"></i> Save Member Roles
                             </button>
                         </div>
@@ -2822,7 +3124,7 @@
                         <p style="margin: 0 0 16px 0; color: var(--silver); font-size: 0.85rem; line-height: 1.5;">
                             Are you sure you want to permanently delete <strong>#<%= activeChannel ? activeChannel.name : '' %></strong>? This action cannot be undone. All message logs and community polls in this channel will be erased.
                         </p>
-                        <button type="button" onclick="confirmDeleteActiveChannel()" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 10px 22px; border-radius: 8px; cursor: pointer;">
+                        <button type="button" class="gpl-btn-danger" onclick="confirmDeleteActiveChannel()">
                             <i class="fas fa-trash-alt"></i> Delete Channel Permanently
                         </button>
                     </div>
@@ -2845,9 +3147,13 @@
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Options (One per line, minimum 2)</label>
                 <textarea name="options" rows="4" placeholder="Android APK&#10;iOS IPA&#10;Windows Software" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;"></textarea>
             </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="closeCreatePollModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">Launch Poll</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeCreatePollModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="gpl-btn-primary">
+                    <i class="fas fa-poll"></i> Launch Poll
+                </button>
             </div>
         </form>
     </div>
@@ -2860,7 +3166,7 @@
             <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-rss" style="color: var(--gold);"></i> Track Creator Mod Updates &amp; Uploads
             </h3>
-            <button type="button" onclick="closeTrackedCreatorsModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+            <button type="button" class="gpl-modal-close-btn" onclick="closeTrackedCreatorsModal()" title="Close">&times;</button>
         </div>
 
         <!-- Tracking Tabs -->
@@ -2901,7 +3207,7 @@
                         </label>
                     </div>
                 </div>
-                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                <button type="submit" class="gpl-btn-primary">
                     <i class="fas fa-plus"></i> Track Creator
                 </button>
             </form>
@@ -2942,7 +3248,7 @@
                             </label>
                         </div>
                     </div>
-                    <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer;">
+                    <button type="submit" class="gpl-btn-primary">
                         <i class="fas fa-rss"></i> Add to Club Feeds
                     </button>
                 </form>
@@ -2967,14 +3273,18 @@
         </h3>
         <p style="color: var(--silver); font-size: 0.85rem; margin-bottom: 14px;">Select the channel where you want to forward this message:</p>
         <input type="hidden" id="forwardMessageId">
-        <select id="forwardChannelSelect" style="width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 18px;">
+        <select id="forwardChannelSelect" class="gui-select" style="width: 100%; margin-bottom: 18px;">
             <% channels.forEach(c => { %>
                 <option value="<%= c._id %>">#<%= c.name %></option>
             <% }) %>
         </select>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" onclick="closeForwardModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button type="button" onclick="submitForwardMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Forward Now</button>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+            <button type="button" class="gpl-btn-secondary" onclick="closeForwardModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="gpl-btn-primary" onclick="submitForwardMessage()">
+                <i class="fas fa-share"></i> Forward Now
+            </button>
         </div>
     </div>
 </div>
@@ -2987,9 +3297,13 @@
         </h3>
         <input type="hidden" id="editMessageId">
         <textarea id="editMessageTextarea" rows="4" style="width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 12px; border-radius: 8px; font-size: 0.92rem; margin-bottom: 18px; resize: vertical; box-sizing: border-box;"></textarea>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button type="button" onclick="closeEditMessageModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-            <button type="button" onclick="submitEditMessage()" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+            <button type="button" class="gpl-btn-secondary" onclick="closeEditMessageModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="gpl-btn-primary" onclick="submitEditMessage()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
         </div>
     </div>
 </div>
@@ -3002,9 +3316,13 @@
         </div>
         <h3 style="color: #fff; margin: 0 0 8px; font-size: 1.2rem;">Delete Message?</h3>
         <p style="color: var(--silver); font-size: 0.88rem; line-height: 1.5; margin: 0 0 20px;">Are you sure you want to permanently delete this message? This cannot be undone.</p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button type="button" onclick="closeClubDeleteModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
-            <button type="button" id="confirmDeleteMessageBtn" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 8px 22px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(231,76,60,0.4);">Delete</button>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 18px;">
+            <button type="button" class="gpl-btn-secondary" onclick="closeClubDeleteModal()">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="gpl-btn-danger" id="confirmDeleteMessageBtn">
+                <i class="fas fa-trash-alt"></i> Delete
+            </button>
         </div>
     </div>
 </div>
@@ -3028,12 +3346,12 @@
             <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-share-alt" style="color: var(--gold);"></i> Share Community
             </h3>
-            <button type="button" onclick="closeClubShareModal()" style="background: none; border: none; color: var(--silver); font-size: 1.3rem; cursor: pointer;">&times;</button>
+            <button type="button" class="gpl-modal-close-btn" onclick="closeClubShareModal()" title="Close">&times;</button>
         </div>
         <p id="shareModalSubtitle" style="color: var(--silver); font-size: 0.88rem; margin: 0 0 16px; line-height: 1.5;"></p>
         <div style="display: flex; gap: 8px; margin-bottom: 18px;">
             <input type="text" id="shareDirectLinkInput" readonly style="flex-grow: 1; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;">
-            <button type="button" onclick="copyShareDirectLink()" id="copyShareLinkBtn" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
+            <button type="button" class="gpl-btn-primary" onclick="copyShareDirectLink()" id="copyShareLinkBtn"><i class="fas fa-copy"></i> Copy</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
             <a href="#" id="shareWhatsAppBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 10px; color: #25d366; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
@@ -3061,7 +3379,7 @@
             <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-trophy" style="color: var(--gold);"></i> Your Unique Club Invite
             </h3>
-            <button type="button" onclick="closeUniqueInviteModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer; padding: 0 4px;">&times;</button>
+            <button type="button" class="gpl-modal-close-btn" onclick="closeUniqueInviteModal()" title="Close">&times;</button>
         </div>
 
         <!-- Invite Stats Banner -->
@@ -3081,7 +3399,7 @@
             <label style="display: block; font-size: 0.8rem; color: var(--silver); margin-bottom: 6px;">Your Personal Invite Link:</label>
             <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box;">
                 <input type="text" id="myUniqueInviteInput" readonly style="flex: 1 1 auto; min-width: 0; width: 100%; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; box-sizing: border-box;" value="">
-                <button type="button" onclick="copyMyUniqueInviteLink()" id="btnCopyMyInvite" style="flex-shrink: 0; background: var(--gold); border: none; color: #000; font-weight: 700; padding: 10px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
+                <button type="button" class="gpl-btn-primary" onclick="copyMyUniqueInviteLink()" id="btnCopyMyInvite">
                     <i class="fas fa-copy"></i> <span>Copy</span>
                 </button>
             </div>
@@ -3128,7 +3446,7 @@
             <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-user-shield" style="color: var(--gold);"></i> Edit Custom Role
             </h3>
-            <button type="button" onclick="closeEditRoleModal()" style="background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer;">&times;</button>
+            <button type="button" class="gpl-modal-close-btn" onclick="closeEditRoleModal()" title="Close">&times;</button>
         </div>
         <form id="editRoleForm" onsubmit="submitEditRole(event)">
             <input type="hidden" id="editRoleId">
@@ -3160,9 +3478,13 @@
                 </label>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button type="button" onclick="closeEditRoleModal()" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 8px 16px; border-radius: 8px; cursor: pointer;">Cancel</button>
-                <button type="submit" style="background: var(--gold); border: none; color: #000; font-weight: 700; padding: 8px 20px; border-radius: 8px; cursor: pointer;">Save Changes</button>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+                <button type="button" class="gpl-btn-secondary" onclick="closeEditRoleModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="submit" class="gpl-btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </form>
     </div>
@@ -3178,9 +3500,13 @@
         </div>
         <h3 id="gplConfirmTitle" style="color: #fff; margin: 0 0 8px; font-size: 1.25rem;">Confirm Action</h3>
         <p id="gplConfirmMessage" style="color: var(--silver); font-size: 0.88rem; line-height: 1.5; margin: 0 0 22px;"></p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button type="button" onclick="closeGplConfirmModal(false)" id="gplConfirmCancelBtn" style="background: transparent; border: 1px solid #444; color: var(--silver); padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>
-            <button type="button" onclick="closeGplConfirmModal(true)" id="gplConfirmActionBtn" style="background: #e74c3c; border: none; color: #fff; font-weight: 700; padding: 9px 24px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(231,76,60,0.4);">Confirm</button>
+        <div style="display: flex; gap: 12px; justify-content: center; margin-top: 18px;">
+            <button type="button" class="gpl-btn-secondary" onclick="closeGplConfirmModal(false)" id="gplConfirmCancelBtn">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="button" class="gpl-btn-danger" onclick="closeGplConfirmModal(true)" id="gplConfirmActionBtn">
+                Confirm
+            </button>
         </div>
     </div>
 </div>
@@ -3909,7 +4235,10 @@
         socket.emit('club_vanish_toggle', { clubId, vanished: isVanished });
         const btn = document.getElementById('vanishToggleBtn');
         const txt = document.getElementById('vanishStatusText');
-        if (btn) btn.style.color = isVanished ? 'var(--gold)' : '#777';
+        if (btn) {
+            btn.classList.toggle('active', isVanished);
+            btn.style.color = isVanished ? 'var(--gold)' : '';
+        }
         if (txt) txt.textContent = isVanished ? 'Ghost ON' : 'Ghost';
     }
 
@@ -4066,16 +4395,21 @@
     function toggleMembersSidebar() {
         const sidebar = document.getElementById('membersSidebar');
         const backdrop = document.getElementById('discordBackdrop');
+        const memberBtn = document.getElementById('topbarMembersBtn');
         if (!sidebar) return;
-        if (window.innerWidth <= 992) {
-            const isOpen = sidebar.classList.contains('open');
-            closeDiscordDrawers();
-            if (!isOpen) {
-                sidebar.classList.add('open');
-                if (backdrop) backdrop.classList.add('active');
-            }
+        const isOpen = sidebar.classList.contains('open');
+        if (isOpen) {
+            sidebar.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('active');
+            if (memberBtn) memberBtn.classList.remove('active');
         } else {
-            sidebar.style.display = (sidebar.style.display === 'none') ? 'flex' : 'none';
+            if (window.innerWidth <= 992) {
+                const leftDrawer = document.getElementById('leftNavDrawer');
+                if (leftDrawer) leftDrawer.classList.remove('open');
+            }
+            sidebar.classList.add('open');
+            if (backdrop) backdrop.classList.add('active');
+            if (memberBtn) memberBtn.classList.add('active');
         }
     }
 
@@ -4087,10 +4421,12 @@
         const membersSidebar = document.getElementById('membersSidebar');
         const backdrop = document.getElementById('discordBackdrop');
         const clubDropdown = document.getElementById('clubHeaderDropdown');
+        const memberBtn = document.getElementById('topbarMembersBtn');
         if (leftDrawer) leftDrawer.classList.remove('open');
-        if (membersSidebar && window.innerWidth <= 992) membersSidebar.classList.remove('open');
+        if (membersSidebar) membersSidebar.classList.remove('open');
         if (backdrop) backdrop.classList.remove('active');
         if (clubDropdown) clubDropdown.classList.remove('active');
+        if (memberBtn) memberBtn.classList.remove('active');
     }
 
     function toggleClubMenu(e) {
@@ -4878,10 +5214,10 @@
                             </span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" onclick="openEditRoleModal('${data.role._id}', '${data.role.name}', '${data.role.badgeIcon || '🛡️'}', '${data.role.color}', ${data.role.permissions?.canManageChannels || false}, ${data.role.permissions?.canKickMembers || false}, ${data.role.permissions?.canPostPolls || false})" style="background: rgba(255,255,255,0.06); border: 1px solid #3a3d4d; color: var(--silver); padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">
+                            <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('${data.role._id}', '${data.role.name}', '${data.role.badgeIcon || '🛡️'}', '${data.role.color}', ${data.role.permissions?.canManageChannels || false}, ${data.role.permissions?.canKickMembers || false}, ${data.role.permissions?.canPostPolls || false})" title="Edit Role">
                                 <i class="fas fa-pencil-alt"></i> Edit
                             </button>
-                            <button type="button" onclick="confirmDeleteRole('${data.role._id}', '${data.role.name}')" style="background: rgba(231,76,60,0.12); border: 1px solid rgba(231,76,60,0.3); color: #ff8a80; padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">
+                            <button type="button" class="btn-role-action delete" onclick="confirmDeleteRole('${data.role._id}', '${data.role.name}')" title="Delete Role">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>

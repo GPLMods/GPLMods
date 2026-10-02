@@ -13684,20 +13684,46 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
             refundEligibility.reason = 'Refund requests are currently on 3-day cooldown from your last refund.';
         }
 
-        let userAvatar = (user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png';
-        if (user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png') {
-            userAvatar = user.signedAvatarUrl;
-        } else if (user.cardAvatarUrl && user.cardAvatarUrl !== '/images/default-avatar.png') {
-            userAvatar = user.cardAvatarUrl;
-        } else if (user.avatarUrl && user.avatarUrl !== '/images/default-avatar.png') {
-            userAvatar = user.avatarUrl;
-        } else if (user.avatar && user.avatar !== '/images/default-avatar.png') {
-            userAvatar = user.avatar;
-        } else if (user.profileImageKey) {
+        let userAvatar = null;
+        if (req.user && req.user.signedAvatarUrl && req.user.signedAvatarUrl !== '/images/default-avatar.png' && !req.user.signedAvatarUrl.startsWith('card-avatars/') && !req.user.signedAvatarUrl.startsWith('avatars/')) {
+            userAvatar = req.user.signedAvatarUrl;
+        }
+
+        if (!userAvatar && user.profileImageKey) {
             try {
                 const resolved = await getSmartImageUrl(user.profileImageKey);
-                if (resolved && resolved !== '/images/default-avatar.png') userAvatar = resolved;
+                if (resolved && resolved !== '/images/default-avatar.png') {
+                    userAvatar = resolved;
+                }
             } catch (e) {}
+        }
+
+        if (!userAvatar && user.cardAvatarDataUrl) {
+            userAvatar = user.cardAvatarDataUrl;
+        }
+
+        if (!userAvatar && user.cardAvatarUrl && user.cardAvatarUrl !== '/images/default-avatar.png') {
+            if (user.cardAvatarUrl.startsWith('http') || user.cardAvatarUrl.startsWith('data:') || user.cardAvatarUrl.startsWith('/')) {
+                userAvatar = user.cardAvatarUrl;
+            } else {
+                try {
+                    const resolvedCard = await getSmartImageUrl(user.cardAvatarUrl);
+                    if (resolvedCard && resolvedCard !== '/images/default-avatar.png') {
+                        userAvatar = resolvedCard;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        if (!userAvatar && user.avatarUrl && (user.avatarUrl.startsWith('http') || user.avatarUrl.startsWith('/'))) {
+            userAvatar = user.avatarUrl;
+        }
+        if (!userAvatar && user.avatar && (user.avatar.startsWith('http') || user.avatar.startsWith('/'))) {
+            userAvatar = user.avatar;
+        }
+
+        if (!userAvatar) {
+            userAvatar = (user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png';
         }
 
         user.signedAvatarUrl = userAvatar;
