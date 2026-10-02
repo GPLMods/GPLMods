@@ -1288,6 +1288,7 @@ function initializeMusicPlayer() {
     const customYtInput = document.getElementById('custom-yt-url');
     const loadYtBtn = document.getElementById('load-yt-btn');
     const ytStatusMsg = document.getElementById('yt-status-msg');
+    const closeBtn = document.getElementById('music-close-btn');
 
     if (!audioPlayer || !playPauseBtn || !trackNameDisplay) return;
 
@@ -1296,6 +1297,14 @@ function initializeMusicPlayer() {
             e.stopPropagation();
             playerContainer.classList.toggle('open');
         });
+
+        // Header close button inside the music card
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                playerContainer.classList.remove('open');
+            });
+        }
 
         // Prevent clicks inside the music player from closing it
         playerContainer.addEventListener('click', (e) => {
@@ -1378,6 +1387,7 @@ function initializeMusicPlayer() {
         if (!playPauseIcon) return;
         playPauseIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
         playPauseBtn.title = isPlaying ? "Pause Music" : "Play Music";
+        if (toggleBtn) toggleBtn.classList.toggle('playing', isPlaying);
     }
 
     function loadLocalTrack(index) {

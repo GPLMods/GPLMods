@@ -735,7 +735,7 @@ a.overlay-btn-primary:hover {
 .overlay-button:hover { transform: scale(1.04); }
 
 /* ==========================================================================
-   FLOATING BOTTOM-LEFT MUSIC PLAYER (SLIDING ANIMATION)
+   FLOATING BOTTOM-LEFT MUSIC PLAYER (SMOOTH POPUP ANIMATION)
    ========================================================================== */
 
 .floating-music-player {
@@ -743,109 +743,199 @@ a.overlay-btn-primary:hover {
     bottom: 20px; 
     left: 0;      
     z-index: 9998; 
-    display: flex;
-    align-items: center;
-    background-color: var(--dark-gray);
-    border: 1px solid #333;
-    border-radius: 0 30px 30px 0;
-    box-shadow: 5px 5px 20px rgba(0,0,0,0.6);
-    
-    /* Start hidden - only the button (50px) is visible */
-    transform: translateX(calc(-100% + 50px));
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
-    will-change: transform;
+    pointer-events: none;
 }
 
-.floating-music-player.open {
-    transform: translateX(0);
-    box-shadow: 0 0 25px var(--glow-gold), 5px 5px 25px rgba(0,0,0,0.7);
-}
-
-/* The Music Icon Button and content */
+/* The Music Icon Button docked on the left screen edge */
 .music-toggle-btn {
-    width: 50px;
-    height: 50px;
-    background: transparent;
-    border: none;
+    pointer-events: auto;
+    width: 48px;
+    height: 48px;
+    background-color: var(--dark-gray);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-left: none;
+    border-radius: 0 24px 24px 0;
     color: var(--gold);
-    font-size: 1.5em;
+    font-size: 1.35em;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.3s ease;
+    box-shadow: 3px 4px 16px rgba(0,0,0,0.6);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     -webkit-tap-highlight-color: transparent;
-    padding: 5px;
-}
-.music-toggle-btn:hover {
-    color: var(--white);
-    text-shadow: 0 0 6px var(--glow-gold);
-    transform: scale(1.08);
-}
-.floating-music-player.open .music-toggle-btn {
-    color: var(--gold);
+    padding: 0;
 }
 
-/* Content wrapper - kept in layout for buttery smooth close transition */
+.music-toggle-btn:hover {
+    color: var(--white);
+    border-color: var(--gold);
+    box-shadow: 0 0 16px var(--glow-gold), 3px 4px 20px rgba(0,0,0,0.8);
+    transform: scale(1.08);
+}
+
+.floating-music-player.open .music-toggle-btn {
+    background-color: var(--gold);
+    color: var(--black);
+    border-color: var(--gold);
+    box-shadow: 0 0 22px var(--glow-gold), 3px 4px 18px rgba(0,0,0,0.7);
+}
+
+.music-toggle-btn.playing {
+    border-color: var(--gold);
+    animation: musicPulse 2s infinite ease-in-out;
+}
+
+@keyframes musicPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 215, 0, 0.3), 3px 4px 16px rgba(0,0,0,0.6); }
+    50% { box-shadow: 0 0 20px var(--glow-gold), 3px 4px 18px rgba(0,0,0,0.8); }
+}
+
+/* Content popup card - opens upwards & smoothly from bottom-left */
 .music-player-content {
+    position: absolute;
+    bottom: 58px;
+    left: 12px;
+    width: 295px;
+    max-width: calc(100vw - 24px);
+    background-color: rgba(22, 22, 28, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(255, 215, 0, 0.12);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px 15px;
-    background: var(--dark-gray);
-    border-radius: 30px;
+    overflow: hidden;
+    transform-origin: bottom left;
+    transform: scale(0.1) translateY(40px);
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), 
+                opacity 0.25s ease, 
+                visibility 0.32s;
 }
 
 .floating-music-player.open .music-player-content {
+    transform: scale(1) translateY(0);
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
 }
 
-.music-player-content .track-name {
+/* Music Player Header */
+.music-player-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.music-header-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.music-close-card-btn {
+    background: transparent;
+    border: none;
     color: var(--silver);
-    font-size: 0.8em;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.music-close-card-btn:hover {
+    color: var(--red);
+    transform: scale(1.15);
+}
+
+.music-player-content .track-name {
+    color: var(--white);
+    font-size: 0.85em;
     font-weight: 600;
-    margin-bottom: 8px;
-    max-width: 120px;
+    margin-bottom: 10px;
+    max-width: 240px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
 }
 
 .music-controls {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
 }
 
 .music-controls button.music-btn {
-    background: none;
-    border: none;
-    padding: 5px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     cursor: pointer;
     color: var(--silver);
     font-size: 1em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
 }
 
 .music-controls button.music-btn:hover {
     color: var(--gold);
-    transform: scale(1.15);
-    text-shadow: 0 0 4px var(--glow-gold);
+    border-color: var(--gold);
+    transform: scale(1.12);
+    box-shadow: 0 0 10px var(--glow-gold);
 }
 
 .music-controls button.music-btn:active {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 
 .music-controls button.music-btn.active {
     color: var(--gold);
-    text-shadow: 0 0 8px var(--glow-gold);
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.15);
+    box-shadow: 0 0 12px var(--glow-gold);
     transform: scale(1.08);
+}
+
+#music-play-pause-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--gold);
+    color: var(--black);
+    border: none;
+    font-size: 1.1em;
+    box-shadow: 0 0 15px var(--glow-gold);
+}
+
+#music-play-pause-btn:hover {
+    color: var(--black);
+    transform: scale(1.12);
+    box-shadow: 0 0 20px var(--glow-gold);
 }
 /* --- Volume Slider & Custom Input Styles --- */
 .volume-container {
