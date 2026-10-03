@@ -109,18 +109,20 @@
         border-color: var(--gold);
     }
     .mobile-drawer-close-btn {
-        display: inline-flex;
+        display: none;
         align-items: center;
         justify-content: center;
         width: 30px;
         height: 30px;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.06);
         border: 1px solid #333645;
         border-radius: 6px;
         color: #8e9297;
         cursor: pointer;
         font-size: 0.95rem;
         transition: all 0.2s;
+        touch-action: manipulation;
+        flex-shrink: 0;
     }
     .mobile-drawer-close-btn:hover {
         background: rgba(244, 67, 54, 0.2);
@@ -152,15 +154,19 @@
     }
 
     /* Club Dropdown Menu */
+    .club-header-area {
+        position: relative;
+        z-index: 1200;
+    }
     .club-header-box {
         position: relative;
     }
     .club-header-dropdown {
         position: absolute;
-        top: 56px;
+        top: calc(100% + 4px);
         left: 8px;
         right: 8px;
-        background: rgba(18, 19, 27, 0.95);
+        background: rgba(18, 19, 27, 0.98);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 215, 0, 0.35);
@@ -169,7 +175,7 @@
         display: none;
         flex-direction: column;
         gap: 3px;
-        z-index: 1200;
+        z-index: 1300;
         box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.12);
     }
     .club-header-dropdown.active {
@@ -442,11 +448,60 @@
     .topbar-channel-info {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
         font-size: 1.05rem;
         font-weight: 700;
         color: #fff;
         flex-wrap: wrap;
+        min-width: 0;
+    }
+    .topbar-club-badge-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        max-width: 170px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+        user-select: none;
+    }
+    .topbar-club-badge-wrap:hover {
+        background: rgba(255, 215, 0, 0.12);
+        border-color: rgba(255, 215, 0, 0.35);
+    }
+    .topbar-club-name {
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: #fff;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .topbar-breadcrumb-sep {
+        color: #666;
+        font-size: 0.85rem;
+        user-select: none;
+    }
+    .topbar-channel-name-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-weight: 700;
+        color: #fff;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    .topbar-channel-title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .topbar-topic {
         color: #8e9297;
@@ -665,6 +720,26 @@
         background: rgba(255, 215, 0, 0.15);
         border-color: var(--gold);
         color: var(--gold);
+    }
+    .react-quick-emoji {
+        font-size: 1.35rem;
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 8px;
+        transition: transform 0.15s ease, background 0.15s ease;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        min-width: 34px;
+        min-height: 34px;
+    }
+    .react-quick-emoji:hover, .react-quick-emoji:active {
+        transform: scale(1.25);
+        background: rgba(255, 215, 0, 0.2);
     }
 
     /* Chat Input Bar */
@@ -1335,9 +1410,21 @@
             display: none;
         }
         .topbar-channel-info {
-            gap: 8px;
-            font-size: 0.95rem;
+            gap: 6px;
+            font-size: 0.92rem;
             min-width: 0;
+            flex-wrap: nowrap;
+        }
+        .topbar-club-badge-wrap {
+            max-width: 110px;
+            padding: 2px 6px;
+        }
+        .topbar-club-name {
+            font-size: 0.85rem;
+        }
+        .topbar-channel-title {
+            max-width: 90px;
+            font-size: 0.85rem;
         }
         .topbar-actions {
             gap: 4px;
@@ -1411,6 +1498,15 @@
     }
 
     @media (max-width: 480px) {
+        .hide-on-tiny-screen {
+            display: none !important;
+        }
+        .topbar-club-badge-wrap {
+            max-width: 90px;
+        }
+        .topbar-channel-title {
+            max-width: 75px;
+        }
         .discord-left-pane-wrapper {
             width: 295px;
         }
@@ -1935,79 +2031,81 @@
         </div>
 
         <!-- Club Header with Server Actions Dropdown -->
-        <div class="club-header-box" onclick="toggleClubMenu(event)">
-            <div class="club-header-title">
-                <span><%= club.name %></span>
-                <% if (club.isVerified || club.isDefault) { %>
-                    <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.85em;"></i>
-                <% } %>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: #8e9297;"></i>
-                <button type="button" class="mobile-drawer-close-btn" onclick="closeDiscordDrawers(event)" title="Close Navigation">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Club Dropdown Menu -->
-        <div class="club-header-dropdown" id="clubHeaderDropdown">
-            <a href="/clubs/<%= club.slug %>/preview" class="club-menu-item">
-                <i class="fas fa-info-circle"></i>
-                <span>Club Overview &amp; Info</span>
-            </a>
-            <div class="club-menu-item" onclick="openUniqueInviteModal(); toggleClubMenu();">
-                <i class="fas fa-user-plus" style="color: var(--gold);"></i>
-                <span>Invite Members (Unique Link)</span>
-                <% if (myInviteCount > 0) { %>
-                    <span class="member-invite-badge" style="margin-left: auto;"><i class="fas fa-trophy"></i> <%= myInviteCount %></span>
-                <% } %>
-            </div>
-            <% if (hasManageClubPerm) { %>
-                <div class="club-menu-divider"></div>
-                <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
-                    <div class="club-menu-item" onclick="openEditClubModal(); toggleClubMenu();">
-                        <i class="fas fa-cog" style="color: var(--silver);"></i>
-                        <span>Club Settings</span>
-                    </div>
-                <% } %>
-                <div class="club-menu-item" onclick="openCreateChannelModal(); toggleClubMenu();">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Create Text Channel</span>
+        <div class="club-header-area">
+            <div class="club-header-box" onclick="toggleClubMenu(event)">
+                <div class="club-header-title">
+                    <span><%= club.name %></span>
+                    <% if (club.isVerified || club.isDefault) { %>
+                        <i class="fas fa-check-circle" style="color: var(--gold); font-size: 0.85em; flex-shrink: 0;"></i>
+                    <% } %>
                 </div>
-                <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
-                    <i class="fas fa-rss" style="color: var(--gold);"></i>
-                    <span>Tracked Creators</span>
-                </div>
-            <% } else { %>
-                <div class="club-menu-divider"></div>
-                <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
-                    <i class="fas fa-bell"></i>
-                    <span>My Subscriptions</span>
-                </div>
-            <% } %>
-            <div class="club-menu-divider"></div>
-            <a href="/clubs" class="club-menu-item">
-                <i class="fas fa-compass"></i>
-                <span>Explore Other Clubs</span>
-            </a>
-            <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
-                <% if (!club.isDefault) { %>
-                    <div class="club-menu-divider"></div>
-                    <div class="club-menu-item" onclick="openDeleteClubModal(); toggleClubMenu();" style="color: #ff5252;">
-                        <i class="fas fa-trash-alt" style="color: #ff5252;"></i>
-                        <span>Delete Club</span>
-                    </div>
-                <% } %>
-            <% } %>
-            <% if (!club.isDefault && membership && !isClubCreator) { %>
-                <form id="leaveClubForm" action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;">
-                    <button type="button" class="club-menu-item" onclick="confirmLeaveClub(event)" style="color: #ff5252; background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Leave Club</span>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: #8e9297;"></i>
+                    <button type="button" class="mobile-drawer-close-btn" onclick="closeDiscordDrawers(event)" title="Close Navigation">
+                        <i class="fas fa-times"></i>
                     </button>
-                </form>
-            <% } %>
+                </div>
+            </div>
+
+            <!-- Club Dropdown Menu -->
+            <div class="club-header-dropdown" id="clubHeaderDropdown">
+                <a href="/clubs/<%= club.slug %>/preview" class="club-menu-item">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Club Overview &amp; Info</span>
+                </a>
+                <div class="club-menu-item" onclick="openUniqueInviteModal(); toggleClubMenu();">
+                    <i class="fas fa-user-plus" style="color: var(--gold);"></i>
+                    <span>Invite Members (Unique Link)</span>
+                    <% if (myInviteCount > 0) { %>
+                        <span class="member-invite-badge" style="margin-left: auto;"><i class="fas fa-trophy"></i> <%= myInviteCount %></span>
+                    <% } %>
+                </div>
+                <% if (hasManageClubPerm) { %>
+                    <div class="club-menu-divider"></div>
+                    <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
+                        <div class="club-menu-item" onclick="openEditClubModal(); toggleClubMenu();">
+                            <i class="fas fa-cog" style="color: var(--silver);"></i>
+                            <span>Club Settings</span>
+                        </div>
+                    <% } %>
+                    <div class="club-menu-item" onclick="openCreateChannelModal(); toggleClubMenu();">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Create Text Channel</span>
+                    </div>
+                    <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
+                        <i class="fas fa-rss" style="color: var(--gold);"></i>
+                        <span>Tracked Creators</span>
+                    </div>
+                <% } else { %>
+                    <div class="club-menu-divider"></div>
+                    <div class="club-menu-item" onclick="openTrackedCreatorsModal(); toggleClubMenu();">
+                        <i class="fas fa-bell"></i>
+                        <span>My Subscriptions</span>
+                    </div>
+                <% } %>
+                <div class="club-menu-divider"></div>
+                <a href="/clubs" class="club-menu-item">
+                    <i class="fas fa-compass"></i>
+                    <span>Explore Other Clubs</span>
+                </a>
+                <% if (isClubCreator || (locals.user && locals.user.role === 'owner')) { %>
+                    <% if (!club.isDefault) { %>
+                        <div class="club-menu-divider"></div>
+                        <div class="club-menu-item" onclick="openDeleteClubModal(); toggleClubMenu();" style="color: #ff5252;">
+                            <i class="fas fa-trash-alt" style="color: #ff5252;"></i>
+                            <span>Delete Club</span>
+                        </div>
+                    <% } %>
+                <% } %>
+                <% if (!club.isDefault && membership && !isClubCreator) { %>
+                    <form id="leaveClubForm" action="/clubs/<%= club.slug %>/leave" method="POST" style="margin: 0;">
+                        <button type="button" class="club-menu-item" onclick="confirmLeaveClub(event)" style="color: #ff5252; background: none; border: none; width: 100%; text-align: left; cursor: pointer;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Leave Club</span>
+                        </button>
+                    </form>
+                <% } %>
+            </div>
         </div>
 
         <!-- Channels Scroll Area -->
@@ -2083,39 +2181,6 @@
         <!-- Top Bar -->
         <div class="chat-topbar">
             <div class="topbar-channel-info">
-                <!-- Mobile Navigation Toggle Button -->
-                <button type="button" class="mobile-channels-toggle-btn" id="mobileChannelsToggleBtn" onclick="toggleLeftDrawer()" title="Channels &amp; Clubs">
-                    <i class="fas fa-bars"></i>
-                </button>
-
-                <!-- Go Back to Clubs Button -->
-                <a href="/clubs" class="topbar-btn back-btn-topbar" title="Back to All Clubs" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 600; margin-right: 6px; background: rgba(255,215,0,0.06);">
-                    <i class="fas fa-arrow-left"></i> <span class="hide-mobile">Clubs</span>
-                </a>
-
-                <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
-                <span style="font-weight: 700;"><%= activeChannel ? activeChannel.name : 'general' %></span>
-
-                <!-- Channel Type & Status Pills -->
-                <% if (activeChannel) { %>
-                    <% if (activeChannel.type === 'rules') { %>
-                        <span class="chan-type-pill rules"><i class="fas fa-scroll"></i> Rules</span>
-                    <% } else if (activeChannel.type === 'announcements') { %>
-                        <span class="chan-type-pill announce"><i class="fas fa-bullhorn"></i> Announcements</span>
-                    <% } else if (activeChannel.type === 'polls') { %>
-                        <span class="chan-type-pill polls"><i class="fas fa-poll"></i> Polls</span>
-                    <% } else if (activeChannel.type === 'new-uploads' || activeChannel.type === 'new-updates') { %>
-                        <span class="chan-type-pill feeds"><i class="fas fa-rss"></i> Mod Feed</span>
-                    <% } else { %>
-                        <span class="chan-type-pill text"><i class="fas fa-hashtag"></i> Text</span>
-                    <% } %>
-                    <span class="chan-type-pill locked" id="topbarLockedBadge" style="display: <%= activeChannel.isReadOnly ? 'inline-flex' : 'none' %>;"><i class="fas fa-lock"></i> Locked</span>
-                    <% if (activeChannel.isPrivate) { %>
-                        <span class="chan-type-pill priv"><i class="fas fa-shield-alt"></i> Private</span>
-                    <% } %>
-                <% } %>
-
-                <!-- Verified Badge for Club in Topbar -->
                 <% 
                     const clubCreatorRole = club.creator ? club.creator.role : '';
                     const isClubOwner = clubCreatorRole === 'owner' || club.isDefault;
@@ -2123,15 +2188,56 @@
                     const isClubDistributor = clubCreatorRole === 'distributor';
                     const isClubVerified = club.isVerified || isClubOwner || isClubStaff || isClubDistributor;
                 %>
-                <% if (isClubVerified) { %>
-                    <% if (isClubOwner) { %>
-                        <i class="fas fa-check-circle" style="color: #ffd700; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(255,215,0,0.4));" title="Official GPLMods Community (Gold Verified)"></i>
-                    <% } else if (isClubStaff) { %>
-                        <i class="fas fa-check-circle" style="color: #e0e0e0; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(255,255,255,0.4));" title="Staff Verified Community (Silver)"></i>
-                    <% } else if (isClubDistributor) { %>
-                        <i class="fas fa-check-circle" style="color: #0099ff; margin-left: 5px; font-size: 0.9em; filter: drop-shadow(0 0 4px rgba(0,153,255,0.4));" title="Distributor Partner Verified (Blue)"></i>
+                <!-- Mobile Navigation Toggle Button -->
+                <button type="button" class="mobile-channels-toggle-btn" id="mobileChannelsToggleBtn" onclick="toggleLeftDrawer()" title="Channels &amp; Clubs">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Go Back to Clubs Button -->
+                <a href="/clubs" class="topbar-btn back-btn-topbar" title="Back to All Clubs" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 600; margin-right: 2px; background: rgba(255,215,0,0.06);">
+                    <i class="fas fa-arrow-left"></i> <span class="hide-mobile">Clubs</span>
+                </a>
+
+                <!-- Club Identity (Club Name + Verified Badge) -->
+                <div class="topbar-club-badge-wrap" onclick="toggleLeftDrawer()" title="<%= club.name %> (Click to view channels &amp; club settings)">
+                    <span class="topbar-club-name"><%= club.name %></span>
+                    <% if (isClubVerified) { %>
+                        <% if (isClubOwner) { %>
+                            <i class="fas fa-check-circle" style="color: #ffd700; font-size: 0.85em; filter: drop-shadow(0 0 4px rgba(255,215,0,0.4)); flex-shrink: 0;" title="Official GPLMods Community (Gold Verified)"></i>
+                        <% } else if (isClubStaff) { %>
+                            <i class="fas fa-check-circle" style="color: #e0e0e0; font-size: 0.85em; filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)); flex-shrink: 0;" title="Staff Verified Community (Silver)"></i>
+                        <% } else if (isClubDistributor) { %>
+                            <i class="fas fa-check-circle" style="color: #0099ff; font-size: 0.85em; filter: drop-shadow(0 0 4px rgba(0,153,255,0.4)); flex-shrink: 0;" title="Distributor Partner Verified (Blue)"></i>
+                        <% } else { %>
+                            <i class="fas fa-check-circle" style="color: #ffd700; font-size: 0.85em; flex-shrink: 0;" title="Verified Community"></i>
+                        <% } %>
+                    <% } %>
+                </div>
+
+                <span class="topbar-breadcrumb-sep">/</span>
+
+                <!-- Channel Name -->
+                <div class="topbar-channel-name-wrap">
+                    <i class="fas <%= activeChannel ? (activeChannel.type === 'polls' ? 'fa-poll' : (activeChannel.type === 'rules' ? 'fa-scroll' : (activeChannel.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold); font-size: 0.9rem;"></i>
+                    <span class="topbar-channel-title"><%= activeChannel ? activeChannel.name : 'general' %></span>
+                </div>
+
+                <!-- Channel Type & Status Pills -->
+                <% if (activeChannel) { %>
+                    <% if (activeChannel.type === 'rules') { %>
+                        <span class="chan-type-pill rules hide-on-tiny-screen"><i class="fas fa-scroll"></i> Rules</span>
+                    <% } else if (activeChannel.type === 'announcements') { %>
+                        <span class="chan-type-pill announce hide-on-tiny-screen"><i class="fas fa-bullhorn"></i> Announcements</span>
+                    <% } else if (activeChannel.type === 'polls') { %>
+                        <span class="chan-type-pill polls hide-on-tiny-screen"><i class="fas fa-poll"></i> Polls</span>
+                    <% } else if (activeChannel.type === 'new-uploads' || activeChannel.type === 'new-updates') { %>
+                        <span class="chan-type-pill feeds hide-on-tiny-screen"><i class="fas fa-rss"></i> Mod Feed</span>
                     <% } else { %>
-                        <i class="fas fa-check-circle" style="color: #ffd700; margin-left: 5px; font-size: 0.9em;" title="Verified Community"></i>
+                        <span class="chan-type-pill text hide-on-tiny-screen"><i class="fas fa-hashtag"></i> Text</span>
+                    <% } %>
+                    <span class="chan-type-pill locked" id="topbarLockedBadge" style="display: <%= activeChannel.isReadOnly ? 'inline-flex' : 'none' %>;"><i class="fas fa-lock"></i> Locked</span>
+                    <% if (activeChannel.isPrivate) { %>
+                        <span class="chan-type-pill priv"><i class="fas fa-shield-alt"></i> Private</span>
                     <% } %>
                 <% } %>
 
@@ -2299,12 +2405,15 @@
                                         <% }) %>
                                     <% } %>
                                     <div class="reaction-pill" onclick="quickReactPicker('<%= msg._id %>', event)" title="Add Reaction">
-                                        <i class="far fa-smile-plus"></i>
+                                        <i class="far fa-face-smile"></i> <i class="fas fa-plus" style="font-size: 0.65rem; margin-left: 2px;"></i>
                                     </div>
                                 </div>
 
                                 <!-- Message Action Toolbar -->
                                 <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                                    <button type="button" class="btn-msg-action" onclick="quickReactPicker('<%= msg._id %>', event)" title="Add Reaction" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                        <i class="far fa-face-smile"></i> React
+                                    </button>
                                     <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-<%= msg._id %>')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                                         <i class="fas fa-share-alt"></i> Share
                                     </button>
@@ -2384,17 +2493,17 @@
 
                 <div class="chat-input-actions">
                     <!-- Emoticon Button (ASCII faces) -->
-                    <button type="button" class="chat-action-btn" onclick="toggleEmoticonPopover()" title="Insert Emoticon">
+                    <button type="button" class="chat-action-btn" onclick="toggleEmoticonPopover(event)" title="Insert Emoticon">
                         <span style="font-size: 1rem; font-weight: 700;">(✿)</span>
                     </button>
 
                     <!-- Emoji Picker Button -->
-                    <button type="button" class="chat-action-btn" id="emojiPickerBtn" title="Insert Emoji">
-                        <i class="far fa-smile"></i>
+                    <button type="button" class="chat-action-btn" id="emojiPickerBtn" onclick="toggleEmojiPicker(event)" title="Insert Emoji">
+                        <i class="far fa-face-smile"></i>
                     </button>
 
                     <!-- GIF Selector Button -->
-                    <button type="button" class="chat-action-btn" onclick="toggleGifPicker()" title="Insert GIF">
+                    <button type="button" class="chat-action-btn" onclick="toggleGifPicker(event)" title="Insert GIF">
                         <i class="fas fa-film"></i>
                     </button>
 
@@ -2427,7 +2536,7 @@
             <div class="gif-picker-modal" id="gifPickerModal">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">Select Animated GIF</span>
-                    <button type="button" onclick="toggleGifPicker()" style="background: none; border: none; color: #aaa; cursor: pointer;">&times;</button>
+                    <button type="button" onclick="toggleGifPicker(event)" style="background: none; border: none; color: #aaa; cursor: pointer; font-size: 1.2rem; line-height: 1; padding: 2px 6px;">&times;</button>
                 </div>
                 <div class="gif-grid">
                     <div class="gif-item" onclick="insertGif('https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif')">
@@ -2606,7 +2715,7 @@
             Are you absolutely sure you want to delete <strong><%= club.name %></strong>?<br>
             This action <strong>CANNOT</strong> be undone. All channels, messages, and roles will be permanently lost.
         </p>
-        <form action="/clubs/<%= club.slug %>/delete" method="POST">
+        <form action="/clubs/<%= club.slug %>/delete" method="POST" onsubmit="handleDeleteClub(event)">
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
                 <button type="button" class="gpl-btn-secondary" onclick="closeDeleteClubModal()">
                     <i class="fas fa-times"></i> Cancel
@@ -3328,15 +3437,15 @@
 </div>
 
 <!-- Floating Quick Reaction Bar -->
-<div id="reactionFloatingBar" style="display: none; position: absolute; z-index: 99999; background: #161822; border: 1.5px solid var(--gold); border-radius: 30px; padding: 4px 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.85); gap: 6px; align-items: center;">
-    <span class="react-quick-emoji" onclick="submitQuickReaction('👍')">👍</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('❤️')">❤️</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('🔥')">🔥</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('🚀')">🚀</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('🎉')">🎉</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('😂')">😂</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('💯')">💯</span>
-    <span class="react-quick-emoji" onclick="submitQuickReaction('⚡')">⚡</span>
+<div id="reactionFloatingBar" style="display: none; position: fixed; z-index: 999999; background: #161822; border: 1.5px solid var(--gold); border-radius: 30px; padding: 6px 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.85); gap: 6px; align-items: center;">
+    <span class="react-quick-emoji" onclick="submitQuickReaction('👍', event)" title="Thumbs Up">👍</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('❤️', event)" title="Heart">❤️</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🔥', event)" title="Fire">🔥</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🚀', event)" title="Rocket">🚀</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('🎉', event)" title="Tada">🎉</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('😂', event)" title="Laugh">😂</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('💯', event)" title="100">💯</span>
+    <span class="react-quick-emoji" onclick="submitQuickReaction('⚡', event)" title="Zap">⚡</span>
 </div>
 
 <!-- Rich Share GUI Modal -->
@@ -3981,10 +4090,13 @@
                 <div class="message-body-text" id="msg-text-${msg._id}">${formattedBody}</div>
                 <div class="reactions-row" id="reactions-${msg._id}">
                     <div class="reaction-pill" onclick="quickReactPicker('${msg._id}', event)" title="Add Reaction">
-                        <i class="far fa-smile-plus"></i>
+                        <i class="far fa-face-smile"></i> <i class="fas fa-plus" style="font-size: 0.65rem; margin-left: 2px;"></i>
                     </div>
                 </div>
                 <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                    <button type="button" class="btn-msg-action" onclick="quickReactPicker('${msg._id}', event)" title="Add Reaction" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                        <i class="far fa-face-smile"></i> React
+                    </button>
                     <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-${msg._id}')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                         <i class="fas fa-share-alt"></i> Share
                     </button>
@@ -4174,7 +4286,7 @@
                 </div>
             `;
         });
-        html += `<div class="reaction-pill" onclick="quickReactPicker('${data.messageId}', event)" title="Add Reaction"><i class="far fa-smile-plus"></i></div>`;
+        html += `<div class="reaction-pill" onclick="quickReactPicker('${data.messageId}', event)" title="Add Reaction"><i class="far fa-face-smile"></i> <i class="fas fa-plus" style="font-size: 0.65rem; margin-left: 2px;"></i></div>`;
         reactionsRow.innerHTML = html;
     });
 
@@ -4284,27 +4396,49 @@
         socket.emit('club_message_reaction', { clubId, channelId, messageId, emoji });
     }
 
+    function closeAllChatPopovers(except) {
+        const gifModal = document.getElementById('gifPickerModal');
+        const mainEmojiPicker = document.getElementById('mainEmojiPicker');
+        const emoticonPopover = document.getElementById('emoticonPopover');
+        const reactionBar = document.getElementById('reactionFloatingBar');
+
+        if (gifModal && except !== 'gif') gifModal.classList.remove('active');
+        if (mainEmojiPicker && except !== 'emoji') mainEmojiPicker.style.display = 'none';
+        if (emoticonPopover && except !== 'emoticon') emoticonPopover.classList.remove('active');
+        if (reactionBar && except !== 'reaction') reactionBar.style.display = 'none';
+    }
+
     let currentReactMsgId = null;
     function quickReactPicker(messageId, event) {
-        if (event && typeof event.stopPropagation === 'function') {
-            event.stopPropagation();
+        if (event) {
+            if (typeof event.stopPropagation === 'function') event.stopPropagation();
+            if (typeof event.preventDefault === 'function') event.preventDefault();
         }
         currentReactMsgId = messageId;
         const bar = document.getElementById('reactionFloatingBar');
         if (!bar) return;
 
+        closeAllChatPopovers('reaction');
+
         const targetEl = (event && (event.currentTarget || event.target)) || document.getElementById(`reactions-${messageId}`);
         if (targetEl) {
             const rect = targetEl.getBoundingClientRect();
-            const barTop = Math.max(10, window.scrollY + rect.top - 46);
-            const barLeft = Math.max(10, Math.min(window.innerWidth - 290, window.scrollX + rect.left));
+            let barTop = rect.top - 54;
+            if (barTop < 10) barTop = rect.bottom + 8;
+            const barWidth = 320;
+            const maxLeft = Math.max(10, window.innerWidth - barWidth - 10);
+            const barLeft = Math.max(10, Math.min(maxLeft, rect.left));
+            bar.style.position = 'fixed';
             bar.style.top = barTop + 'px';
             bar.style.left = barLeft + 'px';
             bar.style.display = 'flex';
         }
     }
 
-    function submitQuickReaction(emoji) {
+    function submitQuickReaction(emoji, event) {
+        if (event && typeof event.stopPropagation === 'function') {
+            event.stopPropagation();
+        }
         if (currentReactMsgId && emoji) {
             toggleReaction(currentReactMsgId, emoji);
         }
@@ -4312,13 +4446,6 @@
         if (bar) bar.style.display = 'none';
         currentReactMsgId = null;
     }
-
-    document.addEventListener('click', (e) => {
-        const bar = document.getElementById('reactionFloatingBar');
-        if (bar && !bar.contains(e.target) && !e.target.closest('.reaction-pill')) {
-            bar.style.display = 'none';
-        }
-    });
 
     function votePoll(messageId, optionIndex) {
         socket.emit('club_poll_vote', { clubId, channelId, messageId, optionIndex });
@@ -4336,40 +4463,76 @@
         }
     }
 
-    // 9. Emoji & Emoticon Popovers
-    const emojiBtn = document.getElementById('emojiPickerBtn');
-    const mainEmojiPicker = document.getElementById('mainEmojiPicker');
-    if (emojiBtn && mainEmojiPicker) {
-        emojiBtn.addEventListener('click', () => {
-            mainEmojiPicker.style.display = (mainEmojiPicker.style.display === 'block') ? 'none' : 'block';
-        });
-        mainEmojiPicker.addEventListener('emoji-click', event => {
-            chatInput.value += event.detail.unicode;
-            chatInput.focus();
-        });
+    // 9. Emoji & Emoticon Popovers (With Mutex & Auto-Close)
+    function toggleEmojiPicker(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const picker = document.getElementById('mainEmojiPicker');
+        if (!picker) return;
+        const isOpen = (picker.style.display === 'block');
+        closeAllChatPopovers(isOpen ? null : 'emoji');
+        if (!isOpen) {
+            picker.style.display = 'block';
+        }
     }
 
-    function toggleEmoticonPopover() {
+    function toggleEmoticonPopover(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
         const pop = document.getElementById('emoticonPopover');
-        pop.classList.toggle('active');
+        if (!pop) return;
+        const isOpen = pop.classList.contains('active');
+        closeAllChatPopovers(isOpen ? null : 'emoticon');
+        if (!isOpen) {
+            pop.classList.add('active');
+        }
     }
 
     function insertEmoticon(emoticon) {
         chatInput.value += ' ' + emoticon + ' ';
         chatInput.focus();
-        document.getElementById('emoticonPopover').classList.remove('active');
+        closeAllChatPopovers();
     }
 
-    function toggleGifPicker() {
+    function toggleGifPicker(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
         const gifModal = document.getElementById('gifPickerModal');
-        gifModal.classList.toggle('active');
+        if (!gifModal) return;
+        const isOpen = gifModal.classList.contains('active');
+        closeAllChatPopovers(isOpen ? null : 'gif');
+        if (!isOpen) {
+            gifModal.classList.add('active');
+        }
     }
 
     function insertGif(gifUrl) {
         chatInput.value += ` ${gifUrl} `;
         chatInput.focus();
-        toggleGifPicker();
+        closeAllChatPopovers();
     }
+
+    const emojiBtn = document.getElementById('emojiPickerBtn');
+    const mainEmojiPicker = document.getElementById('mainEmojiPicker');
+    if (emojiBtn) {
+        emojiBtn.addEventListener('click', (e) => {
+            toggleEmojiPicker(e);
+        });
+    }
+    if (mainEmojiPicker) {
+        mainEmojiPicker.addEventListener('emoji-click', event => {
+            chatInput.value += event.detail.unicode;
+            chatInput.focus();
+            if (window.innerWidth <= 992) {
+                closeAllChatPopovers();
+            }
+        });
+    }
+
+    // Global outside click / tap listener to close emoji, gif, emoticon, and reaction popovers automatically
+    document.addEventListener('click', (e) => {
+        const isInsidePopovers = e.target.closest('#mainEmojiPicker, #gifPickerModal, #emoticonPopover, #reactionFloatingBar, .chat-action-btn, #emojiPickerBtn, .reaction-pill, .btn-msg-action');
+        if (!isInsidePopovers) {
+            closeAllChatPopovers();
+        }
+    });
 
     // Modal Controllers
     function openCreateChannelModal() { document.getElementById('createChannelModal').classList.add('active'); }
@@ -4755,6 +4918,40 @@
     function closeDeleteClubModal() {
         const modal = document.getElementById('deleteClubModal');
         if (modal) modal.style.display = 'none';
+    }
+
+    async function handleDeleteClub(e) {
+        e.preventDefault();
+        const form = e.target;
+        const btn = form.querySelector('button[type="submit"]');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        }
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (data.success && data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            } else {
+                alert(data.error || 'Failed to delete club.');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }
+        } catch (err) {
+            console.error('Delete club error:', err);
+            // Fallback to standard form submit
+            form.submit();
+        }
     }
 
     function switchChannelMenuTab(tabName) {

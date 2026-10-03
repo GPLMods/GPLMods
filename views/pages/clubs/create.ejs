@@ -662,26 +662,26 @@
                     <div class="custom-select-wrapper" id="wrapper-primaryLanguage">
                         <% 
                             const languagesList = [
-                                { code: 'English', label: 'English', flag: '🇬🇧' },
-                                { code: 'Spanish', label: 'Español (Spanish)', flag: '🇪🇸' },
-                                { code: 'Hindi', label: 'हिन्दी (Hindi)', flag: '🇮🇳' },
-                                { code: 'French', label: 'Français (French)', flag: '🇫🇷' },
-                                { code: 'Russian', label: 'Русский (Russian)', flag: '🇷🇺' },
-                                { code: 'German', label: 'Deutsch (German)', flag: '🇩🇪' },
-                                { code: 'Portuguese', label: 'Português (Portuguese)', flag: '🇧🇷' },
-                                { code: 'Arabic', label: 'العربية (Arabic)', flag: '🇦🇪' },
-                                { code: 'Chinese', label: '中文 (Chinese)', flag: '🇨🇳' },
-                                { code: 'Indonesian', label: 'Bahasa Indonesia', flag: '🇮🇩' },
-                                { code: 'Japanese', label: '日本語 (Japanese)', flag: '🇯🇵' },
-                                { code: 'Korean', label: '한국어 (Korean)', flag: '🇰🇷' },
-                                { code: 'Turkish', label: 'Türkçe (Turkish)', flag: '🇹🇷' }
+                                { code: 'English', label: 'English', flagCode: 'gb' },
+                                { code: 'Spanish', label: 'Español (Spanish)', flagCode: 'es' },
+                                { code: 'Hindi', label: 'हिन्दी (Hindi)', flagCode: 'in' },
+                                { code: 'French', label: 'Français (French)', flagCode: 'fr' },
+                                { code: 'Russian', label: 'Русский (Russian)', flagCode: 'ru' },
+                                { code: 'German', label: 'Deutsch (German)', flagCode: 'de' },
+                                { code: 'Portuguese', label: 'Português (Portuguese)', flagCode: 'br' },
+                                { code: 'Arabic', label: 'العربية (Arabic)', flagCode: 'ae' },
+                                { code: 'Chinese', label: '中文 (Chinese)', flagCode: 'cn' },
+                                { code: 'Indonesian', label: 'Bahasa Indonesia', flagCode: 'id' },
+                                { code: 'Japanese', label: '日本語 (Japanese)', flagCode: 'jp' },
+                                { code: 'Korean', label: '한국어 (Korean)', flagCode: 'kr' },
+                                { code: 'Turkish', label: 'Türkçe (Turkish)', flagCode: 'tr' }
                             ];
                             const curLang = formData.primaryLanguage || 'English';
                             const curLangObj = languagesList.find(l => l.code === curLang) || languagesList[0];
                         %>
                         <div class="custom-select">
                             <span class="custom-select-text">
-                                <span class="custom-select-flag" style="font-size: 1.25rem; line-height: 1;"><%= curLangObj.flag %></span>
+                                <span class="fi fi-<%= curLangObj.flagCode %>" style="border-radius: 2px; flex-shrink: 0;"></span>
                                 <span class="text-label"><%= curLangObj.label %></span>
                             </span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
@@ -689,7 +689,7 @@
                         <div class="custom-options">
                             <% languagesList.forEach(lang => { %>
                                 <div class="custom-option <%= (curLang === lang.code) ? 'selected' : '' %>" data-value="<%= lang.code %>">
-                                    <span class="opt-flag" style="font-size: 1.25rem; line-height: 1;"><%= lang.flag %></span>
+                                    <span class="fi fi-<%= lang.flagCode %>" style="border-radius: 2px; flex-shrink: 0;"></span>
                                     <span class="opt-label"><%= lang.label %></span>
                                 </div>
                             <% }); %>
@@ -1110,7 +1110,7 @@ ZW|Zimbabwe
                                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= curCountryObj.name %></span>
                                 </span>
                                 <span id="liveCardLang" style="display: inline-flex; align-items: center; gap: 6px; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                    <span class="preview-flag" style="flex-shrink: 0;"><%= curLangObj.flag %></span>
+                                    <span class="fi fi-<%= curLangObj.flagCode %>" style="border-radius: 2px; flex-shrink: 0;"></span>
                                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= curLangObj.label %></span>
                                 </span>
                             </div>

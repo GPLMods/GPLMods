@@ -2083,16 +2083,29 @@ router.post('/:slugOrId/edit', ensureAuth, uploadClubMedia.fields([{ name: 'icon
 
 // Delete Club
 router.post('/:slugOrId/delete', ensureAuth, async (req, res) => {
+    const isAjax = Boolean(req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || req.is('json'));
     try {
         const club = await Club.findOne({
             $or: [{ slug: req.params.slugOrId }, { _id: req.params.slugOrId.match(/^[0-9a-fA-F]{24}$/) ? req.params.slugOrId : null }]
         });
-        if (!club) return res.status(404).json({ error: 'Club not found.' });
+        if (!club) {
+            if (isAjax) return res.status(404).json({ error: 'Club not found.' });
+            if (req.flash) req.flash('error_msg', 'Club not found.');
+            return res.redirect('/clubs');
+        }
 
-        if (club.isDefault) return res.status(403).json({ error: 'The official GPLMods community cannot be deleted.' });
+        if (club.isDefault) {
+            if (isAjax) return res.status(403).json({ error: 'The official GPLMods community cannot be deleted.' });
+            if (req.flash) req.flash('error_msg', 'The official GPLMods community cannot be deleted.');
+            return res.redirect(`/clubs/${club.slug}`);
+        }
 
         const isOwner = String(club.creator) === String(req.user._id) || req.user.role === 'owner';
-        if (!isOwner) return res.status(403).json({ error: 'Permission denied. Only the club owner can delete the club.' });
+        if (!isOwner) {
+            if (isAjax) return res.status(403).json({ error: 'Permission denied. Only the club owner can delete the club.' });
+            if (req.flash) req.flash('error_msg', 'Permission denied. Only the club owner can delete the club.');
+            return res.redirect(`/clubs/${club.slug}`);
+        }
 
         // Delete associated channels, messages, members
         await ClubChannel.deleteMany({ club: club._id });
@@ -2104,10 +2117,16 @@ router.post('/:slugOrId/delete', ensureAuth, async (req, res) => {
         
         await club.deleteOne();
         
-        return res.json({ success: true, redirectUrl: '/clubs' });
+        if (isAjax) {
+            return res.json({ success: true, redirectUrl: '/clubs' });
+        }
+        if (req.flash) req.flash('success_msg', 'Club deleted successfully.');
+        return res.redirect('/clubs');
     } catch (err) {
         console.error('[Clubs] Delete club error:', err);
-        return res.status(500).json({ error: 'Failed to delete club.' });
+        if (isAjax) return res.status(500).json({ error: 'Failed to delete club.' });
+        if (req.flash) req.flash('error_msg', 'Failed to delete club.');
+        return res.redirect('/clubs');
     }
 });
 

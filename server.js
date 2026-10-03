@@ -18979,6 +18979,7 @@ const startServer = async () => {
                             reactionObj.users.push(user._id);
                         }
                     }
+                    message.markModified('reactions');
                     await message.save();
 
                     const reactionPayload = {
