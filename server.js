@@ -2461,8 +2461,19 @@ app.get('/cc', (req, res) => {
     res.set('Clear-Site-Data', '"cache", "storage"');
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
     res.set('Pragma', 'no-cache');
-    const returnUrl = req.query.returnTo || req.headers.referer || '/';
-    res.render('pages/cache-cleaner', { returnUrl });
+
+    let returnUrl = req.query.returnTo || req.headers.referer || '/';
+    // Prevent redirect loops back to /cc
+    if (returnUrl.includes('/cc')) {
+        returnUrl = '/';
+    }
+
+    if (req.query.action === 'execute') {
+        return res.render('pages/cache-cleaner', { returnUrl });
+    }
+
+    const sep = returnUrl.includes('?') ? '&' : '?';
+    res.redirect(returnUrl + sep + 'open_cc=1');
 });
 
 // 1. The Root Route

@@ -451,7 +451,9 @@
         padding: 8px 18px;
         flex-shrink: 0;
         flex-wrap: nowrap;
-        overflow: hidden;
+        overflow: visible;
+        position: relative;
+        z-index: 100;
         gap: 8px;
     }
     .topbar-channel-info {
@@ -553,6 +555,7 @@
     .topbar-mobile-more-wrapper {
         position: relative;
         display: none;
+        z-index: 101;
     }
     .topbar-more-dropdown {
         position: absolute;
@@ -1741,6 +1744,104 @@
     .chan-type-pill.locked { background: rgba(244, 67, 54, 0.15); color: #ff8a80; border: 1px solid rgba(244, 67, 54, 0.35); }
     .chan-type-pill.priv { background: rgba(142, 68, 173, 0.2); color: #bb86fc; border: 1px solid rgba(142, 68, 173, 0.4); }
 
+    /* Share Community Modal Responsive Grid */
+    .club-share-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    .club-share-social-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 12px 6px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.76rem;
+        font-weight: 600;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        box-sizing: border-box;
+    }
+    .club-share-social-btn:hover {
+        transform: translateY(-2px);
+    }
+    .club-share-social-btn i {
+        font-size: 1.35rem;
+    }
+    .share-btn-whatsapp { background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); color: #25d366; }
+    .share-btn-telegram { background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); color: #0088cc; }
+    .share-btn-twitter  { background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); color: #1da1f2; }
+    .share-btn-reddit   { background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); color: #ff4500; }
+    @media (max-width: 480px) {
+        .club-share-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px;
+        }
+    }
+
+    /* Tracked Creator Custom Option Selector Pills */
+    .gpl-track-pill-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .track-pill-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #14151b;
+        border: 1px solid #333645;
+        padding: 7px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        color: var(--silver);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    .track-pill-label:hover {
+        border-color: rgba(255, 215, 0, 0.4);
+        color: #fff;
+    }
+    .track-pill-label input[type="radio"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border: 1.5px solid #555869;
+        border-radius: 50%;
+        outline: none;
+        margin: 0;
+        cursor: pointer;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    .track-pill-label input[type="radio"]:checked {
+        border-color: var(--gold);
+        background: var(--gold);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    }
+    .track-pill-label input[type="radio"]:checked::after {
+        content: '';
+        width: 5px;
+        height: 5px;
+        background: #14151b;
+        border-radius: 50%;
+    }
+    .track-pill-label.active,
+    .track-pill-label:has(input[type="radio"]:checked) {
+        background: rgba(255, 215, 0, 0.12) !important;
+        border-color: var(--gold) !important;
+        color: var(--gold) !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.15) !important;
+        font-weight: 600;
+    }
+
     /* Typing UI Indicator */
     .club-typing-bar {
         display: flex;
@@ -2434,7 +2535,7 @@
                 <% messages.forEach(msg => { %>
                     <% const isMyMessage = user && String(user._id) === String(msg.sender ? msg.sender._id : ''); %>
                     <% if (msg.isDeleted && isMyMessage) { return; } %>
-                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" style="<%= msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : '' %>">
+                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" style="<%= msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : '' %>">
                         <% 
                             const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
                             const senderAvatar = (msg.sender && msg.sender.signedAvatarUrl) ? msg.sender.signedAvatarUrl : (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
@@ -2813,12 +2914,39 @@
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Visibility</label>
-                <select name="isPrivate" class="gui-select" style="width: 100%;">
-                    <option value="false" <%= !club.isPrivate ? 'selected' : '' %>>Public (Anyone can instantly join)</option>
-                    <% if (!club.isDefault) { %>
-                        <option value="true" <%= club.isPrivate ? 'selected' : '' %>>Private (Requires approval to join)</option>
-                    <% } %>
-                </select>
+                <input type="hidden" name="isPrivate" id="editClubIsPrivate" value="<%= club.isPrivate ? 'true' : 'false' %>">
+                <% if (club.isDefault) { %>
+                    <div style="background: rgba(255,255,255,0.04); border: 1px solid #333645; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.9rem;">
+                        <i class="fas fa-globe" style="color: #69f0ae;"></i>
+                        <span>Public (Official Community)</span>
+                    </div>
+                <% } else { %>
+                    <div class="chan-custom-select-wrapper" id="wrapper-editClubVisibility">
+                        <div class="chan-custom-select" onclick="toggleEditClubVisibilityDropdown(event)">
+                            <span class="chan-custom-select-text">
+                                <i class="fas <%= club.isPrivate ? 'fa-lock' : 'fa-globe' %>" style="color: <%= club.isPrivate ? 'var(--gold)' : '#69f0ae' %>;"></i>
+                                <span class="text-label"><%= club.isPrivate ? 'Private (Requires approval to join)' : 'Public (Anyone can instantly join)' %></span>
+                            </span>
+                            <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
+                        </div>
+                        <div class="chan-custom-options">
+                            <div class="chan-custom-option <%= !club.isPrivate ? 'selected' : '' %>" onclick="selectEditClubVisibility('false', 'Public (Anyone can instantly join)', 'fa-globe', '#69f0ae')">
+                                <i class="fas fa-globe" style="color: #69f0ae; font-size: 1rem;"></i>
+                                <div>
+                                    <strong style="color: #fff; display: block; font-size: 0.88rem;">Public</strong>
+                                    <span style="font-size: 0.76rem; color: var(--silver);">Anyone can instantly join and participate</span>
+                                </div>
+                            </div>
+                            <div class="chan-custom-option <%= club.isPrivate ? 'selected' : '' %>" onclick="selectEditClubVisibility('true', 'Private (Requires approval to join)', 'fa-lock', 'var(--gold)')">
+                                <i class="fas fa-lock" style="color: var(--gold); font-size: 1rem;"></i>
+                                <div>
+                                    <strong style="color: #fff; display: block; font-size: 0.88rem;">Private</strong>
+                                    <span style="font-size: 0.76rem; color: var(--silver);">Requires owner or admin approval to join</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
                 <button type="button" class="gpl-btn-secondary" onclick="closeEditClubModal()">
@@ -3394,8 +3522,8 @@
 </div>
 
 <!-- Tracked Creator Profiles Modal (Multi-Profile, Uploads/Updates/Both, Club & Personal) -->
-<div class="gpl-modal-backdrop" id="trackedCreatorsModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div class="gpl-modal-box" style="max-width: 620px; background: #14151b; border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 92%;">
+<div class="gpl-modal-backdrop" id="trackedCreatorsModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 12px; box-sizing: border-box; overflow-y: auto;">
+    <div class="gpl-modal-box" style="max-width: 600px; background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 22px 18px; width: 100%; box-sizing: border-box; max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h3 style="color: #fff; margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-rss" style="color: var(--gold);"></i> Track Creator Mod Updates &amp; Uploads
@@ -3404,12 +3532,12 @@
         </div>
 
         <!-- Tracking Tabs -->
-        <div style="display: flex; gap: 8px; border-bottom: 1px solid #282a36; padding-bottom: 10px; margin-bottom: 16px;">
-            <button type="button" class="chan-tab-btn active" id="tabBtn-trackPersonal" onclick="switchTrackTab('personal')" style="background: rgba(255,215,0,0.15); border: 1px solid var(--gold); color: #fff; padding: 7px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+        <div style="display: flex; gap: 8px; border-bottom: 1px solid #282a36; padding-bottom: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+            <button type="button" class="chan-tab-btn active" id="tabBtn-trackPersonal" onclick="switchTrackTab('personal')" style="background: rgba(255,215,0,0.15); border: 1px solid var(--gold); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; flex: 1 1 140px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
                 <i class="fas fa-user-check"></i> <span>My Tracked Creators</span>
             </button>
             <% if (hasManageClubPerm) { %>
-                <button type="button" class="chan-tab-btn" id="tabBtn-trackClub" onclick="switchTrackTab('club')" style="background: transparent; border: 1px solid #333645; color: var(--silver); padding: 7px 14px; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                <button type="button" class="chan-tab-btn" id="tabBtn-trackClub" onclick="switchTrackTab('club')" style="background: transparent; border: 1px solid #333645; color: var(--silver); padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; flex: 1 1 140px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
                     <i class="fas fa-satellite-dish"></i> <span>Club Feed Tracking</span>
                 </button>
             <% } %>
@@ -3422,26 +3550,32 @@
             </p>
 
             <!-- Add Personal Tracked Creator Form -->
-            <form id="addPersonalTrackForm" onsubmit="submitAddPersonalTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <form id="addPersonalTrackForm" onsubmit="submitAddPersonalTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px; box-sizing: border-box;">
                 <div style="margin-bottom: 10px;">
                     <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Creator Username</label>
-                    <input type="text" id="personalTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                    <input type="text" id="personalTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px 12px; box-sizing: border-box;">
                 </div>
-                <div style="margin-bottom: 12px;">
+                <div style="margin-bottom: 14px;">
                     <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 6px;">What do you want to track?</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                            <input type="radio" name="personalTrackType" value="both" checked> Both Uploads &amp; Updates
+                    <div class="gpl-track-pill-group">
+                        <label class="track-pill-label active">
+                            <input type="radio" name="personalTrackType" value="both" checked onchange="updateTrackRadioActive(this)">
+                            <i class="fas fa-layer-group" style="font-size: 0.85rem;"></i>
+                            <span>Both Uploads &amp; Updates</span>
                         </label>
-                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                            <input type="radio" name="personalTrackType" value="uploads"> New Uploads Only
+                        <label class="track-pill-label">
+                            <input type="radio" name="personalTrackType" value="uploads" onchange="updateTrackRadioActive(this)">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 0.85rem;"></i>
+                            <span>New Uploads Only</span>
                         </label>
-                        <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                            <input type="radio" name="personalTrackType" value="updates"> Mod Updates Only
+                        <label class="track-pill-label">
+                            <input type="radio" name="personalTrackType" value="updates" onchange="updateTrackRadioActive(this)">
+                            <i class="fas fa-sync-alt" style="font-size: 0.85rem;"></i>
+                            <span>Mod Updates Only</span>
                         </label>
                     </div>
                 </div>
-                <button type="submit" class="gpl-btn-primary">
+                <button type="submit" class="gpl-btn-primary" style="padding: 8px 16px;">
                     <i class="fas fa-plus"></i> Track Creator
                 </button>
             </form>
@@ -3463,26 +3597,32 @@
                 </p>
 
                 <!-- Add Club Tracked Creator Form -->
-                <form id="addClubTrackForm" onsubmit="submitAddClubTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+                <form id="addClubTrackForm" onsubmit="submitAddClubTrack(event)" style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 14px; margin-bottom: 16px; box-sizing: border-box;">
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Creator Username</label>
-                        <input type="text" id="clubTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                        <input type="text" id="clubTrackUsername" placeholder="Exact username on GPLMods..." required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px 12px; box-sizing: border-box;">
                     </div>
-                    <div style="margin-bottom: 12px;">
+                    <div style="margin-bottom: 14px;">
                         <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 6px;">Feed Notification Scope</label>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                                <input type="radio" name="clubTrackType" value="both" checked> Both Uploads &amp; Updates
+                        <div class="gpl-track-pill-group">
+                            <label class="track-pill-label active">
+                                <input type="radio" name="clubTrackType" value="both" checked onchange="updateTrackRadioActive(this)">
+                                <i class="fas fa-layer-group" style="font-size: 0.85rem;"></i>
+                                <span>Both Uploads &amp; Updates</span>
                             </label>
-                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                                <input type="radio" name="clubTrackType" value="uploads"> New Uploads Only
+                            <label class="track-pill-label">
+                                <input type="radio" name="clubTrackType" value="uploads" onchange="updateTrackRadioActive(this)">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 0.85rem;"></i>
+                                <span>New Uploads Only</span>
                             </label>
-                            <label class="track-pill-label" style="display: flex; align-items: center; gap: 6px; background: #14151b; border: 1px solid #333645; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; color: #fff; cursor: pointer;">
-                                <input type="radio" name="clubTrackType" value="updates"> Mod Updates Only
+                            <label class="track-pill-label">
+                                <input type="radio" name="clubTrackType" value="updates" onchange="updateTrackRadioActive(this)">
+                                <i class="fas fa-sync-alt" style="font-size: 0.85rem;"></i>
+                                <span>Mod Updates Only</span>
                             </label>
                         </div>
                     </div>
-                    <button type="submit" class="gpl-btn-primary">
+                    <button type="submit" class="gpl-btn-primary" style="padding: 8px 16px;">
                         <i class="fas fa-rss"></i> Add to Club Feeds
                     </button>
                 </form>
@@ -3500,8 +3640,8 @@
 </div>
 
 <!-- Forward Message Modal -->
-<div class="gpl-modal-backdrop" id="clubForwardModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div class="gpl-modal-box" style="background: #14151b; border: 1px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 440px; box-shadow: 0 15px 40px rgba(0,0,0,0.8);">
+<div class="gpl-modal-backdrop" id="clubForwardModal" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(0,0,0,0.75); align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 16px; box-sizing: border-box; overflow-y: auto;">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 22px 18px; width: 100%; max-width: 440px; box-shadow: 0 15px 40px rgba(0,0,0,0.8); position: relative; overflow: visible; box-sizing: border-box;">
         <h3 style="margin: 0 0 14px 0; color: #fff; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
             <i class="fas fa-share" style="color: var(--gold);"></i> Forward Message
         </h3>
@@ -3517,7 +3657,7 @@
                 </span>
                 <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
             </div>
-            <div class="chan-custom-options">
+            <div class="chan-custom-options" style="max-height: 160px; overflow-y: auto;">
                 <% (channels || []).forEach((c, idx) => { %>
                     <% const fIcon = (c.type === 'polls' ? 'fa-poll' : (c.type === 'rules' ? 'fa-scroll' : (c.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))); %>
                     <div class="chan-custom-option <%= idx === 0 ? 'selected' : '' %>" data-value="<%= c._id %>" onclick="selectForwardChannel('<%= c._id %>', '#<%= c.name %>', '<%= fIcon %>')">
@@ -3592,31 +3732,31 @@
 </div>
 
 <!-- Rich Share GUI Modal -->
-<div class="gpl-modal-backdrop" id="clubShareGUIModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 460px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+<div class="gpl-modal-backdrop" id="clubShareGUIModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px); padding: 16px; box-sizing: border-box; overflow-y: auto;">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 22px 18px; width: 100%; max-width: 460px; box-shadow: 0 16px 45px rgba(0,0,0,0.9); box-sizing: border-box; max-height: 92vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
             <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-share-alt" style="color: var(--gold);"></i> Share Community
             </h3>
             <button type="button" class="gpl-modal-close-btn" onclick="closeClubShareModal()" title="Close">&times;</button>
         </div>
-        <p id="shareModalSubtitle" style="color: var(--silver); font-size: 0.88rem; margin: 0 0 16px; line-height: 1.5;"></p>
-        <div style="display: flex; gap: 8px; margin-bottom: 18px;">
-            <input type="text" id="shareDirectLinkInput" readonly style="flex-grow: 1; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;">
-            <button type="button" class="gpl-btn-primary" onclick="copyShareDirectLink()" id="copyShareLinkBtn"><i class="fas fa-copy"></i> Copy</button>
+        <p id="shareModalSubtitle" style="color: var(--silver); font-size: 0.86rem; margin: 0 0 16px; line-height: 1.5;"></p>
+        <div style="display: flex; gap: 8px; margin-bottom: 18px; width: 100%; box-sizing: border-box;">
+            <input type="text" id="shareDirectLinkInput" readonly style="flex: 1 1 auto; min-width: 0; background: #0d0e12; border: 1px solid #333645; color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none; box-sizing: border-box;">
+            <button type="button" class="gpl-btn-primary" onclick="copyShareDirectLink()" id="copyShareLinkBtn" style="flex-shrink: 0; white-space: nowrap;"><i class="fas fa-copy"></i> Copy</button>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-            <a href="#" id="shareWhatsAppBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.3); border-radius: 10px; color: #25d366; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
-                <i class="fab fa-whatsapp" style="font-size: 1.4rem;"></i> WhatsApp
+        <div class="club-share-grid">
+            <a href="#" id="shareWhatsAppBtn" target="_blank" class="club-share-social-btn share-btn-whatsapp">
+                <i class="fab fa-whatsapp"></i> <span>WhatsApp</span>
             </a>
-            <a href="#" id="shareTelegramBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(0,136,204,0.1); border: 1px solid rgba(0,136,204,0.3); border-radius: 10px; color: #0088cc; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
-                <i class="fab fa-telegram-plane" style="font-size: 1.4rem;"></i> Telegram
+            <a href="#" id="shareTelegramBtn" target="_blank" class="club-share-social-btn share-btn-telegram">
+                <i class="fab fa-telegram-plane"></i> <span>Telegram</span>
             </a>
-            <a href="#" id="shareTwitterBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(29,161,242,0.1); border: 1px solid rgba(29,161,242,0.3); border-radius: 10px; color: #1da1f2; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
-                <i class="fab fa-x-twitter" style="font-size: 1.4rem;"></i> Twitter
+            <a href="#" id="shareTwitterBtn" target="_blank" class="club-share-social-btn share-btn-twitter">
+                <i class="fab fa-x-twitter"></i> <span>Twitter</span>
             </a>
-            <a href="#" id="shareRedditBtn" target="_blank" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 12px; background: rgba(255,69,0,0.1); border: 1px solid rgba(255,69,0,0.3); border-radius: 10px; color: #ff4500; text-decoration: none; font-size: 0.75rem; font-weight: 600;">
-                <i class="fab fa-reddit-alien" style="font-size: 1.4rem;"></i> Reddit
+            <a href="#" id="shareRedditBtn" target="_blank" class="club-share-social-btn share-btn-reddit">
+                <i class="fab fa-reddit-alien"></i> <span>Reddit</span>
             </a>
         </div>
     </div>
@@ -3780,6 +3920,27 @@
     const currentUsername = '<%= user ? user.username : "" %>';
     const hasManageClubPermClient = <%= hasManageClubPerm ? 'true' : 'false' %>;
     let isVanished = <%= vanishedModeDefault ? 'true' : 'false' %>;
+    try {
+        if (currentUserId) {
+            const savedGhost = localStorage.getItem('club_ghost_mode_' + currentUserId);
+            if (savedGhost !== null) {
+                isVanished = (savedGhost === '1');
+            }
+        }
+    } catch (e) {}
+
+    // Immediately reflect restored ghost mode status in the UI
+    if (isVanished) {
+        setTimeout(() => {
+            const vBtn = document.getElementById('vanishToggleBtn');
+            const vTxt = document.getElementById('vanishStatusText');
+            if (vBtn) {
+                vBtn.classList.add('active');
+                vBtn.style.color = 'var(--gold)';
+            }
+            if (vTxt) vTxt.textContent = 'Ghost ON';
+        }, 10);
+    }
 
     const clubRoles = <%- JSON.stringify(roles.map(r => ({ _id: r._id, name: r.name, color: r.color, icon: r.badgeIcon, isDefault: r.isDefault }))) %>;
     const clubMembers = <%- JSON.stringify(members.map(m => ({ _id: m.user?._id, username: m.user?.username, role: m.user?.role, roles: (m.roles || []).map(r => r.name || r) }))) %>;
@@ -4203,6 +4364,7 @@
         const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
         const senderAvatar = msg.sender?.signedAvatarUrl || (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
         const senderName = msg.sender?.username || 'GPLMods';
+        msgDiv.dataset.senderUsername = senderName;
         const roleBadges = [];
 
         if (msg.sender?.role === 'owner') roleBadges.push('<span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>');
@@ -4522,6 +4684,17 @@
     // 6. Vanished Mode Toggle (Site Owner / Admin)
     function toggleVanishedMode() {
         isVanished = !isVanished;
+        try {
+            if (currentUserId) {
+                localStorage.setItem('club_ghost_mode_' + currentUserId, isVanished ? '1' : '0');
+            }
+            fetch('/clubs/api/vanish-mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vanished: isVanished })
+            }).catch(() => {});
+        } catch (e) {}
+
         socket.emit('club_vanish_toggle', { clubId, vanished: isVanished });
         const btn = document.getElementById('vanishToggleBtn');
         const txt = document.getElementById('vanishStatusText');
@@ -4530,6 +4703,7 @@
             btn.style.color = isVanished ? 'var(--gold)' : '';
         }
         if (txt) txt.textContent = isVanished ? 'Ghost ON' : 'Ghost';
+        showGplToast(isVanished ? 'Ghost Mode Activated (You are hidden from member list).' : 'Ghost Mode Deactivated (You are visible).', 'info');
     }
 
     // 7. Interactive Reactions & Poll Actions
@@ -4602,6 +4776,10 @@
         if (emoticonPopover && except !== 'emoticon') emoticonPopover.classList.remove('active');
         if (reactionBar && except !== 'reaction') reactionBar.style.display = 'none';
         if (moreDropdown && except !== 'mobileMore') moreDropdown.style.display = 'none';
+        const forwardWrap = document.getElementById('wrapper-forwardChannel');
+        if (forwardWrap && except !== 'forward') forwardWrap.classList.remove('open');
+        const editClubWrap = document.getElementById('wrapper-editClubVisibility');
+        if (editClubWrap && except !== 'editClub') editClubWrap.classList.remove('open');
     }
 
     let currentReactMsgId = null;
@@ -4655,35 +4833,61 @@
         socket.emit('club_poll_vote', { clubId, channelId, messageId, optionIndex });
     }
 
-    // 8. Live Translation Helper with Notification
+    // 8. Live Translation Helper with DeepL API, Device Language & Sender Username
     async function translateMessage(messageId) {
         const msgEl = document.getElementById(`msg-text-${messageId}`);
         if (!msgEl) return;
-        const currentLang = localStorage.getItem('site_language') || 'en';
+
+        const msgItem = document.getElementById(`msg-${messageId}`);
+        const senderUsername = msgItem?.dataset?.senderUsername || msgItem?.querySelector('.message-username')?.innerText?.trim() || 'user';
+
+        // Detect user's device language or user-selected site language
+        const deviceLangRaw = localStorage.getItem('site_language') || navigator.language || navigator.userLanguage || 'en';
+        const targetLang = deviceLangRaw.split('-')[0].toLowerCase();
 
         // Check if message was already translated to target language
-        if (msgEl.dataset.translatedLang === currentLang) {
-            showGplToast(`Message is already in your selected language (${currentLang.toUpperCase()}).`, 'info');
+        if (msgEl.dataset.translatedLang === targetLang) {
+            showGplToast(`@${senderUsername}'s message is already translated to your device language (${targetLang.toUpperCase()}).`, 'info');
             return;
         }
 
-        // If target language is English and text has not been translated, it's already in original language
-        if (currentLang === 'en' && !msgEl.dataset.translatedLang) {
-            showGplToast('This message is already in your selected language (EN).', 'info');
-            return;
+        // Cache original text before translation if not already saved
+        if (!msgEl.dataset.originalText) {
+            msgEl.dataset.originalText = msgEl.innerText.replace(/\(edited\)/gi, '').replace(/\(Translated to [A-Z-]+\)/gi, '').trim();
         }
+        const textToTranslate = msgEl.dataset.originalText;
+        if (!textToTranslate) return;
 
-        const prevText = msgEl.innerText.trim();
-        if (window.executeTranslation) {
-            await window.executeTranslation(currentLang, msgEl);
-            if (msgEl.innerText.trim() === prevText) {
-                showGplToast(`Message is already in your selected language (${currentLang.toUpperCase()}).`, 'info');
+        try {
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    texts: [textToTranslate],
+                    targetLanguage: targetLang
+                })
+            });
+
+            const data = await res.json();
+            if (data.translations && data.translations.length > 0) {
+                const translated = data.translations[0];
+
+                // If identical or already written in that language
+                if (translated.trim().toLowerCase() === textToTranslate.trim().toLowerCase()) {
+                    showGplToast(`@${senderUsername}'s message is already written in your device language (${targetLang.toUpperCase()}).`, 'info');
+                    return;
+                }
+
+                // Update text with translation note
+                msgEl.innerHTML = `${translated} <span class="translation-note" style="font-size: 0.72rem; color: var(--gold); margin-left: 6px;"><i class="fas fa-language"></i> (Translated to ${targetLang.toUpperCase()})</span>`;
+                msgEl.dataset.translatedLang = targetLang;
+                showGplToast(`Translated @${senderUsername}'s message to ${targetLang.toUpperCase()} successfully!`, 'success');
             } else {
-                msgEl.dataset.translatedLang = currentLang;
-                showGplToast(`Translated to ${currentLang.toUpperCase()}`, 'success');
+                showGplToast(`@${senderUsername}'s message is already written in your device language (${targetLang.toUpperCase()}).`, 'info');
             }
-        } else {
-            showGplToast('Live translation engine active.', 'info');
+        } catch (err) {
+            console.error('Translation error:', err);
+            showGplToast('Translation service is temporarily unavailable.', 'error');
         }
     }
 
@@ -4758,7 +4962,10 @@
     function toggleForwardChannelDropdown(e) {
         if (e && e.stopPropagation) e.stopPropagation();
         const wrap = document.getElementById('wrapper-forwardChannel');
-        if (wrap) wrap.classList.toggle('open');
+        if (!wrap) return;
+        const willOpen = !wrap.classList.contains('open');
+        closeAllChatPopovers(willOpen ? 'forward' : null);
+        wrap.classList.toggle('open', willOpen);
     }
 
     function selectForwardChannel(channelId, name, iconClass) {
@@ -4775,6 +4982,45 @@
             });
             wrap.classList.remove('open');
         }
+    }
+
+    // Club Settings Visibility Custom Dropdown Controller
+    function toggleEditClubVisibilityDropdown(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const wrap = document.getElementById('wrapper-editClubVisibility');
+        if (!wrap) return;
+        const willOpen = !wrap.classList.contains('open');
+        closeAllChatPopovers(willOpen ? 'editClub' : null);
+        wrap.classList.toggle('open', willOpen);
+    }
+
+    function selectEditClubVisibility(val, labelText, iconClass, iconColor) {
+        const hiddenInput = document.getElementById('editClubIsPrivate');
+        if (hiddenInput) hiddenInput.value = val;
+        const wrap = document.getElementById('wrapper-editClubVisibility');
+        if (wrap) {
+            const label = wrap.querySelector('.text-label');
+            const icon = wrap.querySelector('.chan-custom-select-text i');
+            if (label) label.textContent = labelText;
+            if (icon) {
+                icon.className = `fas ${iconClass}`;
+                icon.style.color = iconColor;
+            }
+            wrap.querySelectorAll('.chan-custom-option').forEach(opt => {
+                opt.classList.toggle('selected', (opt.getAttribute('onclick') || '').includes(val));
+            });
+            wrap.classList.remove('open');
+        }
+    }
+
+    // Tracked Creator Radio Option Active Pill Sync
+    function updateTrackRadioActive(radio) {
+        if (!radio) return;
+        const name = radio.name;
+        document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+            const lbl = r.closest('.track-pill-label');
+            if (lbl) lbl.classList.toggle('active', r.checked);
+        });
     }
 
     const emojiBtn = document.getElementById('emojiPickerBtn');
@@ -4799,11 +5045,13 @@
 
     // Global outside click / tap listener to close emoji, gif, emoticon, and reaction popovers automatically
     document.addEventListener('click', (e) => {
-        const isInsidePopovers = e.target.closest('#mainEmojiPicker, #gifPickerModal, #emoticonPopover, #reactionFloatingBar, .chat-action-btn, #emojiPickerBtn, .reaction-pill, .btn-msg-action, #mobileMoreOptionsBtn, #mobileMoreOptionsDropdown, #wrapper-forwardChannel');
+        const isInsidePopovers = e.target.closest('#mainEmojiPicker, #gifPickerModal, #emoticonPopover, #reactionFloatingBar, .chat-action-btn, #emojiPickerBtn, .reaction-pill, .btn-msg-action, #mobileMoreOptionsBtn, #mobileMoreOptionsDropdown, #wrapper-forwardChannel, #wrapper-editClubVisibility');
         if (!isInsidePopovers) {
             closeAllChatPopovers();
             const forwardWrap = document.getElementById('wrapper-forwardChannel');
             if (forwardWrap) forwardWrap.classList.remove('open');
+            const editClubWrap = document.getElementById('wrapper-editClubVisibility');
+            if (editClubWrap) editClubWrap.classList.remove('open');
         }
     });
 

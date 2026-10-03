@@ -79,17 +79,42 @@ function slugify(text) {
 }
 
 // Helper: Resolve club by slug or id
-async function resolveClub(slugOrId) {
+async function resolveClub(slugOrId, req = null) {
     if (!slugOrId) return null;
     let club = null;
+    const populateFields = 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar avatarUrl bio';
     if (slugOrId.match(/^[0-9a-fA-F]{24}$/)) {
-        club = await Club.findById(slugOrId).populate('creator', 'username profileImageKey role signedAvatarUrl');
+        club = await Club.findById(slugOrId).populate('creator', populateFields);
     }
     if (!club) {
-        club = await Club.findOne({ slug: slugOrId.toLowerCase() }).populate('creator', 'username profileImageKey role signedAvatarUrl');
+        club = await Club.findOne({ slug: slugOrId.toLowerCase() }).populate('creator', populateFields);
     }
     if (club) {
         club.bannerUrl = club.bannerUrl || '/images/default-banner.jpg';
+        if (club.creator) {
+            const isGPLMods = club.creator.username === 'GPLMods';
+            const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
+            const getSmartImg = req?.app?.get ? req.app.get('getSmartImageUrl') : null;
+            if (club.creator.signedAvatarUrl && club.creator.signedAvatarUrl !== '/images/default-avatar.png') {
+                // Keep signed avatar
+            } else if (club.creator.cardAvatarUrl && club.creator.cardAvatarUrl !== '/images/default-avatar.png') {
+                club.creator.signedAvatarUrl = club.creator.cardAvatarUrl;
+            } else if (club.creator.avatarUrl && club.creator.avatarUrl !== '/images/default-avatar.png') {
+                club.creator.signedAvatarUrl = club.creator.avatarUrl;
+            } else if (club.creator.avatar && club.creator.avatar !== '/images/default-avatar.png') {
+                club.creator.signedAvatarUrl = club.creator.avatar;
+            } else if (club.creator.profileImageKey && getSmartImg) {
+                try {
+                    const url = await getSmartImg(club.creator.profileImageKey);
+                    if (url && url !== '/images/default-avatar.png') {
+                        club.creator.signedAvatarUrl = url;
+                    }
+                } catch(e) {}
+            }
+            if (!club.creator.signedAvatarUrl) {
+                club.creator.signedAvatarUrl = defaultLogo;
+            }
+        }
     }
     return club;
 }
@@ -214,6 +239,18 @@ function getClubCreationCap(user) {
         isHigherTier
     };
 }
+
+// Ghost / Vanished Mode Persistence Endpoint
+router.post('/api/vanish-mode', ensureAuth, (req, res) => {
+    if (['owner', 'admin'].includes(req.user.role)) {
+        req.session.vanishedMode = (req.body.vanished === true || req.body.vanished === 'true');
+        req.session.save(() => {
+            res.json({ success: true, vanished: req.session.vanishedMode });
+        });
+    } else {
+        res.json({ success: false, error: 'Unauthorized' });
+    }
+});
 
 // ============================================================================
 // 2. CREATE A NEW CLUB
@@ -542,7 +579,7 @@ router.post('/create', ensureAuth, uploadClubMedia.fields([
 // ============================================================================
 router.get('/:slugOrId/preview', async (req, res) => {
     try {
-        const club = await resolveClub(req.params.slugOrId);
+        const club = await resolveClub(req.params.slugOrId, req);
         if (!club) {
             return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Club Not Found', errorMessage: 'The club you are looking for does not exist.' });
         }
@@ -581,7 +618,7 @@ router.get('/:slugOrId/preview', async (req, res) => {
 // ============================================================================
 router.get('/:slugOrId', async (req, res) => {
     try {
-        const club = await resolveClub(req.params.slugOrId);
+        const club = await resolveClub(req.params.slugOrId, req);
         if (!club) {
             return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Club Not Found', errorMessage: 'The club you are looking for does not exist.' });
         }

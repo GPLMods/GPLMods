@@ -343,7 +343,8 @@
             <div class="preview-section">
                 <h3 class="preview-section-title"><i class="fas fa-user-shield" style="color: #64b5f6;"></i> Club Creator &amp; Admin</h3>
                 <div class="creator-bio-card">
-                    <img src="<%= (club.creator && club.creator.signedAvatarUrl) ? club.creator.signedAvatarUrl : '/images/default-avatar.png' %>" alt="Creator Avatar" class="creator-avatar" onerror="this.src='/images/default-avatar.png';">
+                    <% const creatorAvatar = (club.creator && (club.creator.signedAvatarUrl || club.creator.cardAvatarUrl || club.creator.avatarUrl || club.creator.avatar)) ? (club.creator.signedAvatarUrl || club.creator.cardAvatarUrl || club.creator.avatarUrl || club.creator.avatar) : '/images/default-avatar.png'; %>
+                    <img src="<%= creatorAvatar %>" alt="Creator Avatar" class="creator-avatar" onerror="this.src='/images/default-avatar.png';">
                     <div class="creator-info">
                         <h4>
                             <a href="/users/<%= (club.creator && club.creator.username) ? club.creator.username : 'GPLMods' %>" style="color: #fff; text-decoration: none;">

@@ -172,7 +172,7 @@
 
                 // Paths that must never be in back history (auth actions / API / external redirects)
                 const ignoredPrefixes = [
-                    '/logout', '/login/2fa', '/api/', '/leave', '/admin-auth', '/download-file/', '/cdn-cgi/'
+                    '/logout', '/login/2fa', '/api/', '/leave', '/admin-auth', '/download-file/', '/cdn-cgi/', '/cc'
                 ];
                 const isIgnored = ignoredPrefixes.some(prefix => currentPath.startsWith(prefix));
 
@@ -223,7 +223,7 @@
 
                     // 2. Find the previous valid internal URL
                     let destination = null;
-                    const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave'];
+                    const trapPrefixes = ['/login', '/register', '/logout', '/login/2fa', '/leave', '/cc'];
 
                     while (stack.length > 0) {
                         const candidate = stack.pop();
@@ -473,10 +473,42 @@
             .header-right-actions {
                 display: flex;
                 align-items: center;
-                gap: 15px;
+                gap: 12px;
                 justify-self: end;
                 /* Aligns this whole block to the right */
                 flex-shrink: 0;
+            }
+
+            .lang-dropdown-wrapper {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #lang-btn.nav-bell {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 32px;
+                height: 32px;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: none;
+                border: none;
+                outline: none;
+                cursor: pointer;
+                box-sizing: border-box;
+            }
+
+            #nav-bell-link.nav-bell {
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 32px;
+                height: 32px;
+                padding: 0 !important;
+                margin: 0 !important;
+                box-sizing: border-box;
             }
 
             .desktop-text-buttons {
@@ -943,9 +975,8 @@
 
                                     <!-- Language Selector: Fully functional across all pages including 2FA -->
                                     <div class="lang-dropdown-wrapper"
-                                        style="position: relative; display: flex; align-items: center;">
-                                        <button id="lang-btn" class="nav-bell" title="Change Language"
-                                            style="background:none; border:none; cursor:pointer; font-size: 1.6em; padding: 0; line-height: 0;">
+                                        style="position: relative;">
+                                        <button id="lang-btn" class="nav-bell" title="Change Language" aria-label="Change Language">
                                             <i class="fas fa-globe"></i>
                                         </button>
                                         <div id="lang-menu" class="lang-dropdown-content">
@@ -1572,7 +1603,7 @@
 
                                             if (statusEl) {
                                                 statusEl.style.color = '#4caf50';
-                                                statusEl.textContent = '✔ All caches cleared! Reloading fresh...';
+                                                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50; margin-right: 6px;"></i> All caches cleared! Reloading fresh...';
                                             }
                                             if (btn) {
                                                 btn.innerHTML = '<i class="fas fa-check"></i> Reloading...';
@@ -1592,6 +1623,17 @@
                                             }, 500);
                                         }
                                     }
+
+                                    // Check if arriving with open_cc parameter (e.g. from manual /cc navigation)
+                                    try {
+                                        var urlParams = new URLSearchParams(window.location.search);
+                                        if (urlParams.get('open_cc') === '1') {
+                                            openModal(ccModal);
+                                            urlParams.delete('open_cc');
+                                            var cleanSearch = urlParams.toString() ? ('?' + urlParams.toString()) : '';
+                                            window.history.replaceState({}, '', window.location.pathname + cleanSearch + window.location.hash);
+                                        }
+                                    } catch (e) { }
 
                                     document.addEventListener('click', function (e) {
                                         var logoutTarget = e.target.closest('a[href="/logout"]');

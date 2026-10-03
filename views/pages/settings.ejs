@@ -1462,11 +1462,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     cacheModalStatus.style.background = 'rgba(46, 204, 113, 0.15)';
                     cacheModalStatus.style.border = '1px solid var(--green)';
                     cacheModalStatus.style.color = 'var(--green)';
-                    cacheModalStatus.textContent = '✔ All caches cleared! Reloading fresh...';
+                    cacheModalStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--green); margin-right: 6px;"></i> All caches cleared! Reloading fresh...';
                 }
                 if (cacheStatus) {
                     cacheStatus.style.color = 'var(--green)';
-                    cacheStatus.textContent = '✔ All caches cleared! Reloading fresh...';
+                    cacheStatus.innerHTML = '<i class="fas fa-check-circle" style="color: var(--green); margin-right: 6px;"></i> All caches cleared! Reloading fresh...';
                 }
 
                 setTimeout(() => {
