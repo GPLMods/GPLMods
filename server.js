@@ -18964,19 +18964,35 @@ const startServer = async () => {
                     const effectiveClubId = clubId || message.club;
                     const effectiveChanId = channelId || message.channel;
 
-                    let reactionObj = message.reactions.find(r => r.emoji === emoji);
-                    if (!reactionObj) {
-                        reactionObj = { emoji, users: [user._id] };
-                        message.reactions.push(reactionObj);
+                    // Check if user already reacted to this message with ANY emoji
+                    const previousReaction = message.reactions.find(r => 
+                        r.users && r.users.some(u => String(u) === String(user._id))
+                    );
+
+                    if (previousReaction && previousReaction.emoji === emoji) {
+                        // User clicked the exact same emoji they already reacted with -> toggle off
+                        previousReaction.users = previousReaction.users.filter(u => String(u) !== String(user._id));
+                        if (previousReaction.users.length === 0) {
+                            message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+                        }
                     } else {
-                        const uIdx = reactionObj.users.findIndex(u => String(u) === String(user._id));
-                        if (uIdx > -1) {
-                            reactionObj.users.splice(uIdx, 1);
-                            if (reactionObj.users.length === 0) {
-                                message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+                        // User clicked a new or different emoji:
+                        // 1. Remove user from their previous reaction on this message (prevents duplicate reactions)
+                        if (previousReaction) {
+                            previousReaction.users = previousReaction.users.filter(u => String(u) !== String(user._id));
+                            if (previousReaction.users.length === 0) {
+                                message.reactions = message.reactions.filter(r => r.emoji !== previousReaction.emoji);
                             }
+                        }
+                        // 2. Add user to the target emoji reaction
+                        let targetReaction = message.reactions.find(r => r.emoji === emoji);
+                        if (!targetReaction) {
+                            targetReaction = { emoji, users: [user._id] };
+                            message.reactions.push(targetReaction);
                         } else {
-                            reactionObj.users.push(user._id);
+                            if (!targetReaction.users.some(u => String(u) === String(user._id))) {
+                                targetReaction.users.push(user._id);
+                            }
                         }
                     }
                     message.markModified('reactions');
@@ -19111,7 +19127,13 @@ const startServer = async () => {
                     const user = socket.request && socket.request.user;
                     if (!user || !messageId) return;
 
-                    const club = await Club.findById(clubId);
+                    const message = await ClubMessage.findById(messageId).populate('sender', 'username');
+                    if (!message) return;
+
+                    const effectiveClubId = clubId || message.club;
+                    const effectiveChanId = channelId || message.channel;
+
+                    const club = await Club.findById(effectiveClubId);
                     const isStaff = ['owner', 'admin'].includes(user.role);
                     const isCreator = club && String(club.creator) === String(user._id);
 
@@ -19119,22 +19141,21 @@ const startServer = async () => {
                         return socket.emit('club_message_error', { message: 'Only club managers can pin messages.' });
                     }
 
-                    const message = await ClubMessage.findById(messageId).populate('sender', 'username');
-                    if (!message) return;
-
                     const shouldPin = pin !== false;
                     message.isPinned = shouldPin;
                     message.pinnedAt = shouldPin ? new Date() : null;
                     message.pinnedBy = shouldPin ? user._id : null;
                     await message.save();
 
-                    io.to(`club_${clubId}_chan_${channelId}`).emit('club_message_pinned', {
+                    const pinPayload = {
                         messageId: message._id,
-                        channelId,
+                        channelId: effectiveChanId,
                         isPinned: shouldPin,
                         content: message.content,
                         senderName: message.sender ? message.sender.username : 'GPLMods'
-                    });
+                    };
+                    io.to(`club_${effectiveClubId}_chan_${effectiveChanId}`).emit('club_message_pinned', pinPayload);
+                    io.to(`club_${effectiveClubId}`).emit('club_message_pinned', pinPayload);
                 } catch (err) {
                     console.error('[Clubs] Pin message error:', err);
                 }

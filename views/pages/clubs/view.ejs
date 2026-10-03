@@ -329,9 +329,17 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        white-space: nowrap;
+        overflow: hidden;
+        min-width: 0;
+    }
+    .club-header-title span {
         overflow: hidden;
         text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+    .club-header-title i {
+        flex-shrink: 0 !important;
     }
     .channels-scroll-area {
         flex: 1;
@@ -442,7 +450,8 @@
         justify-content: space-between;
         padding: 8px 18px;
         flex-shrink: 0;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow: hidden;
         gap: 8px;
     }
     .topbar-channel-info {
@@ -452,8 +461,10 @@
         font-size: 1.05rem;
         font-weight: 700;
         color: #fff;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow: hidden;
         min-width: 0;
+        flex: 1 1 auto;
     }
     .topbar-club-badge-wrap {
         display: inline-flex;
@@ -461,9 +472,6 @@
         gap: 6px;
         cursor: pointer;
         max-width: 170px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
         padding: 3px 8px;
         border-radius: 6px;
         background: rgba(255, 255, 255, 0.05);
@@ -471,6 +479,7 @@
         transition: all 0.2s ease;
         flex-shrink: 0;
         user-select: none;
+        overflow: visible;
     }
     .topbar-club-badge-wrap:hover {
         background: rgba(255, 215, 0, 0.12);
@@ -480,14 +489,24 @@
         font-weight: 700;
         font-size: 0.92rem;
         color: #fff;
+        max-width: 120px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        display: inline-block;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .topbar-club-badge-wrap i {
+        flex-shrink: 0 !important;
+        display: inline-flex;
+        align-items: center;
     }
     .topbar-breadcrumb-sep {
         color: #666;
         font-size: 0.85rem;
         user-select: none;
+        flex-shrink: 0;
     }
     .topbar-channel-name-wrap {
         display: inline-flex;
@@ -497,11 +516,14 @@
         color: #fff;
         white-space: nowrap;
         min-width: 0;
+        overflow: hidden;
+        flex-shrink: 1;
     }
     .topbar-channel-title {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
     }
     .topbar-topic {
         color: #8e9297;
@@ -513,13 +535,60 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 400px;
+        max-width: 320px;
+        flex-shrink: 2;
     }
     .topbar-actions {
         display: flex;
         align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+        gap: 8px;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+    }
+    .topbar-desktop-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .topbar-mobile-more-wrapper {
+        position: relative;
+        display: none;
+    }
+    .topbar-more-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: #14151e;
+        border: 1px solid var(--gold);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(255, 215, 0, 0.15);
+        padding: 6px;
+        min-width: 210px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .topbar-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        color: #fff;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+    }
+    .topbar-dropdown-item:hover {
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+    }
+    .topbar-dropdown-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 4px 0;
     }
     .topbar-btn {
         background: transparent;
@@ -530,6 +599,9 @@
         padding: 6px;
         border-radius: 6px;
         transition: color 0.2s, background 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
     .topbar-btn:hover {
         color: #fff;
@@ -722,9 +794,9 @@
         color: var(--gold);
     }
     .react-quick-emoji {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
         cursor: pointer;
-        padding: 4px 6px;
+        padding: 3px 5px;
         border-radius: 8px;
         transition: transform 0.15s ease, background 0.15s ease;
         user-select: none;
@@ -734,12 +806,28 @@
         align-items: center;
         justify-content: center;
         line-height: 1;
-        min-width: 34px;
-        min-height: 34px;
+        min-width: 28px;
+        min-height: 28px;
+        flex-shrink: 0;
     }
     .react-quick-emoji:hover, .react-quick-emoji:active {
-        transform: scale(1.25);
+        transform: scale(1.22);
         background: rgba(255, 215, 0, 0.2);
+    }
+    @media (max-width: 600px) {
+        #reactionFloatingBar {
+            max-width: calc(100vw - 20px) !important;
+            padding: 4px 6px !important;
+            gap: 2px !important;
+            border-radius: 24px !important;
+            box-sizing: border-box !important;
+        }
+        .react-quick-emoji {
+            font-size: 1.15rem !important;
+            padding: 2px 4px !important;
+            min-width: 26px !important;
+            min-height: 26px !important;
+        }
     }
 
     /* Chat Input Bar */
@@ -1415,12 +1503,17 @@
             min-width: 0;
             flex-wrap: nowrap;
         }
+        .topbar-desktop-actions { display: none !important; }
+        .topbar-mobile-more-wrapper { display: inline-flex !important; }
+        .back-btn-topbar { display: none !important; }
         .topbar-club-badge-wrap {
-            max-width: 110px;
+            max-width: 140px;
             padding: 2px 6px;
+            overflow: visible;
         }
         .topbar-club-name {
             font-size: 0.85rem;
+            max-width: 95px;
         }
         .topbar-channel-title {
             max-width: 90px;
@@ -1489,11 +1582,15 @@
             max-width: calc(100vw - 16px);
         }
         #mainEmojiPicker {
-            left: 8px !important;
-            right: 8px !important;
-            bottom: 60px !important;
-            width: auto !important;
-            max-width: calc(100vw - 16px) !important;
+            position: fixed !important;
+            left: 10px !important;
+            right: 10px !important;
+            bottom: 70px !important;
+            width: calc(100vw - 20px) !important;
+            max-width: 380px !important;
+            margin: 0 auto !important;
+            height: 360px !important;
+            z-index: 99999 !important;
         }
     }
 
@@ -1502,7 +1599,11 @@
             display: none !important;
         }
         .topbar-club-badge-wrap {
-            max-width: 90px;
+            max-width: 125px;
+            overflow: visible;
+        }
+        .topbar-club-name {
+            max-width: 80px;
         }
         .topbar-channel-title {
             max-width: 75px;
@@ -2193,9 +2294,9 @@
                     <i class="fas fa-bars"></i>
                 </button>
 
-                <!-- Go Back to Clubs Button -->
-                <a href="/clubs" class="topbar-btn back-btn-topbar" title="Back to All Clubs" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 600; margin-right: 2px; background: rgba(255,215,0,0.06);">
-                    <i class="fas fa-arrow-left"></i> <span class="hide-mobile">Clubs</span>
+                <!-- Go Back to Clubs Button (Desktop only shortcut) -->
+                <a href="/clubs" class="topbar-btn back-btn-topbar hide-mobile" title="Back to All Clubs" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--gold); border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 4px 10px; font-size: 0.82rem; font-weight: 600; margin-right: 2px; background: rgba(255,215,0,0.06);">
+                    <i class="fas fa-arrow-left"></i> <span>Clubs</span>
                 </a>
 
                 <!-- Club Identity (Club Name + Verified Badge) -->
@@ -2247,30 +2348,57 @@
             </div>
 
             <div class="topbar-actions">
-                <!-- Invite Button with counter -->
-                <button type="button" class="topbar-btn" onclick="openUniqueInviteModal()" title="Invite Friends & View Total Invites" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.35); color: var(--gold); font-weight: 600; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <i class="fas fa-user-plus"></i>
-                    <span class="hide-mobile">Invite</span>
-                    <% if (myInviteCount > 0) { %>
-                        <span class="topbar-invite-badge"><%= myInviteCount %></span>
-                    <% } %>
-                </button>
+                <!-- Desktop Action Buttons -->
+                <div class="topbar-desktop-actions hide-mobile">
+                    <!-- Invite Button with counter -->
+                    <button type="button" class="topbar-btn" onclick="openUniqueInviteModal()" title="Invite Friends & View Total Invites" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.35); color: var(--gold); font-weight: 600; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Invite</span>
+                        <% if (myInviteCount > 0) { %>
+                            <span class="topbar-invite-badge"><%= myInviteCount %></span>
+                        <% } %>
+                    </button>
 
-                <!-- Tracked Creators Quick Button (Desktop only, mobile has it in drawer menu) -->
-                <button type="button" class="topbar-btn hide-mobile" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
-                    <i class="fas fa-rss"></i>
-                </button>
+                    <!-- Tracked Creators Quick Button (Desktop only) -->
+                    <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
+                        <i class="fas fa-rss"></i>
+                    </button>
 
-                <!-- Consolidated Channel Options & Settings GUI Button -->
-                <button type="button" class="channel-menu-gui-btn" id="btnOpenChannelMenu" onclick="openChannelSettingsGUI()" title="Channel Settings, Roles, Permissions &amp; Invites">
-                    <i class="fas fa-sliders-h"></i>
-                    <span class="hide-mobile">Channel Menu</span>
-                </button>
+                    <!-- Consolidated Channel Options & Settings GUI Button -->
+                    <button type="button" class="channel-menu-gui-btn" id="btnOpenChannelMenu" onclick="openChannelSettingsGUI()" title="Channel Settings, Roles, Permissions &amp; Invites">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Channel Menu</span>
+                    </button>
 
-                <!-- Toggle Members Sidebar on Mobile/Desktop -->
-                <button type="button" class="topbar-btn" id="topbarMembersBtn" onclick="toggleMembersSidebar()" title="Toggle Members List">
-                    <i class="fas fa-users"></i>
-                </button>
+                    <!-- Toggle Members Sidebar -->
+                    <button type="button" class="topbar-btn" id="topbarMembersBtn" onclick="toggleMembersSidebar()" title="Toggle Members List">
+                        <i class="fas fa-users"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile More Options Dropdown Menu -->
+                <div class="topbar-mobile-more-wrapper">
+                    <button type="button" class="topbar-btn topbar-more-btn" id="mobileMoreOptionsBtn" onclick="toggleMobileMoreMenu(event)" title="More Options" style="background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.35); color: var(--gold); border-radius: 8px; padding: 6px 10px;">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="topbar-more-dropdown" id="mobileMoreOptionsDropdown" style="display: none;">
+                        <div class="topbar-dropdown-item" onclick="openUniqueInviteModal(); closeMobileMoreMenu();">
+                            <i class="fas fa-user-plus" style="color: var(--gold); font-size: 0.95rem;"></i>
+                            <span>Invite Members</span>
+                            <% if (myInviteCount > 0) { %>
+                                <span class="topbar-invite-badge" style="margin-left: auto;"><%= myInviteCount %></span>
+                            <% } %>
+                        </div>
+                        <div class="topbar-dropdown-item" onclick="openChannelSettingsGUI(); closeMobileMoreMenu();">
+                            <i class="fas fa-sliders-h" style="color: #64b5f6; font-size: 0.95rem;"></i>
+                            <span>Channel Settings</span>
+                        </div>
+                        <div class="topbar-dropdown-item" onclick="toggleMembersSidebar(); closeMobileMoreMenu();">
+                            <i class="fas fa-users" style="color: #a78bfa; font-size: 0.95rem;"></i>
+                            <span>Channel Members</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2411,9 +2539,6 @@
 
                                 <!-- Message Action Toolbar -->
                                 <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
-                                    <button type="button" class="btn-msg-action" onclick="quickReactPicker('<%= msg._id %>', event)" title="Add Reaction" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
-                                        <i class="far fa-face-smile"></i> React
-                                    </button>
                                     <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-<%= msg._id %>')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                                         <i class="fas fa-share-alt"></i> Share
                                     </button>
@@ -3382,11 +3507,29 @@
         </h3>
         <p style="color: var(--silver); font-size: 0.85rem; margin-bottom: 14px;">Select the channel where you want to forward this message:</p>
         <input type="hidden" id="forwardMessageId">
-        <select id="forwardChannelSelect" class="gui-select" style="width: 100%; margin-bottom: 18px;">
-            <% channels.forEach(c => { %>
-                <option value="<%= c._id %>">#<%= c.name %></option>
-            <% }) %>
-        </select>
+        <input type="hidden" id="forwardChannelSelect" value="<%= (channels && channels.length > 0) ? channels[0]._id : '' %>">
+        <div class="chan-custom-select-wrapper" id="wrapper-forwardChannel" style="margin-bottom: 18px;">
+            <div class="chan-custom-select" onclick="toggleForwardChannelDropdown(event)">
+                <span class="chan-custom-select-text">
+                    <% const defaultForwardChan = (channels && channels.length > 0) ? channels[0] : null; %>
+                    <i class="fas <%= defaultForwardChan ? (defaultForwardChan.type === 'polls' ? 'fa-poll' : (defaultForwardChan.type === 'rules' ? 'fa-scroll' : (defaultForwardChan.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))) : 'fa-hashtag' %>" style="color: var(--gold);"></i>
+                    <span class="text-label">#<%= defaultForwardChan ? defaultForwardChan.name : 'general' %></span>
+                </span>
+                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
+            </div>
+            <div class="chan-custom-options">
+                <% (channels || []).forEach((c, idx) => { %>
+                    <% const fIcon = (c.type === 'polls' ? 'fa-poll' : (c.type === 'rules' ? 'fa-scroll' : (c.type === 'announcements' ? 'fa-bullhorn' : 'fa-hashtag'))); %>
+                    <div class="chan-custom-option <%= idx === 0 ? 'selected' : '' %>" data-value="<%= c._id %>" onclick="selectForwardChannel('<%= c._id %>', '#<%= c.name %>', '<%= fIcon %>')">
+                        <i class="fas <%= fIcon %>" style="color: var(--gold); font-size: 0.95rem;"></i>
+                        <div>
+                            <strong style="color: #fff; display: block; font-size: 0.88rem;">#<%= c.name %></strong>
+                            <span style="font-size: 0.76rem; color: var(--silver);"><%= c.topic || (c.type === 'polls' ? 'Polls & Voting' : (c.type === 'announcements' ? 'Announcements' : 'Discussion Channel')) %></span>
+                        </div>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
             <button type="button" class="gpl-btn-secondary" onclick="closeForwardModal()">
                 <i class="fas fa-times"></i> Cancel
@@ -4094,9 +4237,6 @@
                     </div>
                 </div>
                 <div class="message-actions-toolbar" style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
-                    <button type="button" class="btn-msg-action" onclick="quickReactPicker('${msg._id}', event)" title="Add Reaction" style="background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.3); color: var(--gold); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
-                        <i class="far fa-face-smile"></i> React
-                    </button>
                     <button type="button" class="btn-msg-action" onclick="openClubShareModal('Club Message', '/clubs/<%= club.slug %>#msg-${msg._id}')" title="Share Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: var(--silver); border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
                         <i class="fas fa-share-alt"></i> Share
                     </button>
@@ -4158,15 +4298,53 @@
         const text = document.getElementById('pinnedBannerText');
         const jumpBtn = document.getElementById('pinnedBannerJumpBtn');
         const unpinBtn = document.getElementById('pinnedBannerUnpinBtn');
-        if (!banner) return;
 
-        if (data.isPinned) {
-            banner.style.display = 'flex';
-            if (text) text.textContent = data.content || '';
-            if (jumpBtn) jumpBtn.setAttribute('onclick', `jumpToPinnedMessage('${data.messageId}')`);
-            if (unpinBtn) unpinBtn.setAttribute('onclick', `togglePinClubMessage('${data.messageId}', false)`);
-        } else {
-            banner.style.display = 'none';
+        if (banner) {
+            if (data.isPinned) {
+                banner.style.display = 'flex';
+                if (text) text.textContent = data.content || '';
+                if (jumpBtn) jumpBtn.setAttribute('onclick', `jumpToPinnedMessage('${data.messageId}')`);
+                if (unpinBtn) unpinBtn.setAttribute('onclick', `togglePinClubMessage('${data.messageId}', false)`);
+            } else {
+                const remainingPinned = document.querySelector(`.message-item.pinned-msg-item:not(#msg-${data.messageId})`);
+                if (remainingPinned) {
+                    const remId = remainingPinned.id.replace('msg-', '');
+                    const remText = remainingPinned.querySelector('.message-body-text')?.textContent || '';
+                    banner.style.display = 'flex';
+                    if (text) text.textContent = remText;
+                    if (jumpBtn) jumpBtn.setAttribute('onclick', `jumpToPinnedMessage('${remId}')`);
+                    if (unpinBtn) unpinBtn.setAttribute('onclick', `togglePinClubMessage('${remId}', false)`);
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+        }
+
+        // Real-time update of the pinned message item in the chat feed
+        const msgDiv = document.getElementById(`msg-${data.messageId}`);
+        if (msgDiv) {
+            const pinBtn = msgDiv.querySelector('.btn-msg-pin');
+            if (data.isPinned) {
+                msgDiv.classList.add('pinned-msg-item');
+                msgDiv.style.borderLeft = '3px solid var(--gold)';
+                msgDiv.style.background = 'rgba(255,215,0,0.02)';
+                if (pinBtn) {
+                    pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i> Unpin';
+                    pinBtn.title = 'Unpin Message';
+                    pinBtn.style.color = 'var(--gold)';
+                    pinBtn.setAttribute('onclick', `togglePinClubMessage('${data.messageId}', false)`);
+                }
+            } else {
+                msgDiv.classList.remove('pinned-msg-item');
+                msgDiv.style.borderLeft = '';
+                msgDiv.style.background = '';
+                if (pinBtn) {
+                    pinBtn.innerHTML = '<i class="fas fa-thumbtack"></i> Pin';
+                    pinBtn.title = 'Pin Message';
+                    pinBtn.style.color = 'var(--silver)';
+                    pinBtn.setAttribute('onclick', `togglePinClubMessage('${data.messageId}', true)`);
+                }
+            }
         }
     });
 
@@ -4362,8 +4540,24 @@
         const reactionsRow = document.getElementById(`reactions-${messageId}`);
         if (reactionsRow) {
             const pills = Array.from(reactionsRow.querySelectorAll('.reaction-pill'));
-            let matchedPill = null;
+            // Remove user reaction from any other pill on the same message
             pills.forEach(pill => {
+                if (pill.classList.contains('user-reacted')) {
+                    const spanEmoji = pill.querySelector('span:first-child');
+                    if (spanEmoji && spanEmoji.textContent.trim() !== emoji) {
+                        pill.classList.remove('user-reacted');
+                        const countSpan = pill.querySelector('span:last-child');
+                        let count = parseInt(countSpan ? countSpan.textContent.trim() : '0', 10) || 0;
+                        count = Math.max(0, count - 1);
+                        if (count === 0) pill.remove();
+                        else if (countSpan) countSpan.textContent = count;
+                    }
+                }
+            });
+
+            // Handle the clicked emoji pill
+            let matchedPill = null;
+            Array.from(reactionsRow.querySelectorAll('.reaction-pill')).forEach(pill => {
                 const spanEmoji = pill.querySelector('span:first-child');
                 if (spanEmoji && spanEmoji.textContent.trim() === emoji) {
                     matchedPill = pill;
@@ -4377,7 +4571,7 @@
                     matchedPill.classList.remove('user-reacted');
                     count = Math.max(0, count - 1);
                     if (count === 0) matchedPill.remove();
-                    else countSpan.textContent = count;
+                    else if (countSpan) countSpan.textContent = count;
                 } else {
                     matchedPill.classList.add('user-reacted');
                     if (countSpan) countSpan.textContent = count + 1;
@@ -4401,11 +4595,13 @@
         const mainEmojiPicker = document.getElementById('mainEmojiPicker');
         const emoticonPopover = document.getElementById('emoticonPopover');
         const reactionBar = document.getElementById('reactionFloatingBar');
+        const moreDropdown = document.getElementById('mobileMoreOptionsDropdown');
 
         if (gifModal && except !== 'gif') gifModal.classList.remove('active');
         if (mainEmojiPicker && except !== 'emoji') mainEmojiPicker.style.display = 'none';
         if (emoticonPopover && except !== 'emoticon') emoticonPopover.classList.remove('active');
         if (reactionBar && except !== 'reaction') reactionBar.style.display = 'none';
+        if (moreDropdown && except !== 'mobileMore') moreDropdown.style.display = 'none';
     }
 
     let currentReactMsgId = null;
@@ -4423,14 +4619,22 @@
         const targetEl = (event && (event.currentTarget || event.target)) || document.getElementById(`reactions-${messageId}`);
         if (targetEl) {
             const rect = targetEl.getBoundingClientRect();
-            let barTop = rect.top - 54;
+            const isMobile = window.innerWidth <= 600;
+            let barTop = rect.top - 50;
             if (barTop < 10) barTop = rect.bottom + 8;
-            const barWidth = 320;
-            const maxLeft = Math.max(10, window.innerWidth - barWidth - 10);
-            const barLeft = Math.max(10, Math.min(maxLeft, rect.left));
+            
             bar.style.position = 'fixed';
             bar.style.top = barTop + 'px';
-            bar.style.left = barLeft + 'px';
+            if (isMobile) {
+                bar.style.left = '50%';
+                bar.style.transform = 'translateX(-50%)';
+            } else {
+                bar.style.transform = 'none';
+                const barWidth = 300;
+                const maxLeft = Math.max(10, window.innerWidth - barWidth - 10);
+                const barLeft = Math.max(10, Math.min(maxLeft, rect.left));
+                bar.style.left = barLeft + 'px';
+            }
             bar.style.display = 'flex';
         }
     }
@@ -4451,13 +4655,33 @@
         socket.emit('club_poll_vote', { clubId, channelId, messageId, optionIndex });
     }
 
-    // 8. Live Translation Helper
+    // 8. Live Translation Helper with Notification
     async function translateMessage(messageId) {
         const msgEl = document.getElementById(`msg-text-${messageId}`);
         if (!msgEl) return;
-        const currentLang = localStorage.getItem('site_language') || 'es';
+        const currentLang = localStorage.getItem('site_language') || 'en';
+
+        // Check if message was already translated to target language
+        if (msgEl.dataset.translatedLang === currentLang) {
+            showGplToast(`Message is already in your selected language (${currentLang.toUpperCase()}).`, 'info');
+            return;
+        }
+
+        // If target language is English and text has not been translated, it's already in original language
+        if (currentLang === 'en' && !msgEl.dataset.translatedLang) {
+            showGplToast('This message is already in your selected language (EN).', 'info');
+            return;
+        }
+
+        const prevText = msgEl.innerText.trim();
         if (window.executeTranslation) {
             await window.executeTranslation(currentLang, msgEl);
+            if (msgEl.innerText.trim() === prevText) {
+                showGplToast(`Message is already in your selected language (${currentLang.toUpperCase()}).`, 'info');
+            } else {
+                msgEl.dataset.translatedLang = currentLang;
+                showGplToast(`Translated to ${currentLang.toUpperCase()}`, 'success');
+            }
         } else {
             showGplToast('Live translation engine active.', 'info');
         }
@@ -4465,7 +4689,10 @@
 
     // 9. Emoji & Emoticon Popovers (With Mutex & Auto-Close)
     function toggleEmojiPicker(e) {
-        if (e && e.stopPropagation) e.stopPropagation();
+        if (e) {
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+        }
         const picker = document.getElementById('mainEmojiPicker');
         if (!picker) return;
         const isOpen = (picker.style.display === 'block');
@@ -4509,12 +4736,56 @@
         closeAllChatPopovers();
     }
 
+    // Mobile More Options Dropdown Controller
+    function toggleMobileMoreMenu(e) {
+        if (e) {
+            if (typeof e.stopPropagation === 'function') e.stopPropagation();
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+        }
+        const dropdown = document.getElementById('mobileMoreOptionsDropdown');
+        if (!dropdown) return;
+        const isOpen = (dropdown.style.display === 'flex');
+        closeAllChatPopovers(isOpen ? null : 'mobileMore');
+        dropdown.style.display = isOpen ? 'none' : 'flex';
+    }
+
+    function closeMobileMoreMenu() {
+        const dropdown = document.getElementById('mobileMoreOptionsDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+    }
+
+    // Forward Channel Custom Select Handlers
+    function toggleForwardChannelDropdown(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const wrap = document.getElementById('wrapper-forwardChannel');
+        if (wrap) wrap.classList.toggle('open');
+    }
+
+    function selectForwardChannel(channelId, name, iconClass) {
+        const hiddenInput = document.getElementById('forwardChannelSelect');
+        if (hiddenInput) hiddenInput.value = channelId;
+        const wrap = document.getElementById('wrapper-forwardChannel');
+        if (wrap) {
+            const label = wrap.querySelector('.text-label');
+            const icon = wrap.querySelector('.chan-custom-select-text i');
+            if (label) label.textContent = name;
+            if (icon) icon.className = `fas ${iconClass}`;
+            wrap.querySelectorAll('.chan-custom-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === channelId);
+            });
+            wrap.classList.remove('open');
+        }
+    }
+
     const emojiBtn = document.getElementById('emojiPickerBtn');
     const mainEmojiPicker = document.getElementById('mainEmojiPicker');
     if (emojiBtn) {
-        emojiBtn.addEventListener('click', (e) => {
+        // Mobile touch event for immediate response
+        emojiBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             toggleEmojiPicker(e);
-        });
+        }, { passive: false });
     }
     if (mainEmojiPicker) {
         mainEmojiPicker.addEventListener('emoji-click', event => {
@@ -4528,9 +4799,11 @@
 
     // Global outside click / tap listener to close emoji, gif, emoticon, and reaction popovers automatically
     document.addEventListener('click', (e) => {
-        const isInsidePopovers = e.target.closest('#mainEmojiPicker, #gifPickerModal, #emoticonPopover, #reactionFloatingBar, .chat-action-btn, #emojiPickerBtn, .reaction-pill, .btn-msg-action');
+        const isInsidePopovers = e.target.closest('#mainEmojiPicker, #gifPickerModal, #emoticonPopover, #reactionFloatingBar, .chat-action-btn, #emojiPickerBtn, .reaction-pill, .btn-msg-action, #mobileMoreOptionsBtn, #mobileMoreOptionsDropdown, #wrapper-forwardChannel');
         if (!isInsidePopovers) {
             closeAllChatPopovers();
+            const forwardWrap = document.getElementById('wrapper-forwardChannel');
+            if (forwardWrap) forwardWrap.classList.remove('open');
         }
     });
 
@@ -4667,6 +4940,8 @@
     function closeForwardModal() {
         const modal = document.getElementById('clubForwardModal');
         if (modal) modal.style.display = 'none';
+        const wrap = document.getElementById('wrapper-forwardChannel');
+        if (wrap) wrap.classList.remove('open');
     }
     function submitForwardMessage() {
         const messageId = document.getElementById('forwardMessageId')?.value;
