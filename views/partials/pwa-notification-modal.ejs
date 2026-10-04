@@ -208,7 +208,7 @@
                 body: JSON.stringify(payload)
             });
             if (window.showGplToast) {
-                window.showGplToast({ title: 'Preferences Saved', body: 'Notification settings updated.' });
+                window.showGplToast({ title: 'Preferences Saved', body: 'Notification settings updated.', type: 'success', actionKey: 'pwa_prefs' });
             }
         } catch(e) {}
     }

@@ -1,0 +1,65 @@
+[
+  {
+    "_id": "6ac0abba7531abed38d26548",
+    "club": "6ac0abba7531abed38d26546",
+    "name": "Owner",
+    "color": "#ff3838",
+    "badgeIcon": "fa-crown",
+    "position": 100,
+    "isDefault": false,
+    "permissions": {
+      "canManageClub": true,
+      "canManageChannels": true,
+      "canManageRoles": true,
+      "canKickMembers": true,
+      "canSendMessages": true,
+      "canPostPolls": true,
+      "canAuditPrivate": true
+    },
+    "createdAt": "2026-10-03T07:16:10.608Z",
+    "updatedAt": "2026-10-04T11:38:34.025Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac0abba7531abed38d2654a",
+    "club": "6ac0abba7531abed38d26546",
+    "name": "Moderator",
+    "color": "#5865F2",
+    "badgeIcon": "🛡️",
+    "position": 50,
+    "isDefault": false,
+    "permissions": {
+      "canManageClub": false,
+      "canManageChannels": true,
+      "canManageRoles": false,
+      "canKickMembers": true,
+      "canSendMessages": true,
+      "canPostPolls": true,
+      "canAuditPrivate": false
+    },
+    "createdAt": "2026-10-03T07:16:10.651Z",
+    "updatedAt": "2026-10-03T07:16:10.651Z",
+    "__v": 0
+  },
+  {
+    "_id": "6ac0abba7531abed38d2654c",
+    "club": "6ac0abba7531abed38d26546",
+    "name": "everyone",
+    "color": "#99AAB5",
+    "badgeIcon": "🌐",
+    "position": 1,
+    "isDefault": true,
+    "permissions": {
+      "canManageClub": false,
+      "canManageChannels": false,
+      "canManageRoles": false,
+      "canKickMembers": false,
+      "canSendMessages": true,
+      "canPostPolls": true,
+      "canAuditPrivate": false
+    },
+    "createdAt": "2026-10-03T07:16:10.691Z",
+    "updatedAt": "2026-10-03T07:16:10.691Z",
+    "__v": 0
+  }
+]

@@ -1690,15 +1690,35 @@ app.use(async (req, res, next) => {
         if (req.user.profileImageKey) {
             try {
                 const avatarUrl = await getSmartImageUrl(req.user.profileImageKey);
-                req.user.signedAvatarUrl = (avatarUrl && avatarUrl !== '/images/default-avatar.png')
-                    ? avatarUrl
-                    : (req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo);
+                if (avatarUrl && avatarUrl !== '/images/default-avatar.png') {
+                    req.user.signedAvatarUrl = avatarUrl;
+                }
             } catch (error) {
                 console.error(`Error getting signed URL for key: ${req.user.profileImageKey}`, error);
-                req.user.signedAvatarUrl = req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo;
             }
-        } else {
-            req.user.signedAvatarUrl = req.user.cardAvatarUrl || req.user.avatarUrl || req.user.avatar || defaultLogo;
+        }
+        if (!req.user.signedAvatarUrl || req.user.signedAvatarUrl === '/images/default-avatar.png') {
+            if (req.user.cardAvatarUrl && req.user.cardAvatarUrl !== '/images/default-avatar.png') {
+                if (req.user.cardAvatarUrl.startsWith('http://') || req.user.cardAvatarUrl.startsWith('https://') || req.user.cardAvatarUrl.startsWith('/')) {
+                    req.user.signedAvatarUrl = req.user.cardAvatarUrl;
+                } else {
+                    try {
+                        const avatarUrl = await getSmartImageUrl(req.user.cardAvatarUrl);
+                        if (avatarUrl && avatarUrl !== '/images/default-avatar.png') {
+                            req.user.signedAvatarUrl = avatarUrl;
+                        }
+                    } catch (e) {}
+                }
+            }
+        }
+        if (!req.user.signedAvatarUrl || req.user.signedAvatarUrl === '/images/default-avatar.png') {
+            const d = req.user.avatarUrl || req.user.avatar;
+            if (d && (d.startsWith('http://') || d.startsWith('https://') || d.startsWith('/'))) {
+                req.user.signedAvatarUrl = d;
+            }
+        }
+        if (!req.user.signedAvatarUrl) {
+            req.user.signedAvatarUrl = defaultLogo;
         }
     }
     next();
@@ -18687,17 +18707,11 @@ const startServer = async () => {
 
         async function resolveUserAvatar(u) {
             if (!u) return '/images/default-avatar.png';
-            if (u.signedAvatarUrl && u.signedAvatarUrl !== '/images/default-avatar.png') {
+            const isGPLMods = u.username === 'GPLMods';
+            const defaultLogo = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
+
+            if (u.signedAvatarUrl && typeof u.signedAvatarUrl === 'string' && u.signedAvatarUrl !== '/images/default-avatar.png' && (u.signedAvatarUrl.startsWith('http://') || u.signedAvatarUrl.startsWith('https://') || u.signedAvatarUrl.startsWith('/'))) {
                 return u.signedAvatarUrl;
-            }
-            if (u.cardAvatarUrl && u.cardAvatarUrl !== '/images/default-avatar.png') {
-                return u.cardAvatarUrl;
-            }
-            if (u.avatarUrl && u.avatarUrl !== '/images/default-avatar.png') {
-                return u.avatarUrl;
-            }
-            if (u.avatar && u.avatar !== '/images/default-avatar.png') {
-                return u.avatar;
             }
             if (u.profileImageKey) {
                 try {
@@ -18705,22 +18719,42 @@ const startServer = async () => {
                     if (resolved && resolved !== '/images/default-avatar.png') return resolved;
                 } catch (e) {}
             }
-            if (u._id || u.id) {
+            if (u.cardAvatarUrl && u.cardAvatarUrl !== '/images/default-avatar.png') {
+                if (u.cardAvatarUrl.startsWith('http://') || u.cardAvatarUrl.startsWith('https://') || u.cardAvatarUrl.startsWith('/')) {
+                    return u.cardAvatarUrl;
+                }
                 try {
-                    const dbUser = await User.findById(u._id || u.id).select('signedAvatarUrl cardAvatarUrl profileImageKey avatarUrl avatar').lean();
+                    const resolved = await getSmartImageUrl(u.cardAvatarUrl);
+                    if (resolved && resolved !== '/images/default-avatar.png') return resolved;
+                } catch (e) {}
+            }
+            if (u.avatarUrl && (u.avatarUrl.startsWith('http://') || u.avatarUrl.startsWith('https://') || u.avatarUrl.startsWith('/'))) {
+                return u.avatarUrl;
+            }
+            if (u.avatar && (u.avatar.startsWith('http://') || u.avatar.startsWith('https://') || u.avatar.startsWith('/'))) {
+                return u.avatar;
+            }
+            if (u._id || u.id || isGPLMods) {
+                try {
+                    const query = (u._id || u.id) ? { _id: u._id || u.id } : { username: 'GPLMods' };
+                    const dbUser = await User.findOne(query).select('signedAvatarUrl cardAvatarUrl profileImageKey avatarUrl avatar').lean();
                     if (dbUser) {
-                        if (dbUser.signedAvatarUrl && dbUser.signedAvatarUrl !== '/images/default-avatar.png') return dbUser.signedAvatarUrl;
-                        if (dbUser.cardAvatarUrl && dbUser.cardAvatarUrl !== '/images/default-avatar.png') return dbUser.cardAvatarUrl;
-                        if (dbUser.avatarUrl && dbUser.avatarUrl !== '/images/default-avatar.png') return dbUser.avatarUrl;
-                        if (dbUser.avatar && dbUser.avatar !== '/images/default-avatar.png') return dbUser.avatar;
                         if (dbUser.profileImageKey) {
                             const resolved = await getSmartImageUrl(dbUser.profileImageKey);
                             if (resolved && resolved !== '/images/default-avatar.png') return resolved;
                         }
+                        if (dbUser.signedAvatarUrl && (dbUser.signedAvatarUrl.startsWith('http://') || dbUser.signedAvatarUrl.startsWith('https://') || dbUser.signedAvatarUrl.startsWith('/'))) return dbUser.signedAvatarUrl;
+                        if (dbUser.cardAvatarUrl) {
+                            if (dbUser.cardAvatarUrl.startsWith('http://') || dbUser.cardAvatarUrl.startsWith('https://') || dbUser.cardAvatarUrl.startsWith('/')) return dbUser.cardAvatarUrl;
+                            const resolved = await getSmartImageUrl(dbUser.cardAvatarUrl);
+                            if (resolved && resolved !== '/images/default-avatar.png') return resolved;
+                        }
+                        if (dbUser.avatarUrl && (dbUser.avatarUrl.startsWith('http://') || dbUser.avatarUrl.startsWith('https://') || dbUser.avatarUrl.startsWith('/'))) return dbUser.avatarUrl;
+                        if (dbUser.avatar && (dbUser.avatar.startsWith('http://') || dbUser.avatar.startsWith('https://') || dbUser.avatar.startsWith('/'))) return dbUser.avatar;
                     }
                 } catch (e) {}
             }
-            return '/images/default-avatar.png';
+            return defaultLogo;
         }
 
         function getLiveUsersList() {
@@ -19188,6 +19222,12 @@ const startServer = async () => {
 
                     const channel = await ClubChannel.findById(channelId);
                     if (!channel) return;
+
+                    if (['rules', 'announcements', 'new-uploads', 'new-updates'].includes(channel.type)) {
+                        return socket.emit('club_message_error', { 
+                            message: 'You cannot unlock chat on this specific club channel (#rules, #announcements, mod feeds).' 
+                        });
+                    }
 
                     channel.isReadOnly = typeof isReadOnly === 'boolean' ? isReadOnly : !channel.isReadOnly;
                     await channel.save();

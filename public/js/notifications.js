@@ -335,7 +335,7 @@
         }
     };
 
-    // 6. In-App Floating Toast Notification
+    // 6. In-App Floating Toast Notification (Supports Multiple Notifications & Action Replacement)
     function getToastContainer() {
         let container = document.getElementById('gpl-toast-container');
         if (!container) {
@@ -347,25 +347,117 @@
         return container;
     }
 
-    function showInAppToast(data = {}) {
-        const container = getToastContainer();
-        const toast = document.createElement('div');
-        toast.className = 'gpl-toast-card';
+    function showInAppToast(data = {}, typeParam = null, durationParam = null, actionKeyParam = null) {
+        // Support both showInAppToast('Message', 'success', 4000, 'actionKey') and showInAppToast({ title, body, ... })
+        let payload = {};
+        if (typeof data === 'string') {
+            payload = {
+                body: data,
+                title: typeParam === 'success' ? 'Success' : (typeParam === 'error' ? 'Notice' : (typeParam === 'warning' ? 'Warning' : 'GPL Mods Alert')),
+                type: typeParam || 'info',
+                duration: durationParam || 4500,
+                actionKey: actionKeyParam || null
+            };
+        } else if (data && typeof data === 'object') {
+            payload = { ...data };
+            if (!payload.body && payload.message) payload.body = payload.message;
+            if (typeParam && !payload.type) payload.type = typeParam;
+            if (durationParam && !payload.duration) payload.duration = durationParam;
+            if (actionKeyParam && !payload.actionKey) payload.actionKey = actionKeyParam;
+            if (!payload.type) payload.type = 'info';
+            if (!payload.duration) payload.duration = 5000;
+        }
 
-        const iconHtml = data.icon
-            ? `<img src="${data.icon}" alt="Icon" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-bell\\'></i>';">`
-            : '<i class="fas fa-bell"></i>';
+        const container = getToastContainer();
+        const duration = payload.duration || 5000;
+        const toastType = payload.type || 'info';
+
+        // Action key for deduplication and replacing old notification with new one for each action
+        let actionKey = payload.actionKey;
+        if (!actionKey) {
+            const genericTitles = ['success', 'notice', 'warning', 'gpl mods alert', 'alert', 'error', 'info'];
+            if (payload.title && !genericTitles.includes(payload.title.toLowerCase().trim())) {
+                actionKey = payload.title.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '_');
+            } else if (payload.body) {
+                actionKey = payload.body.toLowerCase().trim().slice(0, 45).replace(/[^a-z0-9_-]/g, '_');
+            }
+        }
+
+        // Determine icon HTML based on type or explicit icon
+        let defaultIconClass = 'fa-bell';
+        if (toastType === 'success') defaultIconClass = 'fa-check-circle';
+        else if (toastType === 'error') defaultIconClass = 'fa-exclamation-circle';
+        else if (toastType === 'warning') defaultIconClass = 'fa-exclamation-triangle';
+        else if (toastType === 'info') defaultIconClass = 'fa-info-circle';
+
+        const iconHtml = payload.icon
+            ? (payload.icon.startsWith('http') || payload.icon.startsWith('/') || payload.icon.startsWith('data:')
+                ? `<img src="${payload.icon}" alt="Icon" onerror="this.parentElement.innerHTML='<i class=\\'fas ${defaultIconClass}\\'></i>';">`
+                : (payload.icon.startsWith('fa-') || payload.icon.startsWith('fas ') ? `<i class="${payload.icon.startsWith('fa-') ? 'fas ' + payload.icon : payload.icon}"></i>` : `<i class="fas ${defaultIconClass}"></i>`))
+            : `<i class="fas ${defaultIconClass}"></i>`;
+
+        // Check if an existing notification with the same actionKey is currently showing
+        let existingToast = null;
+        if (actionKey) {
+            existingToast = container.querySelector(`.gpl-toast-card[data-action-key="${actionKey}"]`);
+        }
+
+        if (existingToast) {
+            // Replace the old notification with the new one for this action!
+            existingToast.className = `gpl-toast-card ${toastType} show gpl-toast-pulse`;
+            
+            const iconWrap = existingToast.querySelector('.gpl-toast-icon-wrap');
+            if (iconWrap) iconWrap.innerHTML = iconHtml;
+
+            const titleEl = existingToast.querySelector('.gpl-toast-title');
+            if (titleEl) titleEl.textContent = payload.title || (toastType === 'success' ? 'Success' : (toastType === 'error' ? 'Notice' : 'GPL Mods Alert'));
+
+            const msgEl = existingToast.querySelector('.gpl-toast-message');
+            if (msgEl) msgEl.textContent = payload.body || '';
+
+            // Reset progress bar
+            const progressBar = existingToast.querySelector('.gpl-toast-progress');
+            if (progressBar) {
+                progressBar.style.transition = 'none';
+                progressBar.style.width = '100%';
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        progressBar.style.transition = `width ${duration}ms linear`;
+                        progressBar.style.width = '0%';
+                    });
+                });
+            }
+
+            // Reset auto remove timer
+            if (existingToast._removeTimer) clearTimeout(existingToast._removeTimer);
+            existingToast._removeTimer = setTimeout(() => {
+                removeToast(existingToast);
+            }, duration);
+
+            setTimeout(() => existingToast.classList.remove('gpl-toast-pulse'), 450);
+            return existingToast;
+        }
+
+        // Multiple notifications support: Limit to max 5 simultaneous notifications
+        const activeToasts = container.querySelectorAll('.gpl-toast-card');
+        if (activeToasts.length >= 5) {
+            removeToast(activeToasts[0]);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `gpl-toast-card ${toastType}`;
+        if (actionKey) toast.setAttribute('data-action-key', actionKey);
 
         toast.innerHTML = `
             <div class="gpl-toast-icon-wrap">
                 ${iconHtml}
             </div>
             <div class="gpl-toast-body">
-                <h5 class="gpl-toast-title">${data.title || 'GPL Mods Alert'}</h5>
-                <p class="gpl-toast-message">${data.body || 'New updates available.'}</p>
+                <h5 class="gpl-toast-title">${payload.title || (toastType === 'success' ? 'Success' : (toastType === 'error' ? 'Notice' : 'GPL Mods Alert'))}</h5>
+                <p class="gpl-toast-message">${payload.body || 'New updates available.'}</p>
             </div>
             <button type="button" class="gpl-toast-close" title="Close">&times;</button>
-            <div class="gpl-toast-progress"></div>
+            <div class="gpl-toast-progress" style="width: 100%;"></div>
         `;
 
         // Click to navigate
@@ -375,8 +467,8 @@
                 removeToast(toast);
                 return;
             }
-            if (data.url) {
-                window.location.href = data.url;
+            if (payload.url) {
+                window.location.href = payload.url;
             }
         });
 
@@ -391,21 +483,34 @@
         container.appendChild(toast);
 
         // Slide in
-        setTimeout(() => toast.classList.add('show'), 50);
+        setTimeout(() => {
+            toast.classList.add('show');
+            const progress = toast.querySelector('.gpl-toast-progress');
+            if (progress) {
+                progress.style.transition = `width ${duration}ms linear`;
+                progress.style.width = '0%';
+            }
+        }, 30);
 
-        // Auto remove after 6 seconds
-        const timer = setTimeout(() => {
+        // Auto remove after specified duration
+        toast._removeTimer = setTimeout(() => {
             removeToast(toast);
-        }, 6000);
+        }, duration);
 
         function removeToast(el) {
-            clearTimeout(timer);
+            if (!el) return;
+            if (el._removeTimer) clearTimeout(el._removeTimer);
             el.classList.remove('show');
-            setTimeout(() => el.remove(), 350);
+            setTimeout(() => {
+                if (el.parentElement) el.remove();
+            }, 350);
         }
+
+        return toast;
     }
 
     window.showGplToast = showInAppToast;
+    window.showToast = showInAppToast;
 
     // 7. Listen for Push Messages from Service Worker & Socket.IO
     if ('serviceWorker' in navigator) {

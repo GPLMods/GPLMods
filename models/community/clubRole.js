@@ -21,7 +21,7 @@ const ClubRoleSchema = new Schema({
     },
     badgeIcon: {
         type: String,
-        default: '🔰'
+        default: 'fa-shield-alt'
     },
     position: {
         type: Number,

@@ -1,5 +1,53 @@
 <%- include('../../partials/header') %>
 
+<%
+function getRoleBadgeIconHtml(badgeIcon) {
+    if (!badgeIcon) return '<i class="fas fa-shield-alt"></i>';
+    const trimmed = String(badgeIcon).trim();
+    if (trimmed.startsWith('fa-') || trimmed.startsWith('fas ') || trimmed.startsWith('fab ') || trimmed.startsWith('far ')) {
+        const cls = trimmed.startsWith('fa-') ? `fas ${trimmed}` : trimmed;
+        return `<i class="${cls}"></i>`;
+    }
+    const emojiMap = {
+        '🛡️': 'fas fa-shield-alt',
+        '🛡': 'fas fa-shield-alt',
+        '🌐': 'fas fa-globe',
+        '🎨': 'fas fa-paint-brush',
+        '👑': 'fas fa-crown',
+        '⭐': 'fas fa-star',
+        '🌟': 'fas fa-star',
+        '🔥': 'fas fa-fire',
+        '💎': 'fas fa-gem',
+        '⚡': 'fas fa-bolt',
+        '🚀': 'fas fa-rocket',
+        '🏆': 'fas fa-trophy',
+        '🎮': 'fas fa-gamepad',
+        '🛠️': 'fas fa-wrench',
+        '🔧': 'fas fa-wrench',
+        '🎖️': 'fas fa-medal',
+        '💡': 'fas fa-lightbulb',
+        '❤️': 'fas fa-heart',
+        '🔒': 'fas fa-lock',
+        '📜': 'fas fa-scroll',
+        '📣': 'fas fa-bullhorn',
+        'Check': 'fas fa-check-circle',
+        '✓': 'fas fa-check-circle'
+    };
+    return `<i class="${emojiMap[trimmed] || 'fas fa-shield-alt'}"></i>`;
+}
+
+function getUserAvatarUrl(u) {
+    if (!u) return '/images/default-avatar.png';
+    const isGPLMods = u.username === 'GPLMods';
+    const defaultFallback = isGPLMods ? '/images/team-logo.png' : '/images/default-avatar.png';
+    const url = u.signedAvatarUrl || u.cardAvatarUrl || u.avatarUrl || u.avatar;
+    if (url && typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) && url !== '/images/default-avatar.png') {
+        return url;
+    }
+    return defaultFallback;
+}
+%>
+
 <style>
     /* Discord Container & Page Layout */
     html, body {
@@ -44,6 +92,254 @@
         position: relative;
         overflow: hidden;
         width: 100%;
+    }
+
+    /* Members Section Dropdown UI */
+    .members-section-filter-wrap {
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        position: relative;
+        background: rgba(13, 14, 18, 0.7);
+    }
+    .members-section-dropdown-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.82rem;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    .members-section-dropdown-btn:hover {
+        border-color: var(--gold);
+        background: #191b24;
+    }
+    .members-section-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 12px;
+        right: 12px;
+        background: #14151b;
+        border: 1.5px solid var(--gold);
+        border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.85);
+        z-index: 9999;
+        max-height: 260px;
+        overflow-y: auto;
+        padding: 6px;
+    }
+    .members-section-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #dcddde;
+        font-size: 0.8rem;
+        transition: background 0.15s;
+    }
+    .members-section-option:hover {
+        background: rgba(255, 215, 0, 0.12);
+        color: #fff;
+    }
+    .members-section-option.active {
+        background: rgba(255, 215, 0, 0.22);
+        color: var(--gold);
+        font-weight: 700;
+    }
+    .members-section-option .count-badge {
+        font-size: 0.72rem;
+        background: rgba(255,255,255,0.08);
+        padding: 1px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+        color: #aaa;
+    }
+
+    /* FontAwesome Role Icon Picker */
+    .fa-icon-picker-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+        background: #0d0e12;
+        border: 1px solid #282a36;
+        border-radius: 8px;
+        padding: 8px;
+        max-height: 135px;
+        overflow-y: auto;
+    }
+    @media (max-width: 600px) {
+        .fa-icon-picker-grid {
+            grid-template-columns: repeat(6, 1fr);
+        }
+    }
+    .fa-icon-btn {
+        background: #14151b;
+        border: 1px solid #282a36;
+        border-radius: 6px;
+        color: var(--silver);
+        font-size: 0.92rem;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .fa-icon-btn:hover {
+        background: rgba(255,215,0,0.15);
+        color: var(--gold);
+        border-color: var(--gold);
+        transform: translateY(-1px);
+    }
+    .fa-icon-btn.selected {
+        background: rgba(255,215,0,0.25);
+        color: var(--gold);
+        border-color: var(--gold);
+        box-shadow: 0 0 8px rgba(255,215,0,0.35);
+    }
+
+    /* Color Swatches Grid & Buttons */
+    .color-swatches-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 6px;
+    }
+    .color-swatches-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+        gap: 8px;
+    }
+    .color-swatch-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .color-swatch-btn:hover {
+        transform: translateY(-2px) scale(1.08);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .color-swatch-btn.selected {
+        border-color: #fff !important;
+        box-shadow: 0 0 10px rgba(255,255,255,0.7), 0 0 4px rgba(0,0,0,0.8);
+        transform: scale(1.08);
+    }
+    .color-swatch-btn .swatch-check {
+        display: none;
+    }
+    .color-swatch-btn.selected .swatch-check {
+        display: block !important;
+    }
+    .custom-role-color-panel {
+        background: #0d0e12;
+        border: 1px solid #282a36;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+    }
+    /* Custom Discord-Style Color Spectrum Picker */
+    .spectrum-pad {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: crosshair;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+        background-color: hsl(51, 100%, 50%);
+    }
+    .spectrum-pad-white {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+        pointer-events: none;
+    }
+    .spectrum-pad-black {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent 0%, #000000 100%);
+        pointer-events: none;
+    }
+    .spectrum-handle {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.9), inset 0 0 2px rgba(0, 0, 0, 0.6);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+    }
+    .spectrum-hue-track {
+        position: relative;
+        width: 100%;
+        height: 14px;
+        border-radius: 7px;
+        margin-top: 10px;
+        cursor: pointer;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+        background: linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+    }
+    .spectrum-hue-handle {
+        position: absolute;
+        top: 50%;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid #ffffff;
+        background: #ffffff;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+    }
+    .btn-spectrum-toggle:hover {
+        background: rgba(255, 255, 255, 0.08) !important;
+        border-color: var(--gold) !important;
+        color: #fff !important;
+    }
+    .color-spectrum-wrapper.open {
+        display: block !important;
+        animation: spectrumSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes spectrumSlideDown {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .channel-invite-box:focus-within {
+        border-color: var(--gold) !important;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.25) !important;
+    }
+    .btn-copy-channel-link:hover {
+        filter: brightness(1.12);
+        box-shadow: 0 0 14px rgba(255, 215, 0, 0.45) !important;
+    }
+    .btn-copy-channel-link:active {
+        transform: scale(0.97);
     }
 
     /* Left Drawer Container (Combines Rail + Channels on Mobile & Desktop Floating) */
@@ -2357,8 +2653,8 @@
         <!-- User Profile Footer with Vanished Mode for Staff -->
         <div class="discord-user-footer">
             <div class="footer-user-info" onclick="window.location.href='/users/<%= user ? user.username : '' %>'">
-                <% const myFooterAvatar = (user && user.signedAvatarUrl && user.signedAvatarUrl !== '/images/default-avatar.png') ? user.signedAvatarUrl : ((user && (user.cardAvatarUrl || user.avatarUrl || user.avatar)) ? (user.cardAvatarUrl || user.avatarUrl || user.avatar) : ((user && user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
-                <img src="<%= myFooterAvatar %>" alt="<%= user ? user.username : 'User Avatar' %>" class="footer-avatar" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
+                <% const myFooterAvatar = getUserAvatarUrl(user); %>
+                <img src="<%= myFooterAvatar %>" alt="<%= user ? user.username : 'User Avatar' %>" class="footer-avatar" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                 <div class="footer-name-box">
                     <span class="footer-username"><%= user ? user.username : 'Guest' %></span>
                     <span class="footer-status-tag"><%= isStaff ? 'Site Staff' : 'Member' %></span>
@@ -2504,12 +2800,17 @@
         </div>
 
         <!-- Channel Restricted Warning Banner -->
-        <div id="channelRestrictedNotice" style="display: <%= (activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none' %>; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600;">
-            <i class="fas fa-lock"></i> Chat in this channel is locked / restricted to staff announcements.
-            <% if (hasManageClubPerm) { %>
-                <button type="button" onclick="toggleChannelRestriction()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 8px;">
+        <% const isSpecificLockedChan = Boolean(activeChannel && ['rules', 'announcements', 'new-uploads', 'new-updates'].includes(activeChannel.type)); %>
+        <div id="channelRestrictedNotice" style="display: <%= (activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none' %>; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600; flex-wrap: wrap;">
+            <i class="fas fa-lock"></i> <span><%= isSpecificLockedChan ? 'Chat in this channel is permanently locked (Rules, Announcements & Mod Feeds).' : 'Chat in this channel is locked / restricted to staff announcements.' %></span>
+            <% if (hasManageClubPerm && !isSpecificLockedChan) { %>
+                <button type="button" id="topbarUnlockBtn" onclick="toggleChannelRestriction()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 8px;">
                     Unlock Now
                 </button>
+            <% } else if (isSpecificLockedChan) { %>
+                <span style="font-size: 0.75rem; color: #ffc107; margin-left: 6px; font-weight: 500;">
+                    <i class="fas fa-exclamation-triangle"></i> Cannot unlock chat on this specific channel.
+                </span>
             <% } %>
         </div>
 
@@ -2537,10 +2838,10 @@
                     <% if (msg.isDeleted && isMyMessage) { return; } %>
                     <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" style="<%= msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : '' %>">
                         <% 
-                            const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
-                            const senderAvatar = (msg.sender && msg.sender.signedAvatarUrl) ? msg.sender.signedAvatarUrl : (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
+                            const isSystemMsg = msg.isSystemMessage || !msg.sender;
+                            const senderAvatar = isSystemMsg ? '/images/team-logo.png' : getUserAvatarUrl(msg.sender);
                         %>
-                        <img src="<%= senderAvatar %>" alt="Sender Avatar" class="message-avatar" onerror="this.src='<%= isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png' %>';">
+                        <img src="<%= senderAvatar %>" alt="Sender Avatar" class="message-avatar" onerror="this.onerror=null; this.src='<%= isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png' %>';">
                         <div class="message-content-col">
                             <div class="message-header-row">
                                 <a href="/users/<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" class="message-username" target="_blank">
@@ -2566,7 +2867,7 @@
                                 <% if (senderRole && senderRole.name !== 'everyone') { %>
                                     <span class="discord-role-pill" style="border: 1px solid <%= senderRole.color %>50; color: <%= senderRole.color %>; background: <%= senderRole.color %>18;">
                                         <span class="role-dot" style="background: <%= senderRole.color %>;"></span>
-                                        <%= senderRole.name %>
+                                        <%- getRoleBadgeIconHtml(senderRole.badgeIcon) %> <%= senderRole.name %>
                                     </span>
                                 <% } %>
                                 <% if (msg.isPinned) { %>
@@ -2797,55 +3098,102 @@
             </div>
             <button type="button" class="drawer-close-btn" onclick="toggleMembersSidebar()" title="Close Members">&times;</button>
         </div>
+
+        <!-- Dropdown UI To Choose Members Section -->
+        <% const staffMembers = members.filter(m => m.user && ['owner', 'admin'].includes(m.user.role)); %>
+        <% const creatorMember = members.find(m => m.user && String(m.user._id) === String(club.creator._id || club.creator)); %>
+        <% const totalStaffCount = staffMembers.length + (creatorMember && !staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)) ? 1 : 0); %>
+        <div class="members-section-filter-wrap">
+            <div class="members-section-dropdown-btn" id="btnMemberSectionDropdown" onclick="toggleMembersSectionDropdown(event)">
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden;">
+                    <span id="memberSectionActiveIcon" style="color: var(--gold);"><i class="fas fa-users"></i></span>
+                    <span id="memberSectionActiveLabel" style="font-weight: 600; font-size: 0.82rem; color: #fff; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;">All Members (<%= members.length %>)</span>
+                </div>
+                <i class="fas fa-chevron-down" style="font-size: 0.72rem; color: var(--silver); transition: transform 0.2s;" id="memberSectionChevron"></i>
+            </div>
+            <div class="members-section-dropdown-menu" id="memberSectionDropdownMenu" style="display: none;">
+                <div class="members-section-option active" data-filter="all" onclick="selectMembersFilter('all', 'All Members (<%= members.length %>)', 'fa-users', 'var(--gold)')">
+                    <i class="fas fa-users" style="color: var(--gold);"></i>
+                    <span style="flex: 1;">All Members</span>
+                    <span class="count-badge"><%= members.length %></span>
+                </div>
+                <% if (totalStaffCount > 0) { %>
+                    <div class="members-section-option" data-filter="staff" onclick="selectMembersFilter('staff', 'Staff & Creator (<%= totalStaffCount %>)', 'fa-crown', '#ffd700')">
+                        <i class="fas fa-crown" style="color: #ffd700;"></i>
+                        <span style="flex: 1;">Staff &amp; Creator</span>
+                        <span class="count-badge"><%= totalStaffCount %></span>
+                    </div>
+                <% } %>
+                <% if (roles && roles.length > 0) { %>
+                    <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 4px 6px;"></div>
+                    <div style="padding: 4px 8px; font-size: 0.68rem; color: #8e9297; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Custom Roles</div>
+                    <% roles.forEach(r => { %>
+                        <% const roleMemberCount = members.filter(m => m.roles && m.roles.some(mr => String(mr._id || mr) === String(r._id) || mr.name === r.name)).length; %>
+                        <div class="members-section-option" data-filter="role-<%= r._id %>" onclick="selectMembersFilter('role-<%= r._id %>', '<%= r.name %> (<%= roleMemberCount %>)', '<%= r.badgeIcon || 'fa-shield-alt' %>', '<%= r.color || '#99aab5' %>')">
+                            <span style="color: <%= r.color || '#99aab5' %>;"><%- getRoleBadgeIconHtml(r.badgeIcon) %></span>
+                            <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= r.name %></span>
+                            <span class="count-badge" style="background: <%= (r.color || '#99aab5') %>22; color: <%= r.color || '#99aab5' %>;"><%= roleMemberCount %></span>
+                        </div>
+                    <% }); %>
+                <% } %>
+            </div>
+        </div>
+
         <div class="members-scroll-area">
             <!-- SITE STAFF SECTION -->
-            <% const staffMembers = members.filter(m => m.user && ['owner', 'admin'].includes(m.user.role)); %>
-            <% if (staffMembers.length > 0) { %>
-                <div class="member-group-header"><i class="fas fa-crown" style="color: var(--gold); margin-right: 6px;"></i> SITE STAFF — <%= staffMembers.length %></div>
-                <% staffMembers.forEach(sm => { %>
-                    <div class="member-card-row" onclick="window.location.href='/users/<%= sm.user.username %>'">
+            <div id="staffSectionWrap" style="display: <%= staffMembers.length > 0 ? 'block' : 'none' %>;">
+                <% if (staffMembers.length > 0) { %>
+                    <div class="member-group-header" id="staffSectionHeader"><i class="fas fa-crown" style="color: var(--gold); margin-right: 6px;"></i> SITE STAFF — <%= staffMembers.length %></div>
+                    <% staffMembers.forEach(sm => { %>
+                        <div class="member-card-row member-staff-card" onclick="window.location.href='/users/<%= sm.user.username %>'">
+                            <div class="member-avatar-wrap">
+                                <% const smAvatar = getUserAvatarUrl(sm.user); %>
+                                <img src="<%= smAvatar %>" class="member-avatar-img" alt="<%= sm.user.username %>" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                <div class="online-dot"></div>
+                            </div>
+                            <div class="member-meta-box">
+                                <span class="member-display-name" style="color: <%= sm.user.role === 'owner' ? 'var(--gold)' : '#64b5f6' %>;">
+                                    <%= sm.user.username %>
+                                </span>
+                                <span style="font-size: 0.72rem; color: #8e9297;"><%= sm.user.role === 'owner' ? 'Site Owner' : 'Site Admin' %></span>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+
+            <!-- CLUB CREATOR -->
+            <div id="creatorSectionWrap" style="display: <%= (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) ? 'block' : 'none' %>;">
+                <% if (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) { %>
+                    <div class="member-group-header" id="creatorSectionHeader" style="margin-top: 14px;"><i class="fas fa-palette" style="color: #ffab91; margin-right: 6px;"></i> CLUB CREATOR — 1</div>
+                    <div class="member-card-row member-creator-card" onclick="window.location.href='/users/<%= creatorMember.user.username %>'">
                         <div class="member-avatar-wrap">
-                            <% const smAvatar = (sm.user.signedAvatarUrl && sm.user.signedAvatarUrl !== '/images/default-avatar.png') ? sm.user.signedAvatarUrl : (sm.user.cardAvatarUrl || sm.user.avatarUrl || sm.user.avatar || (sm.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
-                            <img src="<%= smAvatar %>" class="member-avatar-img" alt="<%= sm.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
+                            <% const crAvatar = getUserAvatarUrl(creatorMember.user); %>
+                            <img src="<%= crAvatar %>" class="member-avatar-img" alt="<%= creatorMember.user.username %>" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                             <div class="online-dot"></div>
                         </div>
                         <div class="member-meta-box">
-                            <span class="member-display-name" style="color: <%= sm.user.role === 'owner' ? 'var(--gold)' : '#64b5f6' %>;">
-                                <%= sm.user.username %>
-                            </span>
-                            <span style="font-size: 0.72rem; color: #8e9297;"><%= sm.user.role === 'owner' ? 'Site Owner' : 'Site Admin' %></span>
+                            <span class="member-display-name" style="color: #ffab91;"><%= creatorMember.user.username %></span>
+                            <span style="font-size: 0.72rem; color: #8e9297;">Club Owner</span>
                         </div>
                     </div>
-                <% }) %>
-            <% } %>
-
-            <!-- CLUB CREATOR -->
-            <% const creatorMember = members.find(m => m.user && String(m.user._id) === String(club.creator._id || club.creator)); %>
-            <% if (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) { %>
-                <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-palette" style="color: #ffab91; margin-right: 6px;"></i> CLUB CREATOR — 1</div>
-                <div class="member-card-row" onclick="window.location.href='/users/<%= creatorMember.user.username %>'">
-                    <div class="member-avatar-wrap">
-                        <% const crAvatar = (creatorMember.user.signedAvatarUrl && creatorMember.user.signedAvatarUrl !== '/images/default-avatar.png') ? creatorMember.user.signedAvatarUrl : (creatorMember.user.cardAvatarUrl || creatorMember.user.avatarUrl || creatorMember.user.avatar || (creatorMember.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
-                        <img src="<%= crAvatar %>" class="member-avatar-img" alt="<%= creatorMember.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
-                        <div class="online-dot"></div>
-                    </div>
-                    <div class="member-meta-box">
-                        <span class="member-display-name" style="color: #ffab91;"><%= creatorMember.user.username %></span>
-                        <span style="font-size: 0.72rem; color: #8e9297;">Club Owner</span>
-                    </div>
-                </div>
-            <% } %>
+                <% } %>
+            </div>
 
             <!-- ALL MEMBERS / EVERYONE -->
-            <div class="member-group-header" style="margin-top: 14px;"><i class="fas fa-users" style="color: #99aab5; font-size: 0.75rem; margin-right: 6px;"></i> @everyone — <span id="onlineCountNum"><%= members.length %></span></div>
+            <div class="member-group-header" id="everyoneSectionHeader" style="margin-top: 14px;"><i class="fas fa-users" style="color: #99aab5; font-size: 0.75rem; margin-right: 6px;"></i> @everyone — <span id="onlineCountNum"><%= members.length %></span></div>
             <div id="onlineMembersList">
                 <% members.forEach(mem => { %>
                     <% if (mem.user) { %>
-                        <% const memRole = (mem.roles && mem.roles.length > 0) ? mem.roles[0] : { name: 'everyone', color: '#99AAB5', badgeIcon: '🌐' }; %>
-                        <div class="member-card-row" onclick="window.location.href='/users/<%= mem.user.username %>'">
+                        <% 
+                            const memRole = (mem.roles && mem.roles.length > 0) ? mem.roles[0] : { name: 'everyone', color: '#99AAB5', badgeIcon: 'fa-globe' }; 
+                            const isStaffUser = ['owner', 'admin'].includes(mem.user.role) || String(mem.user._id) === String(club.creator._id || club.creator);
+                            const roleIdsStr = (mem.roles || []).map(r => String(r._id || r)).join(',');
+                        %>
+                        <div class="member-card-row member-user-card" data-member-row="true" data-user-id="<%= mem.user._id %>" data-is-staff="<%= isStaffUser ? 'true' : 'false' %>" data-role-ids="<%= roleIdsStr %>" onclick="window.location.href='/users/<%= mem.user.username %>'">
                             <div class="member-avatar-wrap">
-                                <% const memAvatar = (mem.user.signedAvatarUrl && mem.user.signedAvatarUrl !== '/images/default-avatar.png') ? mem.user.signedAvatarUrl : (mem.user.cardAvatarUrl || mem.user.avatarUrl || mem.user.avatar || (mem.user.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')); %>
-                                <img src="<%= memAvatar %>" class="member-avatar-img" alt="<%= mem.user.username %>" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
+                                <% const memAvatar = getUserAvatarUrl(mem.user); %>
+                                <img src="<%= memAvatar %>" class="member-avatar-img" alt="<%= mem.user.username %>" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                                 <div class="online-dot"></div>
                             </div>
                             <div class="member-meta-box">
@@ -2861,7 +3209,7 @@
                                     <% if (mem.roles && mem.roles.length > 0) { %>
                                         <% mem.roles.slice(0, 3).forEach(r => { %>
                                             <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40;">
-                                                <%= r.badgeIcon || '🛡️' %> <%= r.name %>
+                                                <%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %>
                                             </span>
                                         <% }); %>
                                         <% if (mem.roles.length > 3) { %>
@@ -2880,6 +3228,10 @@
                     <% } %>
                 <% }) %>
             </div>
+            <div id="emptyFilteredMembers" style="display: none; padding: 26px 14px; text-align: center; color: var(--silver); font-size: 0.82rem;">
+                <i class="fas fa-user-slash" style="font-size: 1.6rem; color: #555; display: block; margin-bottom: 8px;"></i>
+                <span id="emptyFilteredMembersText">No members found in this section.</span>
+            </div>
         </div>
     </div>
 </div>
@@ -2892,7 +3244,7 @@
 <div class="gpl-modal-backdrop" id="editClubModal">
     <div class="gpl-modal-box">
         <h3 style="color: #fff; margin-top: 0; margin-bottom: 16px;"><i class="fas fa-cog" style="color: var(--gold);"></i> Club Settings</h3>
-        <form action="/clubs/<%= club.slug %>/edit" method="POST" enctype="multipart/form-data">
+        <form action="/clubs/<%= club.slug %>/edit" method="POST" enctype="multipart/form-data" onsubmit="handleEditClubSubmit(event)">
             <div style="margin-bottom: 14px;">
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Name</label>
                 <input type="text" name="name" value="<%= club.name %>" required <%= club.isDefault ? 'readonly' : '' %> style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box;">
@@ -2904,13 +3256,63 @@
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Description</label>
                 <textarea name="description" rows="3" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px; box-sizing: border-box; resize: vertical;"><%= club.description %></textarea>
             </div>
-            <div style="margin-bottom: 14px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Icon (Optional)</label>
-                <input type="file" name="icon" accept="image/png, image/jpeg, image/gif, image/webp" style="color: #fff;">
+
+            <!-- Club Icon Preview & Replace -->
+            <div style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid #282a36; border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-camera" style="color: var(--gold);"></i> Club Icon (Avatar)
+                    </label>
+                    <span id="editClubIconStatus" style="font-size: 0.74rem; color: #8e9297;">Square avatar, max 5MB</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+                    <div style="position: relative; width: 72px; height: 72px; border-radius: 14px; overflow: hidden; border: 2px solid #333645; background: #0a0b0e; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+                        <img id="editClubIconPreviewImg" src="<%= club.iconUrl || '/images/default-avatar.png' %>" alt="Club Icon" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                        <div id="editClubIconBadge" style="display: none; position: absolute; bottom: 3px; right: 3px; background: #69f0ae; color: #000; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; align-items: center; justify-content: center; font-weight: 700;" title="New Icon Selected">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 160px;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="gpl-btn-secondary" onclick="document.getElementById('editClubIconInput').click()" style="padding: 7px 14px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <i class="fas fa-upload"></i> <span>Replace Icon</span>
+                            </button>
+                            <button type="button" id="editClubIconResetBtn" onclick="resetEditClubIcon()" style="display: none; padding: 7px 12px; font-size: 0.8rem; background: rgba(244,67,54,0.15); border: 1px solid rgba(244,67,54,0.3); color: #ff8a80; border-radius: 8px; cursor: pointer; align-items: center; gap: 6px;">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                        </div>
+                        <span id="editClubIconFilename" style="font-size: 0.74rem; color: var(--silver); word-break: break-all;">Current: <%= club.iconUrl ? club.iconUrl.split('/').pop() : 'Default Avatar' %></span>
+                    </div>
+                </div>
+                <input type="file" id="editClubIconInput" name="icon" accept="image/png, image/jpeg, image/gif, image/webp" style="display: none;" onchange="handleClubIconSelect(event)">
             </div>
-            <div style="margin-bottom: 14px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Club Banner (Optional)</label>
-                <input type="file" name="banner" accept="image/png, image/jpeg, image/gif, image/webp" style="color: #fff;">
+
+            <!-- Club Banner Preview & Replace -->
+            <div style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid #282a36; border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 0.85rem; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-image" style="color: var(--gold);"></i> Club Banner
+                    </label>
+                    <span id="editClubBannerStatus" style="font-size: 0.74rem; color: #8e9297;">Wide banner, max 5MB</span>
+                </div>
+                <div style="margin-bottom: 10px; position: relative; width: 100%; height: 110px; border-radius: 10px; overflow: hidden; border: 2px solid #333645; background: #0a0b0e; box-shadow: 0 4px 14px rgba(0,0,0,0.4);">
+                    <img id="editClubBannerPreviewImg" src="<%= club.bannerUrl || '/images/default-banner.jpg' %>" alt="Club Banner" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/images/default-banner.jpg';">
+                    <div id="editClubBannerBadge" style="display: none; position: absolute; top: 8px; right: 8px; background: rgba(105, 240, 174, 0.9); color: #000; border-radius: 20px; padding: 2px 8px; font-size: 0.72rem; font-weight: 700; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                        <i class="fas fa-check"></i> New Banner Ready
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="gpl-btn-secondary" onclick="document.getElementById('editClubBannerInput').click()" style="padding: 7px 14px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <i class="fas fa-upload"></i> <span>Replace Banner</span>
+                        </button>
+                        <button type="button" id="editClubBannerResetBtn" onclick="resetEditClubBanner()" style="display: none; padding: 7px 12px; font-size: 0.8rem; background: rgba(244,67,54,0.15); border: 1px solid rgba(244,67,54,0.3); color: #ff8a80; border-radius: 8px; cursor: pointer; align-items: center; gap: 6px;">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                    <span id="editClubBannerFilename" style="font-size: 0.74rem; color: var(--silver); word-break: break-all;">Current: <%= club.bannerUrl ? club.bannerUrl.split('/').pop() : 'Default Banner' %></span>
+                </div>
+                <input type="file" id="editClubBannerInput" name="banner" accept="image/png, image/jpeg, image/gif, image/webp" style="display: none;" onchange="handleClubBannerSelect(event)">
             </div>
             <div style="margin-bottom: 16px;">
                 <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Visibility</label>
@@ -3200,10 +3602,13 @@
         <!-- TAB 2: Invite & Share Link (All Members) -->
         <div class="channel-menu-tab-content" id="tabPane-invite" style="display: none;">
             <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 16px;">
-                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 6px;">Direct Channel Invite Link</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="directChannelInviteInput" readonly style="flex: 1; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 10px 14px; font-size: 0.9rem;" value="">
-                    <button type="button" id="btnCopyChannelInvite" class="gpl-btn-primary" onclick="copyChannelInviteDirect()">
+                <label style="display: block; font-size: 0.85rem; color: var(--silver); margin-bottom: 8px;">Direct Channel Invite Link</label>
+                <div class="channel-invite-box" style="display: flex; align-items: stretch; background: #14151b; border: 1.5px solid #333645; border-radius: 10px; overflow: hidden; width: 100%; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s;">
+                    <div style="display: flex; align-items: center; justify-content: center; padding: 0 12px; color: var(--gold); background: rgba(255,215,0,0.06); border-right: 1px solid #282a36; flex-shrink: 0;">
+                        <i class="fas fa-link" style="font-size: 0.85rem;"></i>
+                    </div>
+                    <input type="text" id="directChannelInviteInput" readonly style="flex: 1 1 0%; min-width: 0; width: 0; background: transparent; border: none; outline: none; color: #fff; padding: 11px 12px; font-size: 0.86rem; font-family: monospace; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;" value="" onclick="this.select(); copyChannelInviteDirect();" title="Click to copy link">
+                    <button type="button" id="btnCopyChannelInvite" class="btn-copy-channel-link" onclick="copyChannelInviteDirect()" style="flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; background: linear-gradient(135deg, #ffd700, #ffb300); color: #000; border: none; font-weight: 700; font-size: 0.86rem; padding: 0 18px; cursor: pointer; transition: all 0.2s; white-space: nowrap; border-radius: 0;">
                         <i class="fas fa-copy"></i> <span>Copy</span>
                     </button>
                 </div>
@@ -3242,11 +3647,22 @@
                                 Restrict regular members from sending messages. Only staff, owner, and managers can chat.
                             </p>
                         </div>
-                        <button type="button" id="btnGuiToggleLock" onclick="toggleChannelRestriction()" style="background: <%= (activeChannel && activeChannel.isReadOnly) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)' %>; border: 1px solid <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; color: <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                            <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock-open' : 'fa-lock' %>"></i>
-                            <span id="btnGuiToggleLockText"><%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Lock Channel Chat' %></span>
-                        </button>
+                        <% if (!isSpecificLockedChan) { %>
+                            <button type="button" id="btnGuiToggleLock" onclick="toggleChannelRestriction()" style="background: <%= (activeChannel && activeChannel.isReadOnly) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)' %>; border: 1px solid <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; color: <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock-open' : 'fa-lock' %>"></i>
+                                <span id="btnGuiToggleLockText"><%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Lock Channel Chat' %></span>
+                            </button>
+                        <% } %>
                     </div>
+                    <% if (isSpecificLockedChan) { %>
+                        <div id="guiSpecificChannelWarning" style="margin-top: 14px; background: rgba(255, 193, 7, 0.1); border: 1.5px solid rgba(255, 193, 7, 0.4); border-radius: 10px; padding: 12px 16px; color: #ffc107; font-size: 0.85rem; display: flex; align-items: flex-start; gap: 10px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 1.25rem; margin-top: 2px; flex-shrink: 0; color: #ffc107;"></i>
+                            <div>
+                                <strong style="display: block; font-size: 0.92rem; color: #fff; margin-bottom: 3px;">Warning: Chat Cannot Be Unlocked</strong>
+                                <span>You cannot unlock chat on this specific club channel (<code style="background: rgba(0,0,0,0.4); color: var(--gold); padding: 1px 6px; border-radius: 4px;">#<%= activeChannel ? activeChannel.name : '' %></code>). This channel is designated for official guidelines, announcements, or automated feeds. The unlock button is disabled and hidden.</span>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
 
                 <!-- 2. Channel Privacy & Allowed Roles (3 Access Modes) -->
@@ -3296,7 +3712,7 @@
                                     <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.85rem; cursor: pointer;">
                                         <input type="checkbox" name="allowedRoles" value="<%= r._id %>" <%= isAllowed ? 'checked' : '' %>>
                                         <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
-                                        <span><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                                        <span><%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %></span>
                                     </label>
                                 <% }); %>
                             </div>
@@ -3362,20 +3778,143 @@
             <div class="channel-menu-tab-content" id="tabPane-roles" style="display: none;">
                 <!-- 1. Create New Custom Role ("Make Roles") -->
                 <div style="background: #0d0e12; border: 1px solid #282a36; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 1rem;"><i class="fas fa-plus-circle" style="color: var(--gold); margin-right: 6px;"></i> Create New Custom Role</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+                        <h4 style="margin: 0; color: #fff; font-size: 1rem;"><i class="fas fa-plus-circle" style="color: var(--gold); margin-right: 6px;"></i> Create New Custom Role</h4>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 0.75rem; color: var(--silver);">Preview:</span>
+                            <span id="newRolePreviewPill" class="discord-sidebar-role-pill" style="color: #FFD700; background: #FFD70018; border: 1px solid #FFD70040; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-shield-alt" id="newRolePreviewIcon"></i> <span id="newRolePreviewText">Role Name</span>
+                            </span>
+                        </div>
+                    </div>
                     <form id="createRoleGUIForm" onsubmit="submitCreateRole(event)">
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
-                                <input type="text" id="newRoleName" placeholder="e.g. VIP Modder, Helper" required style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 8px 10px; box-sizing: border-box;">
+                        <!-- Role Name -->
+                        <div style="margin-bottom: 12px;">
+                            <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
+                            <input type="text" id="newRoleName" placeholder="e.g. VIP Modder, Helper, Beta Tester" required oninput="updateNewRolePreview()" style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+                        </div>
+
+                        <!-- Role Color Selection UI -->
+                        <div style="margin-bottom: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label style="font-size: 0.78rem; color: var(--silver); margin: 0;">
+                                    <i class="fas fa-palette" style="color: var(--gold); margin-right: 4px;"></i> Role Color
+                                </label>
+                                <span id="newRoleColorDisplayTag" style="font-size: 0.75rem; font-family: monospace; color: #ffd700; font-weight: 700; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 1px 8px; border-radius: 6px;">#FFD700</span>
                             </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Badge Emoji</label>
-                                <input type="text" id="newRoleBadge" placeholder="🛡️" value="🛡️" maxlength="4" style="width: 100%; background: #14151b; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 8px 10px; box-sizing: border-box; text-align: center;">
+                            
+                            <!-- Custom Color Picker Bar & Swatches -->
+                            <div class="custom-role-color-panel">
+                                <!-- Curated Discord Palette Swatches -->
+                                <div class="color-swatches-grid" id="newRoleColorSwatches" style="margin-bottom: 10px;">
+                                    <% [
+                                        { hex: '#FFD700', name: 'Gold' },
+                                        { hex: '#5865F2', name: 'Blurple' },
+                                        { hex: '#2ECC71', name: 'Emerald' },
+                                        { hex: '#1ABC9C', name: 'Teal' },
+                                        { hex: '#00D2D3', name: 'Cyan' },
+                                        { hex: '#3498DB', name: 'Sky Blue' },
+                                        { hex: '#9B59B6', name: 'Amethyst' },
+                                        { hex: '#E056FD', name: 'Purple' },
+                                        { hex: '#EB459E', name: 'Fuchsia' },
+                                        { hex: '#FF4757', name: 'Crimson' },
+                                        { hex: '#FF7F50', name: 'Coral' },
+                                        { hex: '#FFA502', name: 'Amber' },
+                                        { hex: '#70A1FF', name: 'Soft Blue' },
+                                        { hex: '#7BED9F', name: 'Mint' },
+                                        { hex: '#99AAB5', name: 'Silver' },
+                                        { hex: '#2F3542', name: 'Dark' }
+                                    ].forEach(col => { %>
+                                        <button type="button" class="color-swatch-btn <%= col.hex === '#FFD700' ? 'selected' : '' %>" style="background: <%= col.hex %>;" onclick="selectNewRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
+                                            <i class="fas fa-check swatch-check" style="font-size: 0.65rem; color: #000; filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); <%= col.hex === '#FFD700' ? 'display: block !important;' : '' %>"></i>
+                                        </button>
+                                    <% }) %>
+                                </div>
+
+                                <!-- Custom Hex / Color Input Row -->
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <!-- Hidden Input storing actual color value (NO native browser dialog) -->
+                                        <input type="hidden" id="newRoleColor" value="#FFD700">
+                                        <!-- Interactive Custom Color Circle & Eyedropper Button -->
+                                        <div onclick="triggerEyeDropper('newRole')" style="position: relative; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.5); border: 2px solid #3d4255; flex-shrink: 0; background: #FFD700; transition: transform 0.15s, box-shadow 0.15s;" id="newRoleColorPreviewCircle" title="Click to pick color or toggle custom spectrum">
+                                            <i class="fas fa-eye-dropper" style="font-size: 0.72rem; color: #000; pointer-events: none;"></i>
+                                        </div>
+                                        <div style="display: flex; align-items: center; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 6px 10px; width: 100px;">
+                                            <span style="color: var(--silver); font-size: 0.8rem; margin-right: 2px; font-family: monospace;">#</span>
+                                            <input type="text" id="newRoleColorHex" value="FFD700" maxlength="6" oninput="onNewRoleColorHexInput(this.value)" placeholder="FFD700" style="width: 100%; background: transparent; border: none; color: #fff; font-size: 0.82rem; font-family: monospace; outline: none; text-transform: uppercase;">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn-spectrum-toggle" onclick="toggleColorSpectrum('newRole')" id="newRoleSpectrumBtn" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: var(--silver); font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">
+                                        <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
+                                        <span>Custom Spectrum</span>
+                                        <i class="fas fa-chevron-down spectrum-arrow" id="newRoleSpectrumArrow" style="font-size: 0.65rem; transition: transform 0.2s;"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Collapsible Interactive 2D Color Spectrum Box (Discord Style) -->
+                                <div id="newRoleSpectrumWrap" class="color-spectrum-wrapper" style="display: none; margin-top: 10px; background: #08090c; border: 1px solid #282a36; border-radius: 10px; padding: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span style="font-size: 0.72rem; color: #8e9297; text-transform: uppercase; letter-spacing: 0.5px;">Drag to pick hue &amp; shade:</span>
+                                        <span id="newRoleRgbDisplay" style="font-family: monospace; font-size: 0.72rem; color: var(--gold);">RGB(255, 215, 0)</span>
+                                    </div>
+                                    <!-- 2D Saturation/Brightness Pad -->
+                                    <div class="spectrum-pad" id="newRoleSpectrumPad">
+                                        <div class="spectrum-pad-white"></div>
+                                        <div class="spectrum-pad-black"></div>
+                                        <div class="spectrum-handle" id="newRoleSpectrumHandle" style="left: 100%; top: 0%;"></div>
+                                    </div>
+                                    <!-- 1D Rainbow Hue Slider -->
+                                    <div class="spectrum-hue-track" id="newRoleHueTrack">
+                                        <div class="spectrum-hue-handle" id="newRoleHueHandle" style="left: 14.16%;"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Color</label>
-                                <input type="color" id="newRoleColor" value="#FFD700" style="width: 100%; height: 36px; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 2px; cursor: pointer; box-sizing: border-box;">
+                        </div>
+
+                        <!-- Badge Emoji / FontAwesome Icon Picker UI -->
+                        <div style="margin-bottom: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <label style="font-size: 0.78rem; color: var(--silver);">
+                                    <i class="fas fa-icons" style="color: var(--gold); margin-right: 4px;"></i> Badge Emoji (FontAwesome Icon)
+                                </label>
+                                <span style="font-size: 0.72rem; color: #8e9297;">Click to choose icon</span>
+                            </div>
+                            <div class="fa-icon-picker-grid" id="newRoleIconGrid">
+                                <% const availableIcons = [
+                                    { id: 'fa-shield-alt', title: 'Shield' },
+                                    { id: 'fa-crown', title: 'Crown' },
+                                    { id: 'fa-star', title: 'Star' },
+                                    { id: 'fa-gem', title: 'Gem' },
+                                    { id: 'fa-fire', title: 'Fire' },
+                                    { id: 'fa-bolt', title: 'Bolt' },
+                                    { id: 'fa-rocket', title: 'Rocket' },
+                                    { id: 'fa-trophy', title: 'Trophy' },
+                                    { id: 'fa-medal', title: 'Medal' },
+                                    { id: 'fa-gamepad', title: 'Gamepad' },
+                                    { id: 'fa-paint-brush', title: 'Paint Brush' },
+                                    { id: 'fa-wrench', title: 'Wrench' },
+                                    { id: 'fa-code', title: 'Code' },
+                                    { id: 'fa-heart', title: 'Heart' },
+                                    { id: 'fa-check-circle', title: 'Verified' },
+                                    { id: 'fa-bullhorn', title: 'Bullhorn' },
+                                    { id: 'fa-skull', title: 'Skull' },
+                                    { id: 'fa-magic', title: 'Magic' },
+                                    { id: 'fa-ghost', title: 'Ghost' },
+                                    { id: 'fa-user-ninja', title: 'Ninja' },
+                                    { id: 'fa-user-astronaut', title: 'Astronaut' },
+                                    { id: 'fa-crosshairs', title: 'Crosshairs' },
+                                    { id: 'fa-lightbulb', title: 'Lightbulb' },
+                                    { id: 'fa-globe', title: 'Globe' }
+                                ]; %>
+                                <% availableIcons.forEach(ic => { %>
+                                    <button type="button" class="fa-icon-btn <%= ic.id === 'fa-shield-alt' ? 'selected' : '' %>" data-icon="<%= ic.id %>" onclick="selectNewRoleIcon('<%= ic.id %>')" title="<%= ic.title %>">
+                                        <i class="fas <%= ic.id %>"></i>
+                                    </button>
+                                <% }) %>
+                            </div>
+                            <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                                <input type="text" id="newRoleBadge" value="fa-shield-alt" oninput="onNewRoleCustomIconInput(this.value)" placeholder="or type custom fa-icon class (e.g. fa-dragon)" style="flex: 1; background: #14151b; border: 1px solid #333645; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 0.78rem;">
                             </div>
                         </div>
 
@@ -3409,7 +3948,7 @@
                             <div class="role-list-row" id="roleRow-<%= r._id %>" style="display: flex; align-items: center; justify-content: space-between; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
-                                        <%= r.badgeIcon || '🛡️' %> <%= r.name %>
+                                        <%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %>
                                     </span>
                                     <% if (r.name === 'everyone') { %>
                                         <span style="font-size: 0.72rem; color: #8e9297;">(Default Role)</span>
@@ -3417,7 +3956,7 @@
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 6px;">
                                     <% if (r.name !== 'everyone') { %>
-                                        <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('<%= r._id %>', '<%= r.name %>', '<%= r.badgeIcon || "🛡️" %>', '<%= r.color || "#FFD700" %>', <%= r.permissions?.canManageChannels || false %>, <%= r.permissions?.canKickMembers || false %>, <%= r.permissions?.canPostPolls || false %>)" title="Edit Role">
+                                        <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('<%= r._id %>', '<%= r.name %>', '<%= r.badgeIcon || "fa-shield-alt" %>', '<%= r.color || "#FFD700" %>', <%= r.permissions?.canManageChannels || false %>, <%= r.permissions?.canKickMembers || false %>, <%= r.permissions?.canPostPolls || false %>)" title="Edit Role">
                                             <i class="fas fa-pencil-alt"></i> Edit
                                         </button>
                                         <button type="button" class="btn-role-action delete" onclick="confirmDeleteRole('<%= r._id %>', '<%= r.name %>')" title="Delete Role">
@@ -3442,17 +3981,51 @@
                     </div>
 
                     <div style="margin-bottom: 14px;">
-                        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Select Member</label>
-                        <select id="assignTargetMember" class="gui-select" onchange="onSelectMemberForRoles(this.value)" style="width: 100%;">
-                            <option value="">-- Choose Member --</option>
-                            <% (members || []).forEach(m => { %>
-                                <% if (m.user) { %>
-                                    <option value="<%= m._id %>" data-roles="<%= (m.roles || []).map(r => r._id || r).join(',') %>">
-                                        <%= m.user.username %> (<%= (m.roles || []).length %> roles)
-                                    </option>
-                                <% } %>
-                            <% }); %>
-                        </select>
+                        <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 6px;">Select Member</label>
+                        <div class="chan-custom-select-wrapper" id="wrapper-assignTargetMember">
+                            <div class="chan-custom-select" onclick="toggleAssignTargetMemberDropdown(event)" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #14151b; border: 1px solid #333645; border-radius: 8px; cursor: pointer;">
+                                <span class="chan-custom-select-text" id="assignTargetMemberTrigger" style="display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.88rem;">
+                                    <span class="member-sel-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: #23272a; flex-shrink: 0; border: 1px solid #333645;">
+                                        <i class="fas fa-user" style="font-size: 0.75rem; color: var(--silver);"></i>
+                                    </span>
+                                    <span class="text-label">-- Choose Member --</span>
+                                </span>
+                                <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver); transition: transform 0.2s;"></i>
+                            </div>
+                            <div class="chan-custom-options" id="assignTargetMemberOptions" style="max-height: 240px; overflow-y: auto; background: #14151e; border: 1px solid var(--gold); border-radius: 10px; padding: 6px;">
+                                <div class="chan-custom-option selected" data-value="" onclick="selectAssignMember('', '-- Choose Member --', null, 0)">
+                                    <span class="member-sel-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: #23272a; flex-shrink: 0;">
+                                        <i class="fas fa-user-slash" style="font-size: 0.72rem; color: var(--silver);"></i>
+                                    </span>
+                                    <div>
+                                        <strong style="color: #fff; font-size: 0.86rem; display: block;">-- Choose Member --</strong>
+                                    </div>
+                                </div>
+                                <% (members || []).forEach(m => { %>
+                                    <% if (m.user) { %>
+                                        <% const memberAvatar = getUserAvatarUrl(m.user); %>
+                                        <div class="chan-custom-option" id="assignOpt-<%= m._id %>" data-value="<%= m._id %>" data-roles="<%= (m.roles || []).map(r => r._id || r).join(',') %>" onclick="selectAssignMember('<%= m._id %>', '<%= m.user.username %>', '<%= memberAvatar %>', '<%= (m.roles || []).length %>')">
+                                            <img src="<%= memberAvatar %>" alt="<%= m.user.username %>" style="width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid #333645;" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
+                                            <div style="flex: 1; min-width: 0;">
+                                                <strong style="color: #fff; font-size: 0.86rem; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= m.user.username %></strong>
+                                                <span class="member-opt-role-count" style="font-size: 0.72rem; color: var(--silver);"><%= (m.roles || []).length %> roles assigned</span>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                <% }); %>
+                            </div>
+                            <!-- Hidden Select for 100% JS backward compatibility -->
+                            <select id="assignTargetMember" style="display: none;" onchange="onSelectMemberForRoles(this.value)">
+                                <option value="">-- Choose Member --</option>
+                                <% (members || []).forEach(m => { %>
+                                    <% if (m.user) { %>
+                                        <option value="<%= m._id %>" data-roles="<%= (m.roles || []).map(r => r._id || r).join(',') %>">
+                                            <%= m.user.username %> (<%= (m.roles || []).length %> roles)
+                                        </option>
+                                    <% } %>
+                                <% }); %>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Member Roles Checkboxes Grid -->
@@ -3465,7 +4038,7 @@
                                 <label class="role-checkbox-item" id="roleLabel-<%= r._id %>" style="display: flex; align-items: center; gap: 8px; background: #14151b; border: 1px solid #2a2d3a; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.82rem; color: #fff;">
                                     <input type="checkbox" class="member-role-checkbox" value="<%= r._id %>" onchange="onMemberRoleCheckboxChange()">
                                     <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>; flex-shrink: 0;"></span>
-                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= r.badgeIcon || '🛡️' %> <%= r.name %></span>
+                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %></span>
                                 </label>
                             <% }); %>
                         </div>
@@ -3833,27 +4406,149 @@
 <!-- EDIT ROLE MODAL                                                -->
 <!-- ============================================================== -->
 <div class="gpl-modal-backdrop" id="editRoleModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 480px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 520px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
             <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-user-shield" style="color: var(--gold);"></i> Edit Custom Role
             </h3>
-            <button type="button" class="gpl-modal-close-btn" onclick="closeEditRoleModal()" title="Close">&times;</button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.75rem; color: var(--silver);">Preview:</span>
+                <span id="editRolePreviewPill" class="discord-sidebar-role-pill" style="color: #FFD700; background: #FFD70018; border: 1px solid #FFD70040; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-shield-alt" id="editRolePreviewIcon"></i> <span id="editRolePreviewText">Role Name</span>
+                </span>
+                <button type="button" class="gpl-modal-close-btn" onclick="closeEditRoleModal()" title="Close" style="margin-left: 6px;">&times;</button>
+            </div>
         </div>
         <form id="editRoleForm" onsubmit="submitEditRole(event)">
             <input type="hidden" id="editRoleId">
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                <div>
-                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
-                    <input type="text" id="editRoleNameInput" required style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 10px; box-sizing: border-box;">
+
+            <!-- Role Name -->
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Name</label>
+                <input type="text" id="editRoleNameInput" required oninput="updateEditRolePreview()" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 12px; box-sizing: border-box;">
+            </div>
+
+            <!-- Role Color Selection UI -->
+            <div style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 0.78rem; color: var(--silver); margin: 0;">
+                        <i class="fas fa-palette" style="color: var(--gold); margin-right: 4px;"></i> Role Color
+                    </label>
+                    <span id="editRoleColorDisplayTag" style="font-size: 0.75rem; font-family: monospace; color: #ffd700; font-weight: 700; background: rgba(255,215,0,0.1); border: 1px solid rgba(255,215,0,0.3); padding: 1px 8px; border-radius: 6px;">#FFD700</span>
                 </div>
-                <div>
-                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Badge Emoji</label>
-                    <input type="text" id="editRoleBadgeInput" maxlength="4" style="width: 100%; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; color: #fff; padding: 9px 10px; box-sizing: border-box; text-align: center;">
+                
+                <!-- Custom Color Picker Bar & Swatches -->
+                <div class="custom-role-color-panel">
+                    <!-- Curated Discord Palette Swatches -->
+                    <div class="color-swatches-grid" id="editRoleColorSwatches" style="margin-bottom: 10px;">
+                        <% [
+                            { hex: '#FFD700', name: 'Gold' },
+                            { hex: '#5865F2', name: 'Blurple' },
+                            { hex: '#2ECC71', name: 'Emerald' },
+                            { hex: '#1ABC9C', name: 'Teal' },
+                            { hex: '#00D2D3', name: 'Cyan' },
+                            { hex: '#3498DB', name: 'Sky Blue' },
+                            { hex: '#9B59B6', name: 'Amethyst' },
+                            { hex: '#E056FD', name: 'Purple' },
+                            { hex: '#EB459E', name: 'Fuchsia' },
+                            { hex: '#FF4757', name: 'Crimson' },
+                            { hex: '#FF7F50', name: 'Coral' },
+                            { hex: '#FFA502', name: 'Amber' },
+                            { hex: '#70A1FF', name: 'Soft Blue' },
+                            { hex: '#7BED9F', name: 'Mint' },
+                            { hex: '#99AAB5', name: 'Silver' },
+                            { hex: '#2F3542', name: 'Dark' }
+                        ].forEach(col => { %>
+                            <button type="button" class="color-swatch-btn" style="background: <%= col.hex %>;" onclick="selectEditRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
+                                <i class="fas fa-check swatch-check" style="font-size: 0.65rem; color: #000; filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); display: none;"></i>
+                            </button>
+                        <% }) %>
+                    </div>
+
+                    <!-- Custom Hex / Color Input Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <!-- Hidden Input storing actual color value (NO native browser dialog) -->
+                            <input type="hidden" id="editRoleColorInput" value="#FFD700">
+                            <!-- Interactive Custom Color Circle & Eyedropper Button -->
+                            <div onclick="triggerEyeDropper('editRole')" style="position: relative; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.5); border: 2px solid #3d4255; flex-shrink: 0; background: #FFD700; transition: transform 0.15s, box-shadow 0.15s;" id="editRoleColorPreviewCircle" title="Click to pick color or toggle custom spectrum">
+                                <i class="fas fa-eye-dropper" style="font-size: 0.72rem; color: #000; pointer-events: none;"></i>
+                            </div>
+                            <div style="display: flex; align-items: center; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 6px 10px; width: 100px;">
+                                <span style="color: var(--silver); font-size: 0.8rem; margin-right: 2px; font-family: monospace;">#</span>
+                                <input type="text" id="editRoleColorHex" value="FFD700" maxlength="6" oninput="onEditRoleColorHexInput(this.value)" placeholder="FFD700" style="width: 100%; background: transparent; border: none; color: #fff; font-size: 0.82rem; font-family: monospace; outline: none; text-transform: uppercase;">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-spectrum-toggle" onclick="toggleColorSpectrum('editRole')" id="editRoleSpectrumBtn" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 10px; color: var(--silver); font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">
+                            <i class="fas fa-sliders-h" style="color: var(--gold);"></i>
+                            <span>Custom Spectrum</span>
+                            <i class="fas fa-chevron-down spectrum-arrow" id="editRoleSpectrumArrow" style="font-size: 0.65rem; transition: transform 0.2s;"></i>
+                        </button>
+                    </div>
+
+                    <!-- Collapsible Interactive 2D Color Spectrum Box (Discord Style) -->
+                    <div id="editRoleSpectrumWrap" class="color-spectrum-wrapper" style="display: none; margin-top: 10px; background: #08090c; border: 1px solid #282a36; border-radius: 10px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 0.72rem; color: #8e9297; text-transform: uppercase; letter-spacing: 0.5px;">Drag to pick hue &amp; shade:</span>
+                            <span id="editRoleRgbDisplay" style="font-family: monospace; font-size: 0.72rem; color: var(--gold);">RGB(255, 215, 0)</span>
+                        </div>
+                        <!-- 2D Saturation/Brightness Pad -->
+                        <div class="spectrum-pad" id="editRoleSpectrumPad">
+                            <div class="spectrum-pad-white"></div>
+                            <div class="spectrum-pad-black"></div>
+                            <div class="spectrum-handle" id="editRoleSpectrumHandle" style="left: 100%; top: 0%;"></div>
+                        </div>
+                        <!-- 1D Rainbow Hue Slider -->
+                        <div class="spectrum-hue-track" id="editRoleHueTrack">
+                            <div class="spectrum-hue-handle" id="editRoleHueHandle" style="left: 14.16%;"></div>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label style="display: block; font-size: 0.78rem; color: var(--silver); margin-bottom: 4px;">Role Color</label>
-                    <input type="color" id="editRoleColorInput" style="width: 100%; height: 38px; background: #0d0e12; border: 1px solid #333645; border-radius: 8px; padding: 2px; cursor: pointer; box-sizing: border-box;">
+            </div>
+
+            <!-- Badge Emoji / FontAwesome Icon Picker UI -->
+            <div style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 0.78rem; color: var(--silver);">
+                        <i class="fas fa-icons" style="color: var(--gold); margin-right: 4px;"></i> Badge Emoji (FontAwesome Icon)
+                    </label>
+                    <span style="font-size: 0.72rem; color: #8e9297;">Click to choose icon</span>
+                </div>
+                <div class="fa-icon-picker-grid" id="editRoleIconGrid">
+                    <% const editRoleIcons = [
+                        { id: 'fa-shield-alt', title: 'Shield' },
+                        { id: 'fa-crown', title: 'Crown' },
+                        { id: 'fa-star', title: 'Star' },
+                        { id: 'fa-gem', title: 'Gem' },
+                        { id: 'fa-fire', title: 'Fire' },
+                        { id: 'fa-bolt', title: 'Bolt' },
+                        { id: 'fa-rocket', title: 'Rocket' },
+                        { id: 'fa-trophy', title: 'Trophy' },
+                        { id: 'fa-medal', title: 'Medal' },
+                        { id: 'fa-gamepad', title: 'Gamepad' },
+                        { id: 'fa-paint-brush', title: 'Paint Brush' },
+                        { id: 'fa-wrench', title: 'Wrench' },
+                        { id: 'fa-code', title: 'Code' },
+                        { id: 'fa-heart', title: 'Heart' },
+                        { id: 'fa-check-circle', title: 'Verified' },
+                        { id: 'fa-bullhorn', title: 'Bullhorn' },
+                        { id: 'fa-skull', title: 'Skull' },
+                        { id: 'fa-magic', title: 'Magic' },
+                        { id: 'fa-ghost', title: 'Ghost' },
+                        { id: 'fa-user-ninja', title: 'Ninja' },
+                        { id: 'fa-user-astronaut', title: 'Astronaut' },
+                        { id: 'fa-crosshairs', title: 'Crosshairs' },
+                        { id: 'fa-lightbulb', title: 'Lightbulb' },
+                        { id: 'fa-globe', title: 'Globe' }
+                    ]; %>
+                    <% editRoleIcons.forEach(ic => { %>
+                        <button type="button" class="fa-icon-btn" data-icon="<%= ic.id %>" onclick="selectEditRoleIcon('<%= ic.id %>')" title="<%= ic.title %>">
+                            <i class="fas <%= ic.id %>"></i>
+                        </button>
+                    <% }) %>
+                </div>
+                <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                    <input type="text" id="editRoleBadgeInput" value="fa-shield-alt" oninput="onEditRoleCustomIconInput(this.value)" placeholder="or type custom fa-icon class (e.g. fa-dragon)" style="flex: 1; background: #0d0e12; border: 1px solid #333645; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 0.78rem;">
                 </div>
             </div>
 
@@ -3951,12 +4646,45 @@
     // ==========================================
     // ZERO BROWSER STATIC: TOAST & CONFIRM SYSTEM
     // ==========================================
-    function showGplToast(message, type = 'info', duration = 3500) {
+    function formatBadgeIcon(badgeIcon) {
+        if (!badgeIcon) return '<i class="fas fa-shield-alt"></i>';
+        const trimmed = String(badgeIcon).trim();
+        if (trimmed.startsWith('fa-') || trimmed.startsWith('fas ') || trimmed.startsWith('fab ') || trimmed.startsWith('far ')) {
+            const cls = trimmed.startsWith('fa-') ? `fas ${trimmed}` : trimmed;
+            return `<i class="${cls}"></i>`;
+        }
+        const emojiMap = {
+            '🛡️': 'fas fa-shield-alt', '🛡': 'fas fa-shield-alt', '🌐': 'fas fa-globe',
+            '🎨': 'fas fa-paint-brush', '👑': 'fas fa-crown', '⭐': 'fas fa-star',
+            '🌟': 'fas fa-star', '🔥': 'fas fa-fire', '💎': 'fas fa-gem', '⚡': 'fas fa-bolt',
+            '🚀': 'fas fa-rocket', '🏆': 'fas fa-trophy', '🎮': 'fas fa-gamepad',
+            '🛠️': 'fas fa-wrench', '🔧': 'fas fa-wrench', '🎖️': 'fas fa-medal',
+            '💡': 'fas fa-lightbulb', '❤️': 'fas fa-heart', '🔒': 'fas fa-lock',
+            '📜': 'fas fa-scroll', '📣': 'fas fa-bullhorn', 'Check': 'fas fa-check-circle', '✓': 'fas fa-check-circle'
+        };
+        return `<i class="${emojiMap[trimmed] || 'fas fa-shield-alt'}"></i>`;
+    }
+
+    function showGplToast(message, type = 'info', duration = 3500, actionKey = null) {
+        if (typeof window.showInAppToast === 'function') {
+            return window.showInAppToast(message, type, duration, actionKey);
+        }
         const container = document.getElementById('gplToastContainer');
         if (!container) return;
 
+        if (actionKey) {
+            const existing = container.querySelector(`[data-action-key="${actionKey}"]`);
+            if (existing) {
+                const msgSpan = existing.querySelector('.toast-msg');
+                if (msgSpan) msgSpan.textContent = message;
+                existing.className = `gpl-toast ${type}`;
+                return existing;
+            }
+        }
+
         const toast = document.createElement('div');
         toast.className = `gpl-toast ${type}`;
+        if (actionKey) toast.setAttribute('data-action-key', actionKey);
 
         let iconClass = 'fa-info-circle';
         if (type === 'success') iconClass = 'fa-check-circle';
@@ -3977,6 +4705,7 @@
             toast.style.animation = 'gplToastSlideOut 0.3s forwards ease';
             setTimeout(() => toast.remove(), 320);
         }, duration);
+        return toast;
     }
 
     let activeConfirmCallback = null;
@@ -4146,11 +4875,11 @@
         // Roles Section
         const roleMatches = [];
         if ('everyone'.includes(query)) {
-            roleMatches.push({ type: 'role', name: 'everyone', color: '#ff8dfb', icon: '🌐' });
+            roleMatches.push({ type: 'role', name: 'everyone', color: '#ff8dfb', icon: 'fa-globe' });
         }
         clubRoles.forEach(r => {
             if (r.name && r.name !== 'everyone' && r.name.toLowerCase().includes(query)) {
-                roleMatches.push({ type: 'role', name: r.name, color: r.color || '#99AAB5', icon: r.badgeIcon || '🛡️' });
+                roleMatches.push({ type: 'role', name: r.name, color: r.color || '#99AAB5', icon: r.icon || 'fa-shield-alt' });
             }
         });
 
@@ -4161,7 +4890,7 @@
                 mentionItemsList.push(r);
                 html += `
                     <div class="mention-item" data-idx="${idx}" onclick="selectMentionItem(mentionItemsList[${idx}])">
-                        <span style="color: ${r.color}; font-size: 1rem;">${r.icon}</span>
+                        <span style="color: ${r.color}; font-size: 0.95rem;">${formatBadgeIcon(r.icon)}</span>
                         <span class="mention-item-name" style="color: ${r.color};">@${r.name}</span>
                         <span class="mention-item-tag">Role</span>
                     </div>
@@ -4361,8 +5090,8 @@
         msgDiv.className = `message-item ${msg.isPinned ? 'pinned-msg-item' : ''} ${isMentioned ? 'message-highlighted-mention' : ''}`;
         msgDiv.id = `msg-${msg._id}`;
 
-        const isGPLModsMsg = !msg.sender || msg.sender.username === 'GPLMods' || msg.isSystemMessage;
-        const senderAvatar = msg.sender?.signedAvatarUrl || (isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
+        const isSystemMsg = msg.isSystemMessage || !msg.sender;
+        const senderAvatar = (msg.sender && (msg.sender.signedAvatarUrl || msg.sender.cardAvatarUrl || msg.sender.avatarUrl || msg.sender.avatar)) || (isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
         const senderName = msg.sender?.username || 'GPLMods';
         msgDiv.dataset.senderUsername = senderName;
         const roleBadges = [];
@@ -4378,14 +5107,14 @@
             const roleName = senderMem.roles[0];
             const matchingRole = clubRoles.find(r => r.name === roleName);
             if (matchingRole && matchingRole.name !== 'everyone') {
-                roleBadges.push(`<span class="discord-role-pill" style="border: 1px solid ${matchingRole.color || '#99AAB5'}50; color: ${matchingRole.color || '#99AAB5'}; background: ${matchingRole.color || '#99AAB5'}18;"><span class="role-dot" style="background: ${matchingRole.color || '#99AAB5'};"></span>${matchingRole.name}</span>`);
+                roleBadges.push(`<span class="discord-role-pill" style="border: 1px solid ${matchingRole.color || '#99AAB5'}50; color: ${matchingRole.color || '#99AAB5'}; background: ${matchingRole.color || '#99AAB5'}18;"><span class="role-dot" style="background: ${matchingRole.color || '#99AAB5'};"></span>${formatBadgeIcon(matchingRole.icon)} ${matchingRole.name}</span>`);
             }
         }
 
         const formattedBody = formatDiscordMentions(msg.content);
 
         msgDiv.innerHTML = `
-            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.src='${isGPLModsMsg ? '/images/team-logo.png' : '/images/default-avatar.png'}';">
+            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.onerror=null; this.src='${isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png'}';">
             <div class="message-content-col">
                 <div class="message-header-row">
                     <a href="/users/${senderName}" class="message-username" target="_blank">${senderName}</a>
@@ -4668,7 +5397,7 @@
                 html += `
                     <div class="member-card-row" onclick="window.location.href='/users/${u.username}'">
                         <div class="member-avatar-wrap">
-                            <img src="${u.avatarUrl || (u.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')}" class="member-avatar-img" alt="${u.username}" onerror="this.onerror=null; this.src=(this.alt==='GPLMods')?'/images/team-logo.png':'/images/default-avatar.png';">
+                            <img src="${u.signedAvatarUrl || u.cardAvatarUrl || u.avatarUrl || u.avatar || (u.username === 'GPLMods' ? '/images/team-logo.png' : '/images/default-avatar.png')}" class="member-avatar-img" alt="${u.username}" onerror="this.onerror=null; this.src='/images/default-avatar.png';">
                             <div class="online-dot"></div>
                         </div>
                         <div class="member-meta-box">
@@ -5286,6 +6015,10 @@
 
     // Channel Restriction Toggle
     function toggleChannelRestriction() {
+        <% if (isSpecificLockedChan) { %>
+            showGplToast('You cannot unlock chat on this specific club channel.', 'warning', 4000, 'chan_lock');
+            return;
+        <% } %>
         socket.emit('club_toggle_channel_restriction', {
             clubId,
             channelId
@@ -5340,7 +6073,7 @@
 
     // Initialize Custom Select GUI for Modals (Create & Edit Channel Type)
     function initCustomChannelSelects() {
-        document.querySelectorAll('.chan-custom-select-wrapper').forEach(wrapper => {
+        document.querySelectorAll('.chan-custom-select-wrapper:not(#wrapper-assignTargetMember):not(#wrapper-editClubVisibility):not(#wrapper-forwardChannel)').forEach(wrapper => {
             const trigger = wrapper.querySelector('.chan-custom-select');
             const optionsList = wrapper.querySelectorAll('.chan-custom-option');
             const hiddenInput = wrapper.querySelector('input[type="hidden"]');
@@ -5489,42 +6222,96 @@
 
     function copyActiveChannelLink() {
         const url = window.location.origin + '/clubs/<%= club.slug %>?channel=' + (channelId || '');
-        if (navigator.clipboard) {
+        if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(url).then(() => {
                 showGplToast('Channel link copied to clipboard!', 'success');
             }).catch(() => {
-                showGplToast(`Channel link: ${url}`, 'info');
+                fallbackCopyText(url, 'Channel link copied to clipboard!');
             });
         } else {
-            showGplToast(`Channel link: ${url}`, 'info');
+            fallbackCopyText(url, 'Channel link copied to clipboard!');
         }
+    }
+
+    function fallbackCopyText(text, successMsg = 'Copied to clipboard!') {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.top = '-9999px';
+            ta.setAttribute('readonly', '');
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            ta.setSelectionRange(0, 99999);
+            const successful = document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (successful) {
+                showGplToast(successMsg, 'success');
+                return true;
+            }
+        } catch (err) {}
+        showGplToast(text, 'info');
+        return false;
     }
 
     function copyChannelInviteDirect() {
         const input = document.getElementById('directChannelInviteInput');
         const btn = document.getElementById('btnCopyChannelInvite');
-        if (!input) return;
+        const textToCopy = (input && input.value) ? input.value : (window.location.origin + '/clubs/<%= club.slug %>?channel=' + (channelId || ''));
+        if (!textToCopy) return;
 
         const finishCopy = () => {
             if (btn) {
                 btn.innerHTML = '<i class="fas fa-check"></i> <span>Copied!</span>';
+                btn.style.background = '#2ed573';
+                btn.style.color = '#fff';
                 setTimeout(() => {
                     btn.innerHTML = '<i class="fas fa-copy"></i> <span>Copy</span>';
+                    btn.style.background = 'linear-gradient(135deg, #ffd700, #ffb300)';
+                    btn.style.color = '#000';
                 }, 2500);
             }
             showGplToast('Channel invite link copied!', 'success');
         };
 
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(input.value).then(finishCopy).catch(() => {
-                input.select();
-                document.execCommand('copy');
+        const fallbackCopy = (text) => {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '-9999px';
+                ta.setAttribute('readonly', '');
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, 99999);
+                const successful = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (successful) {
+                    finishCopy();
+                } else if (input) {
+                    input.focus();
+                    input.select();
+                    finishCopy();
+                }
+            } catch (err) {
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
                 finishCopy();
+            }
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(textToCopy).then(finishCopy).catch(() => {
+                fallbackCopy(textToCopy);
             });
         } else {
-            input.select();
-            document.execCommand('copy');
-            finishCopy();
+            fallbackCopy(textToCopy);
         }
     }
 
@@ -5889,16 +6676,669 @@
     // ==========================================
     // ROLE MANAGEMENT & ASSIGNMENT (MAX 10 ENFORCED)
     // ==========================================
+    function selectNewRoleIcon(iconId) {
+        const input = document.getElementById('newRoleBadge');
+        if (input) input.value = iconId;
+        const grid = document.getElementById('newRoleIconGrid');
+        if (grid) {
+            grid.querySelectorAll('.fa-icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === iconId);
+            });
+        }
+        updateNewRolePreview();
+    }
+
+    function onNewRoleCustomIconInput(val) {
+        const grid = document.getElementById('newRoleIconGrid');
+        if (grid) {
+            grid.querySelectorAll('.fa-icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === val.trim());
+            });
+        }
+        updateNewRolePreview();
+    }
+
+    // ==========================================
+    // COLOR PICKER & HSV SPECTRUM ENGINE (DISCORD STYLE)
+    // ==========================================
+    const currentPickerHsv = {
+        newRole: { h: 51, s: 1, v: 1 },
+        editRole: { h: 51, s: 1, v: 1 }
+    };
+
+    function hsvToRgb(h, s, v) {
+        const c = v * s;
+        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+        const m = v - c;
+        let r = 0, g = 0, b = 0;
+        if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+        else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+        else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+        else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+        else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+        else { r = c; g = 0; b = x; }
+        return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+    }
+
+    function rgbToHsv(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const d = max - min;
+        let h = 0;
+        const s = max === 0 ? 0 : d / max;
+        const v = max;
+        if (max !== min) {
+            switch (max) {
+                case r: h = ((g - b) / d + (g < b ? 6 : 0)) * 60; break;
+                case g: h = ((b - r) / d + 2) * 60; break;
+                case b: h = ((r - g) / d + 4) * 60; break;
+            }
+        }
+        return [h, s, v];
+    }
+
+    function hexToRgb(hex) {
+        let clean = (hex || '').replace('#', '').trim();
+        if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+        if (clean.length !== 6) return [255, 215, 0];
+        const num = parseInt(clean, 16);
+        if (isNaN(num)) return [255, 215, 0];
+        return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    }
+
+    function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    function highlightColorSwatch(containerId, color) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const norm = (color || '').toLowerCase().trim();
+        container.querySelectorAll('.color-swatch-btn').forEach(btn => {
+            const btnTitle = (btn.getAttribute('title') || '').toLowerCase();
+            const isMatch = btnTitle.includes(norm);
+            btn.classList.toggle('selected', isMatch);
+            const check = btn.querySelector('.swatch-check');
+            if (check) check.style.display = isMatch ? 'block' : 'none';
+        });
+    }
+
+    function syncSpectrumFromHex(prefix, hex) {
+        if (!hex) return;
+        const [r, g, b] = hexToRgb(hex);
+        const [h, s, v] = rgbToHsv(r, g, b);
+        currentPickerHsv[prefix] = { h, s, v };
+
+        const pad = document.getElementById(`${prefix}SpectrumPad`);
+        const padHandle = document.getElementById(`${prefix}SpectrumHandle`);
+        const hueTrack = document.getElementById(`${prefix}HueTrack`);
+        const hueHandle = document.getElementById(`${prefix}HueHandle`);
+        const rgbDisplay = document.getElementById(`${prefix}RgbDisplay`);
+
+        if (pad && padHandle) {
+            pad.style.backgroundColor = `hsl(${h}, 100%, 50%)`;
+            padHandle.style.left = `${(s * 100)}%`;
+            padHandle.style.top = `${((1 - v) * 100)}%`;
+        }
+        if (hueTrack && hueHandle) {
+            hueHandle.style.left = `${((h / 360) * 100)}%`;
+        }
+        if (rgbDisplay) {
+            rgbDisplay.textContent = `RGB(${r}, ${g}, ${b})`;
+        }
+    }
+
+    function setPickerHsv(prefix, h, s, v) {
+        currentPickerHsv[prefix] = { h, s, v };
+        const [r, g, b] = hsvToRgb(h, s, v);
+        const hex = rgbToHex(r, g, b);
+        const cleanHex = hex.slice(1);
+
+        const hiddenInputId = prefix === 'newRole' ? 'newRoleColor' : 'editRoleColorInput';
+        const hiddenInput = document.getElementById(hiddenInputId);
+        if (hiddenInput) hiddenInput.value = hex;
+
+        const hexInput = document.getElementById(`${prefix}ColorHex`);
+        if (hexInput && hexInput.value !== cleanHex) hexInput.value = cleanHex;
+
+        const tag = document.getElementById(`${prefix}ColorDisplayTag`);
+        if (tag) {
+            tag.textContent = hex;
+            tag.style.color = hex;
+            tag.style.borderColor = hex + '55';
+            tag.style.background = hex + '1a';
+        }
+
+        const circle = document.getElementById(`${prefix}ColorPreviewCircle`);
+        if (circle) circle.style.background = hex;
+
+        const rgbDisplay = document.getElementById(`${prefix}RgbDisplay`);
+        if (rgbDisplay) rgbDisplay.textContent = `RGB(${r}, ${g}, ${b})`;
+
+        highlightColorSwatch(`${prefix}ColorSwatches`, hex);
+
+        if (prefix === 'newRole') updateNewRolePreview();
+        else updateEditRolePreview();
+    }
+
+    function toggleColorSpectrum(prefix) {
+        const wrap = document.getElementById(`${prefix}SpectrumWrap`);
+        const arrow = document.getElementById(`${prefix}SpectrumArrow`);
+        if (!wrap) return;
+
+        const isOpen = wrap.classList.contains('open');
+        if (isOpen) {
+            wrap.classList.remove('open');
+            wrap.style.display = 'none';
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+        } else {
+            wrap.classList.add('open');
+            wrap.style.display = 'block';
+            if (arrow) arrow.style.transform = 'rotate(180deg)';
+            const curHex = (prefix === 'newRole' ? document.getElementById('newRoleColor')?.value : document.getElementById('editRoleColorInput')?.value) || '#FFD700';
+            syncSpectrumFromHex(prefix, curHex);
+        }
+    }
+
+    async function triggerEyeDropper(prefix) {
+        if (window.EyeDropper) {
+            try {
+                const eyeDropper = new window.EyeDropper();
+                const result = await eyeDropper.open();
+                if (result && result.sRGBHex) {
+                    if (prefix === 'newRole') selectNewRoleColor(result.sRGBHex);
+                    else selectEditRoleColor(result.sRGBHex);
+                }
+            } catch (e) {
+                // User cancelled eyedropper
+            }
+        } else {
+            toggleColorSpectrum(prefix);
+        }
+    }
+
+    function initSpectrumPicker(prefix) {
+        const pad = document.getElementById(`${prefix}SpectrumPad`);
+        const padHandle = document.getElementById(`${prefix}SpectrumHandle`);
+        const hueTrack = document.getElementById(`${prefix}HueTrack`);
+        const hueHandle = document.getElementById(`${prefix}HueHandle`);
+        if (!pad || !hueTrack) return;
+
+        let isDraggingPad = false;
+        let isDraggingHue = false;
+
+        function updatePadFromCoord(clientX, clientY) {
+            const rect = pad.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+            const y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+
+            const s = x / rect.width;
+            const v = 1 - (y / rect.height);
+
+            if (padHandle) {
+                padHandle.style.left = `${(s * 100)}%`;
+                padHandle.style.top = `${((1 - v) * 100)}%`;
+            }
+
+            const curH = currentPickerHsv[prefix] ? currentPickerHsv[prefix].h : 51;
+            setPickerHsv(prefix, curH, s, v);
+        }
+
+        function updateHueFromCoord(clientX) {
+            const rect = hueTrack.getBoundingClientRect();
+            if (rect.width === 0) return;
+            const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+            const h = Math.round((x / rect.width) * 360) % 360;
+
+            if (hueHandle) {
+                hueHandle.style.left = `${(x / rect.width) * 100}%`;
+            }
+            if (pad) {
+                pad.style.backgroundColor = `hsl(${h}, 100%, 50%)`;
+            }
+
+            const curS = currentPickerHsv[prefix] ? currentPickerHsv[prefix].s : 1;
+            const curV = currentPickerHsv[prefix] ? currentPickerHsv[prefix].v : 1;
+            setPickerHsv(prefix, h, curS, curV);
+        }
+
+        pad.addEventListener('mousedown', (e) => {
+            isDraggingPad = true;
+            updatePadFromCoord(e.clientX, e.clientY);
+        });
+        pad.addEventListener('touchstart', (e) => {
+            isDraggingPad = true;
+            if (e.touches && e.touches[0]) {
+                updatePadFromCoord(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        hueTrack.addEventListener('mousedown', (e) => {
+            isDraggingHue = true;
+            updateHueFromCoord(e.clientX);
+        });
+        hueTrack.addEventListener('touchstart', (e) => {
+            isDraggingHue = true;
+            if (e.touches && e.touches[0]) {
+                updateHueFromCoord(e.touches[0].clientX);
+            }
+        }, { passive: true });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingPad) updatePadFromCoord(e.clientX, e.clientY);
+            if (isDraggingHue) updateHueFromCoord(e.clientX);
+        });
+        window.addEventListener('touchmove', (e) => {
+            if (isDraggingPad || isDraggingHue) {
+                if (e.cancelable) e.preventDefault();
+                if (e.touches && e.touches[0]) {
+                    if (isDraggingPad) updatePadFromCoord(e.touches[0].clientX, e.touches[0].clientY);
+                    if (isDraggingHue) updateHueFromCoord(e.touches[0].clientX);
+                }
+            }
+        }, { passive: false });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingPad = false;
+            isDraggingHue = false;
+        });
+        window.addEventListener('touchend', () => {
+            isDraggingPad = false;
+            isDraggingHue = false;
+        });
+    }
+
+    function selectNewRoleColor(col) {
+        const cleanHex = col.startsWith('#') ? col.slice(1) : col;
+        const full = '#' + cleanHex.toUpperCase();
+        const hidden = document.getElementById('newRoleColor');
+        if (hidden) hidden.value = full;
+        const hex = document.getElementById('newRoleColorHex');
+        if (hex) hex.value = cleanHex.toUpperCase();
+        const tag = document.getElementById('newRoleColorDisplayTag');
+        if (tag) {
+            tag.textContent = full;
+            tag.style.color = full;
+            tag.style.borderColor = full + '55';
+            tag.style.background = full + '1a';
+        }
+        const circle = document.getElementById('newRoleColorPreviewCircle');
+        if (circle) circle.style.background = full;
+        highlightColorSwatch('newRoleColorSwatches', full);
+        syncSpectrumFromHex('newRole', full);
+        updateNewRolePreview();
+    }
+
+    function onNewRoleColorHexInput(val) {
+        const clean = val.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+        const hex = document.getElementById('newRoleColorHex');
+        if (hex && hex.value !== clean) hex.value = clean.toUpperCase();
+        if (clean.length === 6) {
+            const full = '#' + clean.toUpperCase();
+            const hidden = document.getElementById('newRoleColor');
+            if (hidden) hidden.value = full;
+            const tag = document.getElementById('newRoleColorDisplayTag');
+            if (tag) {
+                tag.textContent = full;
+                tag.style.color = full;
+                tag.style.borderColor = full + '55';
+                tag.style.background = full + '1a';
+            }
+            const circle = document.getElementById('newRoleColorPreviewCircle');
+            if (circle) circle.style.background = full;
+            highlightColorSwatch('newRoleColorSwatches', full);
+            syncSpectrumFromHex('newRole', full);
+            updateNewRolePreview();
+        }
+    }
+
+    function onNewRoleColorPickerChange(val) {
+        selectNewRoleColor(val);
+    }
+
+    function updateNewRolePreview() {
+        const name = document.getElementById('newRoleName')?.value?.trim() || 'Role Name';
+        const color = document.getElementById('newRoleColor')?.value || '#FFD700';
+        const badgeIcon = document.getElementById('newRoleBadge')?.value?.trim() || 'fa-shield-alt';
+
+        const pill = document.getElementById('newRolePreviewPill');
+        const text = document.getElementById('newRolePreviewText');
+        const iconWrap = document.getElementById('newRolePreviewIcon');
+
+        if (text) text.textContent = name;
+        if (pill) {
+            pill.style.color = color;
+            pill.style.borderColor = color + '55';
+            pill.style.background = color + '18';
+        }
+        if (iconWrap) {
+            const iconCls = badgeIcon.startsWith('fa-') ? `fas ${badgeIcon}` : (badgeIcon.startsWith('fas ') ? badgeIcon : `fas ${badgeIcon}`);
+            iconWrap.className = iconCls;
+        }
+    }
+
+    function selectEditRoleIcon(iconId) {
+        const input = document.getElementById('editRoleBadgeInput');
+        if (input) input.value = iconId;
+        const grid = document.getElementById('editRoleIconGrid');
+        if (grid) {
+            grid.querySelectorAll('.fa-icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === iconId);
+            });
+        }
+        updateEditRolePreview();
+    }
+
+    function onEditRoleCustomIconInput(val) {
+        const grid = document.getElementById('editRoleIconGrid');
+        if (grid) {
+            grid.querySelectorAll('.fa-icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === val.trim());
+            });
+        }
+        updateEditRolePreview();
+    }
+
+    function selectEditRoleColor(col) {
+        const cleanHex = col.startsWith('#') ? col.slice(1) : col;
+        const full = '#' + cleanHex.toUpperCase();
+        const hidden = document.getElementById('editRoleColorInput');
+        if (hidden) hidden.value = full;
+        const hex = document.getElementById('editRoleColorHex');
+        if (hex) hex.value = cleanHex.toUpperCase();
+        const tag = document.getElementById('editRoleColorDisplayTag');
+        if (tag) {
+            tag.textContent = full;
+            tag.style.color = full;
+            tag.style.borderColor = full + '55';
+            tag.style.background = full + '1a';
+        }
+        const circle = document.getElementById('editRoleColorPreviewCircle');
+        if (circle) circle.style.background = full;
+        highlightColorSwatch('editRoleColorSwatches', full);
+        syncSpectrumFromHex('editRole', full);
+        updateEditRolePreview();
+    }
+
+    function onEditRoleColorHexInput(val) {
+        const clean = val.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+        const hex = document.getElementById('editRoleColorHex');
+        if (hex && hex.value !== clean) hex.value = clean.toUpperCase();
+        if (clean.length === 6) {
+            const full = '#' + clean.toUpperCase();
+            const hidden = document.getElementById('editRoleColorInput');
+            if (hidden) hidden.value = full;
+            const tag = document.getElementById('editRoleColorDisplayTag');
+            if (tag) {
+                tag.textContent = full;
+                tag.style.color = full;
+                tag.style.borderColor = full + '55';
+                tag.style.background = full + '1a';
+            }
+            const circle = document.getElementById('editRoleColorPreviewCircle');
+            if (circle) circle.style.background = full;
+            highlightColorSwatch('editRoleColorSwatches', full);
+            syncSpectrumFromHex('editRole', full);
+            updateEditRolePreview();
+        }
+    }
+
+    function onEditRoleColorPickerChange(val) {
+        selectEditRoleColor(val);
+    }
+
+    function updateEditRolePreview() {
+        const name = document.getElementById('editRoleNameInput')?.value?.trim() || 'Role Name';
+        const color = document.getElementById('editRoleColorInput')?.value || '#FFD700';
+        const badgeIcon = document.getElementById('editRoleBadgeInput')?.value?.trim() || 'fa-shield-alt';
+
+        const pill = document.getElementById('editRolePreviewPill');
+        const text = document.getElementById('editRolePreviewText');
+        const iconWrap = document.getElementById('editRolePreviewIcon');
+
+        if (text) text.textContent = name;
+        if (pill) {
+            pill.style.color = color;
+            pill.style.borderColor = color + '55';
+            pill.style.background = color + '18';
+        }
+        if (iconWrap) {
+            const iconCls = badgeIcon.startsWith('fa-') ? `fas ${badgeIcon}` : (badgeIcon.startsWith('fas ') ? badgeIcon : `fas ${badgeIcon}`);
+            iconWrap.className = iconCls;
+        }
+    }
+
+    // Initialize custom spectrum listeners
+    initSpectrumPicker('newRole');
+    initSpectrumPicker('editRole');
+    syncSpectrumFromHex('newRole', '#FFD700');
+
+    // ==========================================
+    // MEMBERS SECTION DROPDOWN UI
+    // ==========================================
+    function toggleMembersSectionDropdown(e) {
+        if (e) e.stopPropagation();
+        const menu = document.getElementById('memberSectionDropdownMenu');
+        const chevron = document.getElementById('memberSectionChevron');
+        if (!menu) return;
+        const isOpen = menu.style.display !== 'none';
+        menu.style.display = isOpen ? 'none' : 'block';
+        if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+
+    function selectMembersFilter(filterType, label, iconClass, color) {
+        const activeLabel = document.getElementById('memberSectionActiveLabel');
+        const activeIcon = document.getElementById('memberSectionActiveIcon');
+        const menu = document.getElementById('memberSectionDropdownMenu');
+        const chevron = document.getElementById('memberSectionChevron');
+
+        if (activeLabel) activeLabel.textContent = label;
+        if (activeIcon) {
+            const cls = iconClass.startsWith('fa-') ? `fas ${iconClass}` : iconClass;
+            activeIcon.innerHTML = `<i class="${cls}" style="color: ${color};"></i>`;
+        }
+
+        if (menu) {
+            menu.style.display = 'none';
+            menu.querySelectorAll('.members-section-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.filter === filterType);
+            });
+        }
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+
+        // Filter the members list in sidebar
+        const staffWrap = document.getElementById('staffSectionWrap');
+        const creatorWrap = document.getElementById('creatorSectionWrap');
+        const everyoneHeader = document.getElementById('everyoneSectionHeader');
+        const memberRows = document.querySelectorAll('.member-user-card');
+        const emptyNotice = document.getElementById('emptyFilteredMembers');
+        const emptyNoticeText = document.getElementById('emptyFilteredMembersText');
+        const counterNum = document.getElementById('onlineCountNum');
+
+        let visibleCount = 0;
+
+        if (filterType === 'all') {
+            if (staffWrap) staffWrap.style.display = 'block';
+            if (creatorWrap) creatorWrap.style.display = 'block';
+            if (everyoneHeader) everyoneHeader.style.display = 'block';
+            memberRows.forEach(r => { r.style.display = 'flex'; visibleCount++; });
+            if (emptyNotice) emptyNotice.style.display = 'none';
+        } else if (filterType === 'staff') {
+            if (staffWrap) staffWrap.style.display = 'block';
+            if (creatorWrap) creatorWrap.style.display = 'block';
+            if (everyoneHeader) everyoneHeader.style.display = 'none';
+            memberRows.forEach(r => {
+                const isStaff = r.dataset.isStaff === 'true';
+                r.style.display = isStaff ? 'flex' : 'none';
+                if (isStaff) visibleCount++;
+            });
+            const staffCards = document.querySelectorAll('.member-staff-card, .member-creator-card');
+            visibleCount += staffCards.length;
+            if (emptyNotice) emptyNotice.style.display = (visibleCount === 0) ? 'block' : 'none';
+            if (emptyNoticeText) emptyNoticeText.textContent = 'No site staff or creator currently in this club.';
+        } else if (filterType.startsWith('role-')) {
+            const roleId = filterType.replace('role-', '');
+            if (staffWrap) staffWrap.style.display = 'none';
+            if (creatorWrap) creatorWrap.style.display = 'none';
+            if (everyoneHeader) everyoneHeader.style.display = 'none';
+            memberRows.forEach(r => {
+                const roleIds = (r.dataset.roleIds || '').split(',');
+                const hasRole = roleIds.includes(roleId);
+                r.style.display = hasRole ? 'flex' : 'none';
+                if (hasRole) visibleCount++;
+            });
+            if (emptyNotice) emptyNotice.style.display = (visibleCount === 0) ? 'block' : 'none';
+            if (emptyNoticeText) emptyNoticeText.textContent = `No members currently have the ${label} role.`;
+        }
+
+        if (counterNum && filterType === 'all') {
+            counterNum.textContent = visibleCount;
+        }
+    }
+
+    // Close members dropdown if user clicks outside
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('memberSectionDropdownMenu');
+        const btn = document.getElementById('btnMemberSectionDropdown');
+        if (menu && menu.style.display !== 'none' && !menu.contains(e.target) && !btn?.contains(e.target)) {
+            menu.style.display = 'none';
+            const chevron = document.getElementById('memberSectionChevron');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+        }
+    });
+
+    // ==========================================
+    // CLUB ICON & BANNER PREVIEW & REPLACE
+    // ==========================================
+    const initialClubIconUrl = '<%= club.iconUrl || "/images/default-avatar.png" %>';
+    const initialClubBannerUrl = '<%= club.bannerUrl || "/images/default-banner.jpg" %>';
+
+    function handleClubIconSelect(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            showGplToast('Icon file size exceeds 5MB limit.', 'error', 4000, 'club_icon_size');
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const preview = document.getElementById('editClubIconPreviewImg');
+            if (preview) preview.src = evt.target.result;
+            const badge = document.getElementById('editClubIconBadge');
+            if (badge) badge.style.display = 'flex';
+            const resetBtn = document.getElementById('editClubIconResetBtn');
+            if (resetBtn) resetBtn.style.display = 'inline-flex';
+            const nameEl = document.getElementById('editClubIconFilename');
+            if (nameEl) nameEl.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            showGplToast(`New icon "${file.name}" selected for preview.`, 'info', 3000, 'club_media_preview');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetEditClubIcon() {
+        const input = document.getElementById('editClubIconInput');
+        if (input) input.value = '';
+        const preview = document.getElementById('editClubIconPreviewImg');
+        if (preview) preview.src = initialClubIconUrl;
+        const badge = document.getElementById('editClubIconBadge');
+        if (badge) badge.style.display = 'none';
+        const resetBtn = document.getElementById('editClubIconResetBtn');
+        if (resetBtn) resetBtn.style.display = 'none';
+        const nameEl = document.getElementById('editClubIconFilename');
+        if (nameEl) nameEl.textContent = 'Current: ' + (initialClubIconUrl.split('/').pop() || 'Default Avatar');
+        showGplToast('Icon reset to original.', 'info', 2500, 'club_media_preview');
+    }
+
+    function handleClubBannerSelect(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            showGplToast('Banner file size exceeds 5MB limit.', 'error', 4000, 'club_banner_size');
+            e.target.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const preview = document.getElementById('editClubBannerPreviewImg');
+            if (preview) preview.src = evt.target.result;
+            const badge = document.getElementById('editClubBannerBadge');
+            if (badge) badge.style.display = 'inline-flex';
+            const resetBtn = document.getElementById('editClubBannerResetBtn');
+            if (resetBtn) resetBtn.style.display = 'inline-flex';
+            const nameEl = document.getElementById('editClubBannerFilename');
+            if (nameEl) nameEl.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+            showGplToast(`New banner "${file.name}" selected for preview.`, 'info', 3000, 'club_media_preview');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function resetEditClubBanner() {
+        const input = document.getElementById('editClubBannerInput');
+        if (input) input.value = '';
+        const preview = document.getElementById('editClubBannerPreviewImg');
+        if (preview) preview.src = initialClubBannerUrl;
+        const badge = document.getElementById('editClubBannerBadge');
+        if (badge) badge.style.display = 'none';
+        const resetBtn = document.getElementById('editClubBannerResetBtn');
+        if (resetBtn) resetBtn.style.display = 'none';
+        const nameEl = document.getElementById('editClubBannerFilename');
+        if (nameEl) nameEl.textContent = 'Current: ' + (initialClubBannerUrl.split('/').pop() || 'Default Banner');
+        showGplToast('Banner reset to original.', 'info', 2500, 'club_media_preview');
+    }
+
+    async function handleEditClubSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const origHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
+
+        try {
+            const formData = new FormData(form);
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showGplToast('Club settings and media updated successfully!', 'success', 3000, 'club_settings_edit');
+                closeEditClubModal();
+                setTimeout(() => window.location.reload(), 700);
+            } else {
+                showGplToast(data.error || 'Failed to update club settings.', 'error', 4500, 'club_settings_edit');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+            }
+        } catch (err) {
+            showGplToast('Error saving club settings.', 'error', 4500, 'club_settings_edit');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origHtml;
+            }
+        }
+    }
+
     async function submitCreateRole(e) {
         e.preventDefault();
         const name = document.getElementById('newRoleName')?.value?.trim();
-        const badgeIcon = document.getElementById('newRoleBadge')?.value?.trim() || '🛡️';
+        const badgeIcon = document.getElementById('newRoleBadge')?.value?.trim() || 'fa-shield-alt';
         const color = document.getElementById('newRoleColor')?.value || '#FFD700';
         const canManageChannels = document.getElementById('permManageChannels')?.checked || false;
         const canKickMembers = document.getElementById('permKickMembers')?.checked || false;
         const canPostPolls = document.getElementById('permPostPolls')?.checked || false;
 
-        if (!name) return showGplToast('Role name is required.', 'warning');
+        if (!name) return showGplToast('Role name is required.', 'warning', 3000, 'role_validate');
 
         try {
             const res = await fetch(`/clubs/<%= club.slug %>/roles`, {
@@ -5919,7 +7359,7 @@
             });
             const data = await res.json();
             if (data.success && data.role) {
-                showGplToast(`Role "${data.role.name}" created successfully!`, 'success');
+                showGplToast(`Role "${data.role.name}" created successfully!`, 'success', 3000, 'role_action');
 
                 const list = document.getElementById('guiRolesDisplayList');
                 if (list) {
@@ -5930,11 +7370,11 @@
                     row.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span class="discord-sidebar-role-pill" style="color: ${data.role.color}; background: ${data.role.color}18; border: 1px solid ${data.role.color}40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
-                                ${data.role.badgeIcon || '🛡️'} ${data.role.name}
+                                ${formatBadgeIcon(data.role.badgeIcon)} ${data.role.name}
                             </span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 6px;">
-                            <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('${data.role._id}', '${data.role.name}', '${data.role.badgeIcon || '🛡️'}', '${data.role.color}', ${data.role.permissions?.canManageChannels || false}, ${data.role.permissions?.canKickMembers || false}, ${data.role.permissions?.canPostPolls || false})" title="Edit Role">
+                            <button type="button" class="btn-role-action edit" onclick="openEditRoleModal('${data.role._id}', '${data.role.name}', '${data.role.badgeIcon || 'fa-shield-alt'}', '${data.role.color}', ${data.role.permissions?.canManageChannels || false}, ${data.role.permissions?.canKickMembers || false}, ${data.role.permissions?.canPostPolls || false})" title="Edit Role">
                                 <i class="fas fa-pencil-alt"></i> Edit
                             </button>
                             <button type="button" class="btn-role-action delete" onclick="confirmDeleteRole('${data.role._id}', '${data.role.name}')" title="Delete Role">
@@ -5955,17 +7395,18 @@
                     label.innerHTML = `
                         <input type="checkbox" class="member-role-checkbox" value="${data.role._id}" onchange="onMemberRoleCheckboxChange()">
                         <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${data.role.color || '#5865F2'}; flex-shrink: 0;"></span>
-                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${data.role.badgeIcon || '🛡️'} ${data.role.name}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${formatBadgeIcon(data.role.badgeIcon)} ${data.role.name}</span>
                     `;
                     checkList.appendChild(label);
                 }
 
                 document.getElementById('newRoleName').value = '';
+                updateNewRolePreview();
             } else {
-                showGplToast(data.error || 'Failed to create role.', 'error');
+                showGplToast(data.error || 'Failed to create role.', 'error', 4000, 'role_action');
             }
         } catch (err) {
-            showGplToast('An error occurred while creating role.', 'error');
+            showGplToast('An error occurred while creating role.', 'error', 4000, 'role_action');
         }
     }
 
@@ -5973,14 +7414,44 @@
         const modal = document.getElementById('editRoleModal');
         if (!modal) return;
 
+        const effectiveIcon = (badgeIcon && badgeIcon !== '🛡️' && badgeIcon !== '🛡') ? badgeIcon : 'fa-shield-alt';
+        const effectiveColor = color || '#FFD700';
+
         document.getElementById('editRoleId').value = roleId;
         document.getElementById('editRoleNameInput').value = name;
-        document.getElementById('editRoleBadgeInput').value = badgeIcon || '🛡️';
-        document.getElementById('editRoleColorInput').value = color || '#FFD700';
+        document.getElementById('editRoleBadgeInput').value = effectiveIcon;
+        document.getElementById('editRoleColorInput').value = effectiveColor;
+
+        const cleanHex = effectiveColor.startsWith('#') ? effectiveColor.slice(1) : effectiveColor;
+        const hexInput = document.getElementById('editRoleColorHex');
+        if (hexInput) hexInput.value = cleanHex.toUpperCase();
+
+        const colorTag = document.getElementById('editRoleColorDisplayTag');
+        if (colorTag) {
+            colorTag.textContent = '#' + cleanHex.toUpperCase();
+            colorTag.style.color = '#' + cleanHex;
+        }
+
+        const previewCircle = document.getElementById('editRoleColorPreviewCircle');
+        if (previewCircle) {
+            previewCircle.style.background = '#' + cleanHex;
+        }
+
+        highlightColorSwatch('editRoleColorSwatches', '#' + cleanHex);
+        syncSpectrumFromHex('editRole', '#' + cleanHex);
+
+        const grid = document.getElementById('editRoleIconGrid');
+        if (grid) {
+            grid.querySelectorAll('.fa-icon-btn').forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.icon === effectiveIcon);
+            });
+        }
+
         document.getElementById('editPermManageChannels').checked = Boolean(canManageChannels);
         document.getElementById('editPermKickMembers').checked = Boolean(canKickMembers);
         document.getElementById('editPermPostPolls').checked = Boolean(canPostPolls);
 
+        updateEditRolePreview();
         modal.style.display = 'flex';
     }
 
@@ -5993,13 +7464,13 @@
         e.preventDefault();
         const roleId = document.getElementById('editRoleId')?.value;
         const name = document.getElementById('editRoleNameInput')?.value?.trim();
-        const badgeIcon = document.getElementById('editRoleBadgeInput')?.value?.trim() || '🛡️';
+        const badgeIcon = document.getElementById('editRoleBadgeInput')?.value?.trim() || 'fa-shield-alt';
         const color = document.getElementById('editRoleColorInput')?.value || '#FFD700';
         const canManageChannels = document.getElementById('editPermManageChannels')?.checked || false;
         const canKickMembers = document.getElementById('editPermKickMembers')?.checked || false;
         const canPostPolls = document.getElementById('editPermPostPolls')?.checked || false;
 
-        if (!roleId || !name) return showGplToast('Role name is required.', 'warning');
+        if (!roleId || !name) return showGplToast('Role name is required.', 'warning', 3000, 'role_validate');
 
         try {
             const res = await fetch(`/clubs/<%= club.slug %>/roles/${roleId}/edit`, {
@@ -6009,14 +7480,14 @@
             });
             const data = await res.json();
             if (data.success) {
-                showGplToast(`Role "${name}" updated successfully!`, 'success');
+                showGplToast(`Role "${name}" updated successfully!`, 'success', 3000, 'role_action');
                 closeEditRoleModal();
                 setTimeout(() => window.location.reload(), 800);
             } else {
-                showGplToast(data.error || 'Failed to update role.', 'error');
+                showGplToast(data.error || 'Failed to update role.', 'error', 4000, 'role_action');
             }
         } catch (err) {
-            showGplToast('Error updating role.', 'error');
+            showGplToast('Error updating role.', 'error', 4000, 'role_action');
         }
     }
 
@@ -6049,7 +7520,55 @@
         });
     }
 
-    // Member Roles Assignment (Strict 10 Roles Maximum)
+    // Member Roles Assignment (Custom Discord Dropdown UI & Strict 10 Roles Maximum)
+    function toggleAssignTargetMemberDropdown(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const wrap = document.getElementById('wrapper-assignTargetMember');
+        if (!wrap) return;
+        const willOpen = !wrap.classList.contains('open');
+        document.querySelectorAll('.chan-custom-select-wrapper').forEach(w => {
+            if (w !== wrap) w.classList.remove('open');
+        });
+        wrap.classList.toggle('open', willOpen);
+    }
+
+    function selectAssignMember(memberId, username, avatarUrl, roleCount) {
+        const select = document.getElementById('assignTargetMember');
+        if (select) {
+            select.value = memberId;
+        }
+
+        const wrap = document.getElementById('wrapper-assignTargetMember');
+        if (wrap) {
+            const trigger = document.getElementById('assignTargetMemberTrigger');
+            if (trigger) {
+                if (!memberId) {
+                    trigger.innerHTML = `
+                        <span class="member-sel-avatar-wrap" style="width: 24px; height: 24px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: #23272a; flex-shrink: 0; border: 1px solid #333645;">
+                            <i class="fas fa-user-slash" style="font-size: 0.72rem; color: var(--silver);"></i>
+                        </span>
+                        <span class="text-label">-- Choose Member --</span>
+                    `;
+                } else {
+                    const fallbackImg = '/images/default-avatar.png';
+                    const avatarSrc = avatarUrl || fallbackImg;
+                    trigger.innerHTML = `
+                        <img src="${avatarSrc}" alt="${username}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid #333645;" onerror="this.onerror=null; this.src='${fallbackImg}';">
+                        <span class="text-label" style="font-weight: 600; color: #fff;">${username}</span>
+                        <span style="font-size: 0.75rem; color: var(--gold); margin-left: auto;">(${roleCount || 0} roles)</span>
+                    `;
+                }
+            }
+
+            wrap.querySelectorAll('.chan-custom-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.getAttribute('data-value') === memberId);
+            });
+            wrap.classList.remove('open');
+        }
+
+        onSelectMemberForRoles(memberId);
+    }
+
     function onSelectMemberForRoles(memberId) {
         const section = document.getElementById('memberRolesCheckboxesSection');
         if (!memberId) {
@@ -6058,7 +7577,7 @@
         }
 
         const select = document.getElementById('assignTargetMember');
-        const selectedOpt = select.querySelector(`option[value="${memberId}"]`);
+        const selectedOpt = select ? select.querySelector(`option[value="${memberId}"]`) : null;
         const rolesAttr = selectedOpt ? selectedOpt.getAttribute('data-roles') : '';
         const memberRoleIds = rolesAttr ? rolesAttr.split(',').filter(Boolean) : [];
 
@@ -6132,9 +7651,28 @@
             if (data.success) {
                 showGplToast('Member roles saved successfully!', 'success');
                 const select = document.getElementById('assignTargetMember');
-                const opt = select.querySelector(`option[value="${memberId}"]`);
+                const opt = select ? select.querySelector(`option[value="${memberId}"]`) : null;
                 if (opt) {
                     opt.setAttribute('data-roles', roleIds.join(','));
+                }
+
+                // Update custom dropdown option
+                const customOpt = document.getElementById(`assignOpt-${memberId}`);
+                if (customOpt) {
+                    customOpt.setAttribute('data-roles', roleIds.join(','));
+                    const roleCountSpan = customOpt.querySelector('.member-opt-role-count');
+                    if (roleCountSpan) {
+                        roleCountSpan.textContent = `${roleIds.length} roles assigned`;
+                    }
+                }
+
+                // Update custom trigger header role count if active
+                const trigger = document.getElementById('assignTargetMemberTrigger');
+                if (trigger) {
+                    const countSpan = trigger.querySelector('span[style*="margin-left: auto"]');
+                    if (countSpan) {
+                        countSpan.textContent = `(${roleIds.length} roles)`;
+                    }
                 }
             } else {
                 showGplToast(data.error || 'Failed to update member roles.', 'error');
