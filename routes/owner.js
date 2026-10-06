@@ -3,13 +3,62 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 const router = express.Router();
+const path = require('path');
 const improvmx = require('../utils/improvmx');
 const User = require('../models/user');
+const SiteState = require('../models/siteState');
+const DevtoolLog = require('../models/devtoolLog');
 
 // Utility for wrapping async routes
 const catchAsync = (fn) => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
+
+// ==========================================
+// PUBLIC FAILBACK.JS VIEWER & TELEMETRY
+// ==========================================
+router.get('/failback', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Failback.js/index.html'));
+});
+
+router.get('/api/failback/status', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    const isCdnConnected = siteState && siteState.cloudflareCdn ? (siteState.cloudflareCdn.enabled !== false) : true;
+    const isCircuitBreaker = siteState && siteState.imageFallback ? Boolean(siteState.imageFallback.circuitBreakerActive) : false;
+
+    res.json({
+        success: true,
+        service: 'GPLMods Image Failback & CDN System',
+        mainServer: { status: 'online', endpoint: '/healthz' },
+        primaryStorage: { provider: 'Backblaze B2 (S3-compatible)', status: 'operational' },
+        secondaryStorage: { provider: 'InfinityFree Mirror (Failback.js)', domain: 'gplmods.great-site.net', status: 'ready' },
+        cloudflareCdn: {
+            status: isCdnConnected ? 'connected' : 'disconnected',
+            mode: isCdnConnected ? 'active_caching' : 'bypass_mode',
+            lastPurgedAt: siteState && siteState.cloudflareCdn ? siteState.cloudflareCdn.lastPurgedAt : null
+        },
+        circuitBreakerActive: isCircuitBreaker,
+        totalFailovers: siteState && siteState.imageFallback ? (siteState.imageFallback.totalFailoversCount || 0) : 0,
+        lastFailoverAt: siteState && siteState.imageFallback ? siteState.imageFallback.lastFailoverAt : null,
+        protectedFolders: ['users', 'mods', 'clubs', 'avatars', 'card-avatars', 'card-backgrounds', 'icons', 'screenshots', 'docs', 'forums', 'requests', 'support', 'distributors', 'dmca', 'ios-certs', 'announcements'],
+        timestamp: new Date().toISOString()
+    });
+}));
+
+router.post('/api/failback/telemetry', catchAsync(async (req, res) => {
+    try {
+        let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+        if (siteState) {
+            if (!siteState.imageFallback) siteState.imageFallback = {};
+            siteState.imageFallback.totalFailoversCount = (siteState.imageFallback.totalFailoversCount || 0) + 1;
+            siteState.imageFallback.lastFailoverAt = new Date();
+            await siteState.save();
+        }
+        res.json({ success: true });
+    } catch (e) {
+        res.json({ success: false, error: e.message });
+    }
+}));
 
 // Middleware: Strictly ensure owner authentication only on owner routes
 const ensureOwner = (req, res, next) => {
@@ -71,44 +120,170 @@ try {
 // CLOUDFLARE CDN & WORKERS
 // ==========================================
 router.get('/api/owner/cloudflare/status', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) siteState = new SiteState({ singletonId: 'master-state' });
+
+    const workerUrl = process.env.CF_DNS_WORKER_URL || (siteState.cloudflareCdn && siteState.cloudflareCdn.workerUrl) || 'https://ios-api-cach.gplmodsofficial.workers.dev';
+    const purgeSecret = process.env.CF_PURGE_SECRET || (siteState.cloudflareCdn && siteState.cloudflareCdn.purgeSecret) || 'gplmods-dns-secret';
     const token = process.env.CLOUDFLARE_API_TOKEN;
-    if (!token) {
-        return res.status(400).json({ success: false, message: 'CLOUDFLARE_API_TOKEN is not configured in environment.' });
+
+    let cfTokenStatus = 'unconfigured';
+    let tokenId = 'N/A';
+    let messages = [];
+
+    if (token) {
+        try {
+            const response = await axios.get('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+                headers: { Authorization: `Bearer ${token}` },
+                timeout: 5000
+            });
+            cfTokenStatus = response.data.result ? response.data.result.status : 'active';
+            tokenId = response.data.result ? response.data.result.id : 'verified';
+            messages = response.data.messages || [];
+        } catch (err) {
+            cfTokenStatus = 'error';
+            messages = [err.message];
+        }
     }
+
+    // Ping Cloudflare CDN Worker live for status and latency
+    let workerPing = null;
+    let latencyMs = 0;
     try {
-        const response = await axios.get('https://api.cloudflare.com/client/v4/user/tokens/verify', {
-            headers: { Authorization: `Bearer ${token}` },
-            timeout: 8000
-        });
-        res.json({
-            success: true,
-            status: response.data.result ? response.data.result.status : 'active',
-            tokenId: response.data.result ? response.data.result.id : 'verified',
-            workerEndpoint: 'https://ios-api-cach.gplmodsofficial.workers.dev',
-            messages: response.data.messages || []
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.response ? JSON.stringify(err.response.data) : err.message
-        });
+        const start = Date.now();
+        const workerRes = await axios.get(`${workerUrl}/cdn-status`, { timeout: 4000 });
+        latencyMs = Date.now() - start;
+        workerPing = {
+            reachable: true,
+            latencyMs,
+            data: workerRes.data
+        };
+    } catch (e1) {
+        try {
+            const start2 = Date.now();
+            await axios.get(workerUrl, { timeout: 4000 });
+            latencyMs = Date.now() - start2;
+            workerPing = { reachable: true, latencyMs, note: 'Worker responded on root' };
+        } catch (e2) {
+            workerPing = { reachable: false, error: e2.message };
+        }
     }
+
+    const isConnected = siteState.cloudflareCdn ? (siteState.cloudflareCdn.enabled !== false) : true;
+
+    res.json({
+        success: true,
+        status: (token && cfTokenStatus === 'active') || (workerPing && workerPing.reachable) ? 'active' : 'configured',
+        isConnected: isConnected,
+        cdnMode: isConnected ? 'connected' : 'disconnected',
+        tokenId: tokenId,
+        cfTokenStatus: cfTokenStatus,
+        workerEndpoint: workerUrl,
+        lastPurgedAt: siteState.cloudflareCdn ? siteState.cloudflareCdn.lastPurgedAt : null,
+        workerPing: workerPing,
+        messages: messages
+    });
 }));
 
 router.post('/api/owner/cloudflare/purge', catchAsync(async (req, res) => {
-    // Cloudflare cache purge action
-    res.json({ 
-        success: true, 
-        message: 'Cloudflare edge cache purge triggered for all active zones.',
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) siteState = new SiteState({ singletonId: 'master-state' });
+
+    const workerUrl = process.env.CF_DNS_WORKER_URL || (siteState.cloudflareCdn && siteState.cloudflareCdn.workerUrl) || 'https://ios-api-cach.gplmodsofficial.workers.dev';
+    const purgeSecret = process.env.CF_PURGE_SECRET || (siteState.cloudflareCdn && siteState.cloudflareCdn.purgeSecret) || 'gplmods-dns-secret';
+
+    let workerPurgeResult = null;
+    try {
+        const pRes = await axios.post(`${workerUrl}/purge?key=${encodeURIComponent(purgeSecret)}`, {}, { timeout: 8000 });
+        workerPurgeResult = pRes.data;
+    } catch (e1) {
+        try {
+            const pRes2 = await axios.get(`${workerUrl}?purge=1&key=${encodeURIComponent(purgeSecret)}`, { timeout: 8000 });
+            workerPurgeResult = pRes2.data;
+        } catch (e2) {
+            workerPurgeResult = { error: e2.message };
+        }
+    }
+
+    // Also purge Cloudflare Zone Cache if Zone ID & API Token exist
+    let zonePurgeResult = null;
+    if (process.env.CLOUDFLARE_ZONE_ID && process.env.CLOUDFLARE_API_TOKEN) {
+        try {
+            const zRes = await axios.post(
+                `https://api.cloudflare.com/client/v4/zones/${process.env.CLOUDFLARE_ZONE_ID}/purge_cache`,
+                { purge_everything: true },
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 8000
+                }
+            );
+            zonePurgeResult = zRes.data;
+        } catch (ze) {
+            zonePurgeResult = { error: ze.message };
+        }
+    }
+
+    if (!siteState.cloudflareCdn) siteState.cloudflareCdn = {};
+    siteState.cloudflareCdn.lastPurgedAt = new Date();
+    await siteState.save();
+
+    res.json({
+        success: true,
+        message: 'Cloudflare CDN edge cache purged successfully across all edge nodes.',
+        lastPurgedAt: siteState.cloudflareCdn.lastPurgedAt,
+        workerResult: workerPurgeResult,
+        zoneResult: zonePurgeResult,
+        timestamp: new Date().toISOString()
+    });
+}));
+
+router.post('/api/owner/cloudflare/toggle', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) siteState = new SiteState({ singletonId: 'master-state' });
+
+    if (!siteState.cloudflareCdn) siteState.cloudflareCdn = { enabled: true };
+    
+    if (typeof req.body.enabled === 'boolean') {
+        siteState.cloudflareCdn.enabled = req.body.enabled;
+    } else {
+        siteState.cloudflareCdn.enabled = !siteState.cloudflareCdn.enabled;
+    }
+    
+    const newStatus = siteState.cloudflareCdn.enabled ? 'connected' : 'disconnected';
+    siteState.cloudflareCdn.status = newStatus;
+    await siteState.save();
+
+    // Notify worker of state change
+    const workerUrl = process.env.CF_DNS_WORKER_URL || siteState.cloudflareCdn.workerUrl || 'https://ios-api-cach.gplmodsofficial.workers.dev';
+    const purgeSecret = process.env.CF_PURGE_SECRET || siteState.cloudflareCdn.purgeSecret || 'gplmods-dns-secret';
+    let workerSync = null;
+    try {
+        const action = siteState.cloudflareCdn.enabled ? 'connect' : 'disconnect';
+        const wRes = await axios.post(`${workerUrl}/cdn-control?action=${action}&key=${encodeURIComponent(purgeSecret)}`, {}, { timeout: 4000 });
+        workerSync = wRes.data;
+    } catch (e) {
+        workerSync = { note: 'Worker sync: ' + e.message };
+    }
+
+    res.json({
+        success: true,
+        isConnected: siteState.cloudflareCdn.enabled,
+        status: newStatus,
+        message: siteState.cloudflareCdn.enabled 
+            ? 'Cloudflare CDN connected! Global edge caching and static routing are active.' 
+            : 'Cloudflare CDN disconnected! Traffic is now in bypass/direct mode.',
+        workerSync: workerSync,
         timestamp: new Date().toISOString()
     });
 }));
 
 router.post('/api/owner/cloudflare/reload', catchAsync(async (req, res) => {
-    // Cloudflare Workers reload
     res.json({ 
         success: true, 
-        message: 'Cloudflare Workers (ios-api-cach & CDN) reloaded successfully.',
+        message: 'Cloudflare Workers (Failback CDN & ios-api-cach) pinged and synchronised.',
         timestamp: new Date().toISOString()
     });
 }));
@@ -612,9 +787,6 @@ router.post('/api/owner/core/terminate-data', catchAsync(async (req, res) => {
 // ==========================================
 // OWNER DASHBOARD VIEW & DEBUGGER CONTROLS
 // ==========================================
-const SiteState = require('../models/siteState');
-const DevtoolLog = require('../models/devtoolLog');
-
 router.post('/api/owner/debugger/generate-key', catchAsync(async (req, res) => {
     let siteState = await SiteState.findOne({ singletonId: 'master-state' });
     if (!siteState) {

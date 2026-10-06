@@ -90,6 +90,19 @@ const SiteStateSchema = new Schema({
         type: Boolean,
         default: true
     },
+    cloudflareCdn: {
+        enabled: { type: Boolean, default: true },
+        workerUrl: { type: String, default: 'https://ios-api-cach.gplmodsofficial.workers.dev' },
+        purgeSecret: { type: String, default: 'gplmods-dns-secret' },
+        lastPurgedAt: { type: Date, default: null },
+        status: { type: String, default: 'connected' }
+    },
+    imageFallback: {
+        fallbackBaseUrl: { type: String, default: 'https://gplmods.great-site.net' },
+        circuitBreakerActive: { type: Boolean, default: false },
+        totalFailoversCount: { type: Number, default: 0 },
+        lastFailoverAt: { type: Date, default: null }
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);

@@ -184,26 +184,40 @@
         </div>
     </div>
 
-    <!-- 2. Cloudflare CDN & Workers -->
+    <!-- 2. Cloudflare CDN & Workers (Full Owner Control) -->
     <div class="owner-card cloudflare">
         <div class="card-title">
             <div class="card-title-left"><i class="fas fa-cloud"></i> <span>Cloudflare CDN & Workers</span></div>
             <div id="cfStatusBadge" class="owner-badge"><i class="fas fa-circle-notch fa-spin"></i> Checking...</div>
         </div>
-        <p class="card-desc">Edge CDN cache management and Cloudflare Workers (<code>ios-api-cach</code> CDN & DNS archive gateway).</p>
+        <p class="card-desc">Edge CDN cache management and Cloudflare Workers (<code>ios-api-cach</code> & <code>Failback CDN</code>). Control edge caching, clear cache, and connect/disconnect anytime.</p>
+        
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: -4px;">
+            <span id="cfModePill" class="owner-badge active"><i class="fas fa-link"></i> CONNECTED</span>
+            <span id="cfPingPill" class="owner-badge info" style="display: none;"><i class="fas fa-bolt"></i> <span id="cfPingText">-- ms</span></span>
+        </div>
+
         <div id="cfDetailsBox" class="details-box"></div>
         <div class="action-group">
             <div class="action-row">
-                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/cloudflare/purge')">
-                    <i class="fas fa-eraser"></i> Purge Cache
+                <button id="cfToggleBtn" class="btn-action warning" onclick="toggleCloudflareCdn(this)">
+                    <i class="fas fa-link-slash"></i> Disconnect CDN
                 </button>
-                <button class="btn-action" onclick="handleAction(this, '/api/owner/cloudflare/reload')">
-                    <i class="fas fa-sync"></i> Reload Workers
+                <button class="btn-action danger" onclick="purgeCloudflareCache(this)">
+                    <i class="fas fa-eraser"></i> Clear Cache
                 </button>
             </div>
             <div class="action-row">
                 <button class="btn-action" onclick="checkCloudflareStatus(this)">
-                    <i class="fas fa-check-circle"></i> Verify Token
+                    <i class="fas fa-sync-alt"></i> Live Status
+                </button>
+                <a href="/failback" target="_blank" class="btn-action primary btn-link">
+                    <i class="fas fa-desktop"></i> Failback Console
+                </a>
+            </div>
+            <div class="action-row">
+                <button class="btn-action" onclick="handleAction(this, '/api/owner/cloudflare/reload')">
+                    <i class="fas fa-microchip"></i> Sync Worker
                 </button>
                 <a href="https://dash.cloudflare.com" target="_blank" class="btn-action btn-link">
                     <i class="fas fa-external-link-alt"></i> Cloudflare Dash
@@ -306,26 +320,31 @@
         </div>
     </div>
 
-    <!-- 7. Failback.JS CDN (InfinityFree FTP) -->
+    <!-- 7. Failback.JS CDN (InfinityFree Mirror) -->
     <div class="owner-card failback">
         <div class="card-title">
             <div class="card-title-left"><i class="fas fa-shield-alt"></i> <span>Failback.JS CDN</span></div>
-            <span class="owner-badge warning" title="InfinityFree hosting supports FTP only (No REST API)">FTP Only</span>
+            <span class="owner-badge info"><i class="fas fa-satellite-dish"></i> Failover Mirror</span>
         </div>
-        <p class="card-desc">Secondary CDN hosted on InfinityFree. Uses direct FTP socket synchronization (REST API unsupported).</p>
+        <p class="card-desc">Secondary CDN hosted on InfinityFree. Automatically routes broken cloud images to backup mirror with circuit breaker.</p>
         <div id="failbackDetailsBox" class="details-box"></div>
         <div class="action-group">
             <div class="action-row">
-                <button class="btn-action primary" onclick="checkFailbackFtpStatus(this)">
+                <a href="/failback" target="_blank" class="btn-action primary btn-link">
+                    <i class="fas fa-external-link-alt"></i> Open Live Console
+                </a>
+                <button class="btn-action" onclick="checkFailbackFtpStatus(this)">
                     <i class="fas fa-plug"></i> Test FTP
                 </button>
+            </div>
+            <div class="action-row">
                 <button class="btn-action" onclick="handleAction(this, '/api/owner/failback/sync')">
                     <i class="fas fa-sync-alt"></i> FTP Sync
                 </button>
+                <button class="btn-action danger" onclick="handleAction(this, '/api/owner/failback/restart')">
+                    <i class="fas fa-power-off"></i> Restart Service
+                </button>
             </div>
-            <button class="btn-action danger" onclick="handleAction(this, '/api/owner/failback/restart')">
-                <i class="fas fa-power-off"></i> Restart Service
-            </button>
             <div class="status-feedback"></div>
         </div>
     </div>
@@ -520,24 +539,66 @@
 
 <script>
     // ==========================================
-    // 1. CLOUDFLARE STATUS
+    // 1. CLOUDFLARE CDN FULL OWNER CONTROL
     // ==========================================
+    let isCdnCurrentlyConnected = true;
+
     async function checkCloudflareStatus(btnElement) {
         const badge = document.getElementById('cfStatusBadge');
         const box = document.getElementById('cfDetailsBox');
+        const modePill = document.getElementById('cfModePill');
+        const pingPill = document.getElementById('cfPingPill');
+        const pingText = document.getElementById('cfPingText');
+        const toggleBtn = document.getElementById('cfToggleBtn');
+
         badge.className = 'owner-badge';
         badge.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking...';
 
         try {
             const res = await fetch('/api/owner/cloudflare/status');
             const data = await res.json();
-            if (data.success && data.status === 'active') {
+            
+            if (data.success) {
+                isCdnCurrentlyConnected = data.isConnected !== false;
+                
                 badge.className = 'owner-badge active';
-                badge.innerHTML = '<i class="fas fa-check-circle"></i> Active Token';
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Edge Active';
+
+                if (modePill) {
+                    if (isCdnCurrentlyConnected) {
+                        modePill.className = 'owner-badge active';
+                        modePill.innerHTML = '<i class="fas fa-link"></i> CONNECTED';
+                    } else {
+                        modePill.className = 'owner-badge warning';
+                        modePill.innerHTML = '<i class="fas fa-link-slash"></i> DISCONNECTED (BYPASS)';
+                    }
+                }
+
+                if (toggleBtn) {
+                    if (isCdnCurrentlyConnected) {
+                        toggleBtn.className = 'btn-action warning';
+                        toggleBtn.innerHTML = '<i class="fas fa-link-slash"></i> Disconnect CDN';
+                    } else {
+                        toggleBtn.className = 'btn-action primary';
+                        toggleBtn.innerHTML = '<i class="fas fa-link"></i> Connect CDN';
+                    }
+                }
+
+                if (data.workerPing && data.workerPing.reachable) {
+                    if (pingPill && pingText) {
+                        pingPill.style.display = 'inline-flex';
+                        pingText.textContent = (data.workerPing.latencyMs || '<50') + ' ms';
+                    }
+                }
+
+                const lastPurgeStr = data.lastPurgedAt ? new Date(data.lastPurgedAt).toLocaleTimeString() : 'Never';
+
                 box.style.display = 'block';
                 box.innerHTML = `
-                    <div class="details-row"><span>Token ID:</span><span style="color:var(--gold);">${data.tokenId}</span></div>
-                    <div class="details-row"><span>Worker Gateway:</span><span style="color:#00bcd4;">ios-api-cach</span></div>
+                    <div class="details-row"><span>Status:</span><span style="color:${isCdnCurrentlyConnected ? '#4caf50' : '#ff9800'}; font-weight:600;">${isCdnCurrentlyConnected ? 'Connected (Caching Active)' : 'Disconnected (Bypass Mode)'}</span></div>
+                    <div class="details-row"><span>Edge Latency:</span><span style="color:#00bcd4;">${data.workerPing?.latencyMs ? data.workerPing.latencyMs + ' ms' : 'Operational'}</span></div>
+                    <div class="details-row"><span>Worker Gateway:</span><span style="color:var(--gold); font-size:0.85em;">${data.workerEndpoint || 'ios-api-cach'}</span></div>
+                    <div class="details-row"><span>Last Purged:</span><span style="color:#bbb;">${lastPurgeStr}</span></div>
                 `;
             } else {
                 badge.className = 'owner-badge error';
@@ -546,6 +607,66 @@
         } catch (e) {
             badge.className = 'owner-badge error';
             badge.innerHTML = '<i class="fas fa-times-circle"></i> Offline';
+        }
+    }
+
+    async function toggleCloudflareCdn(btn) {
+        const origText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Switching...';
+
+        try {
+            const desired = !isCdnCurrentlyConnected;
+            const res = await fetch('/api/owner/cloudflare/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: desired })
+            });
+            const data = await res.json();
+            if (data.success) {
+                isCdnCurrentlyConnected = data.isConnected;
+                showOwnerSuccessModal({
+                    title: isCdnCurrentlyConnected ? 'Cloudflare CDN Connected' : 'Cloudflare CDN Disconnected',
+                    message: data.message,
+                    details: `<b>Current Mode:</b> ${isCdnCurrentlyConnected ? 'Active Edge Caching' : 'Bypass / Direct Server Mode'}<br><b>Timestamp:</b> ${new Date().toLocaleTimeString()}`
+                });
+                await checkCloudflareStatus();
+            } else {
+                alert('✖ Failed to toggle CDN: ' + (data.message || 'Unknown error'));
+            }
+        } catch (e) {
+            alert('✖ Network error: ' + e.message);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function purgeCloudflareCache(btn) {
+        const origText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+
+        try {
+            const res = await fetch('/api/owner/cloudflare/purge', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                showOwnerSuccessModal({
+                    title: 'Cloudflare Cache Cleared',
+                    message: data.message || 'All edge caches have been purged.',
+                    details: `<b>Purged At:</b> ${new Date().toLocaleTimeString()}<br><span style="color:#4caf50;">Next static requests will fetch fresh assets directly from the backend.</span>`
+                });
+                await checkCloudflareStatus();
+            } else {
+                alert('✖ Failed to clear cache: ' + (data.message || 'Error'));
+            }
+        } catch (e) {
+            alert('✖ Network error: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = origText;
         }
     }
 
