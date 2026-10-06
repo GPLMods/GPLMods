@@ -591,21 +591,46 @@
                 };
 
                 // Synchronize dots on manual touch swipe or scroll
-                document.querySelectorAll('.featured-carousel').forEach(carousel => {
-                    let scrollDebounce;
+                document.querySelectorAll('.council-featured-section').forEach(section => {
+                    const carousel = section.querySelector('.featured-carousel');
+                    const dots = section.querySelectorAll('.carousel-dots .dot');
+                    if (!carousel || dots.length <= 1) return;
+
+                    const updateActiveDot = () => {
+                        const slides = carousel.querySelectorAll('.featured-card');
+                        if (!slides.length) return;
+                        const scrollLeft = carousel.scrollLeft;
+                        let closestIdx = 0;
+                        let minDistance = Infinity;
+                        slides.forEach((slide, idx) => {
+                            const distance = Math.abs(slide.offsetLeft - scrollLeft);
+                            if (distance < minDistance) {
+                                minDistance = distance;
+                                closestIdx = idx;
+                            }
+                        });
+                        dots.forEach((d, idx) => d.classList.toggle('active', idx === closestIdx));
+                    };
+
                     carousel.addEventListener('scroll', () => {
-                        clearTimeout(scrollDebounce);
-                        scrollDebounce = setTimeout(() => {
-                            const card = carousel.querySelector('.featured-card');
-                            if (!card) return;
-                            const cardWidth = card.offsetWidth;
-                            const activeIndex = Math.round(carousel.scrollLeft / (cardWidth || 1));
-                            const carouselId = carousel.id || '';
-                            const platform = carouselId.replace('featured-carousel-', '');
-                            const dots = document.querySelectorAll(`#dots-${platform} .dot`);
-                            dots.forEach((d, idx) => d.classList.toggle('active', idx === activeIndex));
-                        }, 50);
+                        window.requestAnimationFrame(updateActiveDot);
                     }, { passive: true });
+
+                    if ('IntersectionObserver' in window) {
+                        const observer = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+                                    const slides = Array.from(carousel.querySelectorAll('.featured-card'));
+                                    const idx = slides.indexOf(entry.target);
+                                    if (idx !== -1) {
+                                        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+                                    }
+                                }
+                            });
+                        }, { root: carousel, threshold: [0.5, 0.75] });
+
+                        carousel.querySelectorAll('.featured-card').forEach(s => observer.observe(s));
+                    }
                 });
             </script>
             <%- include('../partials/video-ad-modal') %>

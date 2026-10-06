@@ -1567,7 +1567,7 @@
     // Share Card using Web Share API if supported via Gateway
     async function shareCardNative() {
         const currentPath = '/users/' + encodeURIComponent('<%= cardUser.username %>') + '?ref=card';
-        const gatewayShareUrl = `https://gplmods.mytunnel.org/?dest=${encodeURIComponent(currentPath)}`;
+        const gatewayShareUrl = 'https://gplmods.netlify.app/?dest=' + encodeURIComponent(currentPath) + '&user=' + encodeURIComponent('<%= cardUser.username %>') + '&card=true';
         const actionsDrop = document.getElementById('cardActionsDropdownWrap');
         if (actionsDrop) actionsDrop.classList.remove('open');
 

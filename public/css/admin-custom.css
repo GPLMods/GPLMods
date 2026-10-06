@@ -681,7 +681,30 @@ div[id^="TOOLTIP"] > *::before,
 [role="tooltip"]::after,
 [data-testid="tooltip"]::after,
 .adminjs_Tooltip::after,
-div[class*="Tooltip"]::after {
+div[class*="Tooltip"]::after,
+.tippy-arrow {
     border-color: #12151c transparent transparent transparent !important;
+    color: #12151c !important;
 }
+
+.tippy-box,
+.tippy-content,
+[data-tippy-root] > *,
+div[data-radix-popper-content-wrapper] > * {
+    background-color: #12151c !important;
+    background: #12151c !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 215, 0, 0.6) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9) !important;
+    font-size: 12px !important;
+    line-height: 1.5 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+}
+
+.tippy-content *,
+[data-tippy-root] * {
+    color: #ffffff !important;
+}
+
 

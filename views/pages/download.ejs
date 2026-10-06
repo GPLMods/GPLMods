@@ -3114,19 +3114,20 @@
             <script>
                 function shareMod() {
                     const directModUrl = window.location.href.split('?')[0]; // direct url of the mod
+                    const gatewayShareUrl = 'https://gplmods.netlify.app/?dest=' + encodeURIComponent(window.location.pathname) + '&mod=' + encodeURIComponent('<%= file.name %>');
 
                     if (navigator.share) {
                         navigator.share({
                             title: '<%= file.name %> on GPL Mods',
                             text: 'Download <%= file.name %> safely on GPL Mods!',
-                            url: directModUrl
+                            url: gatewayShareUrl
                         }).catch(e => console.log('Share dismissed', e));
                     } else {
-                        navigator.clipboard.writeText(directModUrl);
+                        navigator.clipboard.writeText(gatewayShareUrl);
                         if (window.showGplToast) {
-                            window.showGplToast({ title: 'Link Copied', body: 'Direct mod link copied to clipboard!' });
+                            window.showGplToast({ title: 'Link Copied', body: 'Mod gateway link copied to clipboard!' });
                         } else {
-                            alert("Mod link copied!");
+                            alert("Mod gateway link copied!");
                         }
                     }
                 }

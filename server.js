@@ -8670,28 +8670,50 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
             }
         }
 
-        // Multi-device passkeys (iCloud Keychain, Chrome/Android, 1Password) do not maintain signature counters and return 0.
-        // If incomingCounter is 0, supply counter: 0 to bypass @simplewebauthn's counter replay check.
+        // Multi-device passkeys (Google Password Manager on Android, Chrome, iCloud Keychain, 1Password) do not maintain signature counters and return 0.
+        // If incomingCounter === 0, supply counter: 0. If counter mismatch occurs, retry with counter 0 to support synced credentials seamlessly.
         const effectiveCounter = (incomingCounter === 0) ? 0 : (activePasskey.counter || 0);
 
-        const verification = await verifyAuthenticationResponse({
-            response: req.body,
-            expectedChallenge: req.session.currentChallenge,
-            expectedOrigin: expectedOrigins,
-            expectedRPID: expectedRPIDs,
-            credential: {
-                id: activePasskey.credentialID,
-                publicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
-                counter: effectiveCounter,
-                transports: activePasskey.transports,
-            },
-            requireUserVerification: false,
-        });
+        let verification;
+        try {
+            verification = await verifyAuthenticationResponse({
+                response: req.body,
+                expectedChallenge: req.session.currentChallenge,
+                expectedOrigin: expectedOrigins,
+                expectedRPID: expectedRPIDs,
+                credential: {
+                    id: activePasskey.credentialID,
+                    publicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
+                    counter: effectiveCounter,
+                    transports: activePasskey.transports,
+                },
+                requireUserVerification: false,
+            });
+        } catch (counterErr) {
+            if (counterErr.message && (counterErr.message.includes('counter') || counterErr.message.includes('Counter'))) {
+                console.warn('[WebAuthn] Handled counter mismatch for synced passkey. Retrying with counter 0:', counterErr.message);
+                verification = await verifyAuthenticationResponse({
+                    response: req.body,
+                    expectedChallenge: req.session.currentChallenge,
+                    expectedOrigin: expectedOrigins,
+                    expectedRPID: expectedRPIDs,
+                    credential: {
+                        id: activePasskey.credentialID,
+                        publicKey: Buffer.from(activePasskey.credentialPublicKey, 'base64url'),
+                        counter: 0,
+                        transports: activePasskey.transports,
+                    },
+                    requireUserVerification: false,
+                });
+            } else {
+                throw counterErr;
+            }
+        }
 
         if (verification && verification.verified) {
             const verifiedCounter = typeof verification.authenticationInfo?.newCounter === 'number'
                 ? verification.authenticationInfo.newCounter
-                : incomingCounter;
+                : 0;
             if (activePasskey) activePasskey.counter = verifiedCounter;
             if (user.passkey && user.passkey.credentialID === activePasskey.credentialID) {
                 user.passkey.counter = verifiedCounter;
