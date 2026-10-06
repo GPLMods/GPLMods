@@ -10091,6 +10091,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // --- NEW: iOS Store API Endpoint ---
 app.get('/api/ios-store', async (req, res) => {
     try {
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
         const dnsProfiles = await IosDns.find().sort({ isRecommended: -1, createdAt: -1 });
         const certificates = await IosCert.find().sort({ createdAt: -1 });
         
@@ -10101,6 +10105,25 @@ app.get('/api/ios-store', async (req, res) => {
     } catch (error) {
         console.error("iOS Store API Error:", error);
         res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.all('/api/ios-store/purge', async (req, res) => {
+    try {
+        const workerUrl = process.env.CF_DNS_WORKER_URL || 'https://ios-api-cach.gplmodsofficial.workers.dev';
+        const purgeSecret = process.env.CF_PURGE_SECRET || 'gplmods-dns-secret';
+        const axios = require('axios');
+        let cfRes = null;
+        try {
+            const resp = await axios.post(`${workerUrl}/purge?key=${encodeURIComponent(purgeSecret)}`, {}, { timeout: 8000 });
+            cfRes = resp.data;
+        } catch (e1) {
+            const resp2 = await axios.get(`${workerUrl}?purge=1&key=${encodeURIComponent(purgeSecret)}`, { timeout: 8000 });
+            cfRes = resp2.data;
+        }
+        res.json({ success: true, cloudflare: cfRes });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
     }
 });
 

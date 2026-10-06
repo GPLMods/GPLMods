@@ -71,15 +71,27 @@ const s3ClientAdmin = new S3Client({
     }
 });
 
-const triggerCloudflareRebuild = async () => {
+const purgeCloudflareDnsCache = async () => {
+    const workerUrl = process.env.CF_DNS_WORKER_URL || 'https://ios-api-cach.gplmodsofficial.workers.dev';
+    const purgeSecret = process.env.CF_PURGE_SECRET || 'gplmods-dns-secret';
     try {
-        const webhookUrl = 'https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/YOUR_SECRET_UUID';
-        await axios.post(webhookUrl);
-        console.log("Cloudflare rebuild triggered successfully.");
-    } catch (e) {
-        console.error("Failed to trigger Cloudflare rebuild:", e.message);
+        // Attempt POST /purge with key
+        await axios.post(`${workerUrl}/purge?key=${encodeURIComponent(purgeSecret)}`, {}, { timeout: 8000 });
+        console.log("✅ Cloudflare iOS DNS Worker cache purged successfully via POST /purge.");
+        return { success: true };
+    } catch (err1) {
+        // Fallback to GET ?purge=1
+        try {
+            await axios.get(`${workerUrl}?purge=1&key=${encodeURIComponent(purgeSecret)}`, { timeout: 8000 });
+            console.log("✅ Cloudflare iOS DNS Worker cache purged via GET fallback.");
+            return { success: true };
+        } catch (err2) {
+            console.warn("⚠️ Cloudflare DNS cache purge notice:", err2.message);
+            return { success: false, error: err2.message };
+        }
     }
 };
+const triggerCloudflareRebuild = purgeCloudflareDnsCache;
 
 const deleteFromB2Admin = async (fileKey) => {
     if (!fileKey || fileKey === 'external-link') return;
@@ -741,24 +753,53 @@ async function createAdminRouter() {
                 options: {
                     navigation: modsNav,
                     listProperties: ['name', 'status', 'updatedAt'],
+                    filterProperties: ['name', 'status'],
+                    properties: {
+                        status: {
+                            availableValues: [
+                                { value: 'Signed', label: 'Signed (Active)' },
+                                { value: 'Revoked', label: 'Revoked (Blocked)' }
+                            ]
+                        },
+                        'apps.iconUrl': {
+                            description: 'Local bundled icon (e.g. icons/altstore.png, icons/cydia.png, icons/droidify.png, icons/esign.png, icons/feather.png, icons/installer.png, icons/ksign.png, icons/livecontainer.png, icons/neostore.png, icons/purepkg.png, icons/saily.png, icons/scarlet.png, icons/sidestore.png, icons/sileo.png, icons/trollstore.png, icons/zebra.png) or full external URL. Leave empty to auto-detect by app name.'
+                        },
+                        'apps.plistUrl': {
+                            description: 'Direct HTTPS plist manifest URL for OTA installation (itms-services://?action=download-manifest&url=...)'
+                        }
+                    },
                     actions: {
                         new: {
                             after: async (response, request, context) => {
-                                if (request.method === 'post') await triggerCloudflareRebuild();
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
                                 return response;
                             }
                         },
                         edit: {
                             after: async (response, request, context) => {
-                                if (request.method === 'post') await triggerCloudflareRebuild();
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
                                 return response;
                             }
                         },
                         delete: {
                             after: async (response, request, context) => {
-                                if (request.method === 'post') await triggerCloudflareRebuild();
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
                                 return response;
                             }
+                        },
+                        purgeCache: {
+                            actionType: 'resource',
+                            icon: 'RefreshCw',
+                            label: '⚡ Purge Cloudflare Cache',
+                            handler: async (request, response, context) => {
+                                const res = await purgeCloudflareDnsCache();
+                                return {
+                                    notice: {
+                                        message: res.success ? 'Cloudflare iOS Store cache purged successfully!' : 'Cache purge attempted (see server logs).',
+                                        type: res.success ? 'success' : 'default',
+                                    },
+                                };
+                            },
                         }
                     }
                 }
@@ -767,7 +808,53 @@ async function createAdminRouter() {
                 resource: IosDns,
                 options: {
                     navigation: modsNav,
-                    listProperties: ['name', 'configUrl', 'isRecommended', 'updatedAt']
+                    listProperties: ['name', 'isRecommended', 'configUrl', 'updatedAt'],
+                    filterProperties: ['name', 'isRecommended'],
+                    properties: {
+                        configUrl: {
+                            description: 'Direct download link for the .mobileconfig DNS profile'
+                        },
+                        iconUrl: {
+                            description: 'Optional profile icon URL (leave empty for default shield icon)'
+                        },
+                        isRecommended: {
+                            description: 'Marks this profile as Recommended (Gold Install button)'
+                        }
+                    },
+                    actions: {
+                        new: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
+                                return response;
+                            }
+                        },
+                        edit: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
+                                return response;
+                            }
+                        },
+                        delete: {
+                            after: async (response, request, context) => {
+                                if (request.method === 'post') await purgeCloudflareDnsCache();
+                                return response;
+                            }
+                        },
+                        purgeCache: {
+                            actionType: 'resource',
+                            icon: 'RefreshCw',
+                            label: '⚡ Purge Cloudflare Cache',
+                            handler: async (request, response, context) => {
+                                const res = await purgeCloudflareDnsCache();
+                                return {
+                                    notice: {
+                                        message: res.success ? 'Cloudflare iOS Store cache purged successfully!' : 'Cache purge attempted (see server logs).',
+                                        type: res.success ? 'success' : 'default',
+                                    },
+                                };
+                            },
+                        }
+                    }
                 }
             },
             {
