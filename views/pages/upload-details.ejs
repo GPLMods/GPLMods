@@ -254,7 +254,7 @@
         border-color: var(--gold);
         color: var(--gold);
     }
-    .draft-preview-button:hover { background-color: var(--gold); color: var(--black); }
+    .draft-preview-button:hover { background-color: var(--gold); background-image: none; color: var(--black); }
     #screenshotPreviewContainer {
         column-count: 2;
         column-gap: 15px;
@@ -405,7 +405,7 @@
     .template-option-preview { color: var(--silver); font-size: 0.85em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .template-helper-btn {
-        float: right;
+        margin-left: auto;
         background: rgba(255, 215, 0, 0.1);
         color: var(--gold);
         border: 1px solid var(--gold);
@@ -563,7 +563,7 @@
                     </div>
                 </div>
 
-                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <div style="background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                     <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
                     <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -818,9 +818,9 @@
                 <!-- ============================================= -->
 
                 <div class="form-group" style="position: relative;">
-                    <label for="modDescription">
+                    <label for="modDescription" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Mod Description* 
-                        <span class="template-helper-btn" data-target="modDescription">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="modDescription"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="modDescription" name="modDescription" style="display:none;"><%- file && file.modDescription ? file.modDescription : '' %></textarea>
                     <div id="editor-modDescription"><%- file && file.modDescription ? file.modDescription : '' %></div>
@@ -828,9 +828,9 @@
                 </div>
 
                 <div class="form-group" style="position: relative;">
-                    <label for="modFeatures">
+                    <label for="modFeatures" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Mod Features* (One per line)
-                        <span class="template-helper-btn" data-target="modFeatures">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="modFeatures"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file && file.modFeatures ? file.modFeatures : '' %></textarea>
                     <div id="editor-modFeatures"><%- file && file.modFeatures ? file.modFeatures : '' %></div>
@@ -844,9 +844,9 @@
                 </div>
 
                  <div class="form-group" style="position: relative;">
-                    <label for="importantNote">
+                    <label for="importantNote" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Important Note / Installation Instructions (Optional)
-                        <span class="template-helper-btn" data-target="importantNote">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
                     <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
@@ -854,9 +854,9 @@
                 </div>
                 
                 <div class="form-group" style="position: relative;">
-                    <label for="whatsNew">
+                    <label for="whatsNew" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         What's New (Optional)
-                        <span class="template-helper-btn" data-target="whatsNew">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file && file.whatsNew ? file.whatsNew : '' %></textarea>
                     <div id="editor-whatsNew"><%- file && file.whatsNew ? file.whatsNew : '' %></div>
@@ -884,7 +884,7 @@
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 
-                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                         <button type="button" id="btn-single-link" class="btn btn-primary" style="flex:1; padding:10px;">Single External Link</button>
                         <button type="button" id="btn-multi-part" class="btn btn-secondary" style="flex:1; padding:10px;">Multi-Part Download</button>
                     </div>

@@ -473,7 +473,7 @@
             .header-right-actions {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 6px;
                 justify-self: end;
                 /* Aligns this whole block to the right */
                 flex-shrink: 0;
@@ -577,7 +577,7 @@
                 .desktop-text-buttons {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
+                    gap: 6px;
                 }
 
                 /* Keep hamburger visible on desktop as requested */
@@ -592,7 +592,7 @@
 
                 /* Slightly reduce spacing so both avatar and desktop buttons fit */
                 .header-right-actions {
-                    gap: 10px;
+                    gap: 6px;
                 }
             }
 
@@ -1123,7 +1123,7 @@
 
                                             <!-- Mobile Only Items -->
                                             <div class="header-mobile-actions"
-                                                style="display: flex; align-items: center; gap: 12px;">
+                                                style="display: flex; align-items: center; gap: 6px;">
                                                 <% if (user) { %>
                                                     <%
                                                         const defaultHeaderAvatar = (user.username === 'GPLMods') ? '/images/team-logo.png' : '/images/default-avatar.png';
@@ -1544,6 +1544,12 @@
                                     function openModal(modal) {
                                         if (!modal) return;
                                         modal.style.display = 'flex';
+                                        modal.offsetHeight; // Force reflow
+                                        
+                                        // Close profile dropdown if open to prevent it from overlaying or staying open behind
+                                        var pDrop = document.getElementById('profileDropdown');
+                                        if (pDrop) pDrop.classList.remove('active');
+                                        
                                         requestAnimationFrame(function () {
                                             modal.style.opacity = '1';
                                             var card = modal.querySelector('.gpl-action-modal-card');

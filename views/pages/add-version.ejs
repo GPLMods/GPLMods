@@ -113,7 +113,7 @@
             </div>
 
             <!-- AUTO-FETCH CONTAINER -->
-            <div id="autoFetchContainer" style="display: none; background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+            <div id="autoFetchContainer" style="display: none; background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                 <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the store link to automatically grab the latest "What's New" notes and requirements.</p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <div class="filter-group">
@@ -234,7 +234,7 @@
             <div class="form-group" style="position: relative;">
                 <label>
                     What's New in this Version? (Optional)
-                    <span class="template-helper-btn" data-target="whatsNew">💡 Use Template</span>
+                    <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
                 <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
                 <div id="dropdown-whatsNew" class="template-dropdown"></div>
@@ -246,7 +246,7 @@
             <div class="form-group" style="position: relative;">
                 <label for="importantNote">
                     Important Note / Installation Instructions (Optional)
-                    <span class="template-helper-btn" data-target="importantNote">💡 Use Template</span>
+                    <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
                 <textarea id="importantNote" name="importantNote" rows="4" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; outline: none; resize: vertical;"><%= parentFile.importantNote || '' %></textarea>
                 <div id="dropdown-importantNote" class="template-dropdown"></div>

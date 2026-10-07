@@ -18,6 +18,7 @@ const ChatSessionSchema = new Schema({
     messages: [{
         sender: { type: String, enum: ['user', 'bot', 'agent', 'system'] },
         senderName: { type: String },
+        senderAvatar: { type: String },
         text: { type: String },
         mediaUrls: [{ type: String }], // For premium/distributor images/videos
         timestamp: { type: Date, default: Date.now }

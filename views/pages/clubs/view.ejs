@@ -2240,7 +2240,7 @@ function getUserAvatarUrl(u) {
     }
     .chan-tab-btn {
         background: none;
-        border: none;
+        border: 1px solid transparent;
         color: var(--silver);
         padding: 8px 14px;
         border-radius: 8px;
@@ -3945,7 +3945,7 @@ function getUserAvatarUrl(u) {
                     </div>
                     <div id="guiRolesDisplayList" style="display: flex; flex-direction: column; gap: 8px;">
                         <% (roles || []).forEach(r => { %>
-                            <div class="role-list-row" id="roleRow-<%= r._id %>" style="display: flex; align-items: center; justify-content: space-between; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px;">
+                            <div class="role-list-row" id="roleRow-<%= r._id %>" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
                                         <%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %>
@@ -7625,6 +7625,12 @@ function getUserAvatarUrl(u) {
     async function saveMemberAssignedRoles() {
         const memberId = document.getElementById('assignTargetMember')?.value;
         if (!memberId) return showGplToast('Please select a member first.', 'warning');
+
+        const select = document.getElementById('assignTargetMember');
+        const opt = select ? select.querySelector(`option[value="${memberId}"]`) : null;
+        if (opt && opt.textContent.includes('GPLMods')) {
+            return showGplToast('Owner role for default Club cannot be changed for site owner.', 'error');
+        }
 
         const checkedBoxes = Array.from(document.querySelectorAll('.member-role-checkbox:checked'));
         if (checkedBoxes.length > 10) {

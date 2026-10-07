@@ -1202,6 +1202,12 @@
                 <h1>
                     <%= file.name %>
                 </h1>
+                
+                <% if (file.isPromoted && file.promotedUntil && new Date(file.promotedUntil) > new Date()) { %>
+                    <div class="sponsored-badge" style="margin-bottom: 12px;">
+                        <i class="fas fa-bolt"></i> Sponsored
+                    </div>
+                <% } %>
 
                 <% if (file.certification==='certified' ) { %>
                     <div class="safety-badge certification-badge">
@@ -1671,6 +1677,11 @@
                                                         <!-- Updated Action Buttons Start -->
                                                         <!-- ============================ -->
                                                         <div class="action-buttons">
+                                                            <% if (user && file.uploader && (file.uploader._id || file.uploader).toString() === user._id.toString()) { %>
+                                                                <button type="button" class="btn-promote-trigger" onclick="openPromoteModal()" style="width: 100%; justify-content: center; margin-bottom: 10px;">
+                                                                    <i class="fas fa-bolt"></i> <%= (file.isPromoted && file.promotedUntil && new Date(file.promotedUntil) > new Date()) ? 'Extend Promotion' : 'Promote Mod' %>
+                                                                </button>
+                                                            <% } %>
                                                             <button type="button" class="action-btn share-action"
                                                                 onclick="shareMod()">
                                                                 <i class="fas fa-share-alt"></i> Share Mod
@@ -3230,6 +3241,13 @@
                 <p style="color: var(--silver); font-size: 0.88rem; margin-bottom: 16px;">
                     Promote this mod to display it in the <strong>Suggested For You</strong> carousel across download pages. Gain instant visibility, more downloads, and an official <strong>Sponsored</strong> badge!
                 </p>
+
+                <% if (file.isPromoted && file.promotedUntil && new Date(file.promotedUntil) > new Date()) { %>
+                <div style="background: rgba(46, 204, 113, 0.15); padding: 12px; border-radius: 8px; border: 1px solid rgba(46, 204, 113, 0.4); margin-bottom: 16px;">
+                    <strong style="color: #2ecc71;"><i class="fas fa-check-circle"></i> Currently Promoted</strong>
+                    <p style="margin: 4px 0 0 0; color: var(--silver); font-size: 0.85rem;">This mod is actively promoted until <%= new Date(file.promotedUntil).toLocaleDateString() %>. You can purchase additional days below to extend it.</p>
+                </div>
+                <% } %>
 
                 <label style="display: block; color: #fff; font-weight: 600; margin-bottom: 10px; font-size: 0.9rem;">Select Promotion Duration:</label>
 

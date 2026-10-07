@@ -487,6 +487,8 @@
                     setPartsRequired(false);
                 }
             });
+            // Initial sync for required attributes
+            multiPartCheckbox.dispatchEvent(new Event('change'));
 
             function createPartBlock(index) {
                 const block = document.createElement('div');

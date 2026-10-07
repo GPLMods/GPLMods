@@ -8974,13 +8974,44 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
 
     // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
-    if (req.user.role === 'distributor' && req.body.externalUrl) {
+    const isDistributorForm = (req.user.role === 'distributor' || req.user.role === 'admin' || req.user.role === 'owner') && 
+                              (req.body.externalUrl || req.body.isMultiPart === 'true');
+
+    if (isDistributorForm) {
         try {
-            const { externalUrl, originalFilename } = req.body;
+            const externalUrl = req.body.externalUrl || '';
+            const originalFilename = req.body.originalFilename || '';
+            let downloadParts = [];
+
+            if (req.body.isMultiPart === 'true') {
+                const pNames = Array.isArray(req.body.partNames) ? req.body.partNames : (req.body.partNames ? [req.body.partNames] : []);
+                const pUrls = Array.isArray(req.body.partUrls) ? req.body.partUrls : (req.body.partUrls ? [req.body.partUrls] : []);
+                const m1Prov = Array.isArray(req.body.mirror1Providers) ? req.body.mirror1Providers : (req.body.mirror1Providers ? [req.body.mirror1Providers] : []);
+                const m1Url = Array.isArray(req.body.mirror1Urls) ? req.body.mirror1Urls : (req.body.mirror1Urls ? [req.body.mirror1Urls] : []);
+                const m2Prov = Array.isArray(req.body.mirror2Providers) ? req.body.mirror2Providers : (req.body.mirror2Providers ? [req.body.mirror2Providers] : []);
+                const m2Url = Array.isArray(req.body.mirror2Urls) ? req.body.mirror2Urls : (req.body.mirror2Urls ? [req.body.mirror2Urls] : []);
+                
+                const len = Math.max(pUrls.length, pNames.length);
+                for (let i = 0; i < len; i++) {
+                    if (!pUrls[i]) continue;
+                    downloadParts.push({
+                        partName: pNames[i] || `Part ${i + 1}`,
+                        partUrl: pUrls[i],
+                        mirror1Provider: m1Prov[i] || '',
+                        mirror1Url: m1Url[i] || '',
+                        mirror2Provider: m2Prov[i] || '',
+                        mirror2Url: m2Url[i] || '',
+                        directAdminLink: '',
+                        manualFileScanUrl: '',
+                        manualSiteScanUrl: ''
+                    });
+                }
+            }
 
             const newFile = new File({
                 uploader: req.user.username,
                 externalDownloadUrl: externalUrl,
+                downloadParts: downloadParts,
                 originalFilename: originalFilename,
                 fileKey: 'external-link', 
                 fileSize: 0, 
@@ -8993,11 +9024,12 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             await newFile.save();
             
             // --- NEW: VIRUSTOTAL v3 URL SCAN ---
-            console.log(`Starting VT URL scan for Distributor link: ${externalUrl}`);
-            (async () => {
-                try {
-                    const urlParams = new URLSearchParams();
-                    urlParams.append('url', externalUrl);
+            if (externalUrl) {
+                console.log(`Starting VT URL scan for Distributor link: ${externalUrl}`);
+                (async () => {
+                    try {
+                        const urlParams = new URLSearchParams();
+                        urlParams.append('url', externalUrl);
 
                     const vtUrlResponse = await axios.post('https://www.virustotal.com/api/v3/urls', urlParams, {
                         headers: { 
@@ -9006,15 +9038,16 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                         }
                     });
                     
-                    const analysisId = vtUrlResponse.data.data.id;
-                    console.log(`VT URL Scan submitted. Analysis ID: ${analysisId}`);
-                    
-                    await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
-                    pollVirusTotalInBackground(newFile._id);
-                } catch (vtError) {
-                    console.error("VT URL Scan Error:", vtError.response?.data || vtError.message);
-                }
-            })();
+                        const analysisId = vtUrlResponse.data.data.id;
+                        console.log(`VT URL Scan submitted. Analysis ID: ${analysisId}`);
+                        
+                        await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
+                        pollVirusTotalInBackground(newFile._id);
+                    } catch (vtError) {
+                        console.error("VT URL Scan Error:", vtError.response?.data || vtError.message);
+                    }
+                })();
+            }
             
             return res.redirect(`/upload-details/${newFile._id}`);
 
@@ -19891,9 +19924,11 @@ const startServer = async () => {
                     if (!agent) return;
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
+                        const agentAvatarUrl = agent.signedAvatarUrl || agent.avatarUrl || agent.cardAvatarUrl || '/images/default-avatar.png';
                         const agentMsg = { 
                             sender: 'agent', 
                             senderName: agent.username || 'Support Agent',
+                            senderAvatar: agentAvatarUrl,
                             text: data.text || '',
                             mediaUrls: Array.isArray(data.mediaUrls) ? data.mediaUrls : []
                         };

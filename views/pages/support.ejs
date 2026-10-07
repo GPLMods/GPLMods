@@ -1269,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function appendFsMessage(text, sender, senderName, mediaUrls = []) {
+    function appendFsMessage(text, sender, senderName, mediaUrls = [], senderAvatar = null) {
         if (!fsChatMessages) return;
         const div = document.createElement('div');
         let typeClass = 'fs-msg-system';
@@ -1293,8 +1293,15 @@ document.addEventListener('DOMContentLoaded', () => {
             mediaHtml += '</div>';
         }
 
+        let avatarHtml = '';
+        if (sender === 'agent' && senderAvatar) {
+            avatarHtml = `<img src="${senderAvatar}" style="width: 20px; height: 20px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 6px;">`;
+        } else if (sender === 'agent' || sender === 'bot') {
+            avatarHtml = `<i class="${sender === 'bot' ? 'fas fa-robot' : 'fas fa-headset'}" style="margin-right: 6px;"></i>`;
+        }
+
         div.innerHTML = `
-            ${sender === 'agent' || sender === 'bot' ? `<strong style="font-size:0.8em; opacity:0.8; display:block; margin-bottom:3px;">${senderName || (sender === 'bot' ? 'GPL Assistant' : 'Support Agent')}</strong>` : ''}
+            ${sender === 'agent' || sender === 'bot' ? `<strong style="font-size:0.8em; opacity:0.8; display:flex; align-items:center; margin-bottom:4px;">${avatarHtml} ${senderName || (sender === 'bot' ? 'GPL Assistant' : 'Support Agent')}</strong>` : ''}
             ${text ? `<div>${text.replace(/\n/g, '<br>')}</div>` : ''}
             ${mediaHtml}
         `;
@@ -1440,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fsChatMessages.innerHTML = '';
 
             if (data.history && data.history.length > 0) {
-                data.history.forEach(msg => appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls));
+                data.history.forEach(msg => appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls, msg.senderAvatar));
             } else {
                 appendFsMessage("Hello! 👋 I'm the GPL AI Assistant. How can I help you today? Type 'human' at any time to connect with our support agents.", "bot");
             }
@@ -1460,7 +1467,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         socket.on('new_support_message', (msg) => {
-            appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls);
+            appendFsMessage(msg.text, msg.sender, msg.senderName, msg.mediaUrls, msg.senderAvatar);
             if (msg.sender !== 'user') {
                 playFsIncomingSfx();
             } else {

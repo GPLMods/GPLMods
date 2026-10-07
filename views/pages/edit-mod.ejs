@@ -39,7 +39,7 @@
     
     .preview-container { margin-top: 15px; border-radius: 8px; background-color: var(--black); padding: 15px; border: 1px solid #333; display: none; }
     .draft-preview-button { background-color: #16120a; background-image: repeating-linear-gradient(135deg, rgba(255,215,0,.12) 0 2px, transparent 2px 7px); border-color: var(--gold); color: var(--gold); }
-    .draft-preview-button:hover { background-color: var(--gold); color: var(--black); }
+    .draft-preview-button:hover { background-color: var(--gold); background-image: none; color: var(--black); }
     #screenshotPreviewContainer { column-count: 2; column-gap: 15px; }
     #screenshotPreviewContainer img { width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; break-inside: avoid; display: block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     .video-preview-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 4px; width: 100%; }
@@ -236,7 +236,7 @@
     .template-option-preview { color: var(--silver); font-size: 0.85em; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     
     .template-helper-btn {
-        float: right;
+        margin-left: auto;
         background: rgba(255, 215, 0, 0.1);
         color: var(--gold);
         border: 1px solid var(--gold);
@@ -303,7 +303,7 @@
                 </div>
                 <% } %>
 
-                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <div style="background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                     <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 5px;">Platform Source</label>
@@ -578,9 +578,9 @@
 
                 <!-- HIDDEN TEXTAREAS - REQUIRED REMOVED to prevent silent browser failures -->
                 <div class="form-group" style="position: relative;">
-                    <label for="modDescription">
+                    <label for="modDescription" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Mod Description* 
-                        <span class="template-helper-btn" data-target="modDescription">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="modDescription"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="modDescription" name="modDescription" style="display:none;"><%- file.modDescription %></textarea>
                     <div id="editor-modDescription"><%- file.modDescription %></div>
@@ -588,9 +588,9 @@
                 </div>
 
                 <div class="form-group" style="position: relative;">
-                    <label for="modFeatures">
+                    <label for="modFeatures" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Mod Features* (One per line)
-                        <span class="template-helper-btn" data-target="modFeatures">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="modFeatures"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file.modFeatures %></textarea>
                     <div id="editor-modFeatures"><%- file.modFeatures %></div>
@@ -606,9 +606,9 @@
                 <% } %>
 
                 <div class="form-group" style="position: relative;">
-                    <label for="importantNote">
+                    <label for="importantNote" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         Important Note / Installation Instructions (Optional)
-                        <span class="template-helper-btn" data-target="importantNote">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"><%- file.importantNote %></textarea>
                     <div id="editor-importantNote"><%- file.importantNote %></div>
@@ -616,9 +616,9 @@
                 </div>
                 
                 <div class="form-group" style="position: relative;">
-                    <label for="whatsNew">
+                    <label for="whatsNew" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                         What's New (Optional)
-                        <span class="template-helper-btn" data-target="whatsNew">💡 Use Template</span>
+                        <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file.whatsNew %></textarea>
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
@@ -644,7 +644,7 @@
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 
-                    <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                         <button type="button" id="btn-single-link" class="btn <%= file.isMultiPart ? 'btn-secondary' : 'btn-primary' %>" style="flex:1; padding:10px;">Single External Link</button>
                         <button type="button" id="btn-multi-part" class="btn <%= file.isMultiPart ? 'btn-primary' : 'btn-secondary' %>" style="flex:1; padding:10px;">Multi-Part Download</button>
                     </div>
