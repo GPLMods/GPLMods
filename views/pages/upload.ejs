@@ -81,13 +81,13 @@
                 <div style="margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">
                         <span>Pending Upload Slots</span>
-                        <strong style="color: <%= quota.canUpload ? 'var(--white)' : 'var(--red)' %>;">
+                        <strong <%- `style="color: ${quota.canUpload ? 'var(--white)' : 'var(--red)'};"` %>>
                             <%= quota.totalSlots >= 9000 ? 'Unlimited Slots (Privileged Access)' : (quota.usedSlots + ' / ' + quota.totalSlots + ' Used (' + quota.remainingSlots + ' Available)') %>
                         </strong>
                     </div>
                     <div style="background: #111; border-radius: 10px; height: 10px; overflow: hidden; border: 1px solid #333;">
                         <% const usedPercent = quota.totalSlots >= 9000 ? 5 : Math.min(100, Math.round((quota.usedSlots / quota.totalSlots) * 100)); %>
-                        <div style="width: <%= usedPercent %>%; height: 100%; background: <%= quota.canUpload ? 'linear-gradient(90deg, #ffb300, #ffd700)' : '#e53935' %>; transition: width 0.3s ease;"></div>
+                        <div <%- `style="width: ${usedPercent}%; height: 100%; background: ${quota.canUpload ? 'linear-gradient(90deg, #ffb300, #ffd700)' : '#e53935'}; transition: width 0.3s ease;"` %>></div>
                     </div>
                 </div>
 

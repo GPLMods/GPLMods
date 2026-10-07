@@ -646,6 +646,7 @@ ZW|Zimbabwe
         margin: 0 0 16px 0;
         display: -webkit-box;
         -webkit-line-clamp: 3;
+        line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
         flex-grow: 1;
@@ -803,7 +804,7 @@ ZW|Zimbabwe
                     %>
                     <div class="custom-select">
                         <span class="custom-select-text">
-                            <i class="fas <%= curAccessObj.icon %>" style="color: <%= curAccessObj.color %>;"></i>
+                            <i class="fas <%= curAccessObj.icon %>" <%- `style="color: ${curAccessObj.color};"` %>></i>
                             <span class="text-label"><%= curAccessObj.label %></span>
                         </span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
@@ -811,7 +812,7 @@ ZW|Zimbabwe
                     <div class="custom-options">
                         <% accessOptions.forEach(opt => { %>
                             <div class="custom-option <%= (curAccess === opt.value) ? 'selected' : '' %>" data-value="<%= opt.value %>">
-                                <i class="fas <%= opt.icon %>" style="color: <%= opt.color %>;"></i>
+                                <i class="fas <%= opt.icon %>" <%- `style="color: ${opt.color};"` %>></i>
                                 <span class="opt-label"><%= opt.label %></span>
                             </div>
                         <% }); %>
@@ -880,7 +881,7 @@ ZW|Zimbabwe
                     %>
                     <div class="custom-select">
                         <span class="custom-select-text">
-                            <i class="fas <%= curSortObj.icon %>" style="color: <%= curSortObj.color %>;"></i>
+                            <i class="fas <%= curSortObj.icon %>" <%- `style="color: ${curSortObj.color};"` %>></i>
                             <span class="text-label"><%= curSortObj.label %></span>
                         </span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
@@ -888,7 +889,7 @@ ZW|Zimbabwe
                     <div class="custom-options">
                         <% sortOptions.forEach(opt => { %>
                             <div class="custom-option <%= (curSort === opt.value) ? 'selected' : '' %>" data-value="<%= opt.value %>">
-                                <i class="fas <%= opt.icon %>" style="color: <%= opt.color %>;"></i>
+                                <i class="fas <%= opt.icon %>" <%- `style="color: ${opt.color};"` %>></i>
                                 <span class="opt-label"><%= opt.label %></span>
                             </div>
                         <% }); %>

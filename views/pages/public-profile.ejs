@@ -253,9 +253,9 @@
                 <img src="<%= profileUser.signedAvatarUrl %>" 
                      alt="<%= profileUser.username %>'s Avatar" 
                      class="profile-avatar <%= currentRoleTheme.class %>"
-                     style="border-color: <%= currentRoleTheme.color %>; 
-                            box-shadow: 0 0 15px <%= currentRoleTheme.color %>40;
-                            width: 150px; height: 150px; border-radius: 50%; border-width: 3px; border-style: solid; object-fit: cover;">
+                     <%- `style="border-color: ${currentRoleTheme.color}; 
+                            box-shadow: 0 0 15px ${currentRoleTheme.color}40;
+                            width: 150px; height: 150px; border-radius: 50%; border-width: 3px; border-style: solid; object-fit: cover;"` %>>
 
                 <button class="share-btn" onclick="shareProfile()" title="Share Profile" style="position: absolute; bottom: 5px; right: 5px; background: var(--gold); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s; z-index: 10;">
                     <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: var(--black);"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92z"/></svg>
@@ -265,7 +265,7 @@
             <!-- Rank Lottie Animation -->
             <% if (profileUser.forumRank && profileUser.forumRank.lottie) { %>
                 <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                    <lottie-player src="<%= cdnUrl %>/animations/<%= profileUser.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 8px <%= profileUser.forumRank.color %>);" loop autoplay></lottie-player>
+                    <lottie-player src="<%= cdnUrl %>/animations/<%= profileUser.forumRank.lottie %>" background="transparent" speed="1" <%- `style="width: 70px; height: 70px; filter: drop-shadow(0 0 8px ${profileUser.forumRank.color});"` %> loop autoplay></lottie-player>
                 </div>
             <% } %>
 
@@ -279,7 +279,7 @@
             </div>
             
             <!-- Rank & Points -->
-            <p style="color: <%= profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 14px; text-shadow: 0 0 6px <%= profileUser.forumRank ? profileUser.forumRank.color : 'transparent' %>;">
+            <p <%- `style="color: ${profileUser.forumRank ? profileUser.forumRank.color : 'var(--silver)'}; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; margin-bottom: 14px; text-shadow: 0 0 6px ${profileUser.forumRank ? profileUser.forumRank.color : 'transparent'};"` %>>
                 <%= profileUser.forumRank ? profileUser.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= profileUser.forumPoints || 0 %> pts)
             </p>
 
@@ -293,8 +293,8 @@
                                     <i class="fas fa-ban"></i> Card Suspended
                                 </span>
                             <% } else { %>
-                                <span class="user-card-verified-badge" style="display: inline-flex; align-items: center; gap: 6px; background: <%= badge.role === 'distributor' ? 'linear-gradient(135deg, rgba(186, 104, 200, 0.2), rgba(255, 215, 0, 0.15))' : 'rgba(255,215,0,0.15)' %>; color: <%= badge.role === 'distributor' ? '#ffd700' : 'var(--gold)' %>; border: 1px solid <%= badge.role === 'distributor' ? '#ba68c8' : 'var(--gold)' %>; font-size: 0.78em; padding: 4px 12px; border-radius: 20px; font-weight: 600; vertical-align: middle; box-shadow: 0 0 6px <%= badge.role === 'distributor' ? 'rgba(186, 104, 200, 0.3)' : 'rgba(255, 215, 0, 0.2)' %>;" title="<%= badge.role === 'distributor' ? 'Official Verified & Licensed Mod Distributor on GPL Mods' : 'Official Verified GPL Mods Cardholder' %>">
-                                    <i class="fas fa-id-card" style="color: <%= badge.role === 'distributor' ? '#ba68c8' : 'var(--gold)' %>;"></i> 
+                                <span class="user-card-verified-badge" <%- `style="display: inline-flex; align-items: center; gap: 6px; background: ${badge.role === 'distributor' ? 'linear-gradient(135deg, rgba(186, 104, 200, 0.2), rgba(255, 215, 0, 0.15))' : 'rgba(255,215,0,0.15)'}; color: ${badge.role === 'distributor' ? '#ffd700' : 'var(--gold)'}; border: 1px solid ${badge.role === 'distributor' ? '#ba68c8' : 'var(--gold)'}; font-size: 0.78em; padding: 4px 12px; border-radius: 20px; font-weight: 600; vertical-align: middle; box-shadow: 0 0 6px ${badge.role === 'distributor' ? 'rgba(186, 104, 200, 0.3)' : 'rgba(255, 215, 0, 0.2)'};"` %> title="<%= badge.role === 'distributor' ? 'Official Verified & Licensed Mod Distributor on GPL Mods' : 'Official Verified GPL Mods Cardholder' %>">
+                                    <i class="fas fa-id-card" <%- `style="color: ${badge.role === 'distributor' ? '#ba68c8' : 'var(--gold)'};"` %>></i> 
                                     <%= badge.role === 'distributor' ? 'Verified License Distributor' : 'Card Verified' %>
                                 </span>
                             <% } %>
@@ -308,7 +308,7 @@
                                   data-badge-color="<%= badge.color %>"
                                   onclick="showBadgeDetails(this)"
                                   title="<%= badge.description %>"
-                                  style="background: <%= badge.color %>18; border: 1px solid <%= badge.color %>; color: <%= badge.color %>; box-shadow: 0 0 6px <%= badge.color %>25;">
+                                  <%- `style="background: ${badge.color}18; border: 1px solid ${badge.color}; color: ${badge.color}; box-shadow: 0 0 6px ${badge.color}25;"` %>>
                                 <lottie-player src="<%= animSrc %>" background="transparent" speed="1" loop autoplay></lottie-player>
                                 <span><%= badge.title %></span>
                                 <div class="badge-tooltip">
@@ -383,7 +383,7 @@
                 <div class="profile-social-links" style="display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 1.8em; margin-bottom: 25px; flex-wrap: wrap;">
                     <% platformsList.forEach(plat => { %>
                         <% if (resolvedSocials[plat]) { %>
-                            <a href="<%= buildPublicSocialHref(plat, resolvedSocials[plat]) %>" target="_blank" rel="noopener noreferrer" title="<%= socialMeta[plat].title %>" style="color: <%= socialMeta[plat].color %>; display: inline-flex; align-items: center; justify-content: center;">
+                            <a href="<%= buildPublicSocialHref(plat, resolvedSocials[plat]) %>" target="_blank" rel="noopener noreferrer" title="<%= socialMeta[plat].title %>" <%- `style="color: ${socialMeta[plat].color}; display: inline-flex; align-items: center; justify-content: center;"` %>>
                                 <% if (plat === 'gravatar') { %>
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em;">
                                         <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
@@ -410,7 +410,7 @@
 
                     <!-- Profile Tracking Dropdown GUI -->
                     <div class="profile-tracking-dropdown" style="position: relative;">
-                        <button type="button" class="btn" id="btnTrackCreatorProfile" onclick="toggleProfileTrackDropdown(event)" style="background: <%= (typeof currentTracking !== 'undefined' && currentTracking) ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.06)' %>; border: 1px solid <%= (typeof currentTracking !== 'undefined' && currentTracking) ? 'var(--gold)' : '#444' %>; color: <%= (typeof currentTracking !== 'undefined' && currentTracking) ? 'var(--gold)' : 'var(--silver)' %>; border-radius: 20px; padding: 10px 18px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <button type="button" class="btn" id="btnTrackCreatorProfile" onclick="toggleProfileTrackDropdown(event)" <%- `style="background: ${(typeof currentTracking !== 'undefined' && currentTracking) ? 'rgba(255,215,0,0.18)' : 'rgba(255,255,255,0.06)'}; border: 1px solid ${(typeof currentTracking !== 'undefined' && currentTracking) ? 'var(--gold)' : '#444'}; color: ${(typeof currentTracking !== 'undefined' && currentTracking) ? 'var(--gold)' : 'var(--silver)'}; border-radius: 20px; padding: 10px 18px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;"` %>>
                             <i class="fas fa-bell"></i>
                             <span id="trackCreatorStatusText">
                                 <%= (typeof currentTracking !== 'undefined' && currentTracking) ? `Tracking: ${currentTracking === 'both' ? 'All Activity' : (currentTracking === 'uploads' ? 'New Uploads' : 'Mod Updates')}` : 'Track Mod Activity' %>
@@ -428,7 +428,7 @@
                             <button type="button" onclick="setProfileTracking('updates')" style="width: 100%; text-align: left; background: none; border: none; color: #fff; padding: 8px 10px; border-radius: 6px; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-sync" style="color: #64b5f6; font-size: 0.85rem;"></i> Mod Updates Only
                             </button>
-                            <div id="profileTrackRemoveOption" style="<%= (typeof currentTracking !== 'undefined' && currentTracking) ? '' : 'display: none;' %> border-top: 1px solid #282a36; margin: 4px 0; padding-top: 4px;">
+                            <div id="profileTrackRemoveOption" <%- `style="${(typeof currentTracking !== 'undefined' && currentTracking) ? '' : 'display: none;'} border-top: 1px solid #282a36; margin: 4px 0; padding-top: 4px;"` %>>
                                 <button type="button" onclick="setProfileTracking('remove')" style="width: 100%; text-align: left; background: none; border: none; color: #ff6b6b; padding: 8px 10px; border-radius: 6px; font-size: 0.84rem; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                                     <i class="fas fa-bell-slash" style="font-size: 0.85rem;"></i> Stop Tracking
                                 </button>
@@ -802,7 +802,7 @@ GLOBAL|Earth
                                                     <i class="fas fa-paint-brush"></i> Club Creator
                                                 </span>
                                             <% } else if (item.roles && item.roles.length > 0) { %>
-                                                <span style="background: rgba(255, 255, 255, 0.08); color: <%= item.roles[0].color || '#99aab5' %>; border: 1px solid <%= item.roles[0].color || '#555' %>; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;">
+                                                <span <%- `style="background: rgba(255, 255, 255, 0.08); color: ${item.roles[0].color || '#99aab5'}; border: 1px solid ${item.roles[0].color || '#555'}; font-size: 0.72rem; padding: 2px 8px; border-radius: 10px; font-weight: 700;"` %>>
                                                     <%= item.roles[0].badgeIcon || '🔰' %> <%= item.roles[0].name %>
                                                 </span>
                                             <% } else { %>

@@ -780,7 +780,7 @@
             ]
         };
 
-        const serverTemplates = <%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []) %>;
+        const serverTemplates = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : [])) %>'));
         if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
             serverTemplates.forEach(t => {
                 if (t.targetField && t.content) {

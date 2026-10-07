@@ -548,7 +548,7 @@
                 <div class="avatar-section" style="text-align: center; margin-bottom: 25px; padding-bottom: 25px; border-bottom: 1px solid rgba(255, 215, 0, 0.12);">
                     <div class="avatar-preview-wrapper">
                         <img src="<%= user.signedAvatarUrl %>" alt="Avatar Preview" class="avatar-preview" id="avatar-preview"
-                             style="border-color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 25px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                             <%- `style="border-color: ${user.forumRank ? user.forumRank.color : 'var(--silver)'}; box-shadow: 0 0 25px ${user.forumRank ? user.forumRank.color : 'transparent'};"` %>>
                         
                         <!-- PENCIL ICON BUTTON: Triggers the popup modal -->
                         <button type="button" class="avatar-edit-button" id="open-avatar-modal-btn" title="Change Profile Picture" aria-label="Change Profile Picture">
@@ -560,12 +560,12 @@
 
                     <% if (user.forumRank && user.forumRank.lottie) { %>
                         <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 5px;">
-                            <lottie-player src="<%= cdnUrl %>/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px <%= user.forumRank.color %>);" loop autoplay></lottie-player>
+                            <lottie-player src="<%= cdnUrl %>/animations/<%= user.forumRank.lottie %>" background="transparent" speed="1" <%- `style="width: 70px; height: 70px; filter: drop-shadow(0 0 10px ${user.forumRank.color});"` %> loop autoplay></lottie-player>
                         </div>
                     <% } %>
 
                     <h3 class="current-username notranslate" style="margin: 0 0 4px 0; font-size: 1.8em; color: var(--white);"><%= user.username %></h3>
-                    <p style="margin: 0; color: <%= user.forumRank ? user.forumRank.color : 'var(--silver)' %>; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; text-shadow: 0 0 3px <%= user.forumRank ? user.forumRank.color : 'transparent' %>;">
+                    <p <%- `style="margin: 0; color: ${user.forumRank ? user.forumRank.color : 'var(--silver)'}; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 0.85em; text-shadow: 0 0 3px ${user.forumRank ? user.forumRank.color : 'transparent'};"` %>>
                         <%= user.forumRank ? user.forumRank.name : 'Novice' %> (<i class="fas fa-star" style="font-size: 0.9em;"></i> <%= user.forumPoints || 0 %> pts)
                     </p>
                 </div>

@@ -339,7 +339,7 @@
                         <option value="all" <%= currentSubCategory === 'all' ? 'selected' : '' %>>All Categories</option>
                     </select>
                     <div class="custom-select-wrapper <%= currentPlatform === 'all' ? 'disabled' : '' %>" id="wrapper-subCategory">
-                        <div class="custom-select" style="<%= currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : '' %>">
+                        <div class="custom-select" <%- `style="${currentPlatform === 'all' ? 'opacity: 0.5; cursor: not-allowed;' : ''}"` %>>
                             <span class="selected-text">All Categories</span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
@@ -523,7 +523,7 @@
                                     <span style="font-size: 0.75em; text-transform: uppercase; background: rgba(70, 181, 232, 0.15); color: #46b5e8; padding: 3px 10px; border-radius: 12px; font-weight: bold;">
                                         <%= issue.category || 'General' %>
                                     </span>
-                                    <span style="font-size: 0.75em; color: <%= issue.status === 'resolved' ? 'var(--green)' : '#aaa' %>;">
+                                    <span <%- `style="font-size: 0.75em; color: ${issue.status === 'resolved' ? 'var(--green)' : '#aaa'};"` %>>
                                         <i class="fas fa-circle" style="font-size: 0.6em; margin-right: 3px;"></i> <%= issue.status || 'open' %>
                                     </span>
                                 </div>
@@ -568,7 +568,7 @@
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
                         <% clubResults.forEach(club => { %>
                             <div style="background: var(--dark-gray); border: 1px solid #333; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;">
-                                <div style="height: 90px; background-size: cover; background-position: center; background-image: url('<%= club.bannerUrl || '/images/default-banner.jpg' %>'); position: relative;">
+                                <div <%- `style="height: 90px; background-size: cover; background-position: center; background-image: url('${club.bannerUrl || '/images/default-banner.jpg'}'); position: relative;"` %>>
                                     <div style="position: absolute; bottom: -20px; left: 16px;">
                                         <img src="<%= club.iconUrl || '/images/default-avatar.png' %>" style="width: 50px; height: 50px; border-radius: 12px; border: 2px solid #222; object-fit: cover;" onerror="this.src='/images/default-avatar.png';">
                                     </div>

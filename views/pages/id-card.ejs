@@ -21,6 +21,7 @@
     }
     .page-title h1 span {
         background: linear-gradient(135deg, var(--gold) 0%, var(--silver) 100%);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-shadow: 0 0 4px rgba(255, 215, 0, 0.25);
@@ -805,7 +806,7 @@
                 <% if (cardUser.cardStatus === 'suspended' || (!cardUser.twoFactorEnabled && !cardUser.is2FAEnabled)) { %>
                     <span class="card-role-badge" style="background: var(--red); box-shadow: 0 0 10px rgba(229, 57, 53, 0.5);">SUSPENDED</span>
                 <% } else { %>
-                    <span class="card-role-badge" style="background: <%= roleBg %>; box-shadow: 0 0 10px <%= roleShadow %>;"><%= roleName %></span>
+                    <span class="card-role-badge" <%- `style="background: ${roleBg}; box-shadow: 0 0 10px ${roleShadow};"` %>><%= roleName %></span>
                 <% } %>
             </div>
             
@@ -814,7 +815,7 @@
             <h2 class="card-name"><%= cardUser.username %></h2>
             
             <!-- Brand Name Badge (Prominently displayed on the card) -->
-            <div id="cardBrandContainer" class="card-brand-wrap" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'flex' : 'none' %>;">
+            <div id="cardBrandContainer" class="card-brand-wrap" <%- `style="display: ${(custom.brandName && custom.brandName.trim()) ? 'flex' : 'none'};"` %>>
                 <span class="card-brand-badge">
                     <i class="fas fa-crown"></i>
                     <span id="cardBrandBadgeText"><%= custom.brandName || '' %></span>
@@ -895,14 +896,14 @@
             </div>
 
             <!-- Contact Meta Row (Email, Phone, Age) -->
-            <div id="cardMetaRow" class="card-meta-row" style="display: <%= (showEmail || showPhone || showAge) ? 'flex' : 'none' %>;">
-                <span id="cardMetaEmailPill" class="card-meta-pill" style="display: <%= showEmail ? 'inline-flex' : 'none' %>;">
+            <div id="cardMetaRow" class="card-meta-row" <%- `style="display: ${(showEmail || showPhone || showAge) ? 'flex' : 'none'};"` %>>
+                <span id="cardMetaEmailPill" class="card-meta-pill" <%- `style="display: ${showEmail ? 'inline-flex' : 'none'};"` %>>
                     <i class="fas fa-envelope"></i> <span id="cardMetaEmailText"><%= displayEmail %></span>
                 </span>
-                <span id="cardMetaPhonePill" class="card-meta-pill" style="display: <%= showPhone ? 'inline-flex' : 'none' %>;">
+                <span id="cardMetaPhonePill" class="card-meta-pill" <%- `style="display: ${showPhone ? 'inline-flex' : 'none'};"` %>>
                     <i class="fas fa-phone"></i> <span id="cardMetaPhoneText"><%= displayPhone %></span>
                 </span>
-                <span id="cardMetaAgePill" class="card-meta-pill" style="display: <%= showAge ? 'inline-flex' : 'none' %>;">
+                <span id="cardMetaAgePill" class="card-meta-pill" <%- `style="display: ${showAge ? 'inline-flex' : 'none'};"` %>>
                     <i class="fas fa-birthday-cake"></i> <span id="cardMetaAgeText"><%= displayAge %> yrs</span>
                 </span>
             </div>
@@ -961,7 +962,7 @@
                     return h.startsWith('@') ? h : `@${h}`;
                 }
             %>
-            <div id="cardSocialsRow" class="card-socials-row" style="display: <%= (showSocials && socials.length > 0) ? 'flex' : 'none' %>;">
+            <div id="cardSocialsRow" class="card-socials-row" <%- `style="display: ${(showSocials && socials.length > 0) ? 'flex' : 'none'};"` %>>
                 <% socials.slice(0, 3).forEach((s, idx) => { %>
                     <a href="<%= buildSocialHref(s.platform, s.handleOrUrl) %>" target="_blank" rel="noopener noreferrer" class="card-social-pill" id="cardSocialBadge<%= idx %>" title="<%= s.platform %>: <%= s.handleOrUrl || '' %>">
                         <% if (s.platform === 'gravatar') { %>
@@ -993,17 +994,17 @@
             <div class="card-bottom-attribution">
                 <% if (cardUser.role === 'admin') { %>
                     <div class="card-collab-line" style="font-weight: 700; color: var(--gold);">
-                        <span id="collabBrandAdmin" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Admin Team
+                        <span id="collabBrandAdmin" class="brand-highlight" <%- `style="display: ${(custom.brandName && custom.brandName.trim()) ? 'inline' : 'none'};"` %>><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Admin Team
                     </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else if (cardUser.role === 'support') { %>
                     <div class="card-collab-line" style="font-weight: 700; color: #2196f3;">
-                        <span id="collabBrandSupport" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Support Team
+                        <span id="collabBrandSupport" class="brand-highlight" <%- `style="display: ${(custom.brandName && custom.brandName.trim()) ? 'inline' : 'none'};"` %>><%= custom.brandName ? custom.brandName + ' • ' : '' %></span>Official Member Of GPLMods Support Team
                     </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else if (cardUser.role === 'owner') { %>
                     <div class="card-collab-line" style="font-weight: 700; color: #ff9800;">
-                        <span id="collabBrandOwner" class="brand-highlight" style="display: <%= (custom.brandName && custom.brandName.trim()) ? 'inline' : 'none' %>;"><%= custom.brandName ? custom.brandName + ' • ' : '' %></span><span id="collabOwnerTextPreview"><%= (custom.customTagline && custom.customTagline.trim()) ? custom.customTagline : 'Official Founder & Head of GPLMods Ecosystem' %></span>
+                        <span id="collabBrandOwner" class="brand-highlight" <%- `style="display: ${(custom.brandName && custom.brandName.trim()) ? 'inline' : 'none'};"` %>><%= custom.brandName ? custom.brandName + ' • ' : '' %></span><span id="collabOwnerTextPreview"><%= (custom.customTagline && custom.customTagline.trim()) ? custom.customTagline : 'Official Founder & Head of GPLMods Ecosystem' %></span>
                     </div>
                     <div class="card-site-url">https://gplmods.webredirect.org</div>
                 <% } else { %>
@@ -1149,7 +1150,7 @@
                         <span class="switch-slider"></span>
                     </label>
                 </div>
-                <div id="emailOptionsBox" style="display: <%= showEmail ? 'block' : 'none' %>; padding: 12px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin: 10px 0 16px 0; border: 1px dashed rgba(255,215,0,0.25);">
+                <div id="emailOptionsBox" <%- `style="display: ${showEmail ? 'block' : 'none'}; padding: 12px 14px; background: rgba(0,0,0,0.35); border-radius: 8px; margin: 10px 0 16px 0; border: 1px dashed rgba(255,215,0,0.25);"` %>>
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">Email Display Source</label>
                         <select name="emailType" id="emailTypeSelect" style="display: none;">
@@ -1179,7 +1180,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="customEmailInputWrap" style="display: <%= emailType === 'custom' ? 'block' : 'none' %>;">
+                    <div id="customEmailInputWrap" <%- `style="display: ${emailType === 'custom' ? 'block' : 'none'};"` %>>
                         <label style="display: block; font-size: 0.85em; color: var(--silver); margin-bottom: 6px;">Enter Custom Contact Email</label>
                         <input type="email" id="customEmailInput" name="customEmail" value="<%= custom.customEmail || '' %>" placeholder="e.g., contact@arunmods.com" maxlength="80">
                     </div>
@@ -1195,7 +1196,7 @@
                         <span class="switch-slider"></span>
                     </label>
                 </div>
-                <div id="phoneInputWrap" style="display: <%= showPhone ? 'block' : 'none' %>; padding: 10px 0 16px 0;">
+                <div id="phoneInputWrap" <%- `style="display: ${showPhone ? 'block' : 'none'}; padding: 10px 0 16px 0;"` %>>
                     <input type="tel" id="phoneInput" name="phone" value="<%= custom.phone || '' %>" placeholder="e.g., +91 98765 43210" maxlength="25">
                 </div>
 
@@ -1209,7 +1210,7 @@
                         <span class="switch-slider"></span>
                     </label>
                 </div>
-                <div id="ageInputWrap" style="display: <%= showAge ? 'block' : 'none' %>; padding: 10px 0 8px 0;">
+                <div id="ageInputWrap" <%- `style="display: ${showAge ? 'block' : 'none'}; padding: 10px 0 8px 0;"` %>>
                     <input type="number" id="ageInput" name="customAge" value="<%= displayAge || '' %>" placeholder="e.g., 22" min="10" max="120">
                 </div>
             </div>
@@ -1229,7 +1230,7 @@
                     Highlight up to 3 official channels with sleek Font Awesome icons on your ID card.
                 </p>
 
-                <div id="socialInputsContainer" style="display: <%= showSocials ? 'block' : 'none' %>;">
+                <div id="socialInputsContainer" <%- `style="display: ${showSocials ? 'block' : 'none'};"` %>>
                     <% 
                         const socialOptions = [
                             { val: 'telegram', label: 'Telegram (fab fa-telegram)', cleanLabel: 'Telegram' },

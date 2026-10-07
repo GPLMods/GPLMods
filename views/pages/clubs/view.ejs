@@ -2733,7 +2733,7 @@ function getUserAvatarUrl(u) {
                     <% } else { %>
                         <span class="chan-type-pill text hide-on-tiny-screen"><i class="fas fa-hashtag"></i> Text</span>
                     <% } %>
-                    <span class="chan-type-pill locked" id="topbarLockedBadge" style="display: <%= activeChannel.isReadOnly ? 'inline-flex' : 'none' %>;"><i class="fas fa-lock"></i> Locked</span>
+                    <span class="chan-type-pill locked" id="topbarLockedBadge" <%- `style="display: ${activeChannel.isReadOnly ? 'inline-flex' : 'none'};"` %>><i class="fas fa-lock"></i> Locked</span>
                     <% if (activeChannel.isPrivate) { %>
                         <span class="chan-type-pill priv"><i class="fas fa-shield-alt"></i> Private</span>
                     <% } %>
@@ -2801,7 +2801,7 @@ function getUserAvatarUrl(u) {
 
         <!-- Channel Restricted Warning Banner -->
         <% const isSpecificLockedChan = Boolean(activeChannel && ['rules', 'announcements', 'new-uploads', 'new-updates'].includes(activeChannel.type)); %>
-        <div id="channelRestrictedNotice" style="display: <%= (activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none' %>; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600; flex-wrap: wrap;">
+        <div id="channelRestrictedNotice" <%- `style="display: ${(activeChannel && activeChannel.isReadOnly) ? 'flex' : 'none'}; align-items: center; justify-content: center; gap: 8px; background: rgba(231, 76, 60, 0.12); border-bottom: 1px solid rgba(231, 76, 60, 0.4); color: #ff8a80; padding: 7px 14px; font-size: 0.82rem; font-weight: 600; flex-wrap: wrap;"` %>>
             <i class="fas fa-lock"></i> <span><%= isSpecificLockedChan ? 'Chat in this channel is permanently locked (Rules, Announcements & Mod Feeds).' : 'Chat in this channel is locked / restricted to staff announcements.' %></span>
             <% if (hasManageClubPerm && !isSpecificLockedChan) { %>
                 <button type="button" id="topbarUnlockBtn" onclick="toggleChannelRestriction()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 8px;">
@@ -2818,7 +2818,7 @@ function getUserAvatarUrl(u) {
         <div class="chat-messages-container" id="messagesFeed">
             <!-- Pinned Message Banner -->
             <% const pinnedMsg = (messages && messages.length > 0) ? messages.find(m => m.isPinned && !m.isDeleted) : null; %>
-            <div id="pinnedMessageBanner" style="display: <%= pinnedMsg ? 'flex' : 'none' %>; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(255,215,0,0.14) 0%, rgba(20,21,27,0.96) 100%); border-bottom: 1.5px solid var(--gold); padding: 8px 16px; font-size: 0.85rem; color: #fff; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);">
+            <div id="pinnedMessageBanner" <%- `style="display: ${pinnedMsg ? 'flex' : 'none'}; align-items: center; justify-content: space-between; background: linear-gradient(90deg, rgba(255,215,0,0.14) 0%, rgba(20,21,27,0.96) 100%); border-bottom: 1.5px solid var(--gold); padding: 8px 16px; font-size: 0.85rem; color: #fff; position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);"` %>>
                 <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
                     <i class="fas fa-thumbtack" style="color: var(--gold); transform: rotate(45deg); font-size: 0.9rem;"></i>
                     <span style="font-weight: 700; color: var(--gold); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px;">Pinned:</span>
@@ -2836,7 +2836,7 @@ function getUserAvatarUrl(u) {
                 <% messages.forEach(msg => { %>
                     <% const isMyMessage = user && String(user._id) === String(msg.sender ? msg.sender._id : ''); %>
                     <% if (msg.isDeleted && isMyMessage) { return; } %>
-                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" style="<%= msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : '' %>">
+                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" <%- `style="${msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : ''}"` %>>
                         <% 
                             const isSystemMsg = msg.isSystemMessage || !msg.sender;
                             const senderAvatar = isSystemMsg ? '/images/team-logo.png' : getUserAvatarUrl(msg.sender);
@@ -2865,8 +2865,8 @@ function getUserAvatarUrl(u) {
                                     const senderRole = senderMember && senderMember.roles && senderMember.roles.length > 0 ? senderMember.roles[0] : null;
                                 %>
                                 <% if (senderRole && senderRole.name !== 'everyone') { %>
-                                    <span class="discord-role-pill" style="border: 1px solid <%= senderRole.color %>50; color: <%= senderRole.color %>; background: <%= senderRole.color %>18;">
-                                        <span class="role-dot" style="background: <%= senderRole.color %>;"></span>
+                                    <span class="discord-role-pill" <%- `style="border: 1px solid ${senderRole.color}50; color: ${senderRole.color}; background: ${senderRole.color}18;"` %>>
+                                        <span class="role-dot" <%- `style="background: ${senderRole.color};"` %>></span>
                                         <%- getRoleBadgeIconHtml(senderRole.badgeIcon) %> <%= senderRole.name %>
                                     </span>
                                 <% } %>
@@ -2910,8 +2910,8 @@ function getUserAvatarUrl(u) {
                                                     const hasVoted = user && opt.votes && opt.votes.some(v => String(v) === String(user._id));
                                                 %>
                                                 <div class="poll-option-row" onclick="votePoll('<%= msg._id %>', <%= idx %>)">
-                                                    <div class="poll-progress-fill" style="width: <%= pct %>%;"></div>
-                                                    <span style="position: relative; z-index: 2; font-weight: <%= hasVoted ? '700' : 'normal' %>;">
+                                                    <div class="poll-progress-fill" <%- `style="width: ${pct}%;"` %>></div>
+                                                    <span <%- `style="position: relative; z-index: 2; font-weight: ${hasVoted ? '700' : 'normal'};"` %>>
                                                         <%= hasVoted ? '✓ ' : '' %><%= opt.text %>
                                                     </span>
                                                     <span style="position: relative; z-index: 2; font-size: 0.85rem; color: var(--gold);">
@@ -2948,7 +2948,7 @@ function getUserAvatarUrl(u) {
                                         <i class="fas fa-reply"></i> Forward
                                     </button>
                                     <% if (hasManageClubPerm) { %>
-                                        <button type="button" class="btn-msg-action btn-msg-pin" onclick="togglePinClubMessage('<%= msg._id %>', <%= msg.isPinned ? 'false' : 'true' %>)" title="<%= msg.isPinned ? 'Unpin' : 'Pin' %> Message" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: <%= msg.isPinned ? 'var(--gold)' : 'var(--silver)' %>; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;">
+                                        <button type="button" class="btn-msg-action btn-msg-pin" onclick="togglePinClubMessage('<%= msg._id %>', <%= msg.isPinned ? 'false' : 'true' %>)" title="<%= msg.isPinned ? 'Unpin' : 'Pin' %> Message" <%- `style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: ${msg.isPinned ? 'var(--gold)' : 'var(--silver)'}; border-radius: 6px; padding: 3px 8px; font-size: 0.75rem; cursor: pointer;"` %>>
                                             <i class="fas fa-thumbtack"></i> <%= msg.isPinned ? 'Unpin' : 'Pin' %>
                                         </button>
                                     <% } %>
@@ -3000,7 +3000,7 @@ function getUserAvatarUrl(u) {
                 const isChanLocked = Boolean(activeChannel && (activeChannel.isLocked || activeChannel.isReadOnly));
                 const canPostWhenLocked = Boolean(typeof hasManageClubPerm !== 'undefined' && hasManageClubPerm);
             %>
-            <div id="channelLockedChatOverlay" style="display: <%= canChatInChannel ? 'none' : 'flex' %>;" class="chat-locked-full-box">
+            <div id="channelLockedChatOverlay" <%- `style="display: ${canChatInChannel ? 'none' : 'flex'};"` %> class="chat-locked-full-box">
                 <i class="fas fa-lock" style="color: var(--gold); font-size: 1.3rem;"></i>
                 <div>
                     <strong style="color: #fff; display: block; font-size: 0.95rem;">
@@ -3012,7 +3012,7 @@ function getUserAvatarUrl(u) {
                 </div>
             </div>
 
-            <div class="chat-input-box" id="mainChatInputBox" style="position: relative; display: <%= canChatInChannel ? 'flex' : 'none' %>;">
+            <div class="chat-input-box" id="mainChatInputBox" <%- `style="position: relative; display: ${canChatInChannel ? 'flex' : 'none'};"` %>>
                 <!-- Discord Mention Autocomplete Dropdown -->
                 <div id="mentionAutocompleteDropdown" class="mention-autocomplete-dropdown"></div>
 
@@ -3130,9 +3130,9 @@ function getUserAvatarUrl(u) {
                     <% roles.forEach(r => { %>
                         <% const roleMemberCount = members.filter(m => m.roles && m.roles.some(mr => String(mr._id || mr) === String(r._id) || mr.name === r.name)).length; %>
                         <div class="members-section-option" data-filter="role-<%= r._id %>" onclick="selectMembersFilter('role-<%= r._id %>', '<%= r.name %> (<%= roleMemberCount %>)', '<%= r.badgeIcon || 'fa-shield-alt' %>', '<%= r.color || '#99aab5' %>')">
-                            <span style="color: <%= r.color || '#99aab5' %>;"><%- getRoleBadgeIconHtml(r.badgeIcon) %></span>
+                            <span <%- `style="color: ${r.color || '#99aab5'};"` %>><%- getRoleBadgeIconHtml(r.badgeIcon) %></span>
                             <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= r.name %></span>
-                            <span class="count-badge" style="background: <%= (r.color || '#99aab5') %>22; color: <%= r.color || '#99aab5' %>;"><%= roleMemberCount %></span>
+                            <span class="count-badge" <%- `style="background: ${(r.color || '#99aab5')}22; color: ${r.color || '#99aab5'};"` %>><%= roleMemberCount %></span>
                         </div>
                     <% }); %>
                 <% } %>
@@ -3141,7 +3141,7 @@ function getUserAvatarUrl(u) {
 
         <div class="members-scroll-area">
             <!-- SITE STAFF SECTION -->
-            <div id="staffSectionWrap" style="display: <%= staffMembers.length > 0 ? 'block' : 'none' %>;">
+            <div id="staffSectionWrap" <%- `style="display: ${staffMembers.length > 0 ? 'block' : 'none'};"` %>>
                 <% if (staffMembers.length > 0) { %>
                     <div class="member-group-header" id="staffSectionHeader"><i class="fas fa-crown" style="color: var(--gold); margin-right: 6px;"></i> SITE STAFF — <%= staffMembers.length %></div>
                     <% staffMembers.forEach(sm => { %>
@@ -3152,7 +3152,7 @@ function getUserAvatarUrl(u) {
                                 <div class="online-dot"></div>
                             </div>
                             <div class="member-meta-box">
-                                <span class="member-display-name" style="color: <%= sm.user.role === 'owner' ? 'var(--gold)' : '#64b5f6' %>;">
+                                <span class="member-display-name" <%- `style="color: ${sm.user.role === 'owner' ? 'var(--gold)' : '#64b5f6'};"` %>>
                                     <%= sm.user.username %>
                                 </span>
                                 <span style="font-size: 0.72rem; color: #8e9297;"><%= sm.user.role === 'owner' ? 'Site Owner' : 'Site Admin' %></span>
@@ -3163,7 +3163,7 @@ function getUserAvatarUrl(u) {
             </div>
 
             <!-- CLUB CREATOR -->
-            <div id="creatorSectionWrap" style="display: <%= (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) ? 'block' : 'none' %>;">
+            <div id="creatorSectionWrap" <%- `style="display: ${(creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) ? 'block' : 'none'};"` %>>
                 <% if (creatorMember && (!staffMembers.some(sm => String(sm.user._id) === String(creatorMember.user._id)))) { %>
                     <div class="member-group-header" id="creatorSectionHeader" style="margin-top: 14px;"><i class="fas fa-palette" style="color: #ffab91; margin-right: 6px;"></i> CLUB CREATOR — 1</div>
                     <div class="member-card-row member-creator-card" onclick="window.location.href='/users/<%= creatorMember.user.username %>'">
@@ -3198,7 +3198,7 @@ function getUserAvatarUrl(u) {
                             </div>
                             <div class="member-meta-box">
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
-                                    <span class="member-display-name" style="color: <%= (memRole && memRole.color && memRole.name !== 'everyone') ? memRole.color : '#fff' %>;"><%= mem.user.username %></span>
+                                    <span class="member-display-name" <%- `style="color: ${(memRole && memRole.color && memRole.name !== 'everyone') ? memRole.color : '#fff'};"` %>><%= mem.user.username %></span>
                                     <% if (mem.inviteCount && mem.inviteCount > 0) { %>
                                         <span class="member-invite-badge" title="<%= mem.inviteCount %> user(s) invited">
                                             <i class="fas fa-trophy"></i> <%= mem.inviteCount %>
@@ -3208,7 +3208,7 @@ function getUserAvatarUrl(u) {
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px;">
                                     <% if (mem.roles && mem.roles.length > 0) { %>
                                         <% mem.roles.slice(0, 3).forEach(r => { %>
-                                            <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40;">
+                                            <span class="discord-sidebar-role-pill" <%- `style="color: ${r.color || '#99aab5'}; background: ${(r.color || '#99aab5')}18; border: 1px solid ${(r.color || '#99aab5')}40;"` %>>
                                                 <%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %>
                                             </span>
                                         <% }); %>
@@ -3326,7 +3326,7 @@ function getUserAvatarUrl(u) {
                     <div class="chan-custom-select-wrapper" id="wrapper-editClubVisibility">
                         <div class="chan-custom-select" onclick="toggleEditClubVisibilityDropdown(event)">
                             <span class="chan-custom-select-text">
-                                <i class="fas <%= club.isPrivate ? 'fa-lock' : 'fa-globe' %>" style="color: <%= club.isPrivate ? 'var(--gold)' : '#69f0ae' %>;"></i>
+                                <i class="fas <%= club.isPrivate ? 'fa-lock' : 'fa-globe' %>" <%- `style="color: ${club.isPrivate ? 'var(--gold)' : '#69f0ae'};"` %>></i>
                                 <span class="text-label"><%= club.isPrivate ? 'Private (Requires approval to join)' : 'Public (Anyone can instantly join)' %></span>
                             </span>
                             <i class="fas fa-chevron-down" style="font-size: 0.8rem; color: var(--silver);"></i>
@@ -3474,8 +3474,8 @@ function getUserAvatarUrl(u) {
                     <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { %>
                         <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.84rem; cursor: pointer; padding: 6px 10px; background: rgba(255,255,255,0.03); border: 1px solid #282a38; border-radius: 8px;">
                             <input type="checkbox" name="allowedRoles" value="<%= r._id %>">
-                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
-                            <span><i class="fas fa-shield-alt" style="color: <%= r.color || 'var(--gold)' %>; margin-right: 4px;"></i> <%= r.name %></span>
+                            <span <%- `style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${r.color || '#5865F2'};"` %>></span>
+                            <span><i class="fas fa-shield-alt" <%- `style="color: ${r.color || 'var(--gold)'}; margin-right: 4px;"` %>></i> <%= r.name %></span>
                         </label>
                     <% }); %>
                     <% if ((roles || []).filter(r => r.name !== 'everyone').length === 0) { %>
@@ -3575,7 +3575,7 @@ function getUserAvatarUrl(u) {
                     </div>
                     <div>
                         <span style="color: var(--silver); display: block;">Who Can Chat:</span>
-                        <strong style="color: <%= (activeChannel && activeChannel.isReadOnly) ? '#ff8a80' : '#69f0ae' %>;">
+                        <strong <%- `style="color: ${(activeChannel && activeChannel.isReadOnly) ? '#ff8a80' : '#69f0ae'};"` %>>
                             <%= (activeChannel && activeChannel.isReadOnly) ? 'Staff & Managers Only' : 'All Club Members' %>
                         </strong>
                     </div>
@@ -3648,7 +3648,7 @@ function getUserAvatarUrl(u) {
                             </p>
                         </div>
                         <% if (!isSpecificLockedChan) { %>
-                            <button type="button" id="btnGuiToggleLock" onclick="toggleChannelRestriction()" style="background: <%= (activeChannel && activeChannel.isReadOnly) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)' %>; border: 1px solid <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; color: <%= (activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80' %>; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <button type="button" id="btnGuiToggleLock" onclick="toggleChannelRestriction()" <%- `style="background: ${(activeChannel && activeChannel.isReadOnly) ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)'}; border: 1px solid ${(activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80'}; color: ${(activeChannel && activeChannel.isReadOnly) ? '#69f0ae' : '#ff8a80'}; padding: 9px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;"` %>>
                                 <i class="fas <%= (activeChannel && activeChannel.isReadOnly) ? 'fa-lock-open' : 'fa-lock' %>"></i>
                                 <span id="btnGuiToggleLockText"><%= (activeChannel && activeChannel.isReadOnly) ? 'Unlock Channel Chat' : 'Lock Channel Chat' %></span>
                             </button>
@@ -3701,7 +3701,7 @@ function getUserAvatarUrl(u) {
                         </div>
 
                         <!-- Roles Checklist -->
-                        <div id="editChanRolesChecklistWrap" style="<%= curAccessMode === 'open' ? 'display: none;' : '' %> border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; margin-top: 14px;">
+                        <div id="editChanRolesChecklistWrap" <%- `style="${curAccessMode === 'open' ? 'display: none;' : ''} border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px; margin-top: 14px;"` %>>
                             <label style="display: block; font-size: 0.82rem; color: var(--gold); font-weight: 600; margin-bottom: 8px;">
                                 <i class="fas fa-shield-alt"></i> Select Roles with Access/Chat Permissions:
                             </label>
@@ -3711,7 +3711,7 @@ function getUserAvatarUrl(u) {
                                 %>
                                     <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 0.85rem; cursor: pointer;">
                                         <input type="checkbox" name="allowedRoles" value="<%= r._id %>" <%= isAllowed ? 'checked' : '' %>>
-                                        <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>;"></span>
+                                        <span <%- `style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${r.color || '#5865F2'};"` %>></span>
                                         <span><%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %></span>
                                     </label>
                                 <% }); %>
@@ -3825,8 +3825,8 @@ function getUserAvatarUrl(u) {
                                         { hex: '#99AAB5', name: 'Silver' },
                                         { hex: '#2F3542', name: 'Dark' }
                                     ].forEach(col => { %>
-                                        <button type="button" class="color-swatch-btn <%= col.hex === '#FFD700' ? 'selected' : '' %>" style="background: <%= col.hex %>;" onclick="selectNewRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
-                                            <i class="fas fa-check swatch-check" style="font-size: 0.65rem; color: #000; filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); <%= col.hex === '#FFD700' ? 'display: block !important;' : '' %>"></i>
+                                        <button type="button" class="color-swatch-btn <%= col.hex === '#FFD700' ? 'selected' : '' %>" <%- `style="background: ${col.hex};"` %> onclick="selectNewRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
+                                            <i class="fas fa-check swatch-check" <%- `style="font-size: 0.65rem; color: #000; filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); ${col.hex === '#FFD700' ? 'display: block !important;' : ''}"` %>></i>
                                         </button>
                                     <% }) %>
                                 </div>
@@ -3947,7 +3947,7 @@ function getUserAvatarUrl(u) {
                         <% (roles || []).forEach(r => { %>
                             <div class="role-list-row" id="roleRow-<%= r._id %>" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; background: #14151b; border: 1px solid #282a36; border-radius: 8px; padding: 8px 12px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span class="discord-sidebar-role-pill" style="color: <%= r.color || '#99aab5' %>; background: <%= (r.color || '#99aab5') %>18; border: 1px solid <%= (r.color || '#99aab5') %>40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;">
+                                    <span class="discord-sidebar-role-pill" <%- `style="color: ${r.color || '#99aab5'}; background: ${(r.color || '#99aab5')}18; border: 1px solid ${(r.color || '#99aab5')}40; padding: 4px 10px; border-radius: 12px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px;"` %>>
                                         <%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %>
                                     </span>
                                     <% if (r.name === 'everyone') { %>
@@ -4037,7 +4037,7 @@ function getUserAvatarUrl(u) {
                             <% (roles || []).filter(r => r.name !== 'everyone').forEach(r => { %>
                                 <label class="role-checkbox-item" id="roleLabel-<%= r._id %>" style="display: flex; align-items: center; gap: 8px; background: #14151b; border: 1px solid #2a2d3a; border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 0.82rem; color: #fff;">
                                     <input type="checkbox" class="member-role-checkbox" value="<%= r._id %>" onchange="onMemberRoleCheckboxChange()">
-                                    <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: <%= r.color || '#5865F2' %>; flex-shrink: 0;"></span>
+                                    <span <%- `style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${r.color || '#5865F2'}; flex-shrink: 0;"` %>></span>
                                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%- getRoleBadgeIconHtml(r.badgeIcon) %> <%= r.name %></span>
                                 </label>
                             <% }); %>
@@ -4459,7 +4459,7 @@ function getUserAvatarUrl(u) {
                             { hex: '#99AAB5', name: 'Silver' },
                             { hex: '#2F3542', name: 'Dark' }
                         ].forEach(col => { %>
-                            <button type="button" class="color-swatch-btn" style="background: <%= col.hex %>;" onclick="selectEditRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
+                            <button type="button" class="color-swatch-btn" <%- `style="background: ${col.hex};"` %> onclick="selectEditRoleColor('<%= col.hex %>')" title="<%= col.name %> (<%= col.hex %>)">
                                 <i class="fas fa-check swatch-check" style="font-size: 0.65rem; color: #000; filter: drop-shadow(0 0 2px rgba(255,255,255,0.8)); display: none;"></i>
                             </button>
                         <% }) %>
@@ -4637,9 +4637,9 @@ function getUserAvatarUrl(u) {
         }, 10);
     }
 
-    const clubRoles = <%- JSON.stringify(roles.map(r => ({ _id: r._id, name: r.name, color: r.color, icon: r.badgeIcon, isDefault: r.isDefault }))) %>;
-    const clubMembers = <%- JSON.stringify(members.map(m => ({ _id: m.user?._id, username: m.user?.username, role: m.user?.role, roles: (m.roles || []).map(r => r.name || r) }))) %>;
-    const currentUserRoles = <%- JSON.stringify(membership && membership.roles ? membership.roles.map(r => r.name || r) : ['everyone']) %>;
+    const clubRoles = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(roles.map(r => ({ _id: r._id, name: r.name, color: r.color, icon: r.badgeIcon, isDefault: r.isDefault })))) %>'));
+    const clubMembers = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(members.map(m => ({ _id: m.user?._id, username: m.user?.username, role: m.user?.role, roles: (m.roles || []).map(r => r.name || r) })))) %>'));
+    const currentUserRoles = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(membership && membership.roles ? membership.roles.map(r => r.name || r) : ['everyone'])) %>'));
     const myInviteCode = '<%= myInviteCode || "" %>';
     let myInviteCount = <%= myInviteCount || 0 %>;
 

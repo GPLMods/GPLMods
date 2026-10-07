@@ -236,14 +236,14 @@
                     <!-- ═══ ROLE-BASED COMMAND SUITE ═══ -->
                     <div class="admin-dashboard-section" style="max-width: 900px; margin: 0 auto 35px auto;">
                         <div
-                            style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid <%= suiteBorderColor %>; padding-bottom: 12px; margin-bottom: 20px;">
+                            <%- `style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid ${suiteBorderColor}; padding-bottom: 12px; margin-bottom: 20px;"` %>>
                             <h2
-                                style="color: <%= suiteColor %>; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 3px <%= suiteBorderColor %>;">
+                                <%- `style="color: ${suiteColor}; font-size: 1.35em; margin: 0; display: flex; align-items: center; gap: 10px; text-shadow: 0 0 3px ${suiteBorderColor};"` %>>
                                 <i class="fas <%= suiteIcon %>"></i>
                                 <%= suiteTitle %>
                             </h2>
                             <span
-                                style="background: <%= suiteBadgeBg %>; color: <%= suiteColor %>; border: 1px solid <%= suiteBadgeBorder %>; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                                <%- `style="background: ${suiteBadgeBg}; color: ${suiteColor}; border: 1px solid ${suiteBadgeBorder}; padding: 4px 12px; border-radius: 20px; font-size: 0.75em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;"` %>>
                                 <%= accessBadge %>
                             </span>
                         </div>
@@ -316,13 +316,13 @@
                                     ? 'linear-gradient(145deg, #1f1b11, #141414)'
                                     : 'linear-gradient(145deg, #101925, #141414)' ); %>
                                     <a href="/id-card" class="dash-card"
-                                        style="position: relative; padding-top: 32px; border: 1px solid <%= borderColor %>; background: <%= bgGradient %>; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+                                        <%- `style="position: relative; padding-top: 32px; border: 1px solid ${borderColor}; background: ${bgGradient}; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);"` %>>
                                         <span
-                                            style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: <%= themeColor %>; border: 1px solid <%= borderColor %>; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;">
+                                            <%- `style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: ${themeColor}; border: 1px solid ${borderColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;"` %>>
                                             <%= roleBadge %>
                                         </span>
-                                        <i class="fas fa-id-card" style="color: <%= themeColor %>;"></i>
-                                        <h3 style="color: <%= themeColor %>;">
+                                        <i class="fas fa-id-card" <%- `style="color: ${themeColor};"` %>></i>
+                                        <h3 <%- `style="color: ${themeColor};"` %>>
                                             <%= cardTitle %>
                                         </h3>
                                         <p>Customize card, Safe QR &amp; Quick-Login.</p>

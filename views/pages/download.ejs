@@ -2497,7 +2497,7 @@
                     <% } %>
 
                     <% if (hasTrendingTags) { %>
-                        <div style="display: flex; flex-direction: column; gap: 8px; <%= hasModTags ? 'border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;' : '' %>">
+                        <div <%- `style="display: flex; flex-direction: column; gap: 8px; ${hasModTags ? 'border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;' : ''}"` %>>
                             <div style="font-size: 0.88rem; font-weight: 700; color: #ff9800; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
                                 <i class="fas fa-fire"></i> Trending Mod Tags
                             </div>

@@ -554,8 +554,8 @@
                 <div class="icon-upload-container">
                     <label>Mod Icon*</label>
                     <div class="icon-preview" id="iconPreviewBox">
-                        <img id="iconImage" src="<%= file.iconUrl || '' %>" alt="Icon Preview" style="display:<%= file.iconUrl ? 'block' : 'none' %>;">
-                        <span id="iconPlaceholder" style="display:<%= file.iconUrl ? 'none' : 'block' %>;">Preview</span>
+                        <img id="iconImage" src="<%= file.iconUrl || '' %>" alt="Icon Preview" <%- `style="display:${file.iconUrl ? 'block' : 'none'};"` %>>
+                        <span id="iconPlaceholder" <%- `style="display:${file.iconUrl ? 'none' : 'block'};"` %>>Preview</span>
                     </div>
                     <div style="max-width: 250px;">
                         <input type="file" id="modIcon" name="softwareIcon" accept="image/*">
@@ -891,7 +891,7 @@
 
                     <input type="hidden" id="isMultiPartHidden" name="isMultiPart" value="<%= file.isMultiPart ? 'true' : 'false' %>">
 
-                    <div id="single-link-container" style="display: <%= file.isMultiPart ? 'none' : 'block' %>">
+                    <div id="single-link-container" <%- `style="display: ${file.isMultiPart ? 'none' : 'block'}"` %>>
                         <div class="form-group">
                             <label for="externalDownloadUrl">Main External URL*</label>
                             <input type="url" id="externalDownloadUrl" name="externalDownloadUrl" value="<%= file.externalDownloadUrl || '' %>" class="link-req-single" placeholder="https://linkvertise.com/...">
@@ -899,18 +899,18 @@
 
                         <div style="margin-top:10px; border-top:1px solid #333; padding-top:10px;">
                             <p style="color:var(--silver); margin-bottom:8px; font-weight:600;">Admin & Safety Overrides</p>
-                            <div class="form-group" id="manualFileScanGroup" style="display: <%= (typeof file !== 'undefined' && file.fileSize && file.fileSize > 640 * 1024 * 1024) ? 'block' : 'none' %>;">
+                            <div class="form-group" id="manualFileScanGroup" <%- `style="display: ${(typeof file !== 'undefined' && file.fileSize && file.fileSize > 640 * 1024 * 1024) ? 'block' : 'none'};"` %>>
                                 <label for="manualFileScanUrl">Manual File Scan URL <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Required for files over 640MB</span></label>
                                 <input type="url" id="manualFileScanUrl" name="manualFileScanUrl" value="<%= file.manualFileScanUrl || '' %>" placeholder="Manual File Scan URL">
                             </div>
-                            <div class="form-group" id="manualSiteScanGroup" style="display: <%= (typeof file !== 'undefined' && file.directDownloadUrl) ? 'block' : 'none' %>;">
+                            <div class="form-group" id="manualSiteScanGroup" <%- `style="display: ${(typeof file !== 'undefined' && file.directDownloadUrl) ? 'block' : 'none'};"` %>>
                                 <label for="manualSiteScanUrl">Manual Site Scan URL <span style="color: var(--gold); font-size: 0.8em; font-weight: normal;">Only shown when a direct link is provided</span></label>
                                 <input type="url" id="manualSiteScanUrl" name="manualSiteScanUrl" value="<%= file.manualSiteScanUrl || '' %>" placeholder="Manual Site Scan URL">
                             </div>
                         </div>
                     </div>
 
-                    <div id="multi-part-container" style="display: <%= file.isMultiPart ? 'block' : 'none' %>">
+                    <div id="multi-part-container" <%- `style="display: ${file.isMultiPart ? 'block' : 'none'}"` %>>
                         <div id="parts-wrapper">
                             <!-- Parts will be injected by JS -->
                         </div>
@@ -1087,8 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let draggedSlotIndex = -1;
 
     // Load initial screenshots from server if this is a draft
-    const initialScreenshotKeys = <%- JSON.stringify(file.screenshotKeys || []) %>;
-    const initialScreenshotUrls = <%- JSON.stringify(file.screenshotUrls || []) %>;
+    const initialScreenshotKeys = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.screenshotKeys || [])) %>'));
+    const initialScreenshotUrls = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.screenshotUrls || [])) %>'));
     if (Array.isArray(initialScreenshotKeys) && Array.isArray(initialScreenshotUrls)) {
         initialScreenshotKeys.forEach((key, idx) => {
             if (key && initialScreenshotUrls[idx]) {
@@ -1543,8 +1543,8 @@ document.addEventListener('DOMContentLoaded', () => {
         wordpress:['Plugin - Analytics', 'Plugin - Backup', 'Plugin - Contact Form', 'Plugin - E-commerce', 'Plugin - Email Marketing', 'Plugin - Membership', 'Plugin - Multilingual', 'Plugin - Performance', 'Plugin - Page Builder', 'Plugin - SEO', 'Plugin - Security', 'Plugin - Social', 'Plugin - WooCommerce', 'Plugin - Utilities', 'Theme - Agency', 'Theme - Blog', 'Theme - Business', 'Theme - Corporate', 'Theme - Education', 'Theme - E-commerce', 'Theme - Landing Page', 'Theme - Magazine', 'Theme - Minimal', 'Theme - Multipurpose', 'Theme - Portfolio', 'Theme - Restaurant', 'Theme - WooCommerce', 'Theme - Personal', 'Other']
     };
 
-    const savedCategory = <%- JSON.stringify((file.platforms && file.platforms[0]) || '') %>;
-    const savedArchitectures = <%- JSON.stringify(file.architectures || []) %>;
+    const savedCategory = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify((file.platforms && file.platforms[0]) || '')) %>'));
+    const savedArchitectures = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.architectures || [])) %>'));
     function populateCategories() {
         if (!nativePlatformSelect || !nativeCategorySelect || !categoryOptionsContainer || !categoryWrapper) return;
         
@@ -1789,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Merge custom admin templates directly from admin panel
-    const serverTemplates = <%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []) %>;
+    const serverTemplates = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : [])) %>'));
     if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
         serverTemplates.forEach(t => {
             if (t.targetField && t.content) {
@@ -2490,7 +2490,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load existing parts from server-side data
-    const existingParts = <%- JSON.stringify(file.downloadParts || []) %>;
+    const existingParts = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.downloadParts || [])) %>'));
     if (existingParts && existingParts.length > 0) {
         existingParts.forEach((p, idx) => partsWrapper.appendChild(createPartCard(p, idx)));
     } else {

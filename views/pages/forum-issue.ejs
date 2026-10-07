@@ -80,7 +80,7 @@
             <!-- Author Sidebar with Rank Logic -->
             <div class="post-sidebar">
                 <div style="position: relative;">
-                    <img src="<%= issue.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" style="border-color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>; box-shadow: 0 0 15px <%= issue.author.forumRank ? issue.author.forumRank.color : 'transparent' %>;">
+                    <img src="<%= issue.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" <%- `style="border-color: ${issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)'}; box-shadow: 0 0 15px ${issue.author.forumRank ? issue.author.forumRank.color : 'transparent'};"` %>>
                     
                     <!-- Lottie Rank Badge -->
                     <% if (issue.author.forumRank && issue.author.forumRank.lottie) { %>
@@ -92,11 +92,11 @@
                 
                 <a href="/users/<%= slugify(issue.author.username) %>" class="author-name"><%= issue.author.username %></a>
                 
-                <span class="author-rank" style="color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>">
+                <span class="author-rank" <%- `style="color: ${issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)'}"` %>>
                     <%= issue.author.forumRank ? issue.author.forumRank.name : 'Novice' %>
                 </span>
                 <% if (issue.author.role === 'admin' || issue.author.role === 'owner') { %>
-                    <span style="background: <%= issue.author.role === 'owner' ? '#f44336' : 'var(--red)' %>; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;"><%= issue.author.role.toUpperCase() %></span>
+                    <span <%- `style="background: ${issue.author.role === 'owner' ? '#f44336' : 'var(--red)'}; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;"` %>><%= issue.author.role.toUpperCase() %></span>
                 <% } %>
             </div>
 
@@ -121,7 +121,7 @@
                 <div style="display: flex; width: 100%; flex-direction: inherit;">
                     <div class="post-sidebar">
                         <div style="position: relative;">
-                            <img src="<%= reply.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" style="border-color: <%= reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)' %>;">
+                            <img src="<%= reply.author.signedAvatarUrl %>" alt="Avatar" class="author-avatar" <%- `style="border-color: ${reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)'};"` %>>
                             <% if (reply.author.forumRank && reply.author.forumRank.lottie) { %>
                                 <div style="position: absolute; top: -15px; left: -15px; z-index: 10; background: var(--black); border-radius: 50%; padding: 2px;">
                                     <lottie-player src="<%= cdnUrl %>/animations/<%= reply.author.forumRank.lottie %>" background="transparent" speed="1" style="width: 35px; height: 35px; transform: scale(1.3);" loop autoplay></lottie-player>
@@ -129,7 +129,7 @@
                             <% } %>
                         </div>
                         <a href="/users/<%= slugify(reply.author.username) %>" class="author-name"><%= reply.author.username %></a>
-                        <span class="author-rank" style="color: <%= reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)' %>"><%= reply.author.forumRank ? reply.author.forumRank.name : 'Novice' %></span>
+                        <span class="author-rank" <%- `style="color: ${reply.author.forumRank ? reply.author.forumRank.color : 'var(--silver)'}"` %>><%= reply.author.forumRank ? reply.author.forumRank.name : 'Novice' %></span>
                         <% if (reply.isAdminReply) { %>
                             <span style="background: var(--red); color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">ADMIN</span>
                         <% } %>

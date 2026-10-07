@@ -143,7 +143,7 @@
                 <div style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.35); padding: 8px 16px; border-radius: 25px; border: 1px solid #333; font-size: 0.88em;">
                     <span><strong style="color: var(--gold);"><i class="fas fa-crown" style="margin-right: 4px;"></i><%= quota.label %></strong></span>
                     <span style="color: #444;">|</span>
-                    <span>Slots: <strong style="color: <%= quota.canUpload ? 'var(--white)' : 'var(--red)' %>;"><%= quota.usedSlots %> / <%= quota.totalSlots %></strong></span>
+                    <span>Slots: <strong <%- `style="color: ${quota.canUpload ? 'var(--white)' : 'var(--red)'};"` %>><%= quota.usedSlots %> / <%= quota.totalSlots %></strong></span>
                     <span style="color: #444;">|</span>
                     <span>Max Size: <strong style="color: var(--silver);"><%= quota.maxFileSizeMb >= 1024 ? (quota.maxFileSizeMb / 1024).toFixed(1) + ' GB' : quota.maxFileSizeMb + ' MB' %></strong></span>
                 </div>

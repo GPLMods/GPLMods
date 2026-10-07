@@ -250,7 +250,7 @@
                                             <span style="font-size: 0.6em; background: #333; padding: 2px 6px; border-radius: 10px; font-weight: normal; color: var(--silver);">Ad-Supported</span>
                                         <% } %>
                                         <% if (part.partVirusTotalScanDate) { %>
-                                            <span style="font-size: 0.72em; padding: 2px 8px; border-radius: 12px; font-weight: bold; background: <%= part.partVirusTotalPositiveCount > 0 ? 'rgba(255,50,50,0.15)' : 'rgba(0,255,100,0.15)' %>; color: <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>; border: 1px solid <%= part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)' %>;" title="Automated VirusTotal Part Scan">
+                                            <span <%- `style="font-size: 0.72em; padding: 2px 8px; border-radius: 12px; font-weight: bold; background: ${part.partVirusTotalPositiveCount > 0 ? 'rgba(255,50,50,0.15)' : 'rgba(0,255,100,0.15)'}; color: ${part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)'}; border: 1px solid ${part.partVirusTotalPositiveCount > 0 ? 'var(--red)' : 'var(--green)'};"` %> title="Automated VirusTotal Part Scan">
                                                 <i class="fas fa-shield-virus"></i> <%= part.partVirusTotalPositiveCount %> / <%= part.partVirusTotalTotalScans %>
                                             </span>
                                         <% } else if (part.partVirusTotalId || (part.manualFileScanUrl && part.manualFileScanUrl.includes('virustotal.com'))) { %>
@@ -485,7 +485,7 @@
         // Automated background polling on Download Parts page
         (function initPartsAutoPoll() {
             const filePending = <%= Boolean(!file.virusTotalScanDate && (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com')))) %>;
-            const pendingParts = <%- JSON.stringify((file.downloadParts || []).filter(p => !p.partVirusTotalScanDate && (p.partVirusTotalId || (p.manualFileScanUrl && p.manualFileScanUrl.includes('virustotal.com')))).map(p => p._id)) %>;
+            const pendingParts = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify((file.downloadParts || []).filter(p => !p.partVirusTotalScanDate && (p.partVirusTotalId || (p.manualFileScanUrl && p.manualFileScanUrl.includes('virustotal.com')))).map(p => p._id))) %>'));
 
             if (!filePending && (!pendingParts || pendingParts.length === 0)) return;
 

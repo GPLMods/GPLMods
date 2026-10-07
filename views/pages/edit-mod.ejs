@@ -651,7 +651,7 @@
 
                     <input type="hidden" id="isMultiPartHidden" name="isMultiPart" value="<%= file.isMultiPart ? 'true' : 'false' %>">
 
-                    <div id="single-link-container" style="display: <%= file.isMultiPart ? 'none' : 'block' %>">
+                    <div id="single-link-container" <%- `style="display: ${file.isMultiPart ? 'none' : 'block'}"` %>>
                         <div class="form-group">
                             <label for="externalDownloadUrl">Main External URL*</label>
                             <input type="url" id="externalDownloadUrl" name="externalDownloadUrl" value="<%= file.externalDownloadUrl || '' %>" class="link-req-single" placeholder="https://linkvertise.com/...">
@@ -670,7 +670,7 @@
                         </div>
                     </div>
 
-                    <div id="multi-part-container" style="display: <%= file.isMultiPart ? 'block' : 'none' %>">
+                    <div id="multi-part-container" <%- `style="display: ${file.isMultiPart ? 'block' : 'none'}"` %>>
                         <div id="parts-wrapper">
                             <!-- JS will populate existing parts -->
                         </div>
@@ -852,7 +852,7 @@
                     document.querySelectorAll('.link-req-multi').forEach(el => el.required = true);
                 });
 
-                const existingParts = <%- JSON.stringify(file.downloadParts || []) %>;
+                const existingParts = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.downloadParts || [])) %>'));
                 if (existingParts && existingParts.length > 0) {
                     existingParts.forEach((p, idx) => partsWrapper.appendChild(createPartCard(p, idx)));
                 } else {
@@ -988,8 +988,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let draggedSlotIndex = -1;
 
     // Load initial screenshots from server
-    const initialScreenshotKeys = <%- JSON.stringify(file.screenshotKeys || []) %>;
-    const initialScreenshotUrls = <%- JSON.stringify(file.screenshotUrls || []) %>;
+    const initialScreenshotKeys = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.screenshotKeys || [])) %>'));
+    const initialScreenshotUrls = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.screenshotUrls || [])) %>'));
     if (Array.isArray(initialScreenshotKeys) && Array.isArray(initialScreenshotUrls)) {
         initialScreenshotKeys.forEach((key, idx) => {
             if (key && initialScreenshotUrls[idx]) {
@@ -1380,7 +1380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const nativeAgeRatingSelect = document.getElementById('ageRating');
     const ageRatingWrapper = document.getElementById('ageRatingWrapper');
     if (nativeAgeRatingSelect && ageRatingWrapper) {
-        const currentAgeRating = <%- JSON.stringify(file.ageRating || '') %>;
+        const currentAgeRating = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.ageRating || '')) %>'));
         if (currentAgeRating) {
             const opt = ageRatingWrapper.querySelector(`.custom-option[data-value="${currentAgeRating}"]`);
             if (opt) {
@@ -1415,7 +1415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const categories = categoriesByPlatform[selectedPlatform] ||[];
         
         // ✅ SAFE INITIALIZATION: Saved Sub-Category
-        const currentCategory = <%- JSON.stringify((file.platforms && file.platforms.length > 0) ? file.platforms[0] : '') %>; 
+        const currentCategory = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify((file.platforms && file.platforms.length > 0) ? file.platforms[0] : '')) %>')); 
 
         nativeCategorySelect.innerHTML = '';
         categoryOptionsContainer.innerHTML = '';
@@ -1532,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // ✅ SAFE INITIALIZATION: Architecture array
-            const preSelectedArchs = <%- JSON.stringify(file.architectures || []) %>;
+            const preSelectedArchs = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.architectures || [])) %>'));
 
             if (archMap[selectedPlatform]) {
                 archGroup.style.display = 'block';
@@ -1615,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // ✅ SAFE INITIALIZATION: Trigger the chain reaction for Platform
-        const preSelectedPlatform = <%- JSON.stringify(file.category || '') %>; 
+        const preSelectedPlatform = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(file.category || '')) %>')); 
         if (preSelectedPlatform) {
             const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
             if(optionToSelect) {
@@ -1689,7 +1689,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Merge custom admin templates directly from admin panel
-    const serverTemplates = <%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []) %>;
+    const serverTemplates = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : [])) %>'));
     if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
         serverTemplates.forEach(t => {
             if (t.targetField && t.content) {

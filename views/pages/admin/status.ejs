@@ -88,7 +88,7 @@
             </div>
             <div class="info-card">
                 <h3>Environment</h3>
-                <div class="value" style="color: <%= health.environment === 'production' ? '#2ecc71' : 'var(--gold)' %>;"><%= health.environment.toUpperCase() %></div>
+                <div class="value" <%- `style="color: ${health.environment === 'production' ? '#2ecc71' : 'var(--gold)'};"` %>><%= health.environment.toUpperCase() %></div>
             </div>
         </div>
 

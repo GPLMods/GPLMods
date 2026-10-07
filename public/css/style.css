@@ -201,7 +201,8 @@
 input[type="search"]::-webkit-search-decoration,
 input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance:none;
+  -webkit-appearance: none;
+  appearance: none;
 }
         .header-actions { display: none; }
 
@@ -257,26 +258,24 @@ input[type="search"]::-webkit-search-results-decoration {
 @media (max-width: 992px) {
     /* Tablet & Mobile View */
     .header-content {
-        grid-template-columns: 1fr auto; /* Logo on left, Actions on right */
+        grid-template-columns: 1fr auto;
         grid-template-areas: 
             "logo actions"
-            "search search"; /* Search bar drops to a new full-width row */
+            "search search";
     }
     
     .logo { grid-area: logo; }
-    .header-right-actions { grid-area: actions; justify-content: flex-end; }
+    .header-right-actions { grid-area: actions; justify-content: flex-end; order: 3; flex-shrink: 0; }
     
     .search-bar { 
         grid-area: search; 
-        max-width: 100%; /* Take up full width on mobile row */
+        max-width: 100%;
     }
+
+    .policy-banner { flex-direction: row; justify-content: center; }
+    .policy-buttons { margin-left: 20px; }
 }
-    
-    .header-right-actions { 
-        order: 3; 
-        flex-shrink: 0; /* Prevent the icon container from shrinking */
-    } 
-}
+
 @media (min-width: 1024px) {
     /* Desktop View */
     .search-bar { flex-grow: 1; max-width: 500px; margin: 0 20px; }
@@ -288,6 +287,7 @@ input[type="search"]::-webkit-search-results-decoration {
         gap: 10px;
     }
 }
+
 /* Add near .hamburger-menu rules */
 .hamburger-menu.open {
   color: var(--gold);
@@ -298,131 +298,34 @@ input[type="search"]::-webkit-search-results-decoration {
   transform: none !important;
   transition: color 0.2s ease;
 }
-    .policy-banner { flex-direction: row; justify-content: center; }
-    .policy-buttons { margin-left: 20px; }
-}
-        /* --- New Header Mobile Actions --- */
-        .header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
-        
-        /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
-        .avatar-placeholder {
-            display: block; 
-            width: 35px !important;  /* Force strict width */
-            height: 35px !important; /* Force strict height */
-            min-width: 35px; /* Prevent flexbox from shrinking it */
-            min-height: 35px; 
-            border: 2px solid var(--silver);
-            background-color: var(--black); /* Fallback background */
-            border-radius: 50%; 
-            cursor: pointer; 
-            text-decoration: none;
-            overflow: hidden; /* Ensure image doesn't bleed outside the circle */
-        }
-        
-        /* ✅ FIX: Ensure the image perfectly fills the container */
-        .avatar-placeholder img {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important; /* Crop perfectly to the circle */
-            display: block;
-        }
 
-/* Fix default browser styling on search inputs */
-input[type="search"]::-webkit-search-decoration,
-input[type="search"]::-webkit-search-results-button,
-input[type="search"]::-webkit-search-results-decoration {
-  -webkit-appearance:none;
-}
-        .header-actions { display: none; }
+/* --- New Header Mobile Actions --- */
+.header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
 
-/* --- Header Button Textures (Always Applied) --- */
-.btn { padding: 8px 20px; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 0.9em; transition: all 0.3s ease; }
-.btn-login { color: var(--silver); border: 2px solid var(--dark-gray); }
-.btn-login:hover { color: var(--gold); border-color: var(--gold); }
-.btn-signup { background: var(--gold); color: var(--black); border: 2px solid var(--gold); }
-.btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
+/* FIX: Strict sizing for the avatar to prevent blowout */
+.avatar-placeholder {
+    display: block; 
+    width: 35px !important;
+    height: 35px !important;
+    min-width: 35px;
+    min-height: 35px; 
+    border: 2px solid var(--silver);
+    background-color: var(--black);
+    border-radius: 50%; 
+    cursor: pointer; 
+    text-decoration: none;
+    overflow: hidden;
+}
 
-/* --- Notification Bell Styles --- */
-.nav-bell { color: var(--silver); font-size: 1.6em; line-height: 0; transition: color 0.3s ease; }
-.nav-bell:hover { color: var(--gold); }
+/* FIX: Ensure the image perfectly fills the container */
+.avatar-placeholder img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block;
+}
 
-/* --- Responsive Layout Adjustments --- */
-@media (max-width: 992px) {
-    /* Tablet & Mobile View */
-    .header-content {
-        grid-template-columns: 1fr auto; /* Logo on left, Actions on right */
-        grid-template-areas: 
-            "logo actions"
-            "search search"; /* Search bar drops to a new full-width row */
-    }
-    
-    .logo { grid-area: logo; }
-    .header-right-actions { grid-area: actions; justify-content: flex-end; }
-    
-    .search-bar { 
-        grid-area: search; 
-        max-width: 100%; /* Take up full width on mobile row */
-    }
-}
-    
-    .header-right-actions { 
-        order: 3; 
-        flex-shrink: 0; /* Prevent the icon container from shrinking */
-    } 
-}
-@media (min-width: 1024px) {
-    /* Desktop View */
-    .search-bar { flex-grow: 1; max-width: 500px; margin: 0 20px; }
-    
-    /* Reveal the text buttons next to the hamburger menu */
-    .desktop-text-buttons {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-}
-/* Add near .hamburger-menu rules */
-.hamburger-menu.open {
-  color: var(--gold);
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  transform: none !important;
-  transition: color 0.2s ease;
-}
-    .policy-banner { flex-direction: row; justify-content: center; }
-    .policy-buttons { margin-left: 20px; }
-}
-        /* --- New Header Mobile Actions --- */
-        .header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
-        
-        /* ✅ FIX: Strict sizing for the avatar to prevent blowout */
-        .avatar-placeholder {
-            display: block; 
-            width: 35px !important;  /* Force strict width */
-            height: 35px !important; /* Force strict height */
-            min-width: 35px; /* Prevent flexbox from shrinking it */
-            min-height: 35px; 
-            border: 2px solid var(--silver);
-            background-color: var(--black); /* Fallback background */
-            border-radius: 50%; 
-            cursor: pointer; 
-            text-decoration: none;
-            overflow: hidden; /* Ensure image doesn't bleed outside the circle */
-        }
-        
-        /* ✅ FIX: Ensure the image perfectly fills the container */
-        .avatar-placeholder img {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important; /* Crop perfectly to the circle */
-            display: block;
-        }
-        
-
-        
-        /* --- Optimized Sidebar Navigation --- */
+/* --- Optimized Sidebar Navigation --- */
         .mobile-nav {
             display: none; position: fixed; top: 0; left: 0; width: 80%;
             max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001;
@@ -954,6 +857,7 @@ a.overlay-btn-primary:hover {
 /* Custom Range Slider Styling */
 #music-volume-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 4px;
     background: #333;
@@ -1002,7 +906,7 @@ a.overlay-btn-primary:hover {
 }
 /* --- Music Timeline Styles --- */
             .timeline-container { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 15px; font-size: 0.8em; color: var(--silver); }
-            #music-timeline { -webkit-appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; cursor: pointer; }
+            #music-timeline { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: #333; border-radius: 2px; outline: none; cursor: pointer; }
             #music-timeline::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); cursor: pointer; box-shadow: 0 0 5px var(--glow-gold); transition: transform 0.2s; }
             #music-timeline::-webkit-slider-thumb:hover { transform: scale(1.3); }
             #music-current-time, #music-duration { min-width: 35px; text-align: center; font-family: monospace; }
@@ -1154,9 +1058,6 @@ a.overlay-btn-primary:hover {
 }
 
 /* This targets the <i> tag directly if needed, for Font Awesome */
-.main-footer .social-icons i {
-    /* This can often help reset styles if the 'a' tag isn't enough */
-}
 /* ==========================================================================
    EDITOR'S CHOICE BANNER (CAROUSEL)
    ========================================================================== */
@@ -1228,7 +1129,7 @@ a.overlay-btn-primary:hover {
 .featured-content { flex-grow: 1; }
 .featured-content h2 { font-size: 2.2em; line-height: 1.2; margin-bottom: 5px;}
 .featured-content h2 span { color: var(--gold); }
-.featured-content p { color: var(--silver); margin: 10px 0 20px 0; font-size: 1.1em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.featured-content p { color: var(--silver); margin: 10px 0 20px 0; font-size: 1.1em; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 .featured-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
 .featured-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; border: none; cursor: pointer; font-family: inherit;}
@@ -2710,9 +2611,6 @@ body {
 }
 
 /* 6. Utility class to stop specific items from translating */
-.notranslate {
-    /* Google Engine respects this class natively */
-}
 
 /* ========================================================================== */
 /* 7. Image Protection (Prevent Downloading via Long Press / Right Click) */
@@ -2724,7 +2622,6 @@ img {
     -ms-user-select: none; /* IE 10+ and Edge */
     user-select: none; /* Standard syntax */
     -webkit-user-drag: none; /* Prevent dragging */
-    user-drag: none;
     -webkit-touch-callout: none; /* iOS Safari - Disables long press popup */
     pointer-events: none; /* Disables pointer events, making it unclickable for direct download */
 }
@@ -3002,6 +2899,7 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         line-height: 1.25 !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 2 !important;
+        line-clamp: 2 !important;
         -webkit-box-orient: vertical !important;
         overflow: hidden !important;
     }

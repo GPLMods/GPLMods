@@ -917,8 +917,8 @@
 
 <script>
     // Initial data passed from server
-    let localTracks = <%- JSON.stringify(tracks || []) %>;
-    let currentPlaylist = <%- JSON.stringify((weeklyPlaylist && weeklyPlaylist.length) ? weeklyPlaylist : []) %>;
+    let localTracks = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(tracks || [])) %>'));
+    let currentPlaylist = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify((weeklyPlaylist && weeklyPlaylist.length) ? weeklyPlaylist : [])) %>'));
 
     // If currentPlaylist is empty, populate with all localTracks as default
     if (!currentPlaylist || currentPlaylist.length === 0) {

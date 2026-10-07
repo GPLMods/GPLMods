@@ -122,7 +122,7 @@
                 setProgress(100, '<i class="fas fa-check-circle" style="color: #4caf50; margin-right: 6px;"></i> Done! Redirecting...');
                 
                 setTimeout(() => {
-                    const target = <%- JSON.stringify(returnUrl || '/') %>;
+                    const target = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(returnUrl || '/')) %>'));
                     const sep = target.includes('?') ? '&' : '?';
                     window.location.replace(target + sep + '_cc=' + Date.now() + '&cache_cleared=1');
                 }, 400);

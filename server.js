@@ -16831,7 +16831,7 @@ async function getOrBuildFDroidRepoData(req) {
         }
 
         const iconUrl = `${repoBaseUrl}/api/icon/${mod._id}`;
-        const relativeIconPath = `/icons/${mod._id}.png`;
+        const relativeIconPath = `icons/${mod._id}.png`;
         const addedTs = new Date(mod.createdAt).getTime();
         const updatedTs = new Date(mod.updatedAt).getTime();
         const categories = mod.tags && mod.tags.length > 0 ? mod.tags : ["Mods", "Games", "Apps"];
@@ -16861,7 +16861,7 @@ async function getOrBuildFDroidRepoData(req) {
                 [sha256Hash]: {
                     added: updatedTs,
                     file: {
-                        name: `/${apkFileName}`,
+                        name: apkFileName,
                         sha256: sha256Hash,
                         size: mod.fileSize || 1048576
                     },
@@ -16887,7 +16887,7 @@ async function getOrBuildFDroidRepoData(req) {
             name: mod.name,
             summary: `${vName} Mod by ${mod.uploader || 'GPL Mods'}`,
             description: cleanDesc,
-            icon: iconUrl,
+            icon: relativeIconPath,
             author: mod.developer || "GPL Mods",
             categories: categories,
             license: "GPL-3.0-only",
@@ -16954,7 +16954,7 @@ async function getOrBuildFDroidRepoData(req) {
         version: 30000,
         maxAge: 14,
         index: {
-            name: "/index-v2.json",
+            name: "index-v2.json",
             sha256: indexV2Sha256,
             size: indexV2Buffer.length,
             numPackages: Object.keys(indexV2Obj.packages).length

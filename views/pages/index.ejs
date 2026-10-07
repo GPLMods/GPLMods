@@ -210,7 +210,7 @@
                                     <% const actualRating = typeof mod.averageRating === 'number' ? mod.averageRating : 0; %>
                                     <div class="rating" style="display: flex; align-items: center; gap: 8px; margin: 4px 0 8px 0;">
                                         <div class="stars-outer">
-                                            <div class="stars-inner" style="width: <%= (actualRating / 5) * 100 %>%;"></div>
+                                            <div class="stars-inner" <%- `style="width: ${(actualRating / 5) * 100}%;"` %>></div>
                                         </div>
                                         <span class="rating-text" style="font-weight: 700; color: var(--gold); font-size: 1.05em;"><%= actualRating.toFixed(1) %></span>
                                     </div>
@@ -272,7 +272,7 @@
             const platLabel = platformLabels[platformName] || (platformName.charAt(0).toUpperCase() + platformName.slice(1));
             if (councilMods.length > 0) { 
         %>
-            <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" style="<%= pIdx === 0 ? '' : 'display: none;' %>">
+            <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" <%- `style="${pIdx === 0 ? '' : 'display: none;'}"` %>>
                 <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="">
 
                 <div class="container" style="position: relative;">
@@ -303,7 +303,7 @@
                                     <% const actualRating = typeof mod.averageRating === 'number' ? mod.averageRating : 0; %>
                                     <div class="rating" style="display: flex; align-items: center; gap: 8px; margin: 4px 0 8px 0;">
                                         <div class="stars-outer">
-                                            <div class="stars-inner" style="width: <%= (actualRating / 5) * 100 %>%;"></div>
+                                            <div class="stars-inner" <%- `style="width: ${(actualRating / 5) * 100}%;"` %>></div>
                                         </div>
                                         <span class="rating-text" style="font-weight: 700; color: var(--gold); font-size: 1.05em;"><%= actualRating.toFixed(1) %></span>
                                     </div>

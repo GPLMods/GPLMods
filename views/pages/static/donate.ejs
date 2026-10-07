@@ -721,7 +721,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         // --- Server-Injected Daily Cap Data ---
-        let currentCapData = <%- JSON.stringify(typeof capData !== 'undefined' ? capData : { totalCapInr: 2000, spentInr: 0, remainingInr: 2000, rates: { INR: 1, USD: 85, EUR: 92, GBP: 108 } }) %>;
+        let currentCapData = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(typeof capData !== 'undefined' ? capData : { totalCapInr: 2000, spentInr: 0, remainingInr: 2000, rates: { INR: 1, USD: 85, EUR: 92, GBP: 108 } })) %>'));
 
         // --- 1. Custom Dropdown Logic ---
         function setupCustomSelect(wrapperId, nativeSelectId) {

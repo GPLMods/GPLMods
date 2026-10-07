@@ -469,6 +469,7 @@
         line-height: 1.4;
         display: -webkit-box;
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
@@ -548,15 +549,31 @@
     <%- include('../../partials/go-back-button', { fallback: '/clubs' }) %>
     <!-- ======================================== -->
 
+    <style>
+        .cap-badge-safe {
+            background: rgba(255, 215, 0, 0.12);
+            border: 1.5px solid var(--gold);
+            color: var(--gold);
+            padding: 7px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .cap-badge-danger {
+            background: rgba(231, 76, 60, 0.15);
+            border: 1.5px solid #e74c3c;
+            color: #ff6b6b;
+            padding: 7px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .text-priv-icon { color: #ff8a80; }
+        .text-pub-icon { color: #69f0ae; }
+    </style>
+
     <div class="club-create-card" style="margin-top: 1rem;">
         <div class="create-card-header">
             <h1 class="create-card-title"><i class="fas fa-users-cog" style="color: var(--gold);"></i> Create a Club</h1>
             <p class="create-card-subtitle">
                 Establish your community hub on GPLMods. You will receive dedicated Discord-like channels including #rules, #announcements, #new-uploads, #new-updates, and text channels.
             </p>
-        <!-- Club Cap Status -->
         <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
-            <span style="background: <%= (typeof limitReached !== 'undefined' && limitReached) ? 'rgba(231, 76, 60, 0.15)' : 'rgba(255, 215, 0, 0.12)' %>; border: 1.5px solid <%= (typeof limitReached !== 'undefined' && limitReached) ? '#e74c3c' : 'var(--gold)' %>; color: <%= (typeof limitReached !== 'undefined' && limitReached) ? '#ff6b6b' : 'var(--gold)' %>; padding: 7px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="<%= (typeof limitReached !== 'undefined' && limitReached) ? 'cap-badge-danger' : 'cap-badge-safe' %>">
                 <i class="fas fa-users"></i> Clubs Created: <%= typeof userCreatedCount !== 'undefined' ? userCreatedCount : 0 %> / <%= typeof maxClubsAllowed !== 'undefined' ? maxClubsAllowed : (typeof isHigherTier !== 'undefined' && isHigherTier ? 5 : 3) %> Max
             </span>
             <span style="font-size: 0.85rem; color: var(--silver); display: inline-flex; align-items: center; gap: 6px;">
@@ -996,7 +1013,7 @@ ZW|Zimbabwe
                     <% const isPriv = (formData.isPrivate === 'true' || formData.isPrivate === 'on'); %>
                     <div class="custom-select">
                         <span class="custom-select-text">
-                            <i class="fas <%= isPriv ? 'fa-lock' : 'fa-globe' %>" style="color: <%= isPriv ? '#ff8a80' : '#69f0ae' %>;"></i>
+                            <i class="fas <%= isPriv ? 'fa-lock text-priv-icon' : 'fa-globe text-pub-icon' %>"></i>
                             <span class="text-label"><%= isPriv ? 'Private Club (Join Approval Required)' : 'Public Club (Instant Join for All Members)' %></span>
                         </span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>

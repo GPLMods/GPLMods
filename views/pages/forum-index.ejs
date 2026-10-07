@@ -339,7 +339,7 @@
                         <a href="/community/<%= issue.slug %>" class="issue-item">
 
                             <img src="<%= issue.author.signedAvatarUrl %>" alt="Avatar" class="issue-author-avatar"
-                                style="border-color: <%= issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)' %>;">
+                                <%- `style="border-color: ${issue.author.forumRank ? issue.author.forumRank.color : 'var(--silver)'};"` %>>
 
                             <div class="issue-content">
                                 <h3 class="issue-title">
@@ -393,7 +393,7 @@
                 <nav class="pagination" style="display: flex; justify-content: center; padding-bottom: 50px;">
                     <% for(let i=1; i <=totalPages; i++) { %>
                         <a href="/community?page=<%= i %>&category=<%= currentCategory %>&status=<%= currentStatus %>&sort=<%= currentSort %>&q=<%= searchQuery %>"
-                            style="padding: 10px 15px; margin: 0 5px; border-radius: 8px; text-decoration: none; border: 1px solid #444; color: var(--silver); <%= currentPage === i ? 'background: var(--blue); color: white; border-color: var(--blue);' : '' %>">
+                            <%- `style="padding: 10px 15px; margin: 0 5px; border-radius: 8px; text-decoration: none; border: 1px solid #444; color: var(--silver); ${currentPage === i ? 'background: var(--blue); color: white; border-color: var(--blue);' : ''}"` %>>
                             <%= i %>
                         </a>
                         <% } %>

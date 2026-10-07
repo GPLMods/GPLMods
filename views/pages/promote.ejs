@@ -921,7 +921,7 @@
 
     // State management for wizard
     let selectedModId = '<%= preselectedModId || "" %>';
-    let selectedModName = <%- JSON.stringify((userMods && userMods.length > 0) ? (userMods[0].name || userMods[0].title) : '') %>;
+    let selectedModName = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify((userMods && userMods.length > 0) ? (userMods[0].name || userMods[0].title) : '')) %>'));
     let selectedTier = 'featured';
     let selectedMultiplier = 1.4;
     let selectedTierName = 'Featured Highlight';

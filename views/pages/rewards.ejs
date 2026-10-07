@@ -62,20 +62,20 @@
 
         <!-- Live Status & Progress Bar -->
         <div class="status-box">
-            <div class="rank-glow" style="background-color: <%= currentRank.color %>;"></div>
+            <div class="rank-glow" <%- `style="background-color: ${currentRank.color};"` %>></div>
             
             <% if (currentRank.lottie) { %>
                 <lottie-player src="<%= cdnUrl %>/animations/<%= currentRank.lottie %>" background="transparent" speed="1" style="width: 120px; height: 120px; margin: 0 auto;" loop autoplay></lottie-player>
             <% } else { %>
-                <i class="fas fa-medal" style="font-size: 4em; color: <%= currentRank.color %>; margin-bottom: 20px;"></i>
+                <i class="fas fa-medal" <%- `style="font-size: 4em; color: ${currentRank.color}; margin-bottom: 20px;"` %>></i>
             <% } %>
 
-            <h1 class="current-rank-title" style="color: <%= currentRank.color %>; text-shadow: 0 0 4px <%= currentRank.color %>;"><%= currentRank.name %></h1>
+            <h1 class="current-rank-title" <%- `style="color: ${currentRank.color}; text-shadow: 0 0 4px ${currentRank.color};"` %>><%= currentRank.name %></h1>
             <div class="points-display"><strong><%= currentPoints %></strong> Total Points</div>
 
             <% if (nextRank) { %>
                 <div class="progress-bar-container">
-                    <div class="progress-fill" style="width: <%= progressPercent %>%; background-color: <%= currentRank.color %>;">
+                    <div class="progress-fill" <%- `style="width: ${progressPercent}%; background-color: ${currentRank.color};"` %>>
                         <%= progressPercent %>%
                     </div>
                 </div>
