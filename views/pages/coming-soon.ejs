@@ -40,7 +40,7 @@
         .main-header { padding: 20px 0; background: rgba(10, 13, 20, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 1.8em; font-weight: 700; color: var(--gold); text-shadow: 0 0 10px var(--glow-gold); text-decoration: none; display: flex; align-items: center; gap: 8px; }
-        .logo span { color: var(--silver); text-shadow: none; }
+        
         .user-access-badge { font-size: 0.8em; padding: 4px 12px; border-radius: 20px; background: rgba(255,215,0,0.1); border: 1px solid var(--gold); color: var(--gold); display: flex; align-items: center; gap: 6px; }
 
         /* Main Content */
@@ -286,7 +286,7 @@
         <div class="container header-content">
             <a href="/" class="logo">
                 <i class="fas fa-cube" style="color: var(--gold); font-size: 0.9em;"></i>
-                GPL <span>Mods</span>
+                <span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span>
             </a>
 
             <% if (typeof user !== 'undefined' && user) { %>

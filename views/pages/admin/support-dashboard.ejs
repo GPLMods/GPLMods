@@ -444,7 +444,10 @@
                 padding: 6px 12px;
             }
         }
-    </style>
+    
+        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 3px rgba(255, 215, 0, 0.25); }
+        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
+        </style>
 </head>
 <body>
 
@@ -527,7 +530,7 @@
                     <span>Refresh</span>
                 </button>
             </div>
-            <h2>Support Desk</h2>
+            <h2><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> Support Desk</h2>
             <p style="margin:4px 0 0 0; font-size: 0.85em; color: var(--silver);">Agent: <%= user.username %></p>
             <% if (typeof success !== 'undefined' && success) { %>
                 <div style="margin-top: 10px; padding: 8px 12px; background: rgba(46, 204, 113, 0.15); border: 1px solid var(--green); border-radius: 6px; color: #a3e9b8; font-size: 0.8em; line-height: 1.4; display: flex; align-items: flex-start; gap: 6px;">

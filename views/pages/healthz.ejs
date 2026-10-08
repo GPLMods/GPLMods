@@ -51,7 +51,7 @@
             display: block;
             margin-bottom: 30px;
         }
-        .logo span { color: var(--silver); }
+        
         
         .status-icon {
             font-size: 5em;
@@ -97,7 +97,7 @@
     <div class="status-container">
     <%- include('../partials/go-back-button', { fallback: '/' }) %>
     <!-- ======================================== -->
-        <a href="/" class="logo">GPL <span>Mods</span></a>
+        <a href="/" class="logo"><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></a>
         
         <% if (isHealthy) { %>
             <i class="fas fa-check-circle status-icon"></i>

@@ -2033,13 +2033,18 @@ function initializeLanguageSystem() {
 async function executeTranslation(targetLang, rootElement = document.body) {
     console.log(`[DeepL] Translating to ${targetLang}...`);
     
-    // 1. Traverse the DOM to find all visible Text Nodes
-    const textNodes = [];
+    const CACHE_KEY = `gpl_lang_dict_${targetLang}`;
+    let localDict = {};
+    try { localDict = JSON.parse(localStorage.getItem(CACHE_KEY)) || {}; } catch(e) {}
+
     const walker = document.createTreeWalker(rootElement, NodeFilter.SHOW_TEXT, null, false);
     let node;
-    
-    // Elements we DO NOT want to translate
     const ignoreTags = ['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE'];
+    
+    const nodesToFetch = [];
+    const textsToFetch = [];
+    
+    let cacheUpdated = false;
 
     while (node = walker.nextNode()) {
         const parentElement = node.parentElement;
@@ -2047,27 +2052,26 @@ async function executeTranslation(targetLang, rootElement = document.body) {
 
         const parentTag = parentElement.tagName;
         const text = node.nodeValue.trim();
-        
-        // ✅ THE FIX: Check if this element or ANY of its parents have the 'notranslate' class
         const isNotranslate = parentElement.closest('.notranslate') !== null;
         
-        // Only push if it has text, isn't an ignored tag, AND isn't marked as notranslate
         if (text && !ignoreTags.includes(parentTag) && !isNotranslate) {
-            textNodes.push(node);
+            // Apply instantly if in cache
+            if (localDict[text]) {
+                node.nodeValue = node.nodeValue.replace(text, localDict[text]);
+            } else {
+                nodesToFetch.push(node);
+                textsToFetch.push(text);
+            }
         }
     }
 
-    if (textNodes.length === 0) return;
+    if (textsToFetch.length === 0) return; // Everything was cached!
 
-    // Extract the raw string values
-    const textsToTranslate = textNodes.map(n => n.nodeValue);
-
-    // 2. Send to our Backend API in chunks
+    // Send missing strings to API in chunks
     const CHUNK_SIZE = 100; 
-    
-    for (let i = 0; i < textsToTranslate.length; i += CHUNK_SIZE) {
-        const chunk = textsToTranslate.slice(i, i + CHUNK_SIZE);
-        const nodeChunk = textNodes.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < textsToFetch.length; i += CHUNK_SIZE) {
+        const chunk = textsToFetch.slice(i, i + CHUNK_SIZE);
+        const nodeChunk = nodesToFetch.slice(i, i + CHUNK_SIZE);
 
         try {
             const response = await fetch('/api/translate', {
@@ -2075,17 +2079,22 @@ async function executeTranslation(targetLang, rootElement = document.body) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ texts: chunk, targetLanguage: targetLang })
             });
-
             const data = await response.json();
 
             if (data.translations) {
-                // 3. Replace the original text nodes with translated text
                 data.translations.forEach((translatedText, index) => {
-                    nodeChunk[index].nodeValue = translatedText; 
+                    const originalText = chunk[index];
+                    nodeChunk[index].nodeValue = nodeChunk[index].nodeValue.replace(originalText, translatedText);
+                    localDict[originalText] = translatedText;
+                    cacheUpdated = true;
                 });
             }
         } catch (err) {
             console.error('Translation chunk failed:', err);
         }
+    }
+    
+    if (cacheUpdated) {
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(localDict)); } catch(e) { console.error('Cache full', e); }
     }
 }

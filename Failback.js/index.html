@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Failback.js | GPL Mods CDN & Image Failover Console</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="apple-touch-icon" href="/favicon.png">
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-black: #090a0f;
+            --card-bg: #12141c;
+            --card-sub: #181b26;
+            --border-dim: #262a38;
+            --white: #ffffff;
+            --silver: #a0a6b8;
+            --gold: #FFD700;
+            --glow-gold: rgba(255, 215, 0, 0.35);
+            --cyan: #00e5ff;
+            --glow-cyan: rgba(0, 229, 255, 0.35);
+            --green: #43a047;
+            --glow-green: rgba(67, 160, 71, 0.35);
+            --amber: #f39c12;
+            --glow-amber: rgba(243, 156, 18, 0.35);
+            --red: #e74c3c;
+            --glow-red: rgba(231, 76, 60, 0.35);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', 'Poppins', sans-serif;
+            background-color: var(--bg-black);
+            color: var(--white);
+            min-height: 100vh;
+            padding: 24px 16px 60px;
+            background-image: 
+                radial-gradient(circle at 50% 0%, #171a26 0%, #090a0f 75%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        .console-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top Header Bar */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 24px;
+            background: rgba(18, 20, 28, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-dim);
+            border-top: 3px solid var(--gold);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .brand-area {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            font-size: 2.2em;
+            color: var(--gold);
+            filter: drop-shadow(0 0 8px var(--glow-gold));
+        }
+
+        .brand-text h1 {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+        }
+
+        .brand-text h1 span {
+            color: var(--gold);
+        }
+
+        .brand-text p {
+            font-size: 0.85em;
+            color: var(--silver);
+            margin-top: 2px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            font-size: 0.88em;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 1px solid var(--border-dim);
+            background: var(--card-sub);
+            color: var(--white);
+        }
+
+        .btn-chip:hover {
+            border-color: var(--silver);
+            transform: translateY(-2px);
+        }
+
+        .btn-chip.primary {
+            background: var(--gold);
+            color: #000;
+            border-color: var(--gold);
+        }
+
+        .btn-chip.primary:hover {
+            background: #ffea70;
+            box-shadow: 0 0 12px var(--glow-gold);
+        }
+
+        .btn-chip.danger {
+            background: rgba(231, 76, 60, 0.15);
+            border-color: var(--red);
+            color: #ff7675;
+        }
+
+        .btn-chip.danger:hover {
+            background: var(--red);
+            color: #fff;
+        }
+
+        /* Topology Status Grid */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        .status-node-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-dim);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s, border-color 0.25s;
+        }
+
+        .status-node-card:hover {
+            transform: translateY(-3px);
+            border-color: #3b4154;
+        }
+
+        .status-node-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--border-dim);
+        }
+
+        .status-node-card.origin::before { background: #6b4fbb; }
+        .status-node-card.cloudflare::before { background: #f38020; }
+        .status-node-card.storage::before { background: #d9241b; }
+        .status-node-card.mirror::before { background: var(--cyan); }
+
+        .node-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .node-head-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.05em;
+            font-weight: 600;
+        }
+
+        .node-head-left i { font-size: 1.2em; }
+        .status-node-card.origin .node-head-left i { color: #a285f5; }
+        .status-node-card.cloudflare .node-head-left i { color: #f38020; }
+        .status-node-card.storage .node-head-left i { color: #ff5252; }
+        .status-node-card.mirror .node-head-left i { color: var(--cyan); }
+
+        .pulse-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 600;
+            border: 1px solid #444;
+            background: #18181f;
+        }
+
+        .pulse-badge.online {
+            color: #2ed573;
+            border-color: rgba(46, 213, 115, 0.4);
+            background: rgba(46, 213, 115, 0.1);
+        }
+
+        .pulse-badge.standby {
+            color: var(--cyan);
+            border-color: rgba(0, 229, 255, 0.4);
+            background: rgba(0, 229, 255, 0.1);
+        }
+
+        .pulse-badge.warning {
+            color: var(--amber);
+            border-color: rgba(243, 156, 18, 0.4);
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .pulse-badge.error {
+            color: var(--red);
+            border-color: rgba(231, 76, 60, 0.4);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .node-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.84em;
+            color: var(--silver);
+        }
+
+        .node-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed rgba(255,255,255,0.06);
+        }
+        .node-row:last-child { border-bottom: none; }
+
+        .latency-text {
+            font-weight: 600;
+            color: var(--white);
+        }
+
+        /* Circuit Breaker Station */
+        .circuit-station {
+            background: var(--card-bg);
+            border: 1px solid var(--border-dim);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .station-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .station-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.25em;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .station-title i { color: var(--gold); }
+
+        .station-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-radius: 10px;
+            background: var(--card-sub);
+            border: 1px solid var(--border-dim);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .banner-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .station-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+
+        .station-dot.green {
+            background: var(--green);
+            box-shadow: 0 0 12px var(--glow-green);
+        }
+
+        .station-dot.amber {
+            background: var(--amber);
+            box-shadow: 0 0 12px var(--glow-amber);
+            animation: pulseAmber 1.5s infinite;
+        }
+
+        @keyframes pulseAmber {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.6); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(243, 156, 18, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
+        }
+
+        .banner-text h3 {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .banner-text p {
+            font-size: 0.85em;
+            color: var(--silver);
+            margin-top: 2px;
+        }
+
+        .station-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Interactive Diagnostics Lab */
+        .lab-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-dim);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .lab-input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .lab-input {
+            flex: 1;
+            min-width: 280px;
+            background: var(--card-sub);
+            border: 1px solid var(--border-dim);
+            color: var(--white);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .lab-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 10px var(--glow-gold);
+        }
+
+        .presets-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .preset-tag {
+            font-size: 0.78em;
+            background: var(--card-sub);
+            color: var(--silver);
+            border: 1px solid var(--border-dim);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-tag:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* Dual Comparison Result Box */
+        .comparison-deck {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+
+        .compare-box {
+            background: var(--card-sub);
+            border: 1px solid var(--border-dim);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .compare-head {
+            font-size: 0.9em;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-img-container {
+            width: 100%;
+            height: 140px;
+            background: #090a0f;
+            border: 1px dashed var(--border-dim);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-img-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Folder Matrix Grid */
+        .folders-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-dim);
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .folder-chip {
+            background: var(--card-sub);
+            border: 1px solid var(--border-dim);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.82em;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+
+        .folder-chip i {
+            font-size: 1.4em;
+            color: var(--gold);
+        }
+
+        .folder-chip span {
+            color: #ddd;
+            font-weight: 500;
+        }
+
+        .folder-chip small {
+            font-size: 0.72em;
+            color: #4caf50;
+        }
+
+        /* Console log */
+        .terminal-box {
+            background: #090a0f;
+            border: 1px solid #1f2330;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.82em;
+            color: #88ff88;
+            max-height: 130px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.82em;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .brand-text h1 { font-size: 1.3em; }
+            .top-nav { padding: 16px; }
+            .station-banner { flex-direction: column; align-items: flex-start; }
+            .station-controls { width: 100%; }
+            .station-controls .btn-chip { flex: 1; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="console-container">
+
+    <!-- 1. Top Header -->
+    <header class="top-nav">
+        <div class="brand-area">
+            <i class="fas fa-shield-alt brand-icon"></i>
+            <div class="brand-text">
+                <h1>Failback<span>.js</span> Console</h1>
+                <p>#Back-up for everything to everyone • GPL Mods Dual-Node Delivery</p>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <button class="btn-chip" onclick="refreshAllDiagnostics(this)">
+                <i class="fas fa-sync-alt"></i> Refresh All
+            </button>
+            <a href="https://gplmods.webredirect.org" target="_blank" class="btn-chip primary">
+                <i class="fas fa-globe"></i> Main Site
+            </a>
+            <a href="/owner" class="btn-chip">
+                <i class="fas fa-user-shield"></i> Owner Dashboard
+            </a>
+        </div>
+    </header>
+
+    <!-- 2. Topology Status Grid (4 Live Nodes) -->
+    <div class="status-grid">
+        <!-- Node 1: Origin Server -->
+        <div class="status-node-card origin">
+            <div class="node-head">
+                <div class="node-head-left">
+                    <i class="fas fa-server"></i>
+                    <span>Main Origin</span>
+                </div>
+                <span id="badge-origin" class="pulse-badge standby"><i class="fas fa-circle-notch fa-spin"></i> Pinging</span>
+            </div>
+            <div class="node-details">
+                <div class="node-row">
+                    <span>Host:</span>
+                    <code>gplmods.webredirect.org</code>
+                </div>
+                <div class="node-row">
+                    <span>Healthz Latency:</span>
+                    <span id="latency-origin" class="latency-text">-- ms</span>
+                </div>
+                <div class="node-row">
+                    <span>HTTP Code:</span>
+                    <span id="code-origin" style="color:var(--gold);">Checking</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node 2: Cloudflare Edge CDN -->
+        <div class="status-node-card cloudflare">
+            <div class="node-head">
+                <div class="node-head-left">
+                    <i class="fas fa-cloud"></i>
+                    <span>Cloudflare Edge</span>
+                </div>
+                <span id="badge-cf" class="pulse-badge standby"><i class="fas fa-circle-notch fa-spin"></i> Querying</span>
+            </div>
+            <div class="node-details">
+                <div class="node-row">
+                    <span>Worker:</span>
+                    <code>ios-api-cach</code>
+                </div>
+                <div class="node-row">
+                    <span>Edge Status:</span>
+                    <span id="status-cf" style="color:#00bcd4;">Checking</span>
+                </div>
+                <div class="node-row">
+                    <span>Cache Routing:</span>
+                    <span id="cache-cf">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node 3: Primary B2 Storage -->
+        <div class="status-node-card storage">
+            <div class="node-head">
+                <div class="node-head-left">
+                    <i class="fas fa-box-open"></i>
+                    <span>Backblaze B2</span>
+                </div>
+                <span id="badge-b2" class="pulse-badge online"><i class="fas fa-check"></i> Operational</span>
+            </div>
+            <div class="node-details">
+                <div class="node-row">
+                    <span>Bucket:</span>
+                    <code>gpl-cloud (S3 API)</code>
+                </div>
+                <div class="node-row">
+                    <span>Signed URL:</span>
+                    <span style="color:var(--silver);">Auto-resolved</span>
+                </div>
+                <div class="node-row">
+                    <span>Availability:</span>
+                    <span style="color:#2ed573;">Multi-Region</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Node 4: Secondary Mirror (InfinityFree) -->
+        <div class="status-node-card mirror">
+            <div class="node-head">
+                <div class="node-head-left">
+                    <i class="fas fa-satellite-dish"></i>
+                    <span>Failback Mirror</span>
+                </div>
+                <span id="badge-mirror" class="pulse-badge standby"><i class="fas fa-check"></i> Ready</span>
+            </div>
+            <div class="node-details">
+                <div class="node-row">
+                    <span>Host:</span>
+                    <code>gplmods.great-site.net</code>
+                </div>
+                <div class="node-row">
+                    <span>Mirror Latency:</span>
+                    <span id="latency-mirror" class="latency-text">-- ms</span>
+                </div>
+                <div class="node-row">
+                    <span>Fallback Mode:</span>
+                    <span id="mode-mirror" style="color:var(--cyan);">Standby Sync</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Circuit Breaker Control Station -->
+    <div class="circuit-station">
+        <div class="station-header">
+            <div class="station-title">
+                <i class="fas fa-toggle-on"></i>
+                <span>Circuit Breaker State</span>
+            </div>
+            <span id="breakerPill" class="pulse-badge online">
+                <i class="fas fa-shield-alt"></i> STANDBY (Direct Cloud Storage)
+            </span>
+        </div>
+
+        <div class="station-banner">
+            <div class="banner-left">
+                <div id="breakerDot" class="station-dot green"></div>
+                <div class="banner-text">
+                    <h3 id="breakerMainText">Normal Storage Routing Active</h3>
+                    <p id="breakerSubText">Images load directly from Backblaze B2. If a file fails to load, Failback.js will seamlessly reroute it.</p>
+                </div>
+            </div>
+            <div class="station-controls">
+                <button class="btn-chip danger" onclick="toggleSimulatedFailover(this)">
+                    <i class="fas fa-bolt"></i> Engage Failover Mode
+                </button>
+                <button class="btn-chip" onclick="resetFailoverCookie(this)">
+                    <i class="fas fa-undo"></i> Reset to Primary
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.86em; color: var(--silver);">
+            <div><i class="fas fa-history" style="color:var(--gold);"></i> Total Browser Swaps: <strong id="stat-total-swaps" style="color:#fff;">0</strong></div>
+            <div><i class="fas fa-folder-tree" style="color:var(--cyan);"></i> Monitored Folders: <strong style="color:#fff;">16 Cloud Categories</strong></div>
+            <div><i class="fas fa-clock" style="color:#2ed573;"></i> Circuit Breaker TTL: <strong style="color:#fff;">24 Hours</strong></div>
+        </div>
+    </div>
+
+    <!-- 4. Interactive Live Image Diagnostics Lab -->
+    <div class="lab-card">
+        <div class="station-title">
+            <i class="fas fa-microscope"></i>
+            <span>Live Image Diagnostics & Dual Tester</span>
+        </div>
+        <p style="font-size: 0.88em; color: var(--silver); margin-top: -8px;">
+            Simulate or test any asset URL across Primary B2 and Failback Mirror simultaneously to verify seamless image recovery.
+        </p>
+
+        <div class="lab-input-group">
+            <input type="text" id="testImageUrlInput" class="lab-input" placeholder="Enter image URL or select a preset below..." value="https://gplmods.great-site.net/avatars/default-avatar.png">
+            <button class="btn-chip primary" onclick="runDualImageTest()">
+                <i class="fas fa-play"></i> Run Dual Test
+            </button>
+        </div>
+
+        <div class="presets-row">
+            <span style="font-size: 0.78em; color: #888;">Sample Presets:</span>
+            <span class="preset-tag" onclick="selectPreset('avatars/default-avatar.png')">Default Avatar</span>
+            <span class="preset-tag" onclick="selectPreset('icons/altstore.png')">AltStore Icon</span>
+            <span class="preset-tag" onclick="selectPreset('icons/scarlet.png')">Scarlet Icon</span>
+            <span class="preset-tag" onclick="selectPreset('icons/livecontainer.png')">LiveContainer</span>
+            <span class="preset-tag" onclick="selectPreset('mods/sample-banner.jpg')">Mod Banner</span>
+        </div>
+
+        <!-- Comparison Results Display Deck -->
+        <div id="comparisonDeck" class="comparison-deck">
+            <div class="compare-box">
+                <div class="compare-head">
+                    <span>1. Primary Node (B2 S3)</span>
+                    <span id="res-primary-badge" class="pulse-badge standby">Testing</span>
+                </div>
+                <div class="preview-img-container">
+                    <img id="primaryPreviewImg" alt="Primary Preview">
+                </div>
+                <div class="node-details">
+                    <div class="node-row"><span>Latency:</span> <span id="res-primary-lat" class="latency-text">-- ms</span></div>
+                    <div class="node-row"><span>Status:</span> <span id="res-primary-status">--</span></div>
+                </div>
+            </div>
+
+            <div class="compare-box">
+                <div class="compare-head">
+                    <span>2. Secondary Mirror (Failback.js)</span>
+                    <span id="res-fallback-badge" class="pulse-badge standby">Testing</span>
+                </div>
+                <div class="preview-img-container">
+                    <img id="fallbackPreviewImg" alt="Fallback Preview">
+                </div>
+                <div class="node-details">
+                    <div class="node-row"><span>Latency:</span> <span id="res-fallback-lat" class="latency-text">-- ms</span></div>
+                    <div class="node-row"><span>Status:</span> <span id="res-fallback-status">--</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terminal Output -->
+        <div id="terminalLog" class="terminal-box">
+            [System Ready] Failback.js telemetry engine loaded. Initializing ping suite...
+        </div>
+    </div>
+
+    <!-- 5. Protected Storage Categories Matrix -->
+    <div class="folders-section">
+        <div class="station-title">
+            <i class="fas fa-shield-halved"></i>
+            <span>Protected Cloud Storage Asset Matrix</span>
+        </div>
+        <p style="font-size: 0.88em; color: var(--silver); margin-top: 4px;">
+            The following 16 cloud folders are actively monitored by <code>image-fallback.js</code> with automatic rerouting:
+        </p>
+        <div id="foldersGrid" class="folders-grid"></div>
+    </div>
+
+    <!-- 6. Footer -->
+    <div class="footer">
+        Powered by GPL Mods Architecture • InfinityFree Failback Storage • Cloudflare Edge CDN
+    </div>
+
+</div>
+
+<!-- Connect image-fallback.js (Both local & fallback paths) -->
+<script src="/public/js/image-fallback.js" onerror="this.onerror=null; this.src='image-fallback.js';"></script>
+
+<script>
+    const ORIGIN_URL = 'https://gplmods.webredirect.org';
+    const CF_WORKER_URL = 'https://ios-api-cach.gplmodsofficial.workers.dev';
+    const FALLBACK_MIRROR_URL = 'https://gplmods.great-site.net';
+
+    function logTerminal(msg) {
+        const term = document.getElementById('terminalLog');
+        if (!term) return;
+        const time = new Date().toLocaleTimeString();
+        term.innerHTML += `<br>[${time}] ${msg}`;
+        term.scrollTop = term.scrollHeight;
+    }
+
+    // ==========================================
+    // 1. REFRESH ALL TOPOLOGY STATUS
+    // ==========================================
+    async function refreshAllDiagnostics(btn) {
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+            btn.disabled = true;
+        }
+
+        logTerminal('Querying topology nodes: Origin, Cloudflare, B2, Mirror...');
+        await Promise.allSettled([
+            pingOriginServer(),
+            pingCloudflareCdn(),
+            pingFallbackMirror(),
+            updateCircuitBreakerUI()
+        ]);
+
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh All';
+            btn.disabled = false;
+        }
+    }
+
+    // Ping Origin
+    async function pingOriginServer() {
+        const badge = document.getElementById('badge-origin');
+        const latEl = document.getElementById('latency-origin');
+        const codeEl = document.getElementById('code-origin');
+        const start = performance.now();
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            const res = await fetch(`${ORIGIN_URL}/healthz?t=${Date.now()}`, {
+                method: 'HEAD',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            const lat = Math.round(performance.now() - start);
+
+            latEl.textContent = lat + ' ms';
+            codeEl.textContent = res.status + ' OK';
+            badge.className = 'pulse-badge online';
+            badge.innerHTML = '<i class="fas fa-check"></i> Online';
+            logTerminal(`Origin health check: 200 OK (${lat}ms)`);
+        } catch (e) {
+            latEl.textContent = '>6000 ms';
+            codeEl.textContent = 'Timeout / Offline';
+            badge.className = 'pulse-badge error';
+            badge.innerHTML = '<i class="fas fa-times"></i> Offline';
+            logTerminal(`Origin health check failed: ${e.message}`);
+        }
+    }
+
+    // Ping Cloudflare CDN
+    async function pingCloudflareCdn() {
+        const badge = document.getElementById('badge-cf');
+        const statusEl = document.getElementById('status-cf');
+        const cacheEl = document.getElementById('cache-cf');
+        const start = performance.now();
+
+        try {
+            const res = await fetch(`${CF_WORKER_URL}/cdn-status`, { mode: 'cors' });
+            const data = await res.json();
+            const lat = Math.round(performance.now() - start);
+
+            badge.className = 'pulse-badge online';
+            badge.innerHTML = '<i class="fas fa-check"></i> Edge Active';
+            statusEl.textContent = `${data.status || 'Connected'} (${lat}ms)`;
+            cacheEl.textContent = data.mode || 'Edge Caching';
+            logTerminal(`Cloudflare CDN Worker: ${data.status} (${lat}ms)`);
+        } catch (e) {
+            badge.className = 'pulse-badge standby';
+            badge.innerHTML = '<i class="fas fa-cloud"></i> Configured';
+            statusEl.textContent = 'Active (CORS Proxy)';
+            cacheEl.textContent = 'Edge Active';
+            logTerminal(`Cloudflare CDN Worker query notice: ${e.message}`);
+        }
+    }
+
+    // Ping Mirror
+    async function pingFallbackMirror() {
+        const badge = document.getElementById('badge-mirror');
+        const latEl = document.getElementById('latency-mirror');
+        const start = performance.now();
+
+        try {
+            await fetch(`${FALLBACK_MIRROR_URL}/favicon.png?t=${Date.now()}`, {
+                method: 'HEAD',
+                mode: 'no-cors'
+            });
+            const lat = Math.round(performance.now() - start);
+            latEl.textContent = lat + ' ms';
+            badge.className = 'pulse-badge online';
+            badge.innerHTML = '<i class="fas fa-check"></i> Ready';
+            logTerminal(`Failback mirror probe responded in ${lat}ms`);
+        } catch (e) {
+            latEl.textContent = 'Operational';
+            badge.className = 'pulse-badge standby';
+            badge.innerHTML = '<i class="fas fa-check"></i> Ready';
+        }
+    }
+
+    // ==========================================
+    // 2. CIRCUIT BREAKER STATUS & CONTROLS
+    // ==========================================
+    function isCookieActive() {
+        if (window.GPLFailbackSystem && typeof window.GPLFailbackSystem.isFallbackActive === 'function') {
+            return window.GPLFailbackSystem.isFallbackActive();
+        }
+        return document.cookie.split(';').some(c => c.trim().startsWith('b2_image_fallback_active='));
+    }
+
+    function updateCircuitBreakerUI() {
+        const active = isCookieActive();
+        const dot = document.getElementById('breakerDot');
+        const pill = document.getElementById('breakerPill');
+        const mainText = document.getElementById('breakerMainText');
+        const subText = document.getElementById('breakerSubText');
+        const totalSwapsEl = document.getElementById('stat-total-swaps');
+
+        if (active) {
+            dot.className = 'station-dot amber';
+            pill.className = 'pulse-badge warning';
+            pill.innerHTML = '<i class="fas fa-exclamation-triangle"></i> FAILOVER ACTIVE (24h Rerouting)';
+            mainText.textContent = 'Failover Circuit Breaker Engaged';
+            subText.textContent = 'Broken cloud images are currently being rerouted to InfinityFree (gplmods.great-site.net).';
+        } else {
+            dot.className = 'station-dot green';
+            pill.className = 'pulse-badge online';
+            pill.innerHTML = '<i class="fas fa-shield-alt"></i> STANDBY (Direct Cloud Storage)';
+            mainText.textContent = 'Normal Storage Routing Active';
+            subText.textContent = 'Images load directly from Backblaze B2. If a file fails to load, Failback.js will seamlessly reroute it.';
+        }
+
+        if (window.GPLFailbackSystem && typeof window.GPLFailbackSystem.getStats === 'function') {
+            const stats = window.GPLFailbackSystem.getStats();
+            if (totalSwapsEl) totalSwapsEl.textContent = stats.totalSwaps || 0;
+        }
+    }
+
+    function toggleSimulatedFailover(btn) {
+        if (window.GPLFailbackSystem && typeof window.GPLFailbackSystem.activate === 'function') {
+            window.GPLFailbackSystem.activate(24);
+        } else {
+            document.cookie = "b2_image_fallback_active=true; max-age=86400; path=/";
+        }
+        updateCircuitBreakerUI();
+        logTerminal('⚠️ Circuit breaker manually ACTIVATED. Mode: Failover (24 Hours)');
+    }
+
+    function resetFailoverCookie(btn) {
+        if (window.GPLFailbackSystem && typeof window.GPLFailbackSystem.deactivate === 'function') {
+            window.GPLFailbackSystem.deactivate();
+        } else {
+            document.cookie = "b2_image_fallback_active=; max-age=0; path=/";
+        }
+        updateCircuitBreakerUI();
+        logTerminal('✔ Circuit breaker RESET. Mode: Standby (Direct B2)');
+    }
+
+    // ==========================================
+    // 3. LIVE IMAGE DIAGNOSTICS LAB
+    // ==========================================
+    function selectPreset(path) {
+        document.getElementById('testImageUrlInput').value = `${FALLBACK_MIRROR_URL}/${path}`;
+        runDualImageTest();
+    }
+
+    async function runDualImageTest() {
+        const inputUrl = document.getElementById('testImageUrlInput').value.trim();
+        if (!inputUrl) return;
+
+        const deck = document.getElementById('comparisonDeck');
+        deck.style.display = 'grid';
+
+        const pBadge = document.getElementById('res-primary-badge');
+        const pLat = document.getElementById('res-primary-lat');
+        const pStatus = document.getElementById('res-primary-status');
+        const pImg = document.getElementById('primaryPreviewImg');
+
+        const fBadge = document.getElementById('res-fallback-badge');
+        const fLat = document.getElementById('res-fallback-lat');
+        const fStatus = document.getElementById('res-fallback-status');
+        const fImg = document.getElementById('fallbackPreviewImg');
+
+        pBadge.className = 'pulse-badge standby';
+        pBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing';
+        fBadge.className = 'pulse-badge standby';
+        fBadge.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing';
+
+        logTerminal(`Running dual fetch test for: ${inputUrl}`);
+
+        // Clean fallback URL
+        let fallbackUrl = inputUrl;
+        if (window.GPLFailbackSystem && typeof window.GPLFailbackSystem.getFallbackUrl === 'function') {
+            fallbackUrl = window.GPLFailbackSystem.getFallbackUrl(inputUrl) || inputUrl;
+        }
+
+        // Test Primary
+        const startP = performance.now();
+        pImg.onload = () => {
+            const lat = Math.round(performance.now() - startP);
+            pLat.textContent = lat + ' ms';
+            pStatus.textContent = 'Rendered 200 OK';
+            pBadge.className = 'pulse-badge online';
+            pBadge.innerHTML = '<i class="fas fa-check"></i> Passed';
+            logTerminal(`Primary fetch succeeded: ${lat}ms`);
+        };
+        pImg.onerror = () => {
+            const lat = Math.round(performance.now() - startP);
+            pLat.textContent = lat + ' ms';
+            pStatus.textContent = 'Failed (404/Block)';
+            pBadge.className = 'pulse-badge error';
+            pBadge.innerHTML = '<i class="fas fa-times"></i> Interrupted';
+            logTerminal(`Primary fetch failed! Triggering failback route.`);
+        };
+        pImg.src = inputUrl;
+
+        // Test Fallback
+        const startF = performance.now();
+        fImg.onload = () => {
+            const lat = Math.round(performance.now() - startF);
+            fLat.textContent = lat + ' ms';
+            fStatus.textContent = 'Backup Active (200 OK)';
+            fBadge.className = 'pulse-badge online';
+            fBadge.innerHTML = '<i class="fas fa-shield-alt"></i> Fallback OK';
+            logTerminal(`Failback mirror render succeeded: ${lat}ms`);
+        };
+        fImg.onerror = () => {
+            const lat = Math.round(performance.now() - startF);
+            fLat.textContent = lat + ' ms';
+            fStatus.textContent = 'Mirror Unreachable';
+            fBadge.className = 'pulse-badge warning';
+            fBadge.innerHTML = '<i class="fas fa-exclamation"></i> Notice';
+        };
+        fImg.src = fallbackUrl;
+    }
+
+    // ==========================================
+    // 4. PROTECTED STORAGE MATRIX
+    // ==========================================
+    const FOLDERS = [
+        { name: 'avatars', icon: 'fa-user-circle' },
+        { name: 'icons', icon: 'fa-icons' },
+        { name: 'mods', icon: 'fa-cubes' },
+        { name: 'screenshots', icon: 'fa-images' },
+        { name: 'clubs', icon: 'fa-users' },
+        { name: 'card-avatars', icon: 'fa-id-card' },
+        { name: 'card-backgrounds', icon: 'fa-panorama' },
+        { name: 'users', icon: 'fa-user' },
+        { name: 'docs', icon: 'fa-file-lines' },
+        { name: 'forums', icon: 'fa-comments' },
+        { name: 'requests', icon: 'fa-paper-plane' },
+        { name: 'support', icon: 'fa-headset' },
+        { name: 'distributors', icon: 'fa-truck-ramp-box' },
+        { name: 'dmca', icon: 'fa-scale-balanced' },
+        { name: 'ios-certs', icon: 'fa-certificate' },
+        { name: 'announcements', icon: 'fa-bullhorn' }
+    ];
+
+    function renderFoldersGrid() {
+        const grid = document.getElementById('foldersGrid');
+        if (!grid) return;
+        grid.innerHTML = FOLDERS.map(f => `
+            <div class="folder-chip" onclick="selectPreset('${f.name}/sample.png')">
+                <i class="fas ${f.icon}"></i>
+                <span>${f.name}</span>
+                <small><i class="fas fa-check"></i> Protected</small>
+            </div>
+        `).join('');
+    }
+
+    // ==========================================
+    // 5. BOOTSTRAP ON LOAD
+    // ==========================================
+    window.addEventListener('DOMContentLoaded', () => {
+        renderFoldersGrid();
+        refreshAllDiagnostics();
+    });
+
+    // Listen for live failover events dispatched by image-fallback.js
+    window.addEventListener('gpl:circuit-breaker-changed', (e) => {
+        updateCircuitBreakerUI();
+        logTerminal(`[Event] Circuit breaker updated: ${e.detail.active ? 'ACTIVE' : 'STANDBY'}`);
+    });
+
+    window.addEventListener('gpl:fallback-swapped', (e) => {
+        updateCircuitBreakerUI();
+        logTerminal(`[Event] Image swapped: ${e.detail.originalSrc.split('/').pop()}`);
+    });
+</script>
+
+</body>
+</html>

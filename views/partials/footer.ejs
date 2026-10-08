@@ -339,14 +339,17 @@
         </div>
 
         <!-- ======== PWA INSTALL BANNER ======== -->
-        <div id="pwa-install-banner" class="pwa-banner">
-            <div class="pwa-banner-content">
-                <h4>Install GPL Mods App</h4>
-                <p>Add to your home screen for a faster, full-screen experience!</p>
+        <div id="pwa-install-banner" class="pwa-banner" style="background: rgba(15, 15, 18, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 20px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 15px rgba(255,215,0,0.1); width: 90%; max-width: 400px; display: flex; align-items: center; gap: 15px;">
+            <div style="background: linear-gradient(135deg, var(--gold), #ff9800); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 5px 15px rgba(255,215,0,0.2);">
+                <i class="fas fa-cloud-download-alt" style="color: var(--black); font-size: 1.5em;"></i>
             </div>
-            <div class="pwa-buttons">
-                <button id="pwa-install" class="pwa-btn pwa-install-btn">Install</button>
-                <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn">Later</button>
+            <div class="pwa-banner-content" style="flex-grow: 1;">
+                <h4 style="margin: 0 0 5px 0; color: #fff; font-size: 1.05em; font-weight: 700;">Exclusive App for Members!</h4>
+                <p style="margin: 0; color: var(--silver); font-size: 0.8rem; line-height: 1.4;">Download the GPL Mods app today to get VIP features and a faster experience.</p>
+            </div>
+            <div class="pwa-buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                <button id="pwa-install" class="pwa-btn" style="background: var(--gold); color: var(--black); padding: 8px 14px; border-radius: 8px; font-weight: bold; border: none; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">Install</button>
+                <button id="pwa-dismiss" class="pwa-btn" style="background: transparent; color: var(--silver); padding: 8px 14px; border-radius: 8px; font-weight: bold; border: 1px solid #444; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">Later</button>
             </div>
         </div>
 
@@ -830,7 +833,7 @@
             <div class="gpl-chat-header">
                 <div class="gpl-chat-team-info" id="gplChatTeamHeader" style="cursor: pointer; min-width: 0;" title="Minimize Chat">
                     <div class="gpl-chat-team-avatars" id="gplChatTeamAvatars">
-                        <img src="/images/gemini.png" alt="AI" id="gplChatAiAvatar" title="Gemini AI">
+                        <!-- Avatars dynamically injected here via socket -->
                     </div>
                     <div style="min-width: 0;">
                         <strong style="color: var(--white); display: block; font-size: 0.92em;">Support Team</strong>
@@ -1085,7 +1088,7 @@
                 "May I Help You? 👋", 
                 "Looking for a specific mod? 🔍", 
                 "Found a bug? Let me help! 🛠️", 
-                "Need mod suggestions? <i class=\"fa-solid fa-lightbulb\"></i>"
+                "Need mod suggestions? 💡"
             ];
 
             // Message SFX Audio: Greeting (/sfx/greetings.mp3), Incoming (/sfx/massage-recieve.mp3), Outgoing (/sfx/massage-sent.mp3)

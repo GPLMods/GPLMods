@@ -728,7 +728,10 @@
             right: 12px;
         }
     }
-</style>
+
+        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 3px rgba(255, 215, 0, 0.25); }
+        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
+        </style>
 
 <main class="container">
     <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
@@ -740,7 +743,7 @@
         <!-- Header -->
         <div class="music-header-block">
             <div class="music-title-group">
-                <h1><i class="fas fa-music" style="color: var(--music-gold);"></i> Music & <span>Playlist Manager</span></h1>
+                <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> <i class="fas fa-music" style="color: var(--music-gold);"></i> Music & <span>Playlist Manager</span></h1>
                 <p>Manage background audio tracks in <code>public/audio</code>, preview audio, sequence weekly playlist, and upload files.</p>
             </div>
             <div class="music-nav-shortcuts">

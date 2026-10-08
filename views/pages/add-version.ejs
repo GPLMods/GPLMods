@@ -248,7 +248,10 @@
                     Important Note / Installation Instructions (Optional)
                     <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
-                <textarea id="importantNote" name="importantNote" rows="4" style="width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1.1em; font-family: 'Poppins', sans-serif; outline: none; resize: vertical;"><%= parentFile.importantNote || '' %></textarea>
+                <input type="hidden" id="hiddenImportantNote" name="importantNote" value="<%= parentFile.importantNote || '' %>">
+                <div id="importantNote-editor-container" style="height: 150px; background-color: var(--black); color: var(--white); border-radius: 8px; border: 1px solid #333; font-family: 'Poppins', sans-serif; text-align: left;">
+                    <%- parentFile.importantNote || '' %>
+                </div>
                 <div id="dropdown-importantNote" class="template-dropdown"></div>
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
@@ -498,6 +501,12 @@
         var quill = new Quill('#editor-container', {
             theme: 'snow',
             placeholder: 'List changes... If left blank, the old notes will be used.',
+            modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean'] ] }
+        });
+
+        var quillNote = new Quill('#importantNote-editor-container', {
+            theme: 'snow',
+            placeholder: 'Leave blank to keep previous version\'s instructions.',
             modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean'] ] }
         });
         const qlToolbar = document.querySelector('.ql-toolbar');
@@ -815,14 +824,12 @@
                         } else {
                             quill.insertText(quill.getLength(), '\n' + selectedTemplate);
                         }
-                    } else if (targetId === 'importantNote') {
-                        const noteEl = document.getElementById('importantNote');
-                        if (noteEl) {
-                            if (!noteEl.value.trim()) {
-                                noteEl.value = selectedTemplate;
-                            } else {
-                                noteEl.value += '\n\n' + selectedTemplate;
-                            }
+                    } else if (targetId === 'importantNote' && typeof quillNote !== 'undefined' && quillNote) {
+                        const currentHtml = quillNote.root.innerHTML;
+                        if (!currentHtml || currentHtml === '<p><br></p>') {
+                            quillNote.setText(selectedTemplate + '\n');
+                        } else {
+                            quillNote.insertText(quillNote.getLength(), '\n' + selectedTemplate);
                         }
                     }
                     dropdown.style.display = 'none';
@@ -1143,6 +1150,12 @@
             
             const contentHtml = quill.root.innerHTML;
             document.getElementById('hiddenWhatsNew').value = (contentHtml === '<p><br></p>' || contentHtml.trim() === '') ? '' : contentHtml;
+
+            const noteHtml = quillNote.root.innerHTML;
+            const hiddenNote = document.getElementById('hiddenImportantNote');
+            if (hiddenNote) {
+                hiddenNote.value = (noteHtml === '<p><br></p>' || noteHtml.trim() === '') ? '' : noteHtml;
+            }
 
             if (currentMode === 'file' && (!modFileInput || modFileInput.files.length === 0)) {
                 return showErrorModal("Please select a file to upload.");

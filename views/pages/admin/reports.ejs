@@ -29,13 +29,16 @@
         justify-content: flex-end;
         flex-wrap: wrap;
     }
-</style>
+
+        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 3px rgba(255, 215, 0, 0.25); }
+        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
+        </style>
 
 <div class="container">
     <%- include('../../partials/go-back-button', { fallback: '/admin' }) %>
 
     <div class="profile-header">
-        <h1>Admin Dashboard</h1>
+        <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> Admin Dashboard</h1>
         <p>File Report Management</p>
     </div>
 

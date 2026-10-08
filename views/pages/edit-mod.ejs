@@ -190,10 +190,70 @@
     .ql-snow.ql-toolbar button:hover .ql-stroke, .ql-snow .ql-toolbar button:hover .ql-stroke { stroke: var(--gold); }
     .ql-snow.ql-toolbar button:hover .ql-fill, .ql-snow .ql-toolbar button:hover .ql-fill { fill: var(--gold); }
     
-    /* --- Force Quill Editors to be responsive on mobile --- */
+    /* --- Force Quill Editors to be responsive and left-aligned --- */
     .ql-toolbar, .ql-container { max-width: 100% !important; box-sizing: border-box !important; }
-    .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 15px !important; }
-    .upload-form-container { max-width: 100%; overflow-x: hidden; }
+    .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 15px !important; text-align: left !important; }
+    .ql-editor p, .form-group textarea, .form-group input { text-align: left !important; }
+    .ql-editor p { margin-bottom: 0.5em !important; color: var(--white) !important; }
+    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; overflow-x: hidden; }
+
+    /* Auto-Fetch Responsive Layout */
+    .fetch-input-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .fetch-platform-col {
+        flex: 0 0 170px;
+        min-width: 150px;
+        z-index: 10;
+    }
+    .fetch-url-input {
+        flex: 1 1 240px;
+        padding: 10px 14px;
+        height: 45px;
+        border-radius: 8px;
+        background: var(--black);
+        color: white;
+        border: 1px solid #333;
+        outline: none;
+        font-size: 0.95em;
+        text-align: left !important;
+        font-family: 'Poppins', sans-serif;
+    }
+    .fetch-btn {
+        background: var(--blue);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        height: 45px;
+        padding: 0 22px;
+        font-weight: bold;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 0.95em;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform 0.2s, opacity 0.2s;
+    }
+    .fetch-btn:hover {
+        opacity: 0.9;
+        transform: translateY(-1px);
+    }
+    @media (max-width: 650px) {
+        .fetch-input-group {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+        }
+        .fetch-platform-col, .fetch-platform-col .custom-select-wrapper, .fetch-url-input, .fetch-btn {
+            width: 100% !important;
+            flex: 1 1 100% !important;
+        }
+    }
 
     /* --- CUSTOM SELECT DROPDOWN CSS --- */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
@@ -303,38 +363,38 @@
                 </div>
                 <% } %>
 
-                <div style="background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
-                    <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 5px;">Platform Source</label>
-                        <select id="fetchPlatform" name="fetchPlatform" style="display: none;">
-                            <option value="auto" selected>Auto Detect</option>
-                            <option value="playstore">Google Play Store</option>
-                            <option value="appstore">Apple App Store</option>
-                            <option value="steam">Steam</option>
-                            <option value="epic">Epic Games Store</option>
-                            <option value="wordpress">WordPress.org</option>
-                        </select>
-                        <div class="custom-select-wrapper" id="fetchPlatformWrapper">
-                            <div class="custom-select" style="padding: 10px 15px;">
-                                <span class="selected-text" style="color: var(--white);">Auto Detect</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-options">
-                                <div class="custom-option selected" data-value="auto">Auto Detect</div>
-                                <div class="custom-option" data-value="playstore">Google Play Store</div>
-                                <div class="custom-option" data-value="appstore">Apple App Store</div>
-                                <div class="custom-option" data-value="steam">Steam</div>
-                                <div class="custom-option" data-value="epic">Epic Games Store</div>
-                                <div class="custom-option" data-value="wordpress">WordPress.org</div>
+                <div class="auto-fetch-box" style="background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                    <h4 style="color: var(--blue); margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; gap: 8px; text-align: left;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
+                    <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px; text-align: left;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
+                    <div class="fetch-input-group">
+                        <div class="fetch-platform-col">
+                            <select id="fetchPlatform" name="fetchPlatform" style="display: none;">
+                                <option value="auto" selected>Auto Detect</option>
+                                <option value="playstore">Google Play Store</option>
+                                <option value="appstore">Apple App Store</option>
+                                <option value="steam">Steam</option>
+                                <option value="epic">Epic Games Store</option>
+                                <option value="wordpress">WordPress.org</option>
+                            </select>
+                            <div class="custom-select-wrapper" id="fetchPlatformWrapper">
+                                <div class="custom-select" style="padding: 10px 14px; height: 45px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span class="selected-text" style="color: var(--white); font-size: 0.95em;">Auto Detect</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow" style="font-size: 0.8em;"></i>
+                                </div>
+                                <div class="custom-options">
+                                    <div class="custom-option selected" data-value="auto">Auto Detect</div>
+                                    <div class="custom-option" data-value="playstore">Google Play Store</div>
+                                    <div class="custom-option" data-value="appstore">Apple App Store</div>
+                                    <div class="custom-option" data-value="steam">Steam</div>
+                                    <div class="custom-option" data-value="epic">Epic Games Store</div>
+                                    <div class="custom-option" data-value="wordpress">WordPress.org</div>
+                                </div>
                             </div>
                         </div>
+                        <input type="url" id="fetchUrl" class="fetch-url-input" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)...">
+                        <button type="button" id="fetchBtn" class="btn btn-primary fetch-btn"><i class="fas fa-magic"></i> Fetch Data</button>
                     </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <input type="url" id="fetchUrl" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)..." style="flex-grow: 1; padding: 12px 15px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none; transition: border-color 0.3s;">
-                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 25px; font-weight: bold; cursor: pointer; transition: transform 0.2s;">Fetch Data</button>
-                    </div>
-                    <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
+                    <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold; text-align: left;"></span>
                 </div>
 
                 <div class="form-group">
@@ -533,48 +593,7 @@
             <fieldset class="form-section">
                 <legend>Descriptions</legend>
                 
-                <!-- ======== ✅ UPGRADED: AUTO-FETCH METADATA UI ======== -->
-                <div style="background: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
-                    <h4 style="color: var(--blue); margin-bottom: 15px;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="color: var(--silver); font-size: 0.9em; margin-bottom: 5px;">Platform Source</label>
-                        <!-- Native Select (Hidden) -->
-                        <select id="fetchPlatform" name="fetchPlatform" style="display: none;">
-                            <option value="auto" selected>Auto Detect</option>
-                            <option value="playstore">Google Play Store</option>
-                            <option value="appstore">Apple App Store</option>
-                            <option value="steam">Steam</option>
-                            <option value="epic">Epic Games Store</option>
-                            <option value="wordpress">WordPress.org</option>
-                        </select>
-                        
-                        <!-- Custom Select UI -->
-                        <div class="custom-select-wrapper" id="fetchPlatformWrapper">
-                            <div class="custom-select" style="padding: 10px 15px;">
-                                <span class="selected-text" style="color: var(--white);">Auto Detect</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-options">
-                                <div class="custom-option selected" data-value="auto">Auto Detect</div>
-                                <div class="custom-option" data-value="playstore">Google Play Store</div>
-                                <div class="custom-option" data-value="appstore">Apple App Store</div>
-                                <div class="custom-option" data-value="steam">Steam</div>
-                                <div class="custom-option" data-value="epic">Epic Games Store</div>
-                                <div class="custom-option" data-value="wordpress">WordPress.org</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <input type="url" id="fetchUrl" placeholder="Paste store link (Google Play, App Store, Steam, Epic, WordPress)..." style="flex-grow: 1; padding: 12px 15px; border-radius: 8px; background: var(--black); color: white; border: 1px solid #333; outline: none; transition: border-color 0.3s;">
-                        <button type="button" id="fetchBtn" class="btn btn-primary" style="background: var(--blue); color: white; border: none; border-radius: 8px; padding: 0 25px; font-weight: bold; cursor: pointer; transition: transform 0.2s;">
-                            Fetch Data
-                        </button>
-                    </div>
-                    <span id="fetchStatus" style="display: block; margin-top: 10px; font-size: 0.85em; font-weight: bold;"></span>
-                </div>
-                <!-- ======================================================== -->
 
                 <!-- HIDDEN TEXTAREAS - REQUIRED REMOVED to prevent silent browser failures -->
                 <div class="form-group" style="position: relative;">

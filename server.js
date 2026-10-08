@@ -2478,7 +2478,7 @@ const renderHomepage = async (req, res) => {
 
 // Web Cache Clear Shortcut Route (/cc)
 app.get('/cc', (req, res) => {
-    res.set('Clear-Site-Data', '"cache", "storage"');
+    res.set('Clear-Site-Data', '"cache"');
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0');
     res.set('Pragma', 'no-cache');
 
@@ -2486,6 +2486,11 @@ app.get('/cc', (req, res) => {
     // Prevent redirect loops back to /cc
     if (returnUrl.includes('/cc')) {
         returnUrl = '/';
+    }
+
+    // Handle AJAX fetch requests
+    if (req.xhr || req.headers.accept.indexOf('json') > -1 || req.headers['sec-fetch-mode'] === 'cors') {
+        return res.status(200).json({ success: true, message: 'Cache cleared successfully' });
     }
 
     if (req.query.action === 'execute') {

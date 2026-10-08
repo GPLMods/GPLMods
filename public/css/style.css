@@ -546,7 +546,7 @@ a.overlay-btn-primary:hover {
 
 /* 6. Tags */
 .app-feature-tag { position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
-.mod-type-tag { position: absolute; top: 10px; right: 10px; background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+.mod-type-tag { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
 /* Platform Tag Colors */
 .platform-tag {
     color: var(--black);
@@ -567,7 +567,7 @@ a.overlay-btn-primary:hover {
     max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
 .mod-type-tag { 
-    position: absolute; top: 12px; right: 12px; background-color: var(--silver); color: var(--black); 
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--silver); color: var(--black); 
     font-size: 0.75em; font-weight: bold; padding: 5px 10px; border-radius: 12px; z-index: 2; 
     max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
@@ -1240,20 +1240,20 @@ a.overlay-btn-primary:hover {
         .logo .logo-gold-glow,
         .logo-gold-glow {
             color: var(--gold);
-            text-shadow: 0 0 6px rgba(255, 215, 0, 0.45), 0 0 16px rgba(255, 215, 0, 0.18);
+            text-shadow: 0 0 3px rgba(255, 215, 0, 0.25);
             transition: text-shadow 0.3s ease;
         }
         .logo .logo-silver-glow,
         .logo-silver-glow {
             color: var(--silver, #e0e6ed);
-            text-shadow: 0 0 5px rgba(255, 255, 255, 0.25), 0 0 12px rgba(255, 255, 255, 0.08);
+            text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
             transition: text-shadow 0.3s ease;
         }
         .logo:hover .logo-gold-glow {
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.55), 0 0 22px rgba(255, 215, 0, 0.25);
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.35);
         }
         .logo:hover .logo-silver-glow {
-            text-shadow: 0 0 7px rgba(255, 255, 255, 0.35), 0 0 18px rgba(255, 255, 255, 0.12);
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
         }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
@@ -2948,7 +2948,7 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
 
     .mod-grid .mod-type-tag {
         top: 6px !important;
-        right: 6px !important;
+        left: 50% !important; transform: translateX(-50%);
         font-size: 0.65em !important;
         padding: 2px 6px !important;
         max-width: 38% !important;

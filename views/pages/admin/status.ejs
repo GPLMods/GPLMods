@@ -60,13 +60,16 @@
             gap: 10px;
         }
     }
-</style>
+
+        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 3px rgba(255, 215, 0, 0.25); }
+        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
+        </style>
 
 <main class="container">
     <div class="health-container">
         
         <div class="health-header">
-            <h1><i class="fas fa-server" style="color: var(--gold);"></i> System Diagnostics</h1>
+            <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> <i class="fas fa-server" style="color: var(--gold);"></i> System Diagnostics</h1>
             <div class="status-badge status-<%= health.status %>">
                 System <%= health.status %>
             </div>
