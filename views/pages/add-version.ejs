@@ -45,8 +45,8 @@
 
     /* Action buttons */
     .btn-action { display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; border: none; }
-    .btn-action-secondary { background: #2a2a2a; color: var(--silver); border: 1px solid #444; }
-    .btn-action-secondary:hover { background: #3a3a3a; color: var(--white); border-color: #666; }
+    .btn-action-secondary { background: rgba(255, 255, 255, 0.08); color: var(--silver); border: 1px solid rgba(255, 255, 255, 0.15); }
+    .btn-action-secondary:hover { background: rgba(255, 255, 255, 0.15); color: var(--white); border-color: rgba(255, 255, 255, 0.3); }
     .btn-action-danger { background: #d32f2f; color: #fff; }
     .btn-action-danger:hover { background: #b71c1c; }
 
@@ -89,6 +89,43 @@
         vertical-align: middle;
     }
     .template-helper-btn:hover { background: var(--gold); color: var(--black); }
+
+    /* Unified Quill Theme for Version Updates */
+    .ql-toolbar.ql-snow {
+        background-color: #333 !important;
+        border-color: #444 !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    .ql-container.ql-snow {
+        background-color: var(--black) !important;
+        border-color: #444 !important;
+        border-radius: 0 0 8px 8px !important;
+        color: var(--white) !important;
+        font-family: 'Poppins', sans-serif !important;
+        font-size: 1em !important;
+        min-height: 160px !important;
+    }
+    .ql-editor {
+        min-height: 160px;
+        text-align: left !important;
+        color: var(--white) !important;
+        font-family: 'Poppins', sans-serif !important;
+    }
+    .ql-editor.ql-blank::before { color: #888; font-style: normal; }
+    .ql-snow .ql-stroke { stroke: var(--silver) !important; }
+    .ql-snow .ql-fill { fill: var(--silver) !important; }
+    .ql-snow .ql-picker { color: var(--silver) !important; }
+    .ql-snow .ql-picker-options { background-color: var(--dark-gray); border-color: #444; }
+    .ql-snow .ql-picker-item { color: var(--white); }
+    .ql-snow .ql-picker-item:hover { color: var(--gold); }
+    .ql-snow.ql-toolbar button:hover .ql-stroke, 
+    .ql-snow .ql-toolbar button:hover .ql-stroke, 
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke, 
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke { stroke: var(--gold) !important; }
+    .ql-snow.ql-toolbar button:hover .ql-fill, 
+    .ql-snow .ql-toolbar button:hover .ql-fill, 
+    .ql-snow.ql-toolbar button.ql-active .ql-fill, 
+    .ql-snow .ql-toolbar button.ql-active .ql-fill { fill: var(--gold) !important; }
 </style>
 
 <div class="container">
@@ -113,7 +150,7 @@
             </div>
 
             <!-- AUTO-FETCH CONTAINER -->
-            <div id="autoFetchContainer" style="display: none; background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+            <div id="autoFetchContainer" style="display: none; background-color: #0b1a2a; border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                 <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px;">Paste the store link to automatically grab the latest "What's New" notes and requirements.</p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <div class="filter-group">
@@ -249,9 +286,7 @@
                     <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
                 <input type="hidden" id="hiddenImportantNote" name="importantNote" value="<%= parentFile.importantNote || '' %>">
-                <div id="importantNote-editor-container" style="height: 150px; background-color: var(--black); color: var(--white); border-radius: 8px; border: 1px solid #333; font-family: 'Poppins', sans-serif; text-align: left;">
-                    <%- parentFile.importantNote || '' %>
-                </div>
+                <div id="importantNote-editor-container"><%- parentFile.importantNote || '' %></div>
                 <div id="dropdown-importantNote" class="template-dropdown"></div>
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
@@ -509,10 +544,6 @@
             placeholder: 'Leave blank to keep previous version\'s instructions.',
             modules: { toolbar: [ ['bold', 'italic', 'underline', 'strike'], [{'list': 'ordered'}, {'list': 'bullet'}], ['clean'] ] }
         });
-        const qlToolbar = document.querySelector('.ql-toolbar');
-        const qlContainer = document.querySelector('.ql-container');
-        if (qlToolbar) { qlToolbar.style.backgroundColor = '#222'; qlToolbar.style.borderColor = '#333'; qlToolbar.style.borderTopLeftRadius = '8px'; qlToolbar.style.borderTopRightRadius = '8px'; }
-        if (qlContainer) { qlContainer.style.borderColor = '#333'; qlContainer.style.borderBottomLeftRadius = '8px'; qlContainer.style.borderBottomRightRadius = '8px'; qlContainer.style.minHeight = '150px'; qlContainer.style.color = 'var(--white)'; qlContainer.style.fontFamily = "'Poppins', sans-serif"; qlContainer.style.fontSize = '1em'; }
 
         // --- 2. Custom Dropdown Init ---
         function setupCustomSelect(wrapperId, nativeSelectId) {

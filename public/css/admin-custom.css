@@ -701,10 +701,36 @@ div[data-radix-popper-content-wrapper] > * {
     border-radius: 8px !important;
     padding: 8px 12px !important;
 }
-
 .tippy-content *,
 [data-tippy-root] * {
     color: #ffffff !important;
 }
+
+/* ==========================================================================
+   AdminJS Logo & Branding Glow (Matches GPLMods Original Theme)
+   ========================================================================== */
+a[href*="/admin"] img,
+[data-testid="sidebar-branding"] img,
+.adminjs_Sidebar img,
+header img[src*="logo"],
+[class*="Logo"] img {
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)) !important;
+    transition: filter 0.3s ease !important;
+}
+a[href*="/admin"]:hover img,
+[data-testid="sidebar-branding"]:hover img,
+.adminjs_Sidebar:hover img {
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.7)) !important;
+}
+
+[data-testid="sidebar-branding"] h1,
+[data-testid="sidebar-branding"] span,
+[data-testid="sidebar-branding"] a,
+.adminjs_Sidebar h1,
+.adminjs_Sidebar span {
+    color: #FFD700 !important;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
+}
+
 
 

@@ -29,8 +29,8 @@
             --white: #ffffff;
             --gold: #FFD700;
             --silver: #c0c0c0;
-            --glow-gold: rgba(255, 215, 0, 0.12);
-            --glow-silver: rgba(192, 192, 192, 0.10);
+            --glow-gold: rgba(255, 215, 0, 0.5);
+            --glow-silver: rgba(192, 192, 192, 0.55);
             --red: #e53935;
             --glow-red: rgba(229, 57, 53, 0.12);
             --green: #43a047;
@@ -79,7 +79,19 @@
     .custom-select-wrapper.open { z-index: 1000; position: relative; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
     .selected-text { color: var(--white); font-size: 0.95em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .custom-select-arrow { color: var(--silver); transition: transform 0.3s ease; font-size: 0.8em; }
+    .custom-select-arrow { 
+        display: inline-flex; 
+        align-items: center; 
+        justify-content: center; 
+        width: 18px; 
+        height: 18px; 
+        line-height: 1; 
+        transform-origin: 50% 50%; 
+        color: var(--silver); 
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), color 0.3s ease; 
+        font-size: 0.85em; 
+        flex-shrink: 0; 
+    }
     .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
     
     /* Custom Options Dropdown */
@@ -214,14 +226,27 @@ input[type="search"]::-webkit-search-results-decoration {
 .btn-signup:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
 
 /* --- Notification Bell Styles --- */
-.nav-bell { color: var(--silver); font-size: 1.6em; line-height: 0; transition: color 0.3s ease; }
+.nav-bell {
+    color: var(--silver);
+    font-size: 1.35rem;
+    line-height: 1;
+    transition: color 0.3s ease;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
 .nav-bell:hover { color: var(--gold); }
 
 /* --- Unified Header Layout Logic --- */
 .header-right-actions {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 8px;
     order: 2; /* Mobile: Sits top right */
 }
 
@@ -236,7 +261,10 @@ input[type="search"]::-webkit-search-results-decoration {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 1.55em;
+    font-size: 1.35rem;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
     color: var(--silver);
     line-height: 1;
     margin: 0;
@@ -300,7 +328,7 @@ input[type="search"]::-webkit-search-results-decoration {
 }
 
 /* --- New Header Mobile Actions --- */
-.header-mobile-actions { display: flex; align-items: center; gap: 12px; order: 2; }
+.header-mobile-actions { display: flex; align-items: center; gap: 8px; order: 2; }
 
 /* FIX: Strict sizing for the avatar to prevent blowout */
 .avatar-placeholder {
@@ -544,9 +572,43 @@ a.overlay-btn-primary:hover {
 
 .download-overlay, .overlay-button, form { position: relative; z-index: 10; }
 
-/* 6. Tags */
-.app-feature-tag { position: absolute; top: 10px; left: 10px; background-color: var(--gold); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
-.mod-type-tag { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background-color: var(--silver); color: var(--black); font-size: 0.8em; font-weight: bold; padding: 4px 10px; border-radius: 20px; z-index: 2; }
+/* 6. Tags & Badges */
+.app-feature-tag { 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    background-color: var(--gold); 
+    color: var(--black); 
+    font-size: 0.75em; 
+    font-weight: bold; 
+    padding: 4px 10px; 
+    border-radius: 12px; 
+    z-index: 2; 
+    box-shadow: 0 0 8px var(--glow-gold); 
+    max-width: 48%; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+.mod-type-tag { 
+    position: absolute; 
+    top: 10px; 
+    right: 10px; 
+    left: auto !important; 
+    transform: none !important; 
+    background-color: var(--silver); 
+    color: var(--black); 
+    font-size: 0.75em; 
+    font-weight: bold; 
+    padding: 4px 10px; 
+    border-radius: 12px; 
+    z-index: 2; 
+    box-shadow: 0 0 8px var(--glow-silver); 
+    max-width: 48%; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
 /* Platform Tag Colors */
 .platform-tag {
     color: var(--black);
@@ -558,19 +620,7 @@ a.overlay-btn-primary:hover {
 .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
 
 /* ✅ NEW FIX: Orange color for Drafts (Category 'n/a' becomes class 'n') */
-.platform-tag.n { background-color: #FF9800; color: var(--black); } 
-
-/* 6. Fix Overlapping Top Tags */
-.app-feature-tag { 
-    position: absolute; top: 12px; left: 12px; background-color: var(--gold); color: var(--black); 
-    font-size: 0.75em; font-weight: bold; padding: 5px 10px; border-radius: 12px; z-index: 2; 
-    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-}
-.mod-type-tag { 
-    position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background-color: var(--silver); color: var(--black); 
-    font-size: 0.75em; font-weight: bold; padding: 5px 10px; border-radius: 12px; z-index: 2; 
-    max-width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-}
+.platform-tag.n { background-color: #FF9800; color: var(--black); }
         .rating { display: flex; align-items: center; gap: 5px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1em; letter-spacing: 2px; }
         .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
@@ -617,22 +667,20 @@ a.overlay-btn-primary:hover {
 .overlay-btn-primary { background: var(--gold); color: var(--black); }
 .overlay-btn-secondary { 
     position: relative;
-    background-color: #161616;
-    background-image: 
-        linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.35) 100%),
-        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0, rgba(255, 255, 255, 0.03) 2px, transparent 2px, transparent 4px),
-        repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.45) 0, rgba(0, 0, 0, 0.45) 2px, transparent 2px, transparent 4px);
-    background-size: auto, 6px 6px, 6px 6px;
-    color: var(--silver); 
-    border: 1px solid rgba(192, 192, 192, 0.35) !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08) !important;
+    background-image: none !important;
+    color: var(--silver) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     transition: all 0.3s ease;
     z-index: 1;
 }
 .overlay-btn-secondary:hover {
-    color: var(--white);
-    border-color: var(--gold) !important;
-    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.18);
+    background: rgba(255, 255, 255, 0.15) !important;
+    color: var(--white) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
     transform: scale(1.02);
 }
 .overlay-button:hover { transform: scale(1.04); }
@@ -1135,8 +1183,21 @@ a.overlay-btn-primary:hover {
 .featured-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; border: none; cursor: pointer; font-family: inherit;}
 .featured-button.btn-primary { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
 .featured-button.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
-.featured-button.btn-secondary { background: transparent; border: 2px solid var(--gold); color: var(--gold); }
-.featured-button.btn-secondary:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); transform: translateY(-3px); }
+.featured-button.btn-secondary,
+.btn-secondary { 
+    background: rgba(255, 255, 255, 0.08) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.15) !important; 
+    color: var(--silver) !important; 
+    box-shadow: none !important;
+}
+.featured-button.btn-secondary:hover,
+.btn-secondary:hover { 
+    background: rgba(255, 255, 255, 0.15) !important; 
+    color: #ffffff !important; 
+    border-color: rgba(255, 255, 255, 0.3) !important; 
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important; 
+    transform: translateY(-2px); 
+}
 
 /* Navigation dots for carousel */
 .carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 20px; position: relative; z-index: 2;}
@@ -1240,20 +1301,20 @@ a.overlay-btn-primary:hover {
         .logo .logo-gold-glow,
         .logo-gold-glow {
             color: var(--gold);
-            text-shadow: 0 0 3px rgba(255, 215, 0, 0.25);
+            text-shadow: 0 0 10px var(--glow-gold);
             transition: text-shadow 0.3s ease;
         }
         .logo .logo-silver-glow,
         .logo-silver-glow {
-            color: var(--silver, #e0e6ed);
-            text-shadow: 0 0 3px rgba(255, 255, 255, 0.15);
+            color: var(--silver, #c0c0c0);
+            text-shadow: 0 0 10px var(--glow-silver);
             transition: text-shadow 0.3s ease;
         }
         .logo:hover .logo-gold-glow {
-            text-shadow: 0 0 5px rgba(255, 215, 0, 0.35);
+            text-shadow: 0 0 15px var(--glow-gold);
         }
         .logo:hover .logo-silver-glow {
-            text-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
+            text-shadow: 0 0 15px var(--glow-silver);
         }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
@@ -2367,28 +2428,26 @@ a.overlay-btn-primary:hover {
 
 /* Notification Badge */
 .nav-bell { position: relative; display: inline-block; }
-/* Notification Badge with Number */
 .update-badge {
     position: absolute;
-    top: -6px;
-    right: -8px;
-    min-width: 18px; /* Wider to fit numbers */
-    height: 18px;
+    top: -2px;
+    right: -2px;
+    min-width: 17px; /* Fit single and double digits */
+    height: 17px;
     background-color: var(--red);
     color: var(--white);
-    border-radius: 10px; /* Pill shape for numbers > 9 */
-    box-shadow: 0 0 8px var(--glow-red);
+    border-radius: 9px;
+    box-shadow: 0 0 6px var(--glow-red);
     border: 2px solid var(--black);
-    
-    /* Flexbox to center the number perfectly */
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    font-size: 0.65em;
+    font-size: 10px;
     font-weight: bold;
-    padding: 0 4px; /* Padding for double-digit numbers */
+    padding: 0 4px;
     line-height: 1;
+    pointer-events: none;
+    z-index: 5;
 }
 
 /* PWA Install Banner */
@@ -2940,7 +2999,7 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         left: 6px !important;
         font-size: 0.65em !important;
         padding: 2px 6px !important;
-        max-width: 58% !important;
+        max-width: 48% !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
@@ -2948,10 +3007,12 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
 
     .mod-grid .mod-type-tag {
         top: 6px !important;
-        left: 50% !important; transform: translateX(-50%);
+        right: 6px !important;
+        left: auto !important; 
+        transform: none !important;
         font-size: 0.65em !important;
         padding: 2px 6px !important;
-        max-width: 38% !important;
+        max-width: 48% !important;
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;

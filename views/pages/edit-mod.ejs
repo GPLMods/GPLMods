@@ -38,8 +38,8 @@
     .file-input-label:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
     
     .preview-container { margin-top: 15px; border-radius: 8px; background-color: var(--black); padding: 15px; border: 1px solid #333; display: none; }
-    .draft-preview-button { background-color: #16120a; background-image: repeating-linear-gradient(135deg, rgba(255,215,0,.12) 0 2px, transparent 2px 7px); border-color: var(--gold); color: var(--gold); }
-    .draft-preview-button:hover { background-color: var(--gold); background-image: none; color: var(--black); }
+    .draft-preview-button { background-color: rgba(255, 215, 0, 0.08); border-color: var(--gold); color: var(--gold); }
+    .draft-preview-button:hover { background-color: var(--gold); color: var(--black); }
     #screenshotPreviewContainer { column-count: 2; column-gap: 15px; }
     #screenshotPreviewContainer img { width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; break-inside: avoid; display: block; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
     .video-preview-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 4px; width: 100%; }
@@ -259,6 +259,19 @@
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
     .custom-select { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 15px; background-color: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; color: var(--silver); font-size: 1em; transition: all 0.3s ease; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+    .custom-select-arrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        line-height: 1;
+        transform-origin: 50% 50%;
+        color: var(--silver);
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), color 0.3s ease;
+        font-size: 0.85em;
+        flex-shrink: 0;
+    }
     .custom-select-wrapper.open .custom-select-arrow { transform: rotate(180deg); color: var(--gold); }
     .custom-options { position: absolute; top: 100%; left: 0; right: 0; background-color: var(--dark-gray); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 100; display: none; max-height: 250px; overflow-y: auto; }
     .custom-select-wrapper.open .custom-options { display: block; }
@@ -363,7 +376,7 @@
                 </div>
                 <% } %>
 
-                <div class="auto-fetch-box" style="background-color: #0b1a2a; background-image: repeating-linear-gradient(135deg, rgba(33,150,243,0.12) 0 2px, transparent 2px 7px); border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <div class="auto-fetch-box" style="background-color: #0b1a2a; border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                     <h4 style="color: var(--blue); margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; gap: 8px; text-align: left;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
                     <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px; text-align: left;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
                     <div class="fetch-input-group">

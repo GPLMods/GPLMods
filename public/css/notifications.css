@@ -378,10 +378,14 @@
         position: static !important;
     }
     .nav-bell {
-        padding: 6px 8px !important;
+        padding: 0 !important;
+        margin: 0 !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 1.15rem !important;
+        width: 34px !important;
+        height: 34px !important;
+        box-sizing: border-box !important;
+        font-size: 1.22rem !important;
     }
 }

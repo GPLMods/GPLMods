@@ -54,8 +54,19 @@
     
     .btn-view { background: rgba(33, 150, 243, 0.1); color: var(--blue); border-color: var(--blue); }
     .btn-view:hover { background-color: var(--blue); color: var(--white); }
-    .btn-preview { background: var(--gold); color: var(--black); border-color: var(--gold); box-shadow: 0 0 15px var(--glow-gold); }
-    .btn-preview:hover { background: var(--white); color: var(--black); border-color: var(--white); box-shadow: 0 0 25px var(--glow-gold); transform: translateY(-3px); }
+    .btn-preview { 
+        background: rgba(255, 255, 255, 0.08); 
+        color: var(--silver); 
+        border: 1px solid rgba(255, 255, 255, 0.15); 
+        box-shadow: none;
+    }
+    .btn-preview:hover { 
+        background: rgba(255, 255, 255, 0.15); 
+        color: #ffffff; 
+        border-color: rgba(255, 255, 255, 0.3); 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); 
+        transform: translateY(-2px); 
+    }
     .btn-edit { background: rgba(255, 215, 0, 0.1); color: var(--gold); border-color: var(--gold); }
     .btn-edit:hover { background-color: var(--gold); color: var(--black); }
     .btn-delete { background: rgba(229, 57, 53, 0.1); color: var(--red); border-color: var(--red); }

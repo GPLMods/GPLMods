@@ -715,9 +715,29 @@
         .player-left {
             width: 100%;
             max-width: 100%;
-            justify-content: space-between;
-            padding-right: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 0 45px;
             box-sizing: border-box;
+        }
+        .player-icon-pulse {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .player-track-meta {
+            text-align: center;
+            align-items: center;
+            width: 100%;
+            overflow: hidden;
+        }
+        .player-track-title,
+        .player-track-src {
+            text-align: center;
+            width: 100%;
         }
         .player-center {
             width: 100%;
@@ -729,8 +749,8 @@
         }
     }
 
-        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 3px rgba(255, 215, 0, 0.25); }
-        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 3px rgba(255, 255, 255, 0.15); }
+        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 10px rgba(192, 192, 192, 0.55); }
         </style>
 
 <main class="container">
