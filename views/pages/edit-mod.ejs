@@ -17,20 +17,28 @@
     }
     
     /* Reusing your standard form styles */
-    .upload-form-container { max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; }
+    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; box-sizing: border-box; }
     .upload-form-container h2 { text-align: center; font-size: 2.5em; margin-bottom: 1rem; color: var(--white); }
     .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+    .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; width: 100%; max-width: 100%; min-width: 0; min-inline-size: 0; box-sizing: border-box; margin-left: 0; margin-right: 0; }
     .form-section legend { padding: 0 10px; margin-left: 15px; font-size: 1.3em; font-weight: 600; color: var(--gold); }
-    .form-group { margin-bottom: 25px; position: relative; } 
+    .form-group { margin-bottom: 25px; position: relative; width: 100%; max-width: 100%; box-sizing: border-box; } 
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--silver); }
-    .form-group input[type="text"], .form-group input[type="url"], .form-group select, .form-group textarea { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+    .form-group input[type="text"], .form-group input[type="url"], .form-group select, .form-group textarea { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; padding: 12px 15px; border-radius: 8px; border: 1px solid #333; background-color: var(--black); color: var(--white); font-size: 1em; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 10px var(--glow-gold); }
     .form-group textarea { min-height: 120px; resize: vertical; }
     
-    .icon-upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; padding: 20px; border: 2px dashed #333; border-radius: 15px; background-color: rgba(0,0,0,0.2); }
-    .icon-preview { width: 100px; height: 100px; background-color: var(--black); border-radius: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--gold); overflow: hidden; }
+    .icon-upload-container { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-bottom: 30px; padding: 20px; border: 2px dashed #333; border-radius: 15px; background-color: rgba(0,0,0,0.2); width: 100%; max-width: 100%; box-sizing: border-box; }
+    .icon-upload-container label:first-child { display: block; width: 100%; text-align: center; margin-bottom: 12px; font-weight: 600; color: var(--silver); }
+    .icon-preview { width: 100px; height: 100px; background-color: var(--black); border-radius: 20px; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center; border: 2px solid var(--gold); overflow: hidden; }
     .icon-preview img { width: 100%; height: 100%; object-fit: contain; }
+    
+    .auto-fetch-box { width: 100%; max-width: 100%; box-sizing: border-box; }
+    #arch-group { width: 100%; max-width: 100%; box-sizing: border-box; }
+    #platform-flags-container { width: 100%; max-width: 100%; box-sizing: border-box; }
+    .platform-flags-box { width: 100%; max-width: 100%; box-sizing: border-box; }
+    .platform-flags-box label { display: flex !important; align-items: flex-start !important; gap: 10px !important; width: 100% !important; box-sizing: border-box !important; }
+    .platform-flags-box label span { flex: 1; word-break: break-word; overflow-wrap: break-word; }
     
     .file-input-wrapper { position: relative; display: inline-block; width: 100%; }
     input[type="file"] { display: none; }
@@ -195,7 +203,7 @@
     .ql-editor { word-wrap: break-word !important; overflow-wrap: break-word !important; word-break: break-word !important; max-width: 100% !important; padding: 12px 15px !important; text-align: left !important; }
     .ql-editor p, .form-group textarea, .form-group input { text-align: left !important; }
     .ql-editor p { margin-bottom: 0.5em !important; color: var(--white) !important; }
-    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; overflow-x: hidden; }
+    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; overflow-x: hidden; box-sizing: border-box; }
 
     /* Auto-Fetch Responsive Layout */
     .fetch-input-group {
@@ -203,14 +211,22 @@
         gap: 10px;
         flex-wrap: wrap;
         align-items: center;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     .fetch-platform-col {
         flex: 0 0 170px;
-        min-width: 150px;
+        min-width: 140px;
+        max-width: 100%;
+        box-sizing: border-box;
         z-index: 10;
     }
     .fetch-url-input {
-        flex: 1 1 240px;
+        flex: 1 1 200px;
+        min-width: 0 !important;
+        max-width: 100%;
+        box-sizing: border-box;
         padding: 10px 14px;
         height: 45px;
         border-radius: 8px;
@@ -228,7 +244,7 @@
         border: none;
         border-radius: 8px;
         height: 45px;
-        padding: 0 22px;
+        padding: 0 20px;
         font-weight: bold;
         cursor: pointer;
         white-space: nowrap;
@@ -238,20 +254,98 @@
         justify-content: center;
         gap: 8px;
         transition: transform 0.2s, opacity 0.2s;
+        box-sizing: border-box;
     }
     .fetch-btn:hover {
         opacity: 0.9;
         transform: translateY(-1px);
     }
-    @media (max-width: 650px) {
-        .fetch-input-group {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 12px;
-        }
-        .fetch-platform-col, .fetch-platform-col .custom-select-wrapper, .fetch-url-input, .fetch-btn {
+    @media (max-width: 768px) {
+        .container {
             width: 100% !important;
+            max-width: 100% !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+            box-sizing: border-box !important;
+        }
+        .upload-form-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 18px 14px !important;
+            margin: 1rem auto !important;
+            border-radius: 12px !important;
+            box-sizing: border-box !important;
+        }
+        .upload-form-container h2 {
+            font-size: 1.8em !important;
+        }
+        .form-section {
+            padding: 16px 12px !important;
+            margin-bottom: 20px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            min-inline-size: 0 !important;
+            box-sizing: border-box !important;
+        }
+        .form-section legend {
+            margin-left: 8px !important;
+            font-size: 1.15em !important;
+            padding: 0 6px !important;
+        }
+        .icon-upload-container {
+            padding: 16px 12px !important;
+            margin-bottom: 20px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .auto-fetch-box {
+            padding: 16px 12px !important;
+            margin-bottom: 20px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        #arch-group {
+            padding: 16px 12px !important;
+            margin-top: 15px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .platform-flags-box {
+            padding: 16px 12px !important;
+            margin-bottom: 12px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .fetch-input-group {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+            width: 100% !important;
+        }
+        .fetch-platform-col,
+        .fetch-platform-col .custom-select-wrapper,
+        .fetch-url-input,
+        .fetch-btn {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
             flex: 1 1 100% !important;
+            box-sizing: border-box !important;
+        }
+        .fetch-url-input {
+            font-size: 0.9em !important;
+            padding: 10px 12px !important;
+        }
+        .custom-select {
+            padding: 12px 14px !important;
+        }
+        .form-group {
+            margin-bottom: 18px !important;
+        }
+        .submit-button {
+            padding: 13px 18px !important;
+            font-size: 1.1em !important;
         }
     }
 
@@ -369,14 +463,14 @@
                     <div class="icon-preview" id="iconPreviewBox">
                         <img id="iconImage" src="<%= file.iconUrl %>" alt="Icon Preview" style="display:block;">
                     </div>
-                    <div style="max-width: 250px; text-align: center;">
+                    <div style="width: 100%; max-width: 250px; margin: 0 auto; text-align: center;">
                         <input type="file" id="modIcon" name="softwareIcon" accept="image/*">
                         <label for="modIcon" class="file-input-label">Change Icon (Optional)</label>
                     </div>
                 </div>
                 <% } %>
 
-                <div class="auto-fetch-box" style="background-color: #0b1a2a; border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <div class="auto-fetch-box" style="background-color: #0b1a2a; border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px; width: 100%; box-sizing: border-box;">
                     <h4 style="color: var(--blue); margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; gap: 8px; text-align: left;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>
                     <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 15px; text-align: left;">Paste the official store link to automatically fill the description, developer, OS, and Age requirements below!</p>
                     <div class="fetch-input-group">
@@ -475,7 +569,7 @@
                     </select>
                     <div class="custom-select-wrapper" id="platformWrapper">
                         <div class="custom-select">
-                            <span class="selected-text"><%= file.category ? file.category.toUpperCase() : 'Select a platform...' %></span>
+                            <span class="selected-text"><%= file.category ? (file.category === 'android' ? 'Android' : file.category === 'ios-jailed' ? 'iOS - Jailed (IPA)' : file.category === 'ios-jailbroken' ? 'iOS - Jailbroken (DEB)' : file.category === 'windows' ? 'Windows' : file.category === 'wordpress' ? 'WordPress' : file.category) : 'Select a platform...' %></span>
                             <i class="fas fa-chevron-down custom-select-arrow"></i>
                         </div>
                         <div class="custom-options">
@@ -536,7 +630,7 @@
                     </div>
                 </div>
 
-                <div class="form-group" id="arch-group" style="display: none; background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px;">
+                <div class="form-group" id="arch-group" style="display: none; background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px; width: 100%; box-sizing: border-box;">
                     <label style="color: var(--gold);"><i class="fas fa-microchip"></i> Architecture Support <span id="arch-req-star" style="color: var(--red); display: none;">*</span></label>
                     <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 10px;">Select all hardware architectures this file supports.</p>
                     <div class="custom-select-wrapper" id="archWrapper">
@@ -549,7 +643,7 @@
                 </div>
 
                 <!-- Platform-Specific Compatibility Flags -->
-                <div id="platform-flags-container" style="display: none; margin-top: 15px;">
+                <div id="platform-flags-container" style="display: none; margin-top: 15px; width: 100%; box-sizing: border-box;">
                     <!-- Android Flags -->
                     <div id="flags-android" class="platform-flags-box" style="display: none; background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25); margin-bottom: 15px;">
                         <h4 style="color: #00e676; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
