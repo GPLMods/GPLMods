@@ -2555,6 +2555,53 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('autosave-status');
         const snapshotButton = document.getElementById('show-snapshots');
         const snapshotList = document.getElementById('snapshot-list');
+
+        if (snapshotButton && snapshotList) {
+            snapshotButton.addEventListener('click', async () => {
+                if (snapshotList.style.display === 'block' && snapshotList.dataset.loaded === 'true') {
+                    snapshotList.style.display = 'none';
+                    snapshotList.dataset.loaded = 'false';
+                    return;
+                }
+                snapshotList.innerHTML = '<div style="padding: 8px; color: var(--silver); font-size: 0.85rem;"><i class="fas fa-spinner fa-spin"></i> Checking saved drafts...</div>';
+                snapshotList.style.display = 'block';
+                try {
+                    const response = await fetch('/api/mods/<%= file._id %>/snapshots');
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const data = await response.json();
+                    if (data && data.snapshots && data.snapshots.length > 0) {
+                        snapshotList.innerHTML = data.snapshots.map(snapshot => `
+                            <button type="button" data-snapshot-id="${snapshot._id}" style="display:flex; justify-content:space-between; align-items:center; width:100%; margin:6px 0; padding:10px 14px; text-align:left; background:rgba(255,255,255,0.05); border:1px solid rgba(255,215,0,0.3); color:var(--white); border-radius:6px; cursor:pointer; transition:background 0.2s;">
+                                <span><i class="fas fa-history" style="color:var(--gold); margin-right:8px;"></i>${new Date(snapshot.createdAt).toLocaleString()}</span>
+                                <span style="color:var(--gold); font-weight:700; font-size:0.8rem;">Restore</span>
+                            </button>
+                        `).join('');
+                        snapshotList.querySelectorAll('[data-snapshot-id]').forEach(button => button.addEventListener('click', async () => {
+                            if (!confirm('Restore this saved version? Current unsaved changes will be overwritten.')) return;
+                            await fetch(`/api/mods/<%= file._id %>/snapshots/${button.dataset.snapshotId}/restore`, { method: 'POST' });
+                            window.location.reload();
+                        }));
+                    } else {
+                        snapshotList.innerHTML = `
+                            <div style="padding: 10px 14px; background: rgba(229, 57, 53, 0.12); border: 1px solid rgba(229, 57, 53, 0.4); border-radius: 8px; color: #ff5252; display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <span><strong>[ERR: NO_SAVED_DRAFTS]</strong> No saved drafts or versions found for this mod.</span>
+                            </div>
+                        `;
+                    }
+                    snapshotList.dataset.loaded = 'true';
+                } catch (err) {
+                    snapshotList.innerHTML = `
+                        <div style="padding: 10px 14px; background: rgba(229, 57, 53, 0.12); border: 1px solid rgba(229, 57, 53, 0.4); border-radius: 8px; color: #ff5252; display: flex; align-items: center; gap: 8px; font-size: 0.85rem;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span><strong>[ERR: NO_SAVED_DRAFTS]</strong> Unable to retrieve draft history.</span>
+                        </div>
+                    `;
+                    snapshotList.dataset.loaded = 'true';
+                }
+            });
+        }
+
         if (!form || !status || "<%= user && user.autoSaveEnabled ? 'true' : 'false' %>" !== "true") return;
         let timer;
         const save = async () => {
@@ -2568,13 +2615,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const schedule = () => { clearTimeout(timer); timer = setTimeout(() => save().catch(() => { status.textContent = 'Auto-save unavailable'; }), 1200); };
         form.addEventListener('input', schedule);
         form.addEventListener('change', schedule);
-        snapshotButton?.addEventListener('click', async () => {
-            const response = await fetch('/api/mods/<%= file._id %>/snapshots');
-            const data = await response.json();
-            snapshotList.innerHTML = data.snapshots?.length ? data.snapshots.map(snapshot => `<button type="button" data-snapshot-id="${snapshot._id}" style="display:block; width:100%; margin:5px 0; padding:8px; text-align:left; background:transparent; border:1px solid #444; color:var(--silver); border-radius:6px; cursor:pointer;">${new Date(snapshot.createdAt).toLocaleString()} - Restore</button>`).join('') : '<span style="color:var(--silver);">No saved versions yet.</span>';
-            snapshotList.style.display = 'block';
-            snapshotList.querySelectorAll('[data-snapshot-id]').forEach(button => button.addEventListener('click', async () => { await fetch(`/api/mods/<%= file._id %>/snapshots/${button.dataset.snapshotId}/restore`, { method: 'POST' }); window.location.reload(); }));
-        });
     });
 </script>
 

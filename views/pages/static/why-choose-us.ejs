@@ -1,75 +1,315 @@
 <%- include('../../partials/header') %>
 
 <style>
-    .comparison-header { text-align: center; padding: 60px 20px 40px 20px; }
-    .comparison-header h1 { font-size: 3.2em; color: var(--white); margin-bottom: 10px; line-height: 1.2; }
-    .comparison-header h1 span.brand-gpl { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    .comparison-header h1 span.brand-mods { color: var(--silver); text-shadow: 0 0 3px var(--glow-silver); }
-    .comparison-header p { color: var(--silver); font-size: 1.15em; max-width: 800px; margin: 15px auto 0 auto; line-height: 1.6; }
+    .comparison-hero { 
+        text-align: center; 
+        padding: 50px 20px 30px 20px; 
+        position: relative;
+    }
+    
+    .hero-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(255, 215, 0, 0.12);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        color: var(--gold);
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+    }
 
+    .comparison-hero h1 { 
+        font-size: 3.2em; 
+        color: var(--white); 
+        margin-bottom: 15px; 
+        line-height: 1.2; 
+        font-weight: 800;
+    }
+    .comparison-hero h1 span.brand-gpl { 
+        color: var(--gold); 
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); 
+    }
+    .comparison-hero h1 span.brand-mods { 
+        color: #f0f4f8; 
+        text-shadow: 0 0 10px rgba(240, 244, 248, 0.3); 
+    }
+    .comparison-hero p { 
+        color: var(--silver); 
+        font-size: 1.15em; 
+        max-width: 820px; 
+        margin: 0 auto; 
+        line-height: 1.6; 
+    }
+
+    /* Key Value Metric Pills Ribbon */
+    .metric-ribbon {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        max-width: 1050px;
+        margin: 35px auto 50px auto;
+        padding: 0 15px;
+    }
+    .metric-pill-card {
+        background: linear-gradient(145deg, rgba(22, 22, 26, 0.85) 0%, rgba(14, 14, 18, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        transition: transform 0.25s ease, border-color 0.25s ease;
+    }
+    .metric-pill-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 215, 0, 0.3);
+    }
+    .metric-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    .metric-icon-gold { background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.3); }
+    .metric-icon-green { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+    .metric-icon-blue { background: rgba(33, 150, 243, 0.15); color: #60a5fa; border: 1px solid rgba(33, 150, 243, 0.3); }
+    .metric-icon-purple { background: rgba(156, 39, 176, 0.15); color: #ba68c8; border: 1px solid rgba(156, 39, 176, 0.3); }
+
+    .metric-pill-info h4 { margin: 0 0 2px 0; color: #fff; font-size: 1rem; font-weight: 700; }
+    .metric-pill-info p { margin: 0; color: var(--silver); font-size: 0.8rem; }
+
+    /* Comparison Sections */
     .comparison-section { margin-bottom: 60px; }
-    .section-title { text-align: center; color: var(--white); font-size: 2em; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 15px; }
-    .section-title i { color: var(--gold); }
+    .section-headline { 
+        text-align: center; 
+        color: var(--white); 
+        font-size: 2.1em; 
+        margin-bottom: 30px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        gap: 14px; 
+        font-weight: 700;
+    }
+    .section-headline i { color: var(--gold); filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4)); }
 
-    /* The Comparison Grid */
+    /* The High-End Comparison Grid */
     .vs-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0;
-        max-width: 1000px;
-        margin: 0 auto 40px auto;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.5);
-        border: 1px solid #333;
+        gap: 24px;
+        max-width: 1050px;
+        margin: 0 auto;
     }
 
-    .vs-col { padding: 40px 30px; }
-    .vs-col-gpl { background-color: rgba(26, 26, 26, 0.95); position: relative; border-right: 1px solid #333; }
-    .vs-col-gpl::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--gold); box-shadow: 0 0 6px var(--glow-gold); }
-    .vs-col-other { background-color: rgba(10, 10, 10, 0.95); position: relative; }
-    .vs-col-other::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--red); box-shadow: 0 0 6px var(--glow-red); }
+    .vs-col { 
+        border-radius: 18px;
+        padding: 36px 30px; 
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.3s ease;
+    }
+    .vs-col:hover {
+        transform: translateY(-4px);
+    }
 
-    .vs-header { font-size: 1.8em; font-weight: 700; margin-bottom: 25px; text-align: center; }
-    .vs-header-gpl { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    .vs-header-gpl .brand-mods { color: var(--silver); text-shadow: 0 0 3px var(--glow-silver); }
-    .vs-header-other { color: var(--red); text-shadow: 0 0 4px var(--glow-red); }
+    .vs-col-gpl { 
+        background: linear-gradient(155deg, rgba(22, 28, 22, 0.95) 0%, rgba(12, 16, 12, 0.98) 100%); 
+        border: 1px solid rgba(76, 175, 80, 0.35); 
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(76, 175, 80, 0.08);
+    }
+    .vs-col-gpl::before { 
+        content: ''; 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        height: 4px; 
+        background: linear-gradient(90deg, #4caf50, var(--gold)); 
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.6); 
+    }
 
-    .vs-list { list-style: none; padding: 0; margin: 0; }
-    .vs-list li { margin-bottom: 25px; display: flex; align-items: flex-start; gap: 15px; line-height: 1.6; }
+    .vs-col-other { 
+        background: linear-gradient(155deg, rgba(28, 16, 16, 0.9) 0%, rgba(16, 10, 10, 0.98) 100%); 
+        border: 1px solid rgba(244, 67, 54, 0.3); 
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6);
+    }
+    .vs-col-other::before { 
+        content: ''; 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        right: 0; 
+        height: 4px; 
+        background: linear-gradient(90deg, #f44336, #b71c1c); 
+        box-shadow: 0 0 10px rgba(244, 67, 54, 0.4); 
+    }
+
+    .vs-header { 
+        font-size: 1.6em; 
+        font-weight: 800; 
+        margin-bottom: 25px; 
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .vs-header-gpl { 
+        color: var(--gold); 
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); 
+    }
+    .vs-header-other { 
+        color: #ff5252; 
+        text-shadow: 0 0 10px rgba(255, 82, 82, 0.3); 
+    }
+
+    .vs-badge-tag {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+    }
+    .vs-badge-safe { background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.4); }
+    .vs-badge-danger { background: rgba(244, 67, 54, 0.2); color: #ff5252; border: 1px solid rgba(244, 67, 54, 0.4); }
+
+    .vs-list { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+    .vs-list li { 
+        margin-bottom: 24px; 
+        display: flex; 
+        align-items: flex-start; 
+        gap: 15px; 
+        line-height: 1.55; 
+    }
     .vs-list li:last-child { margin-bottom: 0; }
     
-    .vs-icon { font-size: 1.3em; margin-top: 3px; flex-shrink: 0; }
-    .icon-gpl { color: var(--green); }
-    .icon-other { color: var(--red); }
+    .vs-icon-wrap {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .vs-icon-gpl { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.35); box-shadow: 0 0 8px rgba(76, 175, 80, 0.2); }
+    .vs-icon-other { background: rgba(244, 67, 54, 0.15); color: #ff5252; border: 1px solid rgba(244, 67, 54, 0.35); }
 
-    .vs-text strong { display: block; font-size: 1.1em; margin-bottom: 5px; }
+    .vs-text strong { display: block; font-size: 1.05em; margin-bottom: 4px; font-weight: 700; }
     .vs-text-gpl strong { color: var(--white); }
-    .vs-text-gpl span { color: var(--silver); font-size: 0.95em; }
-    .vs-text-other strong { color: #ccc; }
-    .vs-text-other span { color: #888; font-size: 0.95em; }
+    .vs-text-gpl span { color: #b0bec5; font-size: 0.93em; line-height: 1.5; display: block; }
+    .vs-text-other strong { color: #e0e0e0; }
+    .vs-text-other span { color: #888888; font-size: 0.93em; line-height: 1.5; display: block; }
 
     /* CTA Area */
-    .cta-area { text-align: center; padding: 50px 20px; background: linear-gradient(to bottom, transparent, var(--dark-gray)); border-radius: 20px; border-bottom: 2px solid var(--gold); max-width: 900px; margin: 0 auto 60px auto; }
-    .cta-area h2 { color: var(--white); font-size: 2.2em; margin-bottom: 15px; }
-    .cta-btn { display: inline-block; background-color: var(--gold); color: var(--black); padding: 15px 40px; border-radius: 30px; font-weight: 800; font-size: 1.2em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 0 20px var(--glow-gold); margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
-    .cta-btn:hover { transform: translateY(-5px); box-shadow: 0 0 30px var(--glow-gold); background-color: #fff; }
+    .cta-area { 
+        text-align: center; 
+        padding: 55px 25px; 
+        background: linear-gradient(145deg, rgba(22, 22, 26, 0.9) 0%, rgba(12, 12, 16, 0.95) 100%); 
+        border-radius: 20px; 
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        border-top: 3px solid var(--gold);
+        max-width: 950px; 
+        margin: 30px auto 70px auto; 
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 215, 0, 0.12);
+    }
+    .cta-area h2 { color: var(--white); font-size: 2.3em; margin-bottom: 12px; font-weight: 800; }
+    
+    .cta-btn-gold { 
+        display: inline-flex; 
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); 
+        color: #000000 !important; 
+        padding: 16px 44px; 
+        border-radius: 35px; 
+        font-weight: 800; 
+        font-size: 1.15em; 
+        text-decoration: none; 
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        box-shadow: 0 6px 22px rgba(255, 215, 0, 0.5), 0 0 35px rgba(255, 215, 0, 0.25); 
+        margin-top: 15px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.8px; 
+    }
+    .cta-btn-gold:hover { 
+        transform: translateY(-4px) scale(1.02); 
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.7), 0 0 50px rgba(255, 215, 0, 0.35); 
+        background: linear-gradient(135deg, #ffe033 0%, #ffb700 100%);
+    }
 
-    @media (max-width: 800px) {
-        .vs-grid { grid-template-columns: 1fr; border: none; box-shadow: none; gap: 20px; background: transparent; }
-        .vs-col { border-radius: 15px; border: 1px solid #333; }
-        .vs-col-gpl { border-right: 1px solid #333; }
+    @media (max-width: 820px) {
+        .vs-grid { grid-template-columns: 1fr; gap: 20px; }
+        .comparison-hero h1 { font-size: 2.3em; }
+        .section-headline { font-size: 1.6em; }
+        .metric-ribbon { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+        .metric-ribbon { grid-template-columns: 1fr; }
+        .vs-col { padding: 26px 18px; }
+        .cta-btn-gold { width: 100%; justify-content: center; box-sizing: border-box; }
     }
 </style>
 
 <main>
-    <div class="comparison-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-            <%- include('../../partials/go-back-button', { fallback: '/' }) %>
-            <!-- ======================================== -->
+    <div class="comparison-hero">
+        <%- include('../../partials/go-back-button', { fallback: '/' }) %>
         <div class="container">
+            <div class="hero-badge-pill">
+                <i class="fas fa-gem"></i> The New Standard In Transparent Modding
+            </div>
             <h1>Why Choose <span class="brand-gpl">GPL</span> <span class="brand-mods">Mods?</span></h1>
-            <p>The modding community deserves better. See how GPL Mods is setting a new industry standard for safety, transparency, and user empowerment compared to traditional mod sites.</p>
+            <p>The global modding community deserves true security and transparency. Explore how GPL Mods sets an uncompromising standard for safety, verified integrity, and user empowerment.</p>
+        </div>
+    </div>
+
+    <!-- Metric Ribbon Summary -->
+    <div class="metric-ribbon">
+        <div class="metric-pill-card">
+            <div class="metric-icon-box metric-icon-green"><i class="fas fa-shield-virus"></i></div>
+            <div class="metric-pill-info">
+                <h4>100% Scanned</h4>
+                <p>Live VirusTotal API checks</p>
+            </div>
+        </div>
+        <div class="metric-pill-card">
+            <div class="metric-icon-box metric-icon-gold"><i class="fas fa-certificate"></i></div>
+            <div class="metric-pill-info">
+                <h4>14-Day Audit</h4>
+                <p>Real community tested badge</p>
+            </div>
+        </div>
+        <div class="metric-pill-card">
+            <div class="metric-icon-box metric-icon-blue"><i class="fas fa-bolt"></i></div>
+            <div class="metric-pill-info">
+                <h4>1-Click Repos</h4>
+                <p>AltStore, Scarlet, F-Droid</p>
+            </div>
+        </div>
+        <div class="metric-pill-card">
+            <div class="metric-icon-box metric-icon-purple"><i class="fas fa-lock"></i></div>
+            <div class="metric-pill-info">
+                <h4>Data Sovereignty</h4>
+                <p>Zero harvesting, 1-click erase</p>
+            </div>
         </div>
     </div>
 
@@ -77,56 +317,62 @@
 
         <!-- SECURITY & TRANSPARENCY -->
         <section class="comparison-section">
-            <h2 class="section-title"><i class="fas fa-shield-check"></i> Security & Transparency</h2>
+            <h2 class="section-headline"><i class="fas fa-shield-alt"></i> Security &amp; Transparency</h2>
             <div class="vs-grid">
                 <div class="vs-col vs-col-gpl">
-                    <div class="vs-header vs-header-gpl"><span class="brand-gpl">GPL</span> <span class="brand-mods">Mods</span></div>
+                    <div class="vs-header vs-header-gpl">
+                        <span><span class="brand-gpl">GPL</span> <span style="color: #f0f4f8;">Mods</span></span>
+                        <span class="vs-badge-tag vs-badge-safe"><i class="fas fa-check-circle"></i> Certified</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>Live VirusTotal Integration</strong>
                                 <span>Real-time API scans display exact threat metrics for every file. 14-day community and admin testing yields real "Certified Safe" badges.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>100% Safe Cross-Platform Mods</strong>
-                                <span>Strict moderation ensures that all mods for Android, iOS, Windows, and WordPress function exactly as intended without malicious payloads.</span>
+                                <span>Strict moderation ensures that all mods for Android, iOS, Windows, and WordPress function cleanly without malicious payloads or hidden coin-miners.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
-                                <strong>Open-Source & Community-Driven</strong>
-                                <span>Our platform architecture is transparent. The code powering our community is available on GitHub for anyone to audit.</span>
+                                <strong>Open-Source &amp; Community-Audited</strong>
+                                <span>Our platform architecture is transparent. The code powering our community is public and auditable by cybersecurity enthusiasts.</span>
                             </div>
                         </li>
                     </ul>
                 </div>
                 <div class="vs-col vs-col-other">
-                    <div class="vs-header vs-header-other">Other Sites</div>
+                    <div class="vs-header vs-header-other">
+                        <span>Other Mod Sites</span>
+                        <span class="vs-badge-tag vs-badge-danger"><i class="fas fa-times-circle"></i> High Risk</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
                                 <strong>Fake Safety Certifications</strong>
-                                <span>Security scan results are hidden, faked, or bypassed entirely. Badges are used purely to deceive users into downloading.</span>
+                                <span>Security scan results are hidden, faked, or bypassed entirely. Badges are purely aesthetic illusions designed to trick users into downloading.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>High Risk of Spyware</strong>
-                                <span>While files may "work," they are frequently injected with hidden malware, spyware, and crypto-miners.</span>
+                                <strong>High Risk of Spyware &amp; Payloads</strong>
+                                <span>While files may appear to work, binaries are frequently repacked with hidden telemetry, spyware, and cryptojacking scripts.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
                                 <strong>Closed-Source Agendas</strong>
-                                <span>Run by shadowy groups or individuals with proprietary codebases designed to harvest data without user knowledge.</span>
+                                <span>Run by anonymous operators with proprietary backdoors engineered to harvest device identifiers without user consent.</span>
                             </div>
                         </li>
                     </ul>
@@ -134,70 +380,78 @@
             </div>
         </section>
 
-        <!-- USER EXPERIENCE & FEATURES -->
+        <!-- USER EXPERIENCE & ACCESS -->
         <section class="comparison-section">
-            <h2 class="section-title"><i class="fas fa-mobile-alt"></i> User Experience & Access</h2>
+            <h2 class="section-headline"><i class="fas fa-mobile-alt"></i> User Experience &amp; Access</h2>
             <div class="vs-grid">
                 <div class="vs-col vs-col-gpl">
+                    <div class="vs-header vs-header-gpl">
+                        <span><span class="brand-gpl">GPL</span> <span style="color: #f0f4f8;">Mods</span></span>
+                        <span class="vs-badge-tag vs-badge-safe"><i class="fas fa-bolt"></i> Streamlined</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>One-Click Direct Downloads</strong>
-                                <span>Lightning-fast, direct cloud servers. Free users may see standard monetized links from our Distributor Partners, but premium members skip everything.</span>
+                                <span>Lightning-fast cloud mirrors. Free users get clean access without endless loops, while VIP members bypass countdowns and download directly.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>Authentic Community Metrics</strong>
-                                <span>Downloads, views, star ratings, and "Working" votes are 100% authentic and driven by real, registered users.</span>
+                                <span>Downloads, views, star ratings, and "Working" votes are 100% authentic and driven strictly by registered users—never artificially inflated.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
-                                <strong>Seamless Third-Party Repo Support</strong>
-                                <span>Dedicated integrations for SideStore, AltStore, Esign, F-Droid, and Neo Store with one-click direct installs without manually adding repos.</span>
+                                <strong>Native Third-Party Repo Support</strong>
+                                <span>Direct integrations for AltStore, SideStore, Scarlet, LiveContainer, F-Droid, and Neo Store with 1-click install links.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
-                                <strong>Clean, Ad-Light UI</strong>
-                                <span>A beautiful dark theme that respects your screen real estate. No intrusive pop-ups.</span>
+                                <strong>Clean, Non-Intrusive Dark UI</strong>
+                                <span>A modern theme designed with respect for your screen real estate. Zero rogue pop-unders or forced notification triggers.</span>
                             </div>
                         </li>
                     </ul>
                 </div>
                 <div class="vs-col vs-col-other">
+                    <div class="vs-header vs-header-other">
+                        <span>Other Mod Sites</span>
+                        <span class="vs-badge-tag vs-badge-danger"><i class="fas fa-exclamation-triangle"></i> Hostile</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>Broken Links & Infinite Ad-Loops</strong>
-                                <span>Dead mirrors, endless redirects, and aggressive PPD (Pay-Per-Download) barriers that make accessing the file nearly impossible.</span>
+                                <strong>Broken Links &amp; Infinite Ad-Loops</strong>
+                                <span>Dead mirrors, fake "Download" buttons that trigger malware ads, and aggressive Pay-Per-Download barriers that block access.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>Manipulated Statistics</strong>
-                                <span>Fake download counts and bot-generated reviews designed to artificially boost file rankings and mislead visitors.</span>
+                                <strong>Manipulated Bot Statistics</strong>
+                                <span>Fabricated download numbers and bot reviews generated automatically to artificially inflate trust.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
                                 <strong>Fragmented iOS/Android Support</strong>
-                                <span>Files are provided raw, forcing users to jump through hoops or install untrusted profile configurations to use them.</span>
+                                <span>Unorganized raw files forcing users to jump through malicious third-party profile downloads and shady install certificates.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>Aggressive Pop-Unders</strong>
-                                <span>User interfaces saturated with deceptive banners, invisible overlays, and malicious pop-under ads.</span>
+                                <strong>Aggressive Pop-Unders &amp; Screen Hijacks</strong>
+                                <span>Saturated with invisible click-jack layers, notification spam requests, and forced redirects.</span>
                             </div>
                         </li>
                     </ul>
@@ -207,68 +461,76 @@
 
         <!-- EMPOWERMENT & PRIVACY -->
         <section class="comparison-section">
-            <h2 class="section-title"><i class="fas fa-user-lock"></i> Creator Empowerment & Privacy</h2>
+            <h2 class="section-headline"><i class="fas fa-user-lock"></i> Creator Empowerment &amp; Privacy</h2>
             <div class="vs-grid">
                 <div class="vs-col vs-col-gpl">
+                    <div class="vs-header vs-header-gpl">
+                        <span><span class="brand-gpl">GPL</span> <span style="color: #f0f4f8;">Mods</span></span>
+                        <span class="vs-badge-tag vs-badge-safe"><i class="fas fa-shield-alt"></i> Empowered</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
-                                <strong>Creator Dashboard & Mod Requests</strong>
-                                <span>Any registered user can upload mods, track detailed analytics, and request new updates from the community.</span>
+                                <strong>Creator Dashboard &amp; Mod Requests</strong>
+                                <span>Any registered creator can upload mods, track analytics, manage version histories, and respond to community requests.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>Total Data Sovereignty</strong>
                                 <span>You own your data. End-to-end encrypted storage. Edit, modify, or permanently wipe your account and uploads with a single click.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
                                 <strong>Distributor Partnership Program</strong>
-                                <span>We empower creators. Organizations can monetize their own links (Linkvertise, etc.) while leveraging our massive user base for traffic.</span>
+                                <span>Creators can monetize their own links (Linkvertise, Work.ink, etc.) with 0% platform commission while leveraging our global audience.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-check-circle vs-icon icon-gpl"></i>
+                            <div class="vs-icon-wrap vs-icon-gpl"><i class="fas fa-check"></i></div>
                             <div class="vs-text vs-text-gpl">
-                                <strong>Supported by the Community</strong>
-                                <span>Our servers are kept alive through transparent user donations, Premium memberships, and collaborative partnerships.</span>
+                                <strong>Ethical Community Sustenance</strong>
+                                <span>Our servers are kept alive through transparent donations, voluntary VIP memberships, and ethical partner sponsorships.</span>
                             </div>
                         </li>
                     </ul>
                 </div>
                 <div class="vs-col vs-col-other">
+                    <div class="vs-header vs-header-other">
+                        <span>Other Mod Sites</span>
+                        <span class="vs-badge-tag vs-badge-danger"><i class="fas fa-ban"></i> Exploitative</span>
+                    </div>
                     <ul class="vs-list">
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
                                 <strong>Admin Gatekeeping</strong>
-                                <span>Only site owners are permitted to upload content, monopolizing credit and stifling community collaboration.</span>
+                                <span>Only site owners are permitted to upload content, monopolizing credit and stifling community modders from sharing their work.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>Data Trapping & Selling</strong>
-                                <span>Your personal information is quietly harvested and sold to third parties. Deleting your account or data is often impossible.</span>
+                                <strong>Data Trapping &amp; Telemetry Brokerage</strong>
+                                <span>Personal browsing habits and device signatures are quietly brokered to third-party ad networks with no delete option.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
                                 <strong>Zero Revenue Share</strong>
-                                <span>Other sites steal creator content, host it themselves, and keep 100% of the generated ad revenue.</span>
+                                <span>Sites scrape creator content without attribution, host it on ad-stuffed portals, and retain 100% of the proceeds.</span>
                             </div>
                         </li>
                         <li>
-                            <i class="fas fa-times-circle vs-icon icon-other"></i>
+                            <div class="vs-icon-wrap vs-icon-other"><i class="fas fa-times"></i></div>
                             <div class="vs-text vs-text-other">
-                                <strong>Exploitative Business Models</strong>
-                                <span>Servers are sustained entirely by exploiting user privacy and compromising device security.</span>
+                                <strong>Predatory Monetization</strong>
+                                <span>Financially driven by exploiting visitors' trust and monetizing malware-laden installers.</span>
                             </div>
                         </li>
                     </ul>
@@ -279,11 +541,17 @@
         <!-- Call to Action -->
         <div class="cta-area">
             <h2>Experience the Difference</h2>
-            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1.1em;">Stop gambling with your device's security. Join a community built on transparency and trust.</p>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1.15em; max-width: 650px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                Stop gambling with your device's security and data. Join a thriving community engineered around transparency, verified integrity, and respect.
+            </p>
             <% if (!user) { %>
-                <a href="/register" class="cta-btn">Create a Free Account</a>
+                <a href="/register" class="cta-btn-gold">
+                    <i class="fas fa-user-plus"></i> Create a Free Account
+                </a>
             <% } else { %>
-                <a href="/" class="cta-btn">Browse Safe Mods Now</a>
+                <a href="<%= user ? '/home' : '/' %>" class="cta-btn-gold">
+                    <i class="fas fa-compass"></i> Explore Verified Mods Now
+                </a>
             <% } %>
         </div>
 

@@ -114,32 +114,142 @@
             </div>
             <!-- ======== END OF SOCIAL ICONS ======== -->
 
-            <!-- THIS IS THE ACTUAL FOOTER CONTENT. CRAWLERS MUST SEE THIS. -->
-            <div class="footer-links">
-                <a href="/about">About Us</a>
-                <a href="/faq">FAQ</a>
-                <a href="/dmca">DMCA</a>
-                <a href="/tos">Terms of Service</a>
-                <a href="/privacy-policy">Privacy Policy</a>
-                <a href="/refund-policy">Refund Policy</a>
-                <a href="/upload-policy">Upload & Update Policy</a>
-                <a href="/distributor-features">Partnership Benefits</a>
-                <a href="/partnership-policy">Distributor Partnership Policy</a>
-                <a href="/why-choose-us">Why Choose Us</a>
-                <a href="/understanding-scans">Understanding Scans</a>
-                <a href="/licenses">License Hub</a>
-                <a href="/source">Source Code Hub</a>
-                <a href="/repos">App Repositories</a>
-                <a href="/membership">VIP Membership</a>
-                <a href="/my-membership">Membership Status</a>
-                <a href="/volunteer">Volunteer Team</a>
-                <a href="/donate">Donate Us!</a>
-                <a href="/sponsor">Sponsor Infrastructure</a>
-                <a href="/promote">Promote Your Mods</a>
-                <a href="/unsubscribe">Unsubscribe Newsletter</a>
-                <a href="/ai-directory">Site Map</a>
+            <!-- ======== STRUCTURED FOOTER NAVIGATION GRID ======== -->
+            <style>
+                .footer-nav-grid {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 32px;
+                    text-align: left;
+                    margin: 35px 0 30px 0;
+                    padding-bottom: 30px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                .footer-column h4 {
+                    color: var(--gold);
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    margin: 0 0 16px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    letter-spacing: 0.6px;
+                    text-transform: uppercase;
+                }
+                .footer-column h4 i {
+                    font-size: 1.05em;
+                }
+                .footer-column ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+                .footer-column li {
+                    margin-bottom: 9px;
+                }
+                .footer-column a {
+                    color: var(--silver);
+                    text-decoration: none;
+                    font-size: 0.9rem;
+                    transition: all 0.2s ease;
+                    display: inline-block;
+                    line-height: 1.4;
+                }
+                .footer-column a:hover {
+                    color: var(--gold);
+                    transform: translateX(3px);
+                }
+
+                @media (max-width: 900px) {
+                    .footer-nav-grid {
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 28px;
+                    }
+                }
+                @media (max-width: 540px) {
+                    .footer-nav-grid {
+                        grid-template-columns: 1fr;
+                        gap: 22px;
+                        text-align: center;
+                        margin: 25px 0;
+                        padding-bottom: 25px;
+                    }
+                    .footer-column h4 {
+                        justify-content: center;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                        padding-bottom: 8px;
+                        margin-bottom: 12px;
+                    }
+                    .footer-column a:hover {
+                        transform: none;
+                    }
+                }
+            </style>
+
+            <div class="footer-nav-grid">
+                <!-- Column 1: Creator & Uploads -->
+                <div class="footer-column">
+                    <h4><i class="fas fa-cloud-upload-alt"></i> Creator &amp; Uploads</h4>
+                    <ul>
+                        <li><a href="/upload">Upload A New Mod</a></li>
+                        <li><a href="/my-uploads">My Uploads</a></li>
+                        <li><a href="/promote">Promote Your Mods</a></li>
+                        <li><a href="/repos">App Repositories (iOS &amp; Android)</a></li>
+                        <li><a href="/jailbreak-repos">Jailbreak Repos (DEB Tweaks)</a></li>
+                        <li><a href="/source">Source Code Hub</a></li>
+                        <li><a href="/upload-policy">Upload &amp; Update Policy</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 2: Account & VIP -->
+                <div class="footer-column">
+                    <h4><i class="fas fa-user-circle"></i> Account &amp; VIP</h4>
+                    <ul>
+                        <li><a href="/dashboard">User Dashboard</a></li>
+                        <li><a href="/settings">Profile &amp; Settings</a></li>
+                        <li><a href="/membership">VIP Membership Plans</a></li>
+                        <li><a href="/my-membership">Membership Status</a></li>
+                        <li><a href="/rewards">Rewards &amp; Badges</a></li>
+                        <li><a href="/guest/notifications">Notification Settings</a></li>
+                        <li><a href="/unsubscribe">Unsubscribe Newsletter</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Community & Support -->
+                <div class="footer-column">
+                    <h4><i class="fas fa-users"></i> Community &amp; Support</h4>
+                    <ul>
+                        <li><a href="/community">Community Forums</a></li>
+                        <li><a href="/clubs">Chat &amp; Clubs</a></li>
+                        <li><a href="/leaderboard">Leaderboard</a></li>
+                        <li><a href="/volunteer">Volunteer Team</a></li>
+                        <li><a href="/sponsor">Sponsor Infrastructure</a></li>
+                        <li><a href="/donate">Donate Us!</a></li>
+                        <li><a href="/support">Support Tickets</a></li>
+                        <li><a href="/faq">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Trust, Legal & About -->
+                <div class="footer-column">
+                    <h4><i class="fas fa-shield-alt"></i> Trust &amp; Legal</h4>
+                    <ul>
+                        <li><a href="/why-choose-us">Why Choose Us</a></li>
+                        <li><a href="/understanding-scans">Understanding Scans</a></li>
+                        <li><a href="/distributor-features">Partnership Benefits</a></li>
+                        <li><a href="/partnership-policy">Distributor Policy</a></li>
+                        <li><a href="/licenses">License Hub</a></li>
+                        <li><a href="/about">About Us</a></li>
+                        <li><a href="/tos">Terms of Service</a></li>
+                        <li><a href="/privacy-policy">Privacy Policy</a></li>
+                        <li><a href="/dmca">DMCA</a></li>
+                        <li><a href="/refund-policy">Refund Policy</a></li>
+                        <li><a href="/ai-directory">Site Map</a></li>
+                    </ul>
+                </div>
             </div>
-            <p>&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
+
+            <p style="margin: 0; font-size: 0.9rem; color: var(--silver);">&copy; <%= new Date().getFullYear() %> GPL Mods. All Rights Reserved.</p>
         </div>
     </footer>
 
@@ -348,8 +458,112 @@
                 <p style="margin: 0; color: var(--silver); font-size: 0.8rem; line-height: 1.4;">Download the GPL Mods app today to get VIP features and a faster experience.</p>
             </div>
             <div class="pwa-buttons" style="display: flex; flex-direction: column; gap: 8px;">
-                <button id="pwa-install" class="pwa-btn" style="background: var(--gold); color: var(--black); padding: 8px 14px; border-radius: 8px; font-weight: bold; border: none; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">Install</button>
-                <button id="pwa-dismiss" class="pwa-btn" style="background: transparent; color: var(--silver); padding: 8px 14px; border-radius: 8px; font-weight: bold; border: 1px solid #444; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;">Later</button>
+                <button id="pwa-install" class="pwa-btn pwa-install-btn" style="background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); color: var(--black); padding: 8px 16px; border-radius: 8px; font-weight: 700; border: 1px solid rgba(255, 215, 0, 0.6); font-size: 0.82rem; cursor: pointer; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4); text-shadow: 0 1px 1px rgba(0,0,0,0.15);">
+                    <i class="fas fa-download"></i> Install
+                </button>
+                <button id="pwa-dismiss" class="pwa-btn pwa-dismiss-btn" style="background: rgba(255, 255, 255, 0.06); color: var(--silver); padding: 8px 14px; border-radius: 8px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.15); font-size: 0.8rem; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fas fa-clock"></i> Later
+                </button>
+            </div>
+        </div>
+
+        <!-- ======== CUSTOM GPLMODS PWA INSTALL POPUP MODAL ======== -->
+        <div id="gpl-pwa-modal" class="gpl-pwa-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="gpl-pwa-modal-title">
+            <div class="gpl-pwa-modal-card">
+                <button type="button" class="gpl-pwa-modal-close" id="gpl-pwa-modal-close" aria-label="Close">&times;</button>
+                
+                <!-- Hero Device Illustration -->
+                <div class="gpl-pwa-modal-hero">
+                    <div class="gpl-pwa-device-illustration">
+                        <div class="gpl-pwa-laptop-screen">
+                            <div class="gpl-pwa-browser-bar">
+                                <span class="gpl-pwa-dot dot-red"></span>
+                                <span class="gpl-pwa-dot dot-yellow"></span>
+                                <span class="gpl-pwa-dot dot-green"></span>
+                            </div>
+                            <div class="gpl-pwa-screen-body">
+                                <div class="gpl-pwa-screen-logo-wrap">
+                                    <img src="/images/logo.png" alt="GPL Mods" class="gpl-pwa-screen-logo" onerror="this.src='/images/default-avatar.png'">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gpl-pwa-laptop-base"></div>
+                    </div>
+                </div>
+
+                <div class="gpl-pwa-modal-body">
+                    <h3 id="gpl-pwa-modal-title" class="gpl-pwa-modal-title">Install app</h3>
+                    <p class="gpl-pwa-modal-subtitle">Access this site in a dedicated window on your computer or device</p>
+
+                    <!-- App Profile Box -->
+                    <div class="gpl-pwa-app-card">
+                        <div class="gpl-pwa-app-icon-wrap">
+                            <img src="/images/logo.png" alt="GPL Mods" class="gpl-pwa-app-icon" onerror="this.src='/images/default-avatar.png'">
+                        </div>
+                        <div class="gpl-pwa-app-details">
+                            <span class="gpl-pwa-app-name">GPL Mods</span>
+                            <span class="gpl-pwa-app-domain" id="gpl-pwa-app-origin">localhost:3000</span>
+                        </div>
+                        <span class="gpl-pwa-verified-pill"><i class="fas fa-shield-alt"></i> Verified</span>
+                    </div>
+
+                    <!-- Features Checklist -->
+                    <div class="gpl-pwa-features-grid">
+                        <div class="gpl-pwa-feature-item">
+                            <i class="fas fa-bolt" style="color: var(--gold);"></i>
+                            <span>Faster Loading</span>
+                        </div>
+                        <div class="gpl-pwa-feature-item">
+                            <i class="fas fa-bell" style="color: #64b5f6;"></i>
+                            <span>Push Alerts</span>
+                        </div>
+                        <div class="gpl-pwa-feature-item">
+                            <i class="fas fa-check-circle" style="color: #2ecc71;"></i>
+                            <span>100% Safe Mods</span>
+                        </div>
+                        <div class="gpl-pwa-feature-item">
+                            <i class="fas fa-wifi" style="color: #ffb74d;"></i>
+                            <span>Offline Ready</span>
+                        </div>
+                    </div>
+
+                    <!-- Manual Instructions Drawer -->
+                    <div id="gpl-pwa-manual-guide" class="gpl-pwa-manual-guide" style="display: none;">
+                        <div class="gpl-pwa-guide-header">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Quick Installation Guide</span>
+                        </div>
+                        <div class="gpl-pwa-guide-steps">
+                            <div class="gpl-pwa-guide-step">
+                                <strong style="color: var(--gold);"><i class="fab fa-chrome"></i> Chrome / Edge (Desktop):</strong>
+                                <span>Look for the Install icon (<i class="fas fa-desktop"></i> or <i class="fas fa-arrow-circle-down"></i>) in your address bar and click <strong>Install</strong>.</span>
+                            </div>
+                            <div class="gpl-pwa-guide-step">
+                                <strong style="color: #81c784;"><i class="fab fa-android"></i> Android:</strong>
+                                <span>Tap the browser menu (⋮) and tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</span>
+                            </div>
+                            <div class="gpl-pwa-guide-step">
+                                <strong style="color: #64b5f6;"><i class="fab fa-apple"></i> iOS Safari:</strong>
+                                <span>Tap the Share button (<i class="fas fa-share-square"></i>) and tap <strong>Add to Home Screen</strong> (<i class="fas fa-plus-square"></i>).</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="gpl-pwa-modal-actions">
+                        <button type="button" id="gpl-pwa-modal-learn-btn" class="gpl-pwa-learn-btn">
+                            <i class="fas fa-question-circle"></i> Learn more
+                        </button>
+                        <div class="gpl-pwa-primary-actions">
+                            <button type="button" id="gpl-pwa-modal-cancel-btn" class="gpl-pwa-cancel-btn">
+                                Cancel
+                            </button>
+                            <button type="button" id="gpl-pwa-modal-install-btn" class="gpl-pwa-install-btn-modal">
+                                <i class="fas fa-download"></i> Install
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

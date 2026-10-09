@@ -4719,7 +4719,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             }));
         };
 
-        // 1. Suggested For You (Promoted / Sponsored Ads)
+        // 1. Suggested For You (Promoted / Sponsored Ads - strictly active promoted items)
         let rawSuggested = await File.find({
             status: 'live',
             isPromoted: true,
@@ -4727,22 +4727,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             _id: { $nin: excludedIds }
         }).sort({ promotionTier: -1, views: -1 }).limit(6).lean();
 
-        // Backfill if fewer than 4 promoted mods
-        if (rawSuggested.length < 4) {
-            const currentSuggestedIds = [...excludedIds, ...rawSuggested.map(s => s._id)];
-            const backfill = await File.find({
-                status: 'live',
-                $or: [
-                    { isEditorsChoice: true },
-                    { averageRating: { $gte: 4.0 } },
-                    { views: { $gte: 50 } }
-                ],
-                _id: { $nin: currentSuggestedIds }
-            }).sort({ views: -1, averageRating: -1 }).limit(6 - rawSuggested.length).lean();
-            rawSuggested = [...rawSuggested, ...backfill];
-        }
-
-        // 2. Similar Apps
+        // 2. Similar Apps (Strictly matched to similar app categories/tags, no forced fallback)
         const isApp = (displayFile.subCategory && /app|tool|util|product|social|media|software/i.test(displayFile.subCategory)) || displayFile.category === 'wordpress';
         let rawSimilarApps = [];
         if (isApp) {
@@ -4755,45 +4740,39 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                     { tags: { $in: displayFile.tags || [] } }
                 ]
             }).sort({ views: -1, downloads: -1 }).limit(6).lean();
-        } else {
-            rawSimilarApps = await File.find({
-                status: 'live',
-                category: displayFile.category,
-                _id: { $nin: excludedIds },
-                $or: [
-                    { subCategory: { $regex: /app|tool|util|emulator|software/i } },
-                    { tags: { $in: ['tools', 'utilities', 'emulator', 'patcher', 'mod-manager', 'app', 'helper', 'tweaks'] } }
-                ]
-            }).sort({ views: -1 }).limit(6).lean();
-        }
-        // Fallback for similar apps if empty
-        if (rawSimilarApps.length === 0) {
-            rawSimilarApps = await File.find({
-                status: 'live',
-                category: displayFile.category,
-                _id: { $nin: excludedIds }
-            }).sort({ downloads: -1 }).limit(6).lean();
+        } else if (displayFile.tags && displayFile.tags.length > 0) {
+            const appTags = (displayFile.tags || []).filter(t => /app|tool|util|product|software|patcher|helper/i.test(t));
+            if (appTags.length > 0) {
+                rawSimilarApps = await File.find({
+                    status: 'live',
+                    category: displayFile.category,
+                    _id: { $nin: excludedIds },
+                    tags: { $in: appTags }
+                }).sort({ views: -1, downloads: -1 }).limit(6).lean();
+            }
         }
 
-        // 3. Similar Mods
+        // 3. Similar Mods (Strictly matching tags or subcategory, no forced fallback)
         const similarAppsIds = rawSimilarApps.map(a => a._id);
         const similarModsExclude = [...excludedIds, ...similarAppsIds];
-        const similarModsFilter = {
-            status: 'live',
-            _id: { $nin: similarModsExclude }
-        };
+        let rawSimilarMods = [];
         if (Array.isArray(displayFile.tags) && displayFile.tags.length > 0) {
-            similarModsFilter.$or = [
-                { tags: { $in: displayFile.tags } },
-                { category: displayFile.category, subCategory: displayFile.subCategory }
-            ];
-        } else {
-            similarModsFilter.category = displayFile.category;
+            rawSimilarMods = await File.find({
+                status: 'live',
+                _id: { $nin: similarModsExclude },
+                $or: [
+                    { tags: { $in: displayFile.tags } },
+                    { category: displayFile.category, subCategory: displayFile.subCategory }
+                ]
+            }).sort({ views: -1, downloads: -1 }).limit(8).lean();
+        } else if (displayFile.subCategory) {
+            rawSimilarMods = await File.find({
+                status: 'live',
+                category: displayFile.category,
+                subCategory: displayFile.subCategory,
+                _id: { $nin: similarModsExclude }
+            }).sort({ views: -1, downloads: -1 }).limit(8).lean();
         }
-        let rawSimilarMods = await File.find(similarModsFilter)
-            .sort({ views: -1, downloads: -1 })
-            .limit(8)
-            .lean();
 
         // 4. More By Uploader
         let rawMoreByUploader = [];
@@ -4807,7 +4786,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
 
         // 5. More By Developer
         let rawMoreByDeveloper = [];
-        if (displayFile.developer && displayFile.developer !== 'N/A') {
+        if (displayFile.developer && displayFile.developer !== 'N/A' && displayFile.developer !== 'Unknown') {
             rawMoreByDeveloper = await File.find({
                 developer: displayFile.developer,
                 status: 'live',

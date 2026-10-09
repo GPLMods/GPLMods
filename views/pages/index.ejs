@@ -187,14 +187,16 @@
                         %>
                             <div class="featured-card" id="featured-slide-global-<%= index %>">
                                 <div class="featured-icon-wrapper">
-                                    <% if (mod.certification === 'certified') { %>
-                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5;"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
-                                    <% } else if (mod.certification === 'community-tested') { %>
-                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5; background-color: var(--silver); color: var(--black);">Community Tested</div>
-                                    <% } %>
-                                    <% if (mod.version) { %>
-                                        <div class="mod-type-tag" style="position: absolute; top: 12px; right: 12px; z-index: 5;"><%= mod.version %></div>
-                                    <% } %>
+                                    <div class="card-top-badges">
+                                        <% if (mod.certification === 'certified') { %>
+                                            <div class="app-feature-tag"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
+                                        <% } else if (mod.certification === 'community-tested') { %>
+                                            <div class="app-feature-tag" style="background-color: var(--silver); color: var(--black);">Community Tested</div>
+                                        <% } %>
+                                        <% if (mod.version) { %>
+                                            <div class="mod-type-tag"><%= mod.version %></div>
+                                        <% } %>
+                                    </div>
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                                 </div>
                                 <div class="featured-content">
@@ -280,14 +282,16 @@
                         <% councilMods.forEach((mod, index)=> { %>
                             <div class="featured-card" id="featured-slide-<%= platformName %>-<%= index %>">
                                 <div class="featured-icon-wrapper">
-                                    <% if (mod.certification === 'certified') { %>
-                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5;"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
-                                    <% } else if (mod.certification === 'community-tested') { %>
-                                        <div class="app-feature-tag" style="position: absolute; top: 12px; left: 12px; z-index: 5; background-color: var(--silver); color: var(--black);">Community Tested</div>
-                                    <% } %>
-                                    <% if (mod.version) { %>
-                                        <div class="mod-type-tag" style="position: absolute; top: 12px; right: 12px; z-index: 5;"><%= mod.version %></div>
-                                    <% } %>
+                                    <div class="card-top-badges">
+                                        <% if (mod.certification === 'certified') { %>
+                                            <div class="app-feature-tag"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
+                                        <% } else if (mod.certification === 'community-tested') { %>
+                                            <div class="app-feature-tag" style="background-color: var(--silver); color: var(--black);">Community Tested</div>
+                                        <% } %>
+                                        <% if (mod.version) { %>
+                                            <div class="mod-type-tag"><%= mod.version %></div>
+                                        <% } %>
+                                    </div>
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
                                 </div>
                                 <div class="featured-content">

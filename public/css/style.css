@@ -572,6 +572,46 @@ a.overlay-btn-primary:hover {
 
 .download-overlay, .overlay-button, form { position: relative; z-index: 10; }
 
+/* Card Top Badges Layout (Prevents conflict between Certification and Version tags) */
+.card-top-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    z-index: 6;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+.card-top-badges .app-feature-tag,
+.card-top-badges .mod-type-tag {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    pointer-events: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+}
+.card-top-badges .app-feature-tag {
+    flex-shrink: 1;
+    max-width: 55%;
+}
+.card-top-badges .mod-type-tag {
+    margin-left: auto;
+    flex-shrink: 0;
+    max-width: 45%;
+}
+
 /* 6. Tags & Badges */
 .app-feature-tag { 
     position: absolute; 
@@ -619,8 +659,19 @@ a.overlay-btn-primary:hover {
 .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: var(--white); }
 .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: var(--white); }
 
-/* ✅ NEW FIX: Orange color for Drafts (Category 'n/a' becomes class 'n') */
-.platform-tag.n { background-color: #FF9800; color: var(--black); }
+/* White Texture for N/A Platform Tags */
+.platform-tag.na,
+.platform-tag.n-a,
+.platform-tag.n,
+.platform-tag:empty {
+    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%) !important;
+    color: #000000 !important;
+    border: 1px solid rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.4), inset 0 1px 0 #ffffff !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+    letter-spacing: 0.6px !important;
+}
         .rating { display: flex; align-items: center; gap: 5px; }
         .stars-outer { position: relative; display: inline-block; font-size: 1em; letter-spacing: 2px; }
         .stars-inner { position: absolute; top: 0; left: 0; white-space: nowrap; overflow: hidden; width: 0; }
@@ -1022,9 +1073,34 @@ a.overlay-btn-primary:hover {
         /* --- Other Sections & Footer --- */
         .upload-section { background-color: var(--dark-gray); text-align: center; padding: 60px 20px; margin: 40px 0; border-radius: 15px; border: 1px dashed var(--silver); }
         .upload-section h2 { font-size: 2em; margin-bottom: 20px; }
-        .upload-section p { margin-bottom: 20px; }
-        .upload-button { display: inline-block; padding: 12px 30px; background: transparent; color: var(--gold); border: 2px solid var(--gold); border-radius: 30px; cursor: pointer; font-size: 1.1em; transition: all 0.3s ease; text-decoration: none; }
-        .upload-button:hover { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
+        .upload-section p { margin-bottom: 25px; color: var(--silver); }
+        .upload-button { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+            padding: 14px 38px; 
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); 
+            color: #0b0c10 !important; 
+            border: none; 
+            border-radius: 30px; 
+            cursor: pointer; 
+            font-size: 1.1em; 
+            font-weight: 700; 
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            text-decoration: none; 
+            box-shadow: 0 4px 18px rgba(255, 215, 0, 0.45), 0 0 30px rgba(255, 215, 0, 0.25); 
+            letter-spacing: 0.3px;
+        }
+        .upload-button:hover { 
+            background: linear-gradient(135deg, #ffe033 0%, #ffb700 100%); 
+            color: #000000 !important; 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 6px 28px rgba(255, 215, 0, 0.7), 0 0 45px rgba(255, 215, 0, 0.38); 
+        }
+        .upload-button:active {
+            transform: translateY(-1px) scale(0.99);
+        }
         .main-footer { background-color: var(--dark-gray); padding: 40px 20px; text-align: center; color: var(--silver); margin-top: 60px; }
         .footer-links { margin-bottom: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 20px; }
         .footer-links a { color: var(--silver); text-decoration: none; transition: color 0.3s ease; }
@@ -1180,9 +1256,18 @@ a.overlay-btn-primary:hover {
 .featured-content p { color: var(--silver); margin: 10px 0 20px 0; font-size: 1.1em; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 .featured-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
-.featured-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 30px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 600; transition: all 0.3s ease; border: none; cursor: pointer; font-family: inherit;}
-.featured-button.btn-primary { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
-.featured-button.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 0 25px var(--glow-gold); }
+.featured-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 32px; border-radius: 30px; text-decoration: none; font-size: 1.1em; font-weight: 700; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); border: none; cursor: pointer; font-family: inherit;}
+.featured-button.btn-primary { 
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); 
+    color: #0b0c10 !important; 
+    box-shadow: 0 4px 18px rgba(255, 215, 0, 0.45), 0 0 30px rgba(255, 215, 0, 0.25); 
+}
+.featured-button.btn-primary:hover { 
+    background: linear-gradient(135deg, #ffe033 0%, #ffb700 100%); 
+    color: #000000 !important; 
+    transform: translateY(-3px) scale(1.02); 
+    box-shadow: 0 6px 28px rgba(255, 215, 0, 0.7), 0 0 45px rgba(255, 215, 0, 0.38); 
+}
 .featured-button.btn-secondary,
 .btn-secondary { 
     background: rgba(255, 255, 255, 0.08) !important; 
@@ -2477,15 +2562,418 @@ a.overlay-btn-primary:hover {
 .pwa-banner-content p { color: var(--silver); font-size: 0.85em; margin: 0; line-height: 1.3; }
 .pwa-buttons { display: flex; flex-direction: column; gap: 8px; }
 .pwa-btn { padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; font-size: 0.85em; transition: all 0.2s; }
-.pwa-install-btn { background-color: var(--gold); color: var(--black); }
-.pwa-install-btn:hover { transform: scale(1.05); box-shadow: 0 0 10px var(--glow-gold); }
-.pwa-dismiss-btn { background-color: transparent; color: var(--silver); border: 1px solid #444; }
-.pwa-dismiss-btn:hover { border-color: var(--silver); color: var(--white); }
+.pwa-install-btn {
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%) !important;
+    border: 1px solid rgba(255, 215, 0, 0.6) !important;
+    color: var(--black) !important;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-weight: 700 !important;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+.pwa-install-btn:hover {
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.55) !important;
+}
+.pwa-dismiss-btn {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: var(--silver) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+}
+.pwa-dismiss-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: var(--white) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ==========================================================
+   CUSTOM GPLMODS PWA MODAL
+   ========================================================== */
+.gpl-pwa-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.gpl-pwa-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.gpl-pwa-modal-card {
+    background: linear-gradient(145deg, #18181d 0%, #0d0d10 100%);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    border-radius: 22px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 215, 0, 0.15);
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    overflow: hidden;
+    transform: scale(0.92) translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.gpl-pwa-modal-backdrop.show .gpl-pwa-modal-card {
+    transform: scale(1) translateY(0);
+}
+
+.gpl-pwa-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--silver);
+    font-size: 1.3rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    transition: all 0.2s;
+}
+
+.gpl-pwa-modal-close:hover {
+    background: rgba(229, 57, 53, 0.2);
+    border-color: var(--red);
+    color: var(--white);
+    transform: rotate(90deg);
+}
+
+.gpl-pwa-modal-hero {
+    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.12) 0%, transparent 70%);
+    padding: 24px 20px 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gpl-pwa-device-illustration {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 170px;
+}
+
+.gpl-pwa-laptop-screen {
+    width: 140px;
+    height: 90px;
+    background: #000;
+    border: 2px solid #333;
+    border-radius: 10px 10px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.25);
+    position: relative;
+}
+
+.gpl-pwa-browser-bar {
+    height: 12px;
+    background: #1c1c20;
+    border-bottom: 1px solid #2a2a30;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+}
+
+.gpl-pwa-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+.dot-red { background: #ff5f56; }
+.dot-yellow { background: #ffbd2e; }
+.dot-green { background: #27c93f; }
+
+.gpl-pwa-screen-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0f13 0%, #1a1a24 100%);
+    position: relative;
+}
+
+.gpl-pwa-screen-logo-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 12px var(--glow-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    z-index: 1;
+}
+
+.gpl-pwa-screen-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.gpl-pwa-laptop-base {
+    width: 170px;
+    height: 10px;
+    background: linear-gradient(180deg, #444 0%, #222 100%);
+    border-radius: 0 0 8px 8px;
+    border-top: 1px solid #555;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+}
+
+.gpl-pwa-laptop-base::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 3px;
+    background: #111;
+    border-radius: 0 0 3px 3px;
+}
+
+.gpl-pwa-modal-body {
+    padding: 16px 24px 24px;
+    text-align: left;
+}
+
+.gpl-pwa-modal-title {
+    color: var(--white);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+}
+
+.gpl-pwa-modal-subtitle {
+    color: var(--silver);
+    font-size: 0.85rem;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+}
+
+.gpl-pwa-app-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+}
+
+.gpl-pwa-app-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.gpl-pwa-app-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gpl-pwa-app-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.gpl-pwa-app-name {
+    color: var(--white);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.gpl-pwa-app-domain {
+    color: var(--silver);
+    font-size: 0.76rem;
+}
+
+.gpl-pwa-verified-pill {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    color: #2ecc71;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.gpl-pwa-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.gpl-pwa-feature-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gpl-pwa-manual-guide {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+
+.gpl-pwa-guide-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+.gpl-pwa-guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #ccc;
+}
+
+.gpl-pwa-guide-step strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 4px;
+}
+
+.gpl-pwa-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.gpl-pwa-learn-btn {
+    background: transparent;
+    border: none;
+    color: var(--silver);
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 4px;
+    transition: color 0.2s;
+}
+
+.gpl-pwa-learn-btn:hover {
+    color: var(--gold);
+    text-decoration: underline;
+}
+
+.gpl-pwa-primary-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gpl-pwa-cancel-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.84rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.gpl-pwa-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--white);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.gpl-pwa-install-btn-modal {
+    background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+    border: 1px solid rgba(255, 215, 0, 0.6);
+    color: var(--black);
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.84rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.gpl-pwa-install-btn-modal:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+}
 
 /* Force hide PWA Banner inside PWA Standalone Mode */
 @media all and (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
     #pwa-install-banner,
-    .pwa-banner {
+    .pwa-banner,
+    #gpl-pwa-modal {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -2494,7 +2982,8 @@ a.overlay-btn-primary:hover {
     }
 }
 .is-pwa-standalone #pwa-install-banner,
-.is-pwa-standalone .pwa-banner {
+.is-pwa-standalone .pwa-banner,
+.is-pwa-standalone #gpl-pwa-modal {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;

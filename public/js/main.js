@@ -1157,27 +1157,109 @@ function startEngagementSequence() {
         }
     }
 
-    if (!isPwaDismissed && !isPwaInstalled) {
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            window.gplDeferredPrompt = e;
-            window.dispatchEvent(new CustomEvent('gplmods:pwa-installable'));
-            setTimeout(tryShowPwa, pwaDelay);
-        });
+    // --- PWA MODAL CONTROLLERS ---
+    const pwaModal = document.getElementById('gpl-pwa-modal');
+    const pwaModalClose = document.getElementById('gpl-pwa-modal-close');
+    const pwaModalCancel = document.getElementById('gpl-pwa-modal-cancel-btn');
+    const pwaModalInstall = document.getElementById('gpl-pwa-modal-install-btn');
+    const pwaModalLearn = document.getElementById('gpl-pwa-modal-learn-btn');
+    const pwaManualGuide = document.getElementById('gpl-pwa-manual-guide');
+    const pwaAppOrigin = document.getElementById('gpl-pwa-app-origin');
 
-    window.triggerPwaInstallPrompt = async function(instructionsId) {
-        if (window.gplDeferredPrompt) {
+    if (pwaAppOrigin) {
+        pwaAppOrigin.textContent = window.location.host || 'gplmods.com';
+    }
+
+    window.openGplPwaModal = function() {
+        if (!pwaModal) return;
+        pwaModal.style.display = 'flex';
+        requestAnimationFrame(() => {
+            pwaModal.classList.add('show');
+        });
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closeGplPwaModal = function() {
+        if (!pwaModal) return;
+        pwaModal.classList.remove('show');
+        document.body.style.overflow = '';
+        setTimeout(() => {
+            pwaModal.style.display = 'none';
+        }, 300);
+    };
+
+    if (pwaModalClose) pwaModalClose.addEventListener('click', window.closeGplPwaModal);
+    if (pwaModalCancel) pwaModalCancel.addEventListener('click', window.closeGplPwaModal);
+    if (pwaModal) {
+        pwaModal.addEventListener('click', (e) => {
+            if (e.target === pwaModal) window.closeGplPwaModal();
+        });
+    }
+
+    if (pwaModalLearn && pwaManualGuide) {
+        pwaModalLearn.addEventListener('click', () => {
+            const isHidden = pwaManualGuide.style.display === 'none' || !pwaManualGuide.style.display;
+            pwaManualGuide.style.display = isHidden ? 'block' : 'none';
+            pwaModalLearn.innerHTML = isHidden
+                ? '<i class="fas fa-chevron-up"></i> Hide instructions'
+                : '<i class="fas fa-question-circle"></i> Learn more';
+        });
+    }
+
+    async function executePwaInstallPrompt() {
+        const promptToUse = window.gplDeferredPrompt || deferredPrompt;
+        if (promptToUse) {
             try {
-                window.gplDeferredPrompt.prompt();
-                const choice = await window.gplDeferredPrompt.userChoice;
+                promptToUse.prompt();
+                const choice = await promptToUse.userChoice;
                 if (choice && choice.outcome === 'accepted') {
                     localStorage.setItem('gpl_pwa_installed', 'true');
                     window.dispatchEvent(new CustomEvent('gplmods:pwa-installed'));
+                    window.closeGplPwaModal();
+                    if (pwaBanner) pwaBanner.remove();
                 }
+                deferredPrompt = null;
                 window.gplDeferredPrompt = null;
                 return;
-            } catch(e) {}
+            } catch (err) {
+                console.error('[PWA] Prompt error:', err);
+            }
+        }
+        // Fallback: If no deferred prompt is available, reveal instructions in modal
+        if (pwaManualGuide) {
+            pwaManualGuide.style.display = 'block';
+            if (pwaModalLearn) {
+                pwaModalLearn.innerHTML = '<i class="fas fa-chevron-up"></i> Hide instructions';
+            }
+        }
+    }
+
+    if (pwaModalInstall) {
+        pwaModalInstall.addEventListener('click', executePwaInstallPrompt);
+    }
+
+    // Always capture beforeinstallprompt regardless of dismissed state
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        window.gplDeferredPrompt = e;
+        window.dispatchEvent(new CustomEvent('gplmods:pwa-installable'));
+        if (!isPwaDismissed && !isPwaInstalled) {
+            setTimeout(tryShowPwa, pwaDelay);
+        }
+    });
+
+    window.triggerPwaInstallPrompt = async function(instructionsId) {
+        const promptToUse = window.gplDeferredPrompt || deferredPrompt;
+        if (promptToUse) {
+            window.openGplPwaModal();
+            return;
+        }
+        // If modal exists, open it and show manual guide
+        if (pwaModal) {
+            window.openGplPwaModal();
+            if (pwaManualGuide) pwaManualGuide.style.display = 'block';
+            return;
         }
         const inst = instructionsId ? document.getElementById(instructionsId) : document.querySelector('.pwa-install-guide');
         if (inst) {
@@ -1189,37 +1271,33 @@ function startEngagementSequence() {
         }
     };
 
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (pwaBanner) pwaBanner.classList.remove('show');
-                window.GPLPopupCoordinator.unregister('pwa');
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                }
-                setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
-            });
-        }
+    if (installBtn) {
+        installBtn.addEventListener('click', () => {
+            if (pwaBanner) pwaBanner.classList.remove('show');
+            window.GPLPopupCoordinator.unregister('pwa');
+            window.openGplPwaModal();
+        });
+    }
 
-        if (dismissBtn) {
-            dismissBtn.addEventListener('click', () => {
-                if (pwaBanner) pwaBanner.classList.remove('show');
-                window.GPLPopupCoordinator.unregister('pwa');
-                localStorage.setItem('pwaDismissed', 'true');
-                setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
-            });
-        }
-
-        window.addEventListener('appinstalled', () => {
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
             if (pwaBanner) pwaBanner.classList.remove('show');
             window.GPLPopupCoordinator.unregister('pwa');
             localStorage.setItem('pwaDismissed', 'true');
-            localStorage.setItem('gpl_pwa_installed', 'true');
-            deferredPrompt = null;
-            window.dispatchEvent(new CustomEvent('gplmods:pwa-installed'));
+            setTimeout(triggerNewsletter, newsletterAfterPwaDelay);
         });
     }
+
+    window.addEventListener('appinstalled', () => {
+        if (pwaBanner) pwaBanner.classList.remove('show');
+        window.GPLPopupCoordinator.unregister('pwa');
+        localStorage.setItem('pwaDismissed', 'true');
+        localStorage.setItem('gpl_pwa_installed', 'true');
+        deferredPrompt = null;
+        window.gplDeferredPrompt = null;
+        window.closeGplPwaModal();
+        window.dispatchEvent(new CustomEvent('gplmods:pwa-installed'));
+    });
 
     // --- NEWSLETTER TRIGGER ---
     function triggerNewsletter() {

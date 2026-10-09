@@ -35,7 +35,34 @@
     .status-draft { background-color: #666; color: var(--white); box-shadow: 0 0 10px rgba(102,102,102,0.5); }
     .status-rejected { background-color: var(--red); color: var(--white); box-shadow: 0 0 10px rgba(229,57,53,0.5); }
 
-    .platform-tag { position: absolute; top: 10px; right: 10px; font-size: 0.75em; font-weight: 700; padding: 5px 12px; border-radius: 20px; color: var(--black); z-index: 2; }
+    .platform-tag {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.75em;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 20px;
+        color: var(--black);
+        z-index: 2;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .platform-tag.android { background-color: var(--android-color, #A4C639); color: #000; }
+    .platform-tag.ios-ipa, .platform-tag.ios-jailed { background-color: #ffffff; color: #000; }
+    .platform-tag.ios-deb, .platform-tag.ios-jailbroken { background-color: #ff9800; color: #000; }
+    .platform-tag.windows { background-color: var(--windows-color, #0078D6); color: #fff; }
+    .platform-tag.wordpress { background-color: var(--wordpress-color, #21759B); color: #fff; }
+    .platform-tag.na, .platform-tag.n-a, .platform-tag.n, .platform-tag:empty {
+        background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%) !important;
+        color: #000000 !important;
+        border: 1px solid rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 4px 14px rgba(255, 255, 255, 0.4), inset 0 1px 0 #ffffff !important;
+        font-weight: 800 !important;
+        text-shadow: none !important;
+        letter-spacing: 0.6px !important;
+    }
 
     .mod-card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
     .mod-card-content h3 { font-size: 1.4em; margin-bottom: 15px; color: var(--white); word-break: break-word; }
@@ -46,6 +73,16 @@
     .stat-value { color: var(--white); font-weight: 600; font-size: 1em; }
     .stat-value.gold { color: var(--gold); }
     .stat-value.green { color: var(--green); }
+    .stat-value.stat-na {
+        color: var(--silver);
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        display: inline-block;
+        width: fit-content;
+        font-size: 0.88em;
+    }
     
     .rejection-reason { background: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: #ffadad; padding: 10px; border-radius: 8px; font-size: 0.85em; margin-bottom: 20px; }
 
@@ -69,8 +106,30 @@
     }
     .btn-edit { background: rgba(255, 215, 0, 0.1); color: var(--gold); border-color: var(--gold); }
     .btn-edit:hover { background-color: var(--gold); color: var(--black); }
-    .btn-delete { background: rgba(229, 57, 53, 0.1); color: var(--red); border-color: var(--red); }
-    .btn-delete:hover { background-color: var(--red); color: var(--white); }
+    .btn-delete {
+        background: rgba(229, 57, 53, 0.1);
+        color: var(--red);
+        border-color: var(--red);
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 6px 12px;
+        min-width: 62px;
+    }
+    .btn-delete:hover {
+        background-color: var(--red);
+        color: var(--white);
+        box-shadow: 0 0 12px var(--glow-red);
+    }
+    .btn-delete .delete-btn-text {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        line-height: 1;
+    }
     .btn-draft { background: var(--gold); color: var(--black); box-shadow: 0 0 15px var(--glow-gold); }
     .btn-draft:hover { transform: scale(1.05); }
 
@@ -233,8 +292,8 @@
                                 <span class="status-badge-top" style="background: #ff3366; color: #fff; box-shadow: 0 0 10px rgba(255, 51, 102, 0.4);">
                                     <i class="fas fa-lock"></i> Restricted (DMCA)
                                 </span>
-                                <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                                <span class="platform-tag <%= (!file.category || file.category.toLowerCase().includes('n/a') || file.category.toLowerCase() === 'na') ? 'na' : file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                    <%= (!file.category || file.category.toLowerCase().includes('n/a') || file.category.toLowerCase() === 'na') ? 'N/A' : file.category.toUpperCase().replace('-', ' ') %>
                                 </span>
                                 <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon">
                             </div>
@@ -285,8 +344,8 @@
                             </span>
                             
                             <!-- Absolute Platform Tag -->
-                            <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                                <%= file.category.toUpperCase().replace('-', ' ') %>
+                            <span class="platform-tag <%= (!file.category || file.category.toLowerCase().includes('n/a') || file.category.toLowerCase() === 'na') ? 'na' : file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
+                                <%= (!file.category || file.category.toLowerCase().includes('n/a') || file.category.toLowerCase() === 'na') ? 'N/A' : file.category.toUpperCase().replace('-', ' ') %>
                             </span>
 
                             <img src="<%= file.iconUrl %>" alt="<%= file.name %> Icon">
@@ -305,11 +364,11 @@
                                     <span class="stat-value gold"><%= file.averageRating.toFixed(1) %> ★</span>
                                 </div>
                                 
-                                <% const totalVotes = file.workingVoteCount + file.notWorkingVoteCount; %>
+                                <% const totalVotes = (file.workingVoteCount || 0) + (file.notWorkingVoteCount || 0); %>
                                 <% const workingPercentage = totalVotes > 0 ? Math.round((file.workingVoteCount / totalVotes) * 100) + '%' : 'N/A'; %>
                                 <div class="stat-row">
                                     <span class="stat-label">Working Vote</span>
-                                    <span class="stat-value green"><%= workingPercentage %></span>
+                                    <span class="stat-value <%= workingPercentage === 'N/A' ? 'stat-na' : 'green' %>"><%= workingPercentage %></span>
                                 </div>
                                 <div class="stat-row">
                                     <span class="stat-label">Uploaded</span>
@@ -332,8 +391,9 @@
                                     <a href="/upload-details/<%= file._id %>" class="action-btn btn-draft" style="width: 100%;">
                                         <i class="fas fa-edit"></i> Finish Draft
                                     </a>
-                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="Discard Draft">
+                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-name="<%= file.name %>" data-status="<%= file.status %>" title="Discard Draft">
                                         <i class="fas fa-trash"></i>
+                                        <span class="delete-btn-text">Discard</span>
                                     </button>
                                 <% } else { %>
                                     <% if (file.status === 'draft') { %>
@@ -361,8 +421,9 @@
                                         </button>
                                     <% } %>
                                     
-                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-status="<%= file.status %>" title="<%= file.status === 'draft' ? 'Discard Draft' : 'Delete Mod' %>">
+                                    <button class="action-btn btn-delete delete-btn" data-id="<%= file._id %>" data-name="<%= file.name %>" data-status="<%= file.status %>" title="<%= file.status === 'draft' ? 'Discard Draft' : 'Delete Mod' %>">
                                         <i class="fas fa-trash"></i>
+                                        <span class="delete-btn-text"><%= file.status === 'draft' ? 'Discard' : 'Delete' %></span>
                                     </button>
                                 <% } %>
                             </div>
@@ -547,9 +608,13 @@
         let elementToAnimate = null;
 
         // --- 3. HELPER FUNCTIONS ---
-        function showDeleteModal(title, text) {
+        function showDeleteModal(title, text, isHtml = false) {
             deleteModalTitle.textContent = title;
-            deleteModalText.textContent = text;
+            if (isHtml) {
+                deleteModalText.innerHTML = text;
+            } else {
+                deleteModalText.textContent = text;
+            }
             deleteModal.style.display = 'flex';
             setTimeout(() => deleteModal.classList.add('show'), 10);
         }
@@ -594,12 +659,22 @@
                 deleteActionType = 'full-mod';
                 targetModId = this.dataset.id;
                 const modStatus = this.dataset.status;
+                const rawName = this.dataset.name || (this.closest('.upload-item')?.querySelector('h3')?.textContent?.trim()) || 'this mod';
+                const safeName = rawName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 elementToAnimate = this.closest('.upload-item');
                 
-                if (modStatus === 'processing') {
-                    showDeleteModal('Discard Draft?', 'Are you sure you want to delete this draft? The uploaded file will be permanently removed from the server.');
+                if (modStatus === 'processing' || modStatus === 'draft') {
+                    showDeleteModal(
+                        `Discard Draft: "${rawName}"?`,
+                        `Are you sure you want to discard the draft for <strong style="color: var(--white);">${safeName}</strong>? All uploaded files and unsaved details will be permanently removed from the server.`,
+                        true
+                    );
                 } else {
-                    showDeleteModal('Delete Mod?', 'Are you absolutely sure you want to delete this entire mod? This includes all files, images, and reviews. This is permanent.');
+                    showDeleteModal(
+                        `Delete "${rawName}"?`,
+                        `Are you absolutely sure you want to delete <strong style="color: var(--white);">${safeName}</strong>? This includes all uploaded files, images, versions, and user reviews. This action is permanent and cannot be undone.`,
+                        true
+                    );
                 }
             });
         });

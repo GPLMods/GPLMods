@@ -1,116 +1,319 @@
 <%- include('../../partials/header') %>
 
 <style>
-    .features-page-header { text-align: center; padding: 60px 20px 20px 20px; }
-    .features-page-header h1 { font-size: 3.2em; color: var(--white); margin-bottom: 10px; line-height: 1.2; }
-    .features-page-header h1 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
-    .features-page-header p { color: var(--silver); font-size: 1.15em; max-width: 800px; margin: 15px auto 30px auto; line-height: 1.6; }
+    .features-hero { 
+        text-align: center; 
+        padding: 50px 20px 30px 20px; 
+    }
+    
+    .hero-badge-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: rgba(255, 215, 0, 0.12);
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        color: var(--gold);
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+    }
+
+    .features-hero h1 { 
+        font-size: 3.2em; 
+        color: var(--white); 
+        margin-bottom: 12px; 
+        line-height: 1.2; 
+        font-weight: 800;
+    }
+    .features-hero h1 span { 
+        color: var(--gold); 
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.5); 
+    }
+    .features-hero p { 
+        color: var(--silver); 
+        font-size: 1.15em; 
+        max-width: 840px; 
+        margin: 0 auto; 
+        line-height: 1.6; 
+    }
 
     /* Policy Warning Banner */
-    .policy-warning {
-        background-color: rgba(33, 150, 243, 0.1);
-        border: 1px solid var(--blue);
+    .policy-warning-card {
+        background: linear-gradient(135deg, rgba(33, 150, 243, 0.12) 0%, rgba(15, 23, 42, 0.85) 100%);
+        border: 1px solid rgba(33, 150, 243, 0.35);
+        border-left: 4px solid #2196f3;
         color: #90caf9;
-        max-width: 800px;
-        margin: 0 auto 50px auto;
-        padding: 15px 25px;
-        border-radius: 10px;
+        max-width: 950px;
+        margin: 35px auto 45px auto;
+        padding: 20px 26px;
+        border-radius: 14px;
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 18px;
         text-align: left;
         font-size: 0.95em;
+        line-height: 1.6;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
-    .policy-warning i { font-size: 1.8em; color: var(--blue); }
-    .policy-warning a { color: var(--white); font-weight: bold; text-decoration: underline; transition: color 0.3s; }
-    .policy-warning a:hover { color: var(--gold); }
+    .policy-warning-card i { 
+        font-size: 2rem; 
+        color: #60a5fa; 
+        flex-shrink: 0;
+        filter: drop-shadow(0 0 8px rgba(33, 150, 243, 0.5));
+    }
+    .policy-warning-card a { 
+        color: #ffffff; 
+        font-weight: 700; 
+        text-decoration: underline; 
+        transition: color 0.2s; 
+    }
+    .policy-warning-card a:hover { 
+        color: var(--gold); 
+    }
+
+    /* Value Proposition Ribbon */
+    .partner-metric-ribbon {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        max-width: 1100px;
+        margin: 0 auto 50px auto;
+        padding: 0 20px;
+    }
+    .partner-metric-card {
+        background: linear-gradient(145deg, rgba(22, 22, 26, 0.85) 0%, rgba(14, 14, 18, 0.95) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    .partner-metric-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+    .partner-metric-icon.gold { background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.3); }
+    .partner-metric-icon.green { background: rgba(76, 175, 80, 0.15); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+    .partner-metric-icon.blue { background: rgba(33, 150, 243, 0.15); color: #60a5fa; border: 1px solid rgba(33, 150, 243, 0.3); }
+    .partner-metric-icon.purple { background: rgba(156, 39, 176, 0.15); color: #ba68c8; border: 1px solid rgba(156, 39, 176, 0.3); }
+
+    .partner-metric-info h4 { margin: 0 0 2px 0; color: #fff; font-size: 1rem; font-weight: 700; }
+    .partner-metric-info p { margin: 0; color: var(--silver); font-size: 0.8rem; }
 
     /* The Feature Grid */
     .feature-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 30px;
+        gap: 28px;
         margin: 0 auto 60px auto;
         max-width: 1200px;
         padding: 0 20px;
     }
 
     .feature-card {
-        background-color: var(--dark-gray);
-        border: 1px solid #333;
-        border-radius: 15px;
-        padding: 35px 25px;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: linear-gradient(155deg, rgba(22, 22, 28, 0.9) 0%, rgba(12, 12, 16, 0.98) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 36px 28px;
+        transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
         position: relative;
         overflow: hidden;
-        text-align: center;
+        text-align: left;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
     
     .feature-card:hover {
-        transform: translateY(-10px);
-        border-color: var(--gold);
-        box-shadow: 0 15px 35px rgba(255, 215, 0, 0.15);
+        transform: translateY(-8px);
+        border-color: rgba(255, 215, 0, 0.45);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.12);
+    }
+    .feature-card:hover::before {
+        opacity: 1;
+    }
+
+    .card-top-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 22px;
     }
 
     .feature-icon-wrapper {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #222, #111);
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #1f1f24, #121216);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2em;
+        font-size: 1.8em;
         color: var(--gold);
-        margin-bottom: 25px;
-        border: 2px solid #444;
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        box-shadow: inset 0 2px 8px rgba(0,0,0,0.6), 0 4px 15px rgba(0, 0, 0, 0.4);
         transition: all 0.3s ease;
     }
 
     .feature-card:hover .feature-icon-wrapper {
-        background: var(--gold);
-        color: var(--black);
-        border-color: var(--gold);
-        box-shadow: 0 0 20px var(--glow-gold);
+        background: linear-gradient(135deg, #ffd700, #ffaa00);
+        color: #0b0c10;
+        border-color: #ffd700;
+        box-shadow: 0 0 22px rgba(255, 215, 0, 0.5);
+        transform: scale(1.05);
     }
 
-    .feature-card h3 { color: var(--white); font-size: 1.3em; margin-bottom: 15px; }
-    .feature-card p { color: var(--silver); font-size: 0.95em; line-height: 1.6; margin: 0; }
+    .benefit-tag {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        color: var(--gold);
+    }
+
+    .feature-card h3 { 
+        color: var(--white); 
+        font-size: 1.35em; 
+        margin: 0 0 12px 0; 
+        font-weight: 700;
+    }
+    .feature-card p { 
+        color: #a0aec0; 
+        font-size: 0.95em; 
+        line-height: 1.65; 
+        margin: 0; 
+        flex-grow: 1;
+    }
 
     /* Bottom CTA Area */
-    .partner-cta-area { text-align: center; margin-bottom: 80px; padding: 50px 20px; background: linear-gradient(to bottom, transparent, var(--dark-gray)); border-radius: 20px; border-bottom: 2px solid var(--gold); max-width: 1000px; margin-left: auto; margin-right: auto; }
-    .partner-cta-area h2 { color: var(--white); font-size: 2.2em; margin-bottom: 15px; }
-    .apply-btn { display: inline-block; background-color: var(--gold); color: var(--black); padding: 18px 50px; border-radius: 30px; font-weight: 800; font-size: 1.2em; text-decoration: none; transition: all 0.3s ease; box-shadow: 0 0 20px var(--glow-gold); margin-top: 20px; text-transform: uppercase; letter-spacing: 1px; }
-    .apply-btn:hover { transform: translateY(-5px); box-shadow: 0 0 30px var(--glow-gold); background-color: #fff; }
+    .partner-cta-area { 
+        text-align: center; 
+        margin-bottom: 80px; 
+        padding: 55px 25px; 
+        background: linear-gradient(145deg, rgba(22, 22, 28, 0.9) 0%, rgba(12, 12, 16, 0.98) 100%); 
+        border-radius: 22px; 
+        border: 1px solid rgba(255, 215, 0, 0.35);
+        border-top: 3px solid var(--gold);
+        max-width: 1000px; 
+        margin-left: auto; 
+        margin-right: auto; 
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 215, 0, 0.15);
+    }
+    .partner-cta-area h2 { color: var(--white); font-size: 2.3em; margin-bottom: 12px; font-weight: 800; }
+    
+    .apply-btn { 
+        display: inline-flex; 
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%); 
+        color: #0b0c10 !important; 
+        padding: 16px 48px; 
+        border-radius: 35px; 
+        font-weight: 800; 
+        font-size: 1.15em; 
+        text-decoration: none; 
+        transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        box-shadow: 0 6px 22px rgba(255, 215, 0, 0.5), 0 0 35px rgba(255, 215, 0, 0.25); 
+        margin-top: 20px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.8px; 
+    }
+    .apply-btn:hover { 
+        transform: translateY(-4px) scale(1.02); 
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.7), 0 0 50px rgba(255, 215, 0, 0.35); 
+        background: linear-gradient(135deg, #ffe033 0%, #ffb700 100%);
+    }
 
-    @media (max-width: 768px) {
-        .features-page-header h1 { font-size: 2.5em; }
+    @media (max-width: 820px) {
+        .features-hero h1 { font-size: 2.4em; }
         .feature-grid { grid-template-columns: 1fr; }
-        .policy-warning { flex-direction: column; text-align: center; }
+        .policy-warning-card { flex-direction: column; text-align: center; }
+        .partner-metric-ribbon { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+        .partner-metric-ribbon { grid-template-columns: 1fr; }
+        .apply-btn { width: 100%; justify-content: center; box-sizing: border-box; }
     }
 </style>
 
 <main>
-    <div class="features-page-header">
-    <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-            <%- include('../../partials/go-back-button', { fallback: '/' }) %>
-            <!-- ======================================== -->
+    <div class="features-hero">
+        <%- include('../../partials/go-back-button', { fallback: '/' }) %>
         <div class="container">
+            <div class="hero-badge-pill">
+                <i class="fas fa-crown"></i> Official Creator Distribution Ecosystem
+            </div>
             <h1>Distributor <span>Partnership Program</span></h1>
-            <p>Scale your audience, monetize your links, and distribute your content to thousands of daily users on the GPL Mods platform. Designed exclusively for modding teams, channels, and established creators.</p>
+            <p>Scale your audience, monetize your destination links, and distribute content seamlessly to thousands of daily users on GPL Mods. Engineered specifically for reverse-engineering teams, modding channels, and established creators.</p>
         </div>
     </div>
 
     <div class="container">
         <!-- Policy Agreement Warning -->
-        <div class="policy-warning">
+        <div class="policy-warning-card">
             <i class="fas fa-file-contract"></i>
             <div>
-                <strong>Important Notice:</strong> By submitting an application and joining the Distributor Program, you explicitly agree to adhere to our <a href="/partnership-policy" target="_blank">Distributor Partnership & Distribution Policy</a>. Strict compliance regarding link safety and malware-free content is required.
+                <strong>Important Program Terms:</strong> By applying and joining the Distributor Program, you explicitly agree to adhere to our <a href="/partnership-policy" target="_blank">Distributor Partnership &amp; Distribution Policy</a>. Strict compliance regarding link safety, malware-free content, and zero deceptive download buttons is strictly enforced.
+            </div>
+        </div>
+
+        <!-- Metric Ribbon -->
+        <div class="partner-metric-ribbon">
+            <div class="partner-metric-card">
+                <div class="partner-metric-icon gold"><i class="fas fa-percentage"></i></div>
+                <div class="partner-metric-info">
+                    <h4>0% Commission</h4>
+                    <p>Keep 100% of your PPD revenue</p>
+                </div>
+            </div>
+            <div class="partner-metric-card">
+                <div class="partner-metric-icon green"><i class="fas fa-certificate"></i></div>
+                <div class="partner-metric-info">
+                    <h4>Verified Checkmark</h4>
+                    <p>Instant brand credibility badge</p>
+                </div>
+            </div>
+            <div class="partner-metric-card">
+                <div class="partner-metric-icon blue"><i class="fas fa-server"></i></div>
+                <div class="partner-metric-info">
+                    <h4>Direct Mirrors</h4>
+                    <p>Drive, Mega, Dropbox or VPS</p>
+                </div>
+            </div>
+            <div class="partner-metric-card">
+                <div class="partner-metric-icon purple"><i class="fas fa-crown"></i></div>
+                <div class="partner-metric-info">
+                    <h4>Free VIP Status</h4>
+                    <p>Lifetime GPL Mods+ upgrade</p>
+                </div>
             </div>
         </div>
     </div>
@@ -119,58 +322,82 @@
         
         <!-- Feature 1 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-money-bill-wave"></i></div>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-money-bill-wave"></i></div>
+                <span class="benefit-tag">Monetization</span>
+            </div>
             <h3>Total Monetization Freedom</h3>
-            <p>Utilize your own Pay-Per-Download (PPD) services or link shorteners (e.g., Linkvertise, Shrink.io, Work.ink, 10drives, DevUploads). We take 0% commission on the revenue you generate.</p>
+            <p>Utilize your own Pay-Per-Download (PPD) services or link shorteners (e.g., Linkvertise, Shrink.io, Work.ink, 10drives, DevUploads). We take 0% commission on the revenue you generate—keep every cent you earn.</p>
         </div>
 
         <!-- Feature 2 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-project-diagram"></i></div>
-            <h3>Brand Expansion & Traffic</h3>
-            <p>Promote your official Website, Telegram Channel, Discord Server, and YouTube directly on your public profile page. Drive highly targeted traffic back to your own ecosystems.</p>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-project-diagram"></i></div>
+                <span class="benefit-tag">Traffic Growth</span>
+            </div>
+            <h3>Brand Expansion &amp; Targeted Traffic</h3>
+            <p>Promote your official Website, Telegram Channel, Discord Server, and YouTube directly on your public creator profile page. Drive thousands of engaged, gaming-focused visitors back to your personal ecosystem.</p>
         </div>
 
         <!-- Feature 3 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-check-circle"></i></div>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-check-circle"></i></div>
+                <span class="benefit-tag">Credibility</span>
+            </div>
             <h3>Verified Organization Badge</h3>
-            <p>Stand out instantly. Your profile and all your uploaded mods will feature the exclusive "Verified Distributor" badge, establishing immediate trust and credibility with our user base.</p>
+            <p>Stand out across the community. Your profile and all uploaded creations will feature the exclusive gold "Verified Distributor" checkmark, immediately establishing trust and safety with downloaders.</p>
         </div>
 
         <!-- Feature 4 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-crown"></i></div>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-crown"></i></div>
+                <span class="benefit-tag">VIP Privilege</span>
+            </div>
             <h3>Lifetime Premium Access</h3>
-            <p>All distributors automatically receive a complimentary, lifetime upgrade to <strong>GPL Mods+</strong>. Enjoy a 100% ad-free experience, custom profile options, and priority support.</p>
+            <p>All approved distributors automatically receive a complimentary, permanent upgrade to <strong>GPL Mods+</strong>. Enjoy a 100% ad-free experience, custom badge flair, profile personalization, and priority concierge support.</p>
         </div>
 
         <!-- Feature 5 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-server"></i></div>
-            <h3>Complete Mirror Control</h3>
-            <p>No need to re-upload massive files. Retain full ownership of your distribution by linking directly to your existing hosted mirrors on Dropbox, Google Drive, Mega, or your private servers.</p>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-server"></i></div>
+                <span class="benefit-tag">Hosting Control</span>
+            </div>
+            <h3>Complete Mirror Ownership</h3>
+            <p>No need to re-upload massive GB files. Retain full custody of your releases by linking directly to your existing hosted mirrors on Dropbox, Google Drive, Mega, MediaFire, or your private servers.</p>
         </div>
 
         <!-- Feature 6 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-star"></i></div>
-            <h3>Premium User Targeting</h3>
-            <p>Enhance the ecosystem by offering seamless, ad-free direct download links specifically for our GPL Mods+ users, while keeping your monetized links active for standard members.</p>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-star"></i></div>
+                <span class="benefit-tag">Audience Retention</span>
+            </div>
+            <h3>Premium User Dual-Targeting</h3>
+            <p>Elevate user experience by offering seamless, ad-free direct downloads specifically for GPL Mods+ members, while maintaining your monetized linkvertise URLs for standard visitors.</p>
         </div>
 
         <!-- Feature 7 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-shield-alt"></i></div>
+                <span class="benefit-tag">Pure Integrity</span>
+            </div>
             <h3>Zero Ad Interference</h3>
-            <p>We guarantee a clean bridge to your content. GPL Mods will never inject our own secondary ads, pop-ups, or intermediary link-shorteners over your provided destination URLs.</p>
+            <p>We guarantee an uncompromised bridge to your content. GPL Mods will never inject secondary pop-ups, forced interstitial ads, or intermediary redirection screens over your destination links.</p>
         </div>
 
         <!-- Feature 8 -->
         <div class="feature-card">
-            <div class="feature-icon-wrapper"><i class="fas fa-balance-scale"></i></div>
-            <h3>Dedicated Moderation Track</h3>
-            <p>Benefit from a specialized moderation queue. Distributors experience faster review times and a significantly reduced risk of automated bans, ensuring fair treatment of your content.</p>
+            <div class="card-top-header">
+                <div class="feature-icon-wrapper"><i class="fas fa-balance-scale"></i></div>
+                <span class="benefit-tag">Priority Support</span>
+            </div>
+            <h3>Dedicated Moderation Queue</h3>
+            <p>Benefit from a specialized moderation fast-track. Verified distributors experience rapid upload approvals and direct communication channels with site admins, eliminating unjustified false flags.</p>
         </div>
 
     </div>
@@ -178,8 +405,12 @@
     <div class="container">
         <div class="partner-cta-area">
             <h2>Ready to Expand Your Reach?</h2>
-            <p style="color: var(--silver); margin-bottom: 20px; font-size: 1.1em;">Join the leading network of verified mod distributors today.</p>
-            <a href="/partnership" class="apply-btn">Apply For Access Now</a>
+            <p style="color: var(--silver); margin-bottom: 25px; font-size: 1.15em; max-width: 650px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                Join the foremost network of verified mod distributors and share your creations with our passionate community.
+            </p>
+            <a href="/partnership" class="apply-btn">
+                <i class="fas fa-paper-plane"></i> Apply For Partner Access Now
+            </a>
         </div>
     </div>
 </main>

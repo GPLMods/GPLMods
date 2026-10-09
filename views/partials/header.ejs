@@ -1449,119 +1449,106 @@
                                                 </ul>
                                             </li>
                                             <% } %>
-                                                <li><a href="/dashboard"><i class="fas fa-user-circle"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        Dashboard</a></li>
-                                                <li><a href="/settings"><i class="fas fa-cog"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        Settings</a></li>
-                                                <li><a href="/docs" style="color: var(--gold);"><i class="fas fa-book"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        Documentation</a></li>
-                                                <li><a href="/licenses"><i class="fas fa-file-contract"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        License Hub</a></li>
-                                                <li><a href="/community"><i class="fa-regular fa-comments"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        Community Forums</a></li>
-                                                <li><a href="/upload"><i class="fas fa-cloud-upload-alt"
-                                                            style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                        Upload A New Mod</a></li>
-                                                <li><a href="/clubs"><i class="fa-solid fa-message"
-                                                            style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                        Chat &amp; Clubs</a></li>
-                                                <li><a href="/membership"><i class="fas fa-gem"
-                                                            style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                        Membership</a></li>
-                                                <% if (user) { %>
-                                                    <li><a href="/my-membership"><i class="fas fa-id-card"
-                                                                style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                            My Membership &amp; Status</a></li>
-                                                    <% } %>
-                                                        <li><a href="/volunteer"><i class="fas fa-hands-helping"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i>
-                                                                Volunteer Team</a></li>
-                                                        <li><a href="/about"><i class="fas fa-info-circle"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                About Us!</a></li>
-                                                        <li><a href="/leaderboard"><i class="fas fa-trophy"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i>
-                                                                Leaderboard!</a></li>
-                                                        <li><a href="/donate"><i class="fas fa-hand-holding-heart"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
-                                                                Donate Us!</a></li>
-                                                        <li><a href="/sponsor"><i
-                                                                    class="fa-solid fa-hand-holding-dollar"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #1ee973;"></i>
-                                                                Sponsors!</a></li>
-                                                        <li><a href="/promote"><i class="fas fa-bullhorn"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center; color: #ff9800;"></i>
-                                                                Promote Mods</a></li>
-                                                        <li><a href="/request-mod"><i class="fas fa-plus-circle"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                Required New Mods</a></li>
-                                                        <li><a href="/support"><i class="fas fa-headset"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                Support Tickets</a></li>
-                                                        <li><a href="/logout" style="color: var(--red);"><i
-                                                                    class="fas fa-sign-out-alt"
-                                                                    style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                Logout</a></li>
-                                                        <% } else { %>
-                                                            <li><a href="/docs" style="color: var(--gold);"><i
-                                                                        class="fas fa-book"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    Documentation</a></li>
-                                                            <li><a href="/licenses"><i class="fas fa-file-contract"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    License Hub</a></li>
-                                                            <li><a href="/community"><i class="fas fa-comments"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    Community Forums</a></li>
-                                                            <li><a href="/upload"><i class="fas fa-cloud-upload-alt"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    Upload A New Mod</a></li>
-                                                            <li><a href="/membership"><i class="fas fa-gem"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                                    Membership</a></li>
-                                                            <li><a href="/volunteer"><i class="fas fa-hands-helping"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #00bcd4;"></i>
-                                                                    Volunteer Team</a></li>
-                                                            <li><a href="/about"><i class="fas fa-info-circle"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    About Us!</a></li>
-                                                            <li><a href="/leaderboard"><i class="fas fa-trophy"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #ffd700;"></i>
-                                                                    Leaderboard!</a></li>
-                                                            <li><a href="/donate"><i class="fas fa-hand-holding-heart"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #e91e63;"></i>
-                                                                    Donate Us!</a></li>
-                                                            <li><a href="/sponsor"><i
-                                                                        class="fa-solid fa-hand-holding-dollar"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #1ee973;"></i>
-                                                                    Sponsors!</a></li>
-                                                            <li><a href="/promote"><i class="fas fa-bullhorn"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: #ff9800;"></i>
-                                                                    Promote Mods</a></li>
-                                                            <li><a href="/guest/notifications"
-                                                                    style="color: var(--gold);"><i class="fas fa-bell"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center; color: var(--gold);"></i>
-                                                                    Notification Settings</a></li>
-                                                            <li><a href="/login"><i class="fas fa-sign-in-alt"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    Login</a></li>
-                                                            <li><a href="/register"><i class="fas fa-user-plus"
-                                                                        style="margin-right: 10px; width: 18px; text-align: center;"></i>
-                                                                    Sign Up</a></li>
-                                                            <% } %>
-                                                                <li
-                                                                    style="margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
-                                                                    <a href="/cc" title="Purge Web Cache (/cc)"
-                                                                        style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">
-                                                                        <i class="fas fa-broom"></i> Clear Web Cache
-                                                                        (/cc)
-                                                                    </a>
-                                                                </li>
+                            <% } %>
+
+                            <!-- Creator & Uploads Submenu -->
+                            <li class="has-submenu">
+                                <a href="#" class="collapsible-trigger">
+                                    <span><i class="fas fa-cloud-upload-alt" style="margin-right: 10px; width: 18px; color: var(--gold);"></i>
+                                        Creator &amp; Uploads</span>
+                                    <span class="arrow">▼</span>
+                                </a>
+                                <ul class="sub-menu">
+                                    <li><a href="/upload"><i class="fas fa-plus-circle" style="margin-right: 8px; color: var(--gold);"></i> Upload A New Mod</a></li>
+                                    <% if (user) { %>
+                                        <li><a href="/my-uploads"><i class="fas fa-folder-open" style="margin-right: 8px; color: #60a5fa;"></i> My Uploads</a></li>
+                                    <% } %>
+                                    <li><a href="/promote"><i class="fas fa-bullhorn" style="margin-right: 8px; color: #ff9800;"></i> Promote Mods</a></li>
+                                    <li><a href="/request-mod"><i class="fas fa-hand-holding" style="margin-right: 8px; color: #4caf50;"></i> Request New Mods</a></li>
+                                    <li><a href="/repos"><i class="fas fa-boxes" style="margin-right: 8px; color: #2196f3;"></i> App Repositories (iOS &amp; Android)</a></li>
+                                    <li><a href="/jailbreak-repos"><i class="fas fa-unlock-alt" style="margin-right: 8px; color: #ff9800;"></i> Jailbreak Repos (DEB)</a></li>
+                                    <li><a href="/source"><i class="fas fa-code-branch" style="margin-right: 8px; color: #ba68c8;"></i> Source Code Hub</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Account & Settings Submenu -->
+                            <li class="has-submenu">
+                                <a href="#" class="collapsible-trigger">
+                                    <span><i class="fas fa-user-circle" style="margin-right: 10px; width: 18px; color: #60a5fa;"></i>
+                                        Account &amp; Settings</span>
+                                    <span class="arrow">▼</span>
+                                </a>
+                                <ul class="sub-menu">
+                                    <% if (user) { %>
+                                        <li><a href="/dashboard"><i class="fas fa-tachometer-alt" style="margin-right: 8px; color: var(--gold);"></i> User Dashboard</a></li>
+                                        <li><a href="/settings"><i class="fas fa-cog" style="margin-right: 8px; color: #b0bec5;"></i> Profile &amp; Account Settings</a></li>
+                                        <li><a href="/profile/<%= user.username %>"><i class="fas fa-id-badge" style="margin-right: 8px; color: #4caf50;"></i> Public Profile</a></li>
+                                        <li><a href="/my-membership"><i class="fas fa-crown" style="margin-right: 8px; color: var(--gold);"></i> My Membership Status</a></li>
+                                        <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 8px; color: #e91e63;"></i> VIP Membership Plans</a></li>
+                                        <li><a href="/wishlist"><i class="fas fa-heart" style="margin-right: 8px; color: #f44336;"></i> My Wishlist</a></li>
+                                        <li><a href="/rewards"><i class="fas fa-medal" style="margin-right: 8px; color: #ffd700;"></i> Rewards &amp; Badges</a></li>
+                                        <li><a href="/notifications"><i class="fas fa-bell" style="margin-right: 8px; color: #ff9800;"></i> Notifications Hub</a></li>
+                                    <% } else { %>
+                                        <li><a href="/login"><i class="fas fa-sign-in-alt" style="margin-right: 8px; color: var(--gold);"></i> Sign In / Login</a></li>
+                                        <li><a href="/register"><i class="fas fa-user-plus" style="margin-right: 8px; color: #4caf50;"></i> Create Account / Sign Up</a></li>
+                                        <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 8px; color: #e91e63;"></i> VIP Membership Plans</a></li>
+                                        <li><a href="/guest/notifications"><i class="fas fa-bell" style="margin-right: 8px; color: var(--gold);"></i> Guest Notifications</a></li>
+                                    <% } %>
+                                </ul>
+                            </li>
+
+                            <!-- Community & Social Submenu -->
+                            <li class="has-submenu">
+                                <a href="#" class="collapsible-trigger">
+                                    <span><i class="fas fa-users" style="margin-right: 10px; width: 18px; color: #4caf50;"></i>
+                                        Community &amp; Social</span>
+                                    <span class="arrow">▼</span>
+                                </a>
+                                <ul class="sub-menu">
+                                    <li><a href="/community"><i class="far fa-comments" style="margin-right: 8px; color: #60a5fa;"></i> Community Forums</a></li>
+                                    <li><a href="/clubs"><i class="fas fa-comments" style="margin-right: 8px; color: var(--gold);"></i> Chat &amp; Clubs</a></li>
+                                    <li><a href="/leaderboard"><i class="fas fa-trophy" style="margin-right: 8px; color: #ffd700;"></i> Leaderboard &amp; Top Creators</a></li>
+                                    <li><a href="/volunteer"><i class="fas fa-hands-helping" style="margin-right: 8px; color: #00bcd4;"></i> Volunteer Team</a></li>
+                                    <li><a href="/sponsor"><i class="fas fa-hand-holding-dollar" style="margin-right: 8px; color: #1ee973;"></i> Sponsor Infrastructure</a></li>
+                                    <li><a href="/donate"><i class="fas fa-hand-holding-heart" style="margin-right: 8px; color: #e91e63;"></i> Donate &amp; Support Us</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Resources & Trust Submenu -->
+                            <li class="has-submenu">
+                                <a href="#" class="collapsible-trigger">
+                                    <span><i class="fas fa-book-open" style="margin-right: 10px; width: 18px; color: #ffb74d;"></i>
+                                        Resources &amp; Trust</span>
+                                    <span class="arrow">▼</span>
+                                </a>
+                                <ul class="sub-menu">
+                                    <li><a href="/docs"><i class="fas fa-book" style="margin-right: 8px; color: var(--gold);"></i> Documentation</a></li>
+                                    <li><a href="/why-choose-us"><i class="fas fa-shield-alt" style="margin-right: 8px; color: #4caf50;"></i> Why Choose GPL Mods?</a></li>
+                                    <li><a href="/understanding-scans"><i class="fas fa-shield-virus" style="margin-right: 8px; color: #60a5fa;"></i> Understanding Scans</a></li>
+                                    <li><a href="/distributor-features"><i class="fas fa-handshake" style="margin-right: 8px; color: var(--gold);"></i> Distributor Partnership</a></li>
+                                    <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 8px; color: #b0bec5;"></i> License Hub</a></li>
+                                    <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 8px; color: #29b6f6;"></i> About Us</a></li>
+                                    <li><a href="/support"><i class="fas fa-headset" style="margin-right: 8px; color: #ab47bc;"></i> Support Tickets</a></li>
+                                    <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health Status</a></li>
+                                    <li><a href="/ai-directory"><i class="fas fa-sitemap" style="margin-right: 8px; color: #90caf9;"></i> Site Map</a></li>
+                                </ul>
+                            </li>
+
+                            <!-- Quick Utilities (Cache & Logout) -->
+                            <li style="margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
+                                <a href="/cc" title="Purge Web Cache (/cc)"
+                                    style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">
+                                    <i class="fas fa-broom"></i> Clear Web Cache (/cc)
+                                </a>
+                            </li>
+
+                            <% if (user) { %>
+                                <li>
+                                    <a href="/logout" style="color: var(--red); display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                                        <i class="fas fa-sign-out-alt"></i> Logout
+                                    </a>
+                                </li>
+                            <% } %>
                         </ul>
                     </nav>
                     <% } %>
