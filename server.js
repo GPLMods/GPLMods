@@ -16938,7 +16938,7 @@ async function getOrBuildFDroidRepoData(req) {
         version: 30000,
         maxAge: 14,
         index: {
-            name: "index-v2.json",
+            name: "/index-v2.json",
             sha256: indexV2Sha256,
             size: indexV2Buffer.length,
             numPackages: Object.keys(indexV2Obj.packages).length
@@ -16950,17 +16950,17 @@ async function getOrBuildFDroidRepoData(req) {
     const indexV1String = JSON.stringify(indexV1Obj, null, 2);
 
     // Create and cryptographically sign entry.jar (contains entry.json)
-    const entryZip = new AdmZip();
+    const entryZip = new AdmZip(undefined, { noSort: true });
     entryZip.addFile("entry.json", Buffer.from(entryJsonString, "utf8"));
     const entryJarBuffer = fdroidSigner.signZip(entryZip);
 
     // Create and cryptographically sign index-v1.jar (contains index-v1.json)
-    const indexV1Zip = new AdmZip();
+    const indexV1Zip = new AdmZip(undefined, { noSort: true });
     indexV1Zip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
     const indexV1JarBuffer = fdroidSigner.signZip(indexV1Zip);
 
     // Create and cryptographically sign index.jar (contains index.xml only per F-Droid specification)
-    const indexJarZip = new AdmZip();
+    const indexJarZip = new AdmZip(undefined, { noSort: true });
     indexJarZip.addFile("index.xml", Buffer.from(xml, "utf8"));
     const indexJarBuffer = fdroidSigner.signZip(indexJarZip);
 
@@ -16989,16 +16989,8 @@ async function getOrBuildFDroidRepoData(req) {
 // 1. Base repository endpoint (Supports /fdroid/repo, /repo, and /fdroid aliases)
 app.get(['/fdroid/repo', '/fdroid/repo/', '/repo', '/repo/', '/fdroid', '/fdroid/'], async (req, res) => {
     try {
-        const accept = (req.headers.accept || '').toLowerCase();
-
-        // Only redirect if client explicitly requests standard HTML browser navigation and NOT json
-        const isExplicitHtmlBrowser = accept.includes('text/html') && !accept.includes('application/json') && !req.xhr;
-
-        if (isExplicitHtmlBrowser && !req.query.format) {
-            return res.redirect('/repos#android-repo');
-        }
-
         // F-Droid clients, Droid-ify, Neo Store, Dalvik, cURL, or JSON probes: return entry.json with 200 OK
+        // Do NOT 302 redirect base repository endpoints as Android package managers forbid repo redirects.
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
             'Content-Type': 'application/json; charset=utf-8',
@@ -17014,7 +17006,7 @@ app.get(['/fdroid/repo', '/fdroid/repo/', '/repo', '/repo/', '/fdroid', '/fdroid
 });
 
 // 2. F-Droid Index V2 Entry Point (entry.json)
-app.get(['/fdroid/repo/entry.json', '/repo/entry.json'], async (req, res) => {
+app.get(['/fdroid/repo/entry.json', '/repo/entry.json', '/entry.json'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17031,7 +17023,7 @@ app.get(['/fdroid/repo/entry.json', '/repo/entry.json'], async (req, res) => {
 });
 
 // 3. F-Droid Index V2 Entry JAR (entry.jar)
-app.get(['/fdroid/repo/entry.jar', '/repo/entry.jar'], async (req, res) => {
+app.get(['/fdroid/repo/entry.jar', '/repo/entry.jar', '/entry.jar'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17048,7 +17040,7 @@ app.get(['/fdroid/repo/entry.jar', '/repo/entry.jar'], async (req, res) => {
 });
 
 // 4. F-Droid Index V2 Full Index (index-v2.json)
-app.get(['/fdroid/repo/index-v2.json', '/repo/index-v2.json'], async (req, res) => {
+app.get(['/fdroid/repo/index-v2.json', '/repo/index-v2.json', '/index-v2.json'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17065,7 +17057,7 @@ app.get(['/fdroid/repo/index-v2.json', '/repo/index-v2.json'], async (req, res) 
 });
 
 // 5. F-Droid Index V1 (index-v1.json)
-app.get(['/fdroid/repo/index-v1.json', '/repo/index-v1.json'], async (req, res) => {
+app.get(['/fdroid/repo/index-v1.json', '/repo/index-v1.json', '/index-v1.json'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17082,7 +17074,7 @@ app.get(['/fdroid/repo/index-v1.json', '/repo/index-v1.json'], async (req, res) 
 });
 
 // 6. F-Droid Index V1 JAR (index-v1.jar)
-app.get(['/fdroid/repo/index-v1.jar', '/repo/index-v1.jar'], async (req, res) => {
+app.get(['/fdroid/repo/index-v1.jar', '/repo/index-v1.jar', '/index-v1.jar'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17099,7 +17091,7 @@ app.get(['/fdroid/repo/index-v1.jar', '/repo/index-v1.jar'], async (req, res) =>
 });
 
 // 7. F-Droid Classic XML (index.xml)
-app.get(['/fdroid/repo/index.xml', '/repo/index.xml'], async (req, res) => {
+app.get(['/fdroid/repo/index.xml', '/repo/index.xml', '/index.xml'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({
@@ -17115,7 +17107,7 @@ app.get(['/fdroid/repo/index.xml', '/repo/index.xml'], async (req, res) => {
 });
 
 // 8. F-Droid Classic JAR (index.jar)
-app.get(['/fdroid/repo/index.jar', '/repo/index.jar'], async (req, res) => {
+app.get(['/fdroid/repo/index.jar', '/repo/index.jar', '/index.jar'], async (req, res) => {
     try {
         const repoData = await getOrBuildFDroidRepoData(req);
         res.set({

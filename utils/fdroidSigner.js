@@ -114,7 +114,7 @@ class FDroidSigner {
             if (this.keytoolPath && !fs.existsSync(this.keystorePath)) {
                 console.log(`[F-Droid Signer] Generating permanent EC repository keystore at: ${this.keystorePath}`);
                 try {
-                    const genCmd = `"${this.keytoolPath}" -genkeypair -alias "${this.alias}" -keyalg EC -groupname secp256r1 -sigalg SHA256withECDSA -validity 10000 -storetype PKCS12 -keystore "${this.keystorePath}" -storepass "${this.storepass}" -keypass "${this.keypass}" -dname "${this.dname}"`;
+                    const genCmd = `"${this.keytoolPath}" -genkeypair -alias "${this.alias}" -keyalg EC -groupname secp256r1 -sigalg SHA256withECDSA -validity 10000 -storetype PKCS12 -keystore "${this.keystorePath}" -storepass "${this.storepass}" -keypass "${this.keypass}" -dname "${this.dname}" -ext BasicConstraints=ca:false -ext KeyUsage=digitalSignature -ext ExtendedKeyUsage=codeSigning`;
                     execSync(genCmd, { stdio: 'pipe' });
                 } catch (err) {
                     console.error('[F-Droid Signer] Failed to generate EC keystore:', err);
@@ -140,7 +140,7 @@ class FDroidSigner {
                 // Generate directly with openssl if keytool was absent
                 try {
                     execSync(`"${this.opensslPath}" ecparam -name prime256v1 -genkey -noout -out "${this.keyPath}"`, { stdio: 'pipe' });
-                    execSync(`"${this.opensslPath}" req -new -x509 -key "${this.keyPath}" -out "${this.certPath}" -days 10000 -subj "/CN=GPL Mods Android/OU=F-Droid Repo/O=GPL Mods/C=US"`, { stdio: 'pipe' });
+                    execSync(`"${this.opensslPath}" req -new -x509 -key "${this.keyPath}" -out "${this.certPath}" -days 10000 -subj "/CN=GPL Mods Android/OU=F-Droid Repo/O=GPL Mods/C=US" -addext "basicConstraints=critical,CA:FALSE" -addext "keyUsage=critical,digitalSignature" -addext "extendedKeyUsage=codeSigning"`, { stdio: 'pipe' });
                 } catch (e) {}
             }
         }
@@ -182,6 +182,22 @@ class FDroidSigner {
     }
 
     /**
+     * Formats a manifest line adhering strictly to standard 72-byte line wrapping.
+     */
+    formatManifestLine(line) {
+        if (line.length <= 70) return line + '\r\n';
+        let res = '';
+        let remaining = line;
+        res += remaining.slice(0, 70) + '\r\n';
+        remaining = remaining.slice(70);
+        while (remaining.length > 0) {
+            res += ' ' + remaining.slice(0, 69) + '\r\n';
+            remaining = remaining.slice(69);
+        }
+        return res;
+    }
+
+    /**
      * Signs an AdmZip instance using jarsigner or openssl CMS.
      * Ensures exactly 1 single code signer per entry for strict Droid-ify / Neo-Store verification.
      */
@@ -192,7 +208,7 @@ class FDroidSigner {
 
         // Extract non-META-INF entries cleanly
         const rawEntries = admZip.getEntries().filter(e => !e.isDirectory && !e.entryName.startsWith('META-INF/'));
-        const cleanZip = new AdmZip();
+        const cleanZip = new AdmZip(undefined, { noSort: true });
         const entries = [];
         for (const entry of rawEntries) {
             const data = entry.getData();
@@ -240,12 +256,15 @@ class FDroidSigner {
         const aliasUpper = (this.alias || 'GPLMODS').toUpperCase().replace(/[^A-Z0-9_-]/g, '');
 
         // 1. Generate META-INF/MANIFEST.MF
-        let manifest = 'Manifest-Version: 1.0\r\nCreated-By: 1.0 (GPLMods F-Droid Engine)\r\n\r\n';
+        const mainSection = 'Manifest-Version: 1.0\r\nCreated-By: 1.0 (GPLMods F-Droid Engine)\r\n\r\n';
+        let manifest = mainSection;
         const entryDigests = [];
 
         for (const entry of entries) {
             const fileHash = crypto.createHash('sha256').update(entry.data).digest('base64');
-            const section = `Name: ${entry.name}\r\nSHA-256-Digest: ${fileHash}\r\n\r\n`;
+            const section = this.formatManifestLine(`Name: ${entry.name}`) +
+                            this.formatManifestLine(`SHA-256-Digest: ${fileHash}`) +
+                            '\r\n';
             manifest += section;
 
             const secHash = crypto.createHash('sha256').update(Buffer.from(section, 'utf8')).digest('base64');
@@ -254,15 +273,22 @@ class FDroidSigner {
 
         const manifestBuffer = Buffer.from(manifest, 'utf8');
         const manifestHash = crypto.createHash('sha256').update(manifestBuffer).digest('base64');
+        const mainAttrsHash = crypto.createHash('sha256').update(Buffer.from(mainSection, 'utf8')).digest('base64');
 
-        // 2. Generate META-INF/<ALIAS>.SF
-        let sf = `Signature-Version: 1.0\r\nCreated-By: 1.0 (GPLMods F-Droid Engine)\r\nSHA-256-Digest-Manifest: ${manifestHash}\r\n\r\n`;
+        // 2. Generate META-INF/<ALIAS>.SF with Main-Attributes digest
+        let sf = 'Signature-Version: 1.0\r\nCreated-By: 1.0 (GPLMods F-Droid Engine)\r\n' +
+                 this.formatManifestLine(`SHA-256-Digest-Manifest: ${manifestHash}`) +
+                 this.formatManifestLine(`SHA-256-Digest-Manifest-Main-Attributes: ${mainAttrsHash}`) +
+                 '\r\n';
+
         for (const item of entryDigests) {
-            sf += `Name: ${item.name}\r\nSHA-256-Digest: ${item.secHash}\r\n\r\n`;
+            sf += this.formatManifestLine(`Name: ${item.name}`) +
+                  this.formatManifestLine(`SHA-256-Digest: ${item.secHash}`) +
+                  '\r\n';
         }
         const sfBuffer = Buffer.from(sf, 'utf8');
 
-        // 3. Sign .SF file using OpenSSL CMS detached signature
+        // 3. Sign .SF file using OpenSSL CMS detached signature (eContent is absent per Jar specification)
         const tempId = `fdroid-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const tmpSfPath = path.join(os.tmpdir(), `${tempId}.SF`);
         const tmpEcPath = path.join(os.tmpdir(), `${tempId}.EC`);
@@ -270,7 +296,8 @@ class FDroidSigner {
         let ecBuffer;
         try {
             fs.writeFileSync(tmpSfPath, sfBuffer);
-            const opensslCmd = `"${this.opensslPath}" cms -sign -in "${tmpSfPath}" -signer "${this.certPath}" -inkey "${this.keyPath}" -outform DER -binary -nodetach -out "${tmpEcPath}"`;
+            // No -nodetach flag -> produces detached signature block where eContent is ABSENT
+            const opensslCmd = `"${this.opensslPath}" cms -sign -in "${tmpSfPath}" -signer "${this.certPath}" -inkey "${this.keyPath}" -outform DER -binary -out "${tmpEcPath}"`;
             execSync(opensslCmd, { stdio: 'pipe' });
             ecBuffer = fs.readFileSync(tmpEcPath);
         } finally {
@@ -282,14 +309,15 @@ class FDroidSigner {
             }
         }
 
-        // 4. Assemble signed JAR
-        const signedZip = new AdmZip();
-        for (const entry of entries) {
-            signedZip.addFile(entry.name, entry.data);
-        }
+        // 4. Assemble signed JAR with META-INF FIRST, using { noSort: true } to guarantee order
+        const signedZip = new AdmZip(undefined, { noSort: true });
         signedZip.addFile('META-INF/MANIFEST.MF', manifestBuffer);
         signedZip.addFile(`META-INF/${aliasUpper}.SF`, sfBuffer);
         signedZip.addFile(`META-INF/${aliasUpper}.EC`, ecBuffer);
+
+        for (const entry of entries) {
+            signedZip.addFile(entry.name, entry.data);
+        }
 
         return signedZip.toBuffer();
     }
@@ -303,7 +331,7 @@ class FDroidSigner {
             manifest += `Name: ${entry.entryName}\r\nSHA-256-Digest: ${hash}\r\n\r\n`;
         }
 
-        const fallbackZip = new AdmZip();
+        const fallbackZip = new AdmZip(undefined, { noSort: true });
         fallbackZip.addFile('META-INF/MANIFEST.MF', Buffer.from(manifest, 'utf8'));
         for (const entry of entries) {
             fallbackZip.addFile(entry.entryName, entry.getData());
