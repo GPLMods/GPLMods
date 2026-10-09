@@ -16959,10 +16959,9 @@ async function getOrBuildFDroidRepoData(req) {
     indexV1Zip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
     const indexV1JarBuffer = fdroidSigner.signZip(indexV1Zip);
 
-    // Create and cryptographically sign index.jar (contains index.xml & index-v1.json)
+    // Create and cryptographically sign index.jar (contains index.xml only per F-Droid specification)
     const indexJarZip = new AdmZip();
     indexJarZip.addFile("index.xml", Buffer.from(xml, "utf8"));
-    indexJarZip.addFile("index-v1.json", Buffer.from(indexV1String, "utf8"));
     const indexJarBuffer = fdroidSigner.signZip(indexJarZip);
 
     // Save to cache
