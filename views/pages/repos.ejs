@@ -167,8 +167,9 @@
             const rawDomain = baseUrl.replace(/^https?:\/\//, ''); 
             const fp = (typeof fdroidFingerprint !== 'undefined' && fdroidFingerprint) ? fdroidFingerprint : '';
             const formattedFp = (typeof fdroidFormattedFingerprint !== 'undefined' && fdroidFormattedFingerprint) ? fdroidFormattedFingerprint : fp;
-            const fullRepoUrlWithFp = fp ? (fullRepoUrl + '/fdroid/repo?fingerprint=' + fp) : (fullRepoUrl + '/fdroid/repo');
-            const clientIntentUrl = fp ? ('fdroidrepos://' + rawDomain + '/fdroid/repo?fingerprint=' + fp) : ('fdroidrepos://' + rawDomain + '/fdroid/repo');
+            const cleanFp = fp.toLowerCase().replace(/[^a-f0-9]/g, '');
+            const fullRepoUrlWithFp = cleanFp ? (fullRepoUrl + '/fdroid/repo?fingerprint=' + cleanFp) : (fullRepoUrl + '/fdroid/repo');
+            const clientIntentUrl = cleanFp ? ('fdroidrepos://' + rawDomain + '/fdroid/repo?fingerprint=' + cleanFp) : ('fdroidrepos://' + rawDomain + '/fdroid/repo');
         %>
 
 
@@ -328,7 +329,7 @@
                         <!-- F-Droid Official -->
                         <div style="background: #151518; border: 1px solid #333; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;">
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fab fa-android" style="font-size: 2rem; color: var(--android-color);"></i>
+                                <img src="<%= cdnUrl %>/images/icons/f-droid.png" alt="F-Droid" style="width: 32px; height: 32px; object-fit: contain;" onerror="this.style.display='none'">
                                 <div>
                                     <h4 style="margin: 0; color: #fff; font-size: 0.95rem;">F-Droid</h4>
                                     <span style="color: var(--silver); font-size: 0.75rem;">Official FOSS Store</span>
@@ -350,16 +351,24 @@
 
                     <% if (fp) { %>
                     <div style="margin: 15px auto 20px auto; max-width: 650px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(76, 175, 80, 0.3); border-radius: 8px; padding: 12px 16px; text-align: left;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                             <span style="color: var(--android-color); font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">
                                 <i class="fas fa-fingerprint"></i> SHA-256 Signing Fingerprint
                             </span>
-                            <button type="button" onclick="copyRepoUrl('<%= formattedFp %>', this)" style="background: none; border: 1px solid #444; color: var(--silver); padding: 2px 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer;">
-                                <i class="fas fa-copy"></i> Copy Fingerprint
-                            </button>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" onclick="copyRepoUrl('<%= cleanFp %>', this)" style="background: rgba(76, 175, 80, 0.15); border: 1px solid var(--android-color); color: var(--android-color); padding: 3px 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer; font-weight: bold;">
+                                    <i class="fas fa-copy"></i> Copy Clean Hex (Neo Store / Droid-ify)
+                                </button>
+                                <button type="button" onclick="copyRepoUrl('<%= formattedFp %>', this)" style="background: none; border: 1px solid #444; color: var(--silver); padding: 3px 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer;">
+                                    <i class="fas fa-copy"></i> Copy Formatted
+                                </button>
+                            </div>
                         </div>
                         <div style="font-family: monospace; font-size: 0.85em; color: #a0aec0; word-break: break-all; line-height: 1.4;">
                             <%= formattedFp %>
+                        </div>
+                        <div style="font-family: monospace; font-size: 0.78em; color: #718096; word-break: break-all; margin-top: 5px;">
+                            Raw Hex (No colons): <%= cleanFp %>
                         </div>
                     </div>
                     <% } %>
@@ -386,7 +395,7 @@
 
                         <a href="<%= clientIntentUrl %>" class="repo-btn"
                             style="border-color: var(--android-color);">
-                            <i class="fab fa-android" style="color: var(--android-color); font-size: 1.3em;"></i> Add to
+                            <img src="<%= cdnUrl %>/images/icons/f-droid.png" alt="F-Droid" class="repo-icon"> Add to
                             F-Droid
                         </a>
 

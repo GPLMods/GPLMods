@@ -16740,8 +16740,8 @@ async function getOrBuildFDroidRepoData(req) {
             icon: {
                 "en-US": {
                     name: "/icons/icon-512x512.png",
-                    sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                    size: 512
+                    sha256: "c5f30a595e6c4a3cb4ff4d4afc1ecd3c7115a991a777c8ba79d5653d52ef6b0b",
+                    size: 163328
                 }
             },
             mirrors: [
@@ -16808,13 +16808,15 @@ async function getOrBuildFDroidRepoData(req) {
         if (cleanNotes) fullMarkdownDesc += `**App Store Info:**\n${cleanNotes}\n\n`;
 
         const screenshotArray = [];
+        const screenshotV1Array = [];
         if (mod.screenshotKeys && mod.screenshotKeys.length > 0) {
             mod.screenshotKeys.forEach((_, i) => {
-                screenshotArray.push({ name: `${repoBaseUrl}/api/screenshot/${mod._id}/${i}` });
+                screenshotArray.push({ name: `/screenshots/${mod._id}/${i}.png` });
+                screenshotV1Array.push(`screenshots/${mod._id}/${i}.png`);
             });
         }
 
-        const iconUrl = `${repoBaseUrl}/api/icon/${mod._id}`;
+        const iconUrl = `${repoBaseUrl}/icons/${mod._id}.png`;
         const relativeIconPath = `icons/${mod._id}.png`;
         const addedTs = new Date(mod.createdAt).getTime();
         const updatedTs = new Date(mod.updatedAt).getTime();
@@ -16832,12 +16834,14 @@ async function getOrBuildFDroidRepoData(req) {
                 authorName: mod.uploader || "GPL Community",
                 icon: {
                     "en-US": {
-                        name: relativeIconPath,
-                        sha256: sha256Hash,
-                        size: 512
+                        name: `/icons/${mod._id}.png`
                     }
                 },
-                phoneScreenshots: { "en-US": screenshotArray },
+                screenshots: {
+                    phone: {
+                        "en-US": screenshotArray
+                    }
+                },
                 added: addedTs,
                 lastUpdated: updatedTs
             },
@@ -16845,7 +16849,7 @@ async function getOrBuildFDroidRepoData(req) {
                 [sha256Hash]: {
                     added: updatedTs,
                     file: {
-                        name: apkFileName,
+                        name: `/${apkFileName}`,
                         sha256: sha256Hash,
                         size: mod.fileSize || 1048576
                     },
@@ -16855,9 +16859,6 @@ async function getOrBuildFDroidRepoData(req) {
                         usesSdk: {
                             minSdkVersion: minSdk,
                             targetSdkVersion: 34
-                        },
-                        signer: {
-                            sha256: [sha256Hash]
                         }
                     },
                     releaseNotes: { "en-US": cleanWhatsNew }
@@ -16878,7 +16879,16 @@ async function getOrBuildFDroidRepoData(req) {
             added: addedTs,
             lastUpdated: updatedTs,
             suggestedVersionName: vName,
-            suggestedVersionCode: String(vCode)
+            suggestedVersionCode: String(vCode),
+            localized: {
+                "en-US": {
+                    name: mod.name,
+                    summary: `${vName} Mod by ${mod.uploader || 'GPL Mods'}`,
+                    description: cleanDesc,
+                    icon: relativeIconPath,
+                    phoneScreenshots: screenshotV1Array
+                }
+            }
         });
 
         indexV1Obj.packages[bundleId] = [
@@ -17128,10 +17138,17 @@ app.get(['/fdroid/repo/icon-512x512.png', '/repo/icon-512x512.png', '/fdroid/rep
     res.redirect('/images/icon-512x512.png');
 });
 
-// 10. Relative Icon path resolver for clients looking in /icons/:id or /icons/:pkg.png
-app.get(['/fdroid/repo/icons/:iconPath', '/repo/icons/:iconPath', '/icons/:iconPath'], async (req, res) => {
+// 10. Relative Icon path resolver for clients looking in /icons/:id, /repo/icons/:id, etc.
+app.get([
+    '/fdroid/repo/icons/:iconPath', 
+    '/repo/icons/:iconPath', 
+    '/icons/:iconPath',
+    '/fdroid/repo/api/icon/:iconPath',
+    '/repo/api/icon/:iconPath',
+    '/api/icon/:iconPath'
+], async (req, res) => {
     try {
-        const iconParam = req.params.iconPath.replace(/\.(png|jpg|webp)$/i, '');
+        const iconParam = String(req.params.iconPath || '').replace(/\.(png|jpg|webp)$/i, '');
         if (iconParam === 'icon-512x512' || iconParam === 'icon') {
             return res.redirect('/images/icon-512x512.png');
         }
@@ -17161,6 +17178,32 @@ app.get(['/fdroid/repo/icons/:iconPath', '/repo/icons/:iconPath', '/icons/:iconP
     }
 });
 
+// 10b. Screenshots resolver for F-Droid clients (/screenshots/:id/:index and /api/screenshot/:id/:index)
+app.get([
+    '/fdroid/repo/screenshots/:id/:index',
+    '/repo/screenshots/:id/:index',
+    '/screenshots/:id/:index',
+    '/fdroid/repo/api/screenshot/:id/:index',
+    '/repo/api/screenshot/:id/:index',
+    '/api/screenshot/:id/:index'
+], async (req, res) => {
+    try {
+        const cleanId = req.params.id;
+        const cleanIndex = parseInt(String(req.params.index).replace(/\.(png|jpg|webp)$/i, ''), 10);
+        if (Types.ObjectId.isValid(cleanId) && !isNaN(cleanIndex)) {
+            const file = await File.findById(cleanId);
+            if (file && file.screenshotKeys && file.screenshotKeys[cleanIndex]) {
+                const key = file.screenshotKeys[cleanIndex];
+                const signedUrl = await getSmartImageUrl(key);
+                return res.redirect(signedUrl);
+            }
+        }
+        return res.status(404).send('Screenshot not found');
+    } catch (e) {
+        return res.status(404).send('Screenshot not found');
+    }
+});
+
 // 11. Direct APK Download Resolver (Handles /fdroid/repo/:apkFile and /repo/:apkFile)
 app.get(['/fdroid/repo/:apkFile', '/repo/:apkFile', '/fdroid/repo/download/:apkFile', '/repo/download/:apkFile'], async (req, res, next) => {
     try {
@@ -17185,7 +17228,20 @@ app.get(['/fdroid/repo/:apkFile', '/repo/:apkFile', '/fdroid/repo/download/:apkF
             }
         }
 
-        // 2. Try finding by package name / slug / name
+        // 2. Try finding by 64-character SHA-256 / virusTotalId
+        if (/^[a-f0-9]{64}$/i.test(cleanParam)) {
+            const fileByHash = await File.findOne({ 
+                category: 'android', 
+                status: 'live',
+                virusTotalId: cleanParam.toLowerCase()
+            });
+            if (fileByHash) {
+                if (fileByHash.externalDownloadUrl) return res.redirect(fileByHash.externalDownloadUrl);
+                return res.redirect(`/download-file/${fileByHash._id}`);
+            }
+        }
+
+        // 3. Try finding by package name / slug / name
         const cleanSlug = cleanParam
             .replace(/^com\.gplmods\./i, '')
             .replace(/_\d+$/, '') // Remove trailing version code e.g. _8011100
