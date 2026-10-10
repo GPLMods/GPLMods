@@ -599,17 +599,25 @@ a.overlay-btn-primary:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    vertical-align: middle;
 }
 .card-top-badges .app-feature-tag {
     flex-shrink: 1;
     max-width: 55%;
+    padding: 3px 8px;
+    font-size: 0.72em;
 }
 .card-top-badges .mod-type-tag {
     margin-left: auto;
     flex-shrink: 0;
     max-width: 45%;
+    padding: 3px 8px;
+    font-size: 0.72em;
 }
 
 /* 6. Tags & Badges */
@@ -620,7 +628,7 @@ a.overlay-btn-primary:hover {
     background-color: var(--gold); 
     color: var(--black); 
     font-size: 0.75em; 
-    font-weight: bold; 
+    font-weight: 700; 
     padding: 4px 10px; 
     border-radius: 12px; 
     z-index: 2; 
@@ -629,6 +637,11 @@ a.overlay-btn-primary:hover {
     white-space: nowrap; 
     overflow: hidden; 
     text-overflow: ellipsis; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
 }
 .mod-type-tag { 
     position: absolute; 
@@ -639,7 +652,7 @@ a.overlay-btn-primary:hover {
     background-color: var(--silver); 
     color: var(--black); 
     font-size: 0.75em; 
-    font-weight: bold; 
+    font-weight: 700; 
     padding: 4px 10px; 
     border-radius: 12px; 
     z-index: 2; 
@@ -648,6 +661,11 @@ a.overlay-btn-primary:hover {
     white-space: nowrap; 
     overflow: hidden; 
     text-overflow: ellipsis; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.2;
 }
 /* Platform Tag Colors */
 .platform-tag {
@@ -1385,21 +1403,21 @@ a.overlay-btn-primary:hover {
         }
         .logo .logo-gold-glow,
         .logo-gold-glow {
-            color: var(--gold);
-            text-shadow: 0 0 10px var(--glow-gold);
+            color: var(--gold) !important;
+            text-shadow: 0 0 10px var(--glow-gold), 0 0 20px var(--glow-gold) !important;
             transition: text-shadow 0.3s ease;
         }
         .logo .logo-silver-glow,
         .logo-silver-glow {
-            color: var(--silver, #c0c0c0);
-            text-shadow: 0 0 10px var(--glow-silver);
+            color: #f0f4f8 !important;
+            text-shadow: 0 0 10px var(--glow-silver), 0 0 20px rgba(255, 255, 255, 0.3) !important;
             transition: text-shadow 0.3s ease;
         }
         .logo:hover .logo-gold-glow {
-            text-shadow: 0 0 15px var(--glow-gold);
+            text-shadow: 0 0 15px var(--glow-gold), 0 0 25px var(--glow-gold) !important;
         }
         .logo:hover .logo-silver-glow {
-            text-shadow: 0 0 15px var(--glow-silver);
+            text-shadow: 0 0 15px var(--glow-silver), 0 0 25px rgba(255, 255, 255, 0.4) !important;
         }
         .main-nav { display: none; } /* Hide main nav on this page for simplicity, or implement as needed */
         .mobile-nav { display: none; position: fixed; top: 0; left: 0; width: 80%; max-width: 300px; height: 100%; background-color: var(--dark-gray); padding: 20px; z-index: 1001; }
@@ -2599,6 +2617,127 @@ a.overlay-btn-primary:hover {
 /* ==========================================================
    CUSTOM GPLMODS PWA MODAL
    ========================================================== */
+/* Standardized Custom Dialog Modals */
+.gpl-custom-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100005;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.gpl-custom-modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+.gpl-custom-modal-card {
+    background: linear-gradient(145deg, #18181f 0%, #101015 100%);
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    border-radius: 18px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 215, 0, 0.12);
+    width: 100%;
+    max-width: 440px;
+    padding: 24px 22px;
+    text-align: center;
+    position: relative;
+    transform: scale(0.92) translateY(15px);
+    transition: transform 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.gpl-custom-modal-backdrop.show .gpl-custom-modal-card {
+    transform: scale(1) translateY(0);
+}
+.gpl-custom-modal-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+.gpl-custom-modal-title {
+    color: var(--white);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+}
+.gpl-custom-modal-desc {
+    color: var(--silver);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 20px;
+}
+.gpl-custom-modal-input {
+    width: 100%;
+    padding: 11px 14px;
+    background: #0b0b0e;
+    border: 1px solid #33333d;
+    border-radius: 10px;
+    color: var(--white);
+    font-size: 0.92rem;
+    font-family: inherit;
+    margin-bottom: 18px;
+    box-sizing: border-box;
+}
+.gpl-custom-modal-input:focus {
+    border-color: var(--gold);
+    outline: none;
+    box-shadow: 0 0 10px var(--glow-gold);
+}
+.gpl-custom-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+.gpl-modal-btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.gpl-modal-btn.cancel {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--silver);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.gpl-modal-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--white);
+}
+.gpl-modal-btn.confirm {
+    background: var(--gold);
+    color: #000;
+    font-weight: 700;
+}
+.gpl-modal-btn.confirm:hover {
+    background: #ffea70;
+    box-shadow: 0 0 14px var(--glow-gold);
+}
+.gpl-modal-btn.danger {
+    background: #e53935;
+    color: #fff;
+    font-weight: 700;
+}
+.gpl-modal-btn.danger:hover {
+    background: #f44336;
+    box-shadow: 0 0 14px rgba(229, 57, 53, 0.5);
+}
+
 .gpl-pwa-modal-backdrop {
     position: fixed;
     top: 0;
@@ -2763,6 +2902,57 @@ a.overlay-btn-primary:hover {
     height: 3px;
     background: #111;
     border-radius: 0 0 3px 3px;
+}
+
+.gpl-pwa-mobile-home-indicator {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .gpl-pwa-device-illustration {
+        width: 100px;
+    }
+    .gpl-pwa-laptop-screen {
+        width: 92px;
+        height: 140px;
+        border: 3px solid #33333d;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 16px rgba(255, 215, 0, 0.22);
+    }
+    .gpl-pwa-browser-bar {
+        height: 16px;
+        background: #0d0d11;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        justify-content: center;
+        padding: 0 4px;
+        position: relative;
+    }
+    .gpl-pwa-dot.dot-yellow,
+    .gpl-pwa-dot.dot-green {
+        display: none !important;
+    }
+    .gpl-pwa-dot.dot-red {
+        width: 24px;
+        height: 5px;
+        border-radius: 4px;
+        background: #2a2a34;
+        box-shadow: inset 0 0 2px rgba(0,0,0,0.8);
+    }
+    .gpl-pwa-laptop-base {
+        display: none !important;
+    }
+    .gpl-pwa-mobile-home-indicator {
+        display: block !important;
+        width: 32px;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.45);
+        border-radius: 3px;
+        position: absolute;
+        bottom: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+    }
 }
 
 .gpl-pwa-modal-body {
@@ -3483,7 +3673,22 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         gap: 3px !important;
     }
 
-    .mod-grid .app-feature-tag {
+    .mod-grid .card-top-badges .app-feature-tag,
+    .mod-grid .card-top-badges .mod-type-tag {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        line-height: 1.2 !important;
+        font-size: 0.68em !important;
+        padding: 2px 6px !important;
+    }
+
+    .mod-grid .app-feature-tag:not(.card-top-badges *) {
         top: 6px !important;
         left: 6px !important;
         font-size: 0.65em !important;
@@ -3492,9 +3697,12 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    .mod-grid .mod-type-tag {
+    .mod-grid .mod-type-tag:not(.card-top-badges *) {
         top: 6px !important;
         right: 6px !important;
         left: auto !important; 
@@ -3505,6 +3713,9 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
     .mod-grid .download-overlay {
@@ -3645,3 +3856,13 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
 .fa-hearts::before {
     content: "\f004";
 }
+
+/* Universal Notification Dot Hiding */
+.update-badge.hidden,
+.update-badge[style*="display: none"],
+.update-badge[style*="display:none"],
+.update-badge[hidden],
+.update-badge:empty {
+    display: none !important;
+}
+

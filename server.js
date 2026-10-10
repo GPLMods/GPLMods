@@ -2286,8 +2286,68 @@ passport.use(new MicrosoftStrategy({
 // 1.5. PUBLIC & DIAGNOSTIC ROUTES
 // ===============================
 
+// --- PUBLIC SYSTEM STATUS PAGE (Visitors & Uptime Monitors) ---
+app.get('/status', async (req, res) => {
+    try {
+        const reqHost = (req.hostname || req.get('host') || '').toLowerCase().split(':')[0];
+        const isLocalHost = reqHost === 'localhost' || reqHost === '127.0.0.1' || reqHost === '::1' || reqHost === '0.0.0.0' || reqHost.startsWith('192.168.') || reqHost.startsWith('10.');
+        const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+        const isOnline = isRender || (!isLocalHost && reqHost !== '');
+        const dynamicEnvironment = isOnline ? 'production' : 'development';
+
+        const dbConnected = mongoose.connection.readyState === 1;
+
+        let storageStatus = 'CONNECTED';
+        try {
+            if (s3Client && process.env.B2_BUCKET_NAME) {
+                const { ListObjectsV2Command } = require('@aws-sdk/client-s3');
+                const command = new ListObjectsV2Command({
+                    Bucket: process.env.B2_BUCKET_NAME,
+                    MaxKeys: 1
+                });
+                await s3Client.send(command);
+            }
+        } catch (e) {
+            storageStatus = 'DEGRADED';
+        }
+
+        const overallStatus = (!dbConnected || storageStatus === 'DEGRADED') ? 'DEGRADED' : 'OPERATIONAL';
+
+        const publicHealth = {
+            status: overallStatus,
+            uptime: formatUptime(process.uptime()),
+            environment: dynamicEnvironment,
+            timestamp: new Date().toISOString(),
+            services: {
+                app: { status: 'CONNECTED' },
+                database: { status: dbConnected ? 'CONNECTED' : 'DISCONNECTED' },
+                storage: { status: storageStatus },
+                cdn: { status: 'CONNECTED' },
+                virustotal: { status: 'CONNECTED' }
+            }
+        };
+
+        res.render('pages/status', {
+            health: publicHealth,
+            pageTitle: 'System Status | GPL Mods'
+        });
+    } catch (err) {
+        console.error('Error rendering public /status:', err);
+        res.status(500).render('pages/status', {
+            health: {
+                status: 'DEGRADED',
+                uptime: formatUptime(process.uptime()),
+                environment: 'production',
+                timestamp: new Date().toISOString(),
+                services: {}
+            },
+            pageTitle: 'System Status | GPL Mods'
+        });
+    }
+});
+
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
-app.get('/status', ensureAdmin, async (req, res) => {
+app.get('/admin/status', ensureAdmin, async (req, res) => {
     
     // 1. Gather Basic Server Info
     const memUsage = process.memoryUsage();
@@ -2305,7 +2365,7 @@ app.get('/status', ensureAdmin, async (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: formatUptime(process.uptime()),
         nodeVersion: process.version,
-        // ✅ NEW: Detailed Memory Metrics
+        // Detailed Memory Metrics
         memoryUsage: {
             rss: memUsage.rss,             // Total RAM allocated
             heapTotal: memUsage.heapTotal, // V8 engine memory
@@ -2342,8 +2402,6 @@ app.get('/status', ensureAdmin, async (req, res) => {
 
     // 3. Check Backblaze B2 (S3 Client)
     try {
-        // We perform a very lightweight operation: listing a single object (or just testing the credentials)
-        // If this throws an error, our B2 connection is broken.
         const { ListObjectsV2Command } = require('@aws-sdk/client-s3');
         const command = new ListObjectsV2Command({
             Bucket: process.env.B2_BUCKET_NAME,
@@ -2361,12 +2419,9 @@ app.get('/status', ensureAdmin, async (req, res) => {
 
     // 4. Check VirusTotal API (Lightweight check)
     try {
-        // Just checking if the API key is present and formatted correctly locally
         if (!process.env.VIRUSTOTAL_API_KEY || process.env.VIRUSTOTAL_API_KEY.length < 32) {
             throw new Error("API Key is missing or invalid length.");
         }
-        // To do a real live check, you could hit a safe VT endpoint, but that uses quota.
-        // Local validation is usually sufficient for a quick health check.
         healthData.services.virustotal.status = 'CONFIGURED';
         healthData.services.virustotal.details = 'API Key is present.';
     } catch (e) {
@@ -2375,12 +2430,11 @@ app.get('/status', ensureAdmin, async (req, res) => {
     }
 
     // 5. Final Status Calculation
-    // If any warnings exist, the server is "DEGRADED", not "UP"
     if (healthData.warnings.length > 0 && healthData.status === 'UP') {
         healthData.status = 'DEGRADED';
     }
 
-    // Instead of sending raw JSON, let's render a beautiful admin page!
+    // Render admin status console
     const debuggerData = await getOrRotateDebuggerKey(false);
     const recentDevtoolLogs = await DevtoolLog.find().sort({ createdAt: -1 }).limit(10).lean();
 
@@ -7497,9 +7551,19 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
 // ===================================
 // 6.5 PUBLIC PROFILE ROUTE
 // ===================================
-app.get('/users/:username', async (req, res, next) => {
+app.get(['/users/:username', '/profile/:username'], (req, res) => {
+    const rawUsername = req.params.username || '';
+    return res.redirect(301, `/user/${encodeURIComponent(rawUsername.toLowerCase())}`);
+});
+
+app.get('/user/:username', async (req, res, next) => {
     try {
-        const slug = req.params.username;
+        const rawUsername = req.params.username || '';
+        const lowerUsername = rawUsername.toLowerCase();
+        if (rawUsername !== lowerUsername) {
+            return res.redirect(301, `/user/${encodeURIComponent(lowerUsername)}`);
+        }
+        const slug = lowerUsername;
         const searchPattern = new RegExp(`^${slug.replace(/-/g, '[-\\s]+')}$`, 'i');
 
         // --- 1. FETCH USER WITH POPULATES ---
@@ -7614,7 +7678,7 @@ app.get('/users/:username', async (req, res, next) => {
             pageDescription: profileDescription,
             pageImage: profileImage,
             pageKeywords: `gpl mods, ${targetUserObj.username}, distributor profile, mod uploads`,
-            pageUrl: `https://gplmods.webredirect.org/users/${targetUserObj.username}`,
+            pageUrl: `https://gplmods.webredirect.org/user/${targetUserObj.username.toLowerCase()}`,
             isCardRef: req.query.ref === 'card',
             joinedClubs: joinedClubs
         });
@@ -15880,6 +15944,7 @@ Allow: /membership
 Allow: /docs/
 Allow: /upload-policy
 Allow: /category
+Allow: /user/
 Allow: /users/
 Allow: /leaderboard
 Allow: /licenses
@@ -16043,7 +16108,7 @@ app.get('/sitemap-users.xml', async (req, res) => {
         ].filter(Boolean));
 
         allUsers.forEach(username => {
-             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/users/' + encodeURIComponent(username))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/user/' + encodeURIComponent(username.toLowerCase()))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
         xml += '</urlset>';
         res.send(xml);

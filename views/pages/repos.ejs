@@ -19,11 +19,13 @@
         }
 
         .platform-section {
-            margin-bottom: 60px;
+            margin-bottom: 50px;
             background: var(--dark-gray);
             padding: 30px;
             border-radius: 15px;
             border: 1px solid #333;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .platform-title {
@@ -35,6 +37,8 @@
             margin-bottom: 20px;
             border-bottom: 1px solid #444;
             padding-bottom: 15px;
+            flex-wrap: wrap;
+            word-break: break-word;
         }
 
         /* Repo Box */
@@ -46,6 +50,8 @@
             margin-bottom: 30px;
             text-align: center;
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.05);
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .repo-box h3 {
@@ -54,37 +60,13 @@
             font-size: 1.3em;
         }
 
-        .repo-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            background: #1a1a1a;
-            color: var(--silver);
-            border: 1px solid #444;
-            padding: 12px 15px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .repo-btn:hover {
-            background: var(--gold);
-            color: var(--black);
-            border-color: var(--gold);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px var(--glow-gold);
-        }
-
-        /* ✅ FIX: Perfect scaling for custom SVG icons inside buttons */
+        /* Perfect scaling for custom SVG icons inside buttons */
         .repo-icon {
             width: 24px;
             height: 24px;
             min-width: 24px;
             max-width: 24px;
             object-fit: contain;
-            /* This makes PNGs scale perfectly! */
             display: block;
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
         }
@@ -101,22 +83,19 @@
             letter-spacing: 1px;
             user-select: all;
             margin-bottom: 20px;
-
-            /* ✅ FIX: Force long URLs to wrap onto the next line */
             word-break: break-all;
-
-            /* Prevent the box from getting wider than its container */
             max-width: 100%;
+            box-sizing: border-box;
         }
 
         .repo-buttons-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
             gap: 15px;
         }
 
         .repo-btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
@@ -128,6 +107,7 @@
             text-decoration: none;
             font-weight: bold;
             transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
         .repo-btn:hover {
@@ -140,6 +120,50 @@
 
         .repo-btn i {
             font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .repo-page-header {
+                padding: 40px 15px;
+                margin-bottom: 25px;
+            }
+            .repo-page-header h1 {
+                font-size: 2.2em;
+            }
+            .platform-section {
+                padding: 18px 14px;
+                margin-bottom: 35px;
+                border-radius: 12px;
+            }
+            .platform-title {
+                font-size: 1.4em;
+                gap: 10px;
+            }
+            .repo-box {
+                padding: 18px 12px;
+            }
+            .repo-buttons-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            .repo-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            .ipa-archive-card {
+                padding: 16px 14px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                text-align: center !important;
+            }
+            .ipa-archive-card > div {
+                flex-direction: column !important;
+                text-align: center !important;
+            }
+            .ipa-archive-card .repo-btn {
+                width: 100% !important;
+                justify-content: center !important;
+            }
         }
     </style>
 

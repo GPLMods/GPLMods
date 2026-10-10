@@ -17,7 +17,7 @@
         color: var(--white);
         margin: 0 0 10px 0;
     }
-    .dmca-admin-header h1 span {
+    .dmca-admin-header h1 span.dmca-title-accent {
         color: #ff3366;
         text-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
     }
@@ -440,7 +440,7 @@
 
     <div class="dmca-admin-header">
         <div class="container">
-            <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> DMCA <span>Compliance & Legal Console</span></h1>
+            <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> DMCA <span class="dmca-title-accent">Compliance &amp; Legal Console</span></h1>
             <p>Automated link protection, variant promotions, false claim restorations, and permanent removals.</p>
         </div>
     </div>
@@ -611,11 +611,9 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <form action="/admin/dmca/<%= claim._id %>/hide-now" method="POST" style="margin: 0;">
-                                        <button type="submit" class="claim-btn btn-hide-now" onclick="return confirm('Immediately hide links for this claim now?');">
-                                            <i class="fas fa-bolt"></i> Hide Links Now
-                                        </button>
-                                    </form>
+                                    <button type="button" class="claim-btn btn-hide-now" onclick="openHideLinksModal('<%= claim._id %>')">
+                                        <i class="fas fa-bolt"></i> Hide Links Now
+                                    </button>
                                 </div>
                             <% } else if (claim.status === 'auto-hidden') { %>
                                 <div class="timer-callout hidden">
@@ -719,11 +717,9 @@
                                 <button type="button" class="claim-btn btn-false-claim" onclick="openFalseClaimModal('<%= claim._id %>')">
                                     <i class="fas fa-undo"></i> Mark as False Claim & Restore
                                 </button>
-                                <form action="/admin/dmca/<%= claim._id %>/reject" method="POST" style="margin: 0;">
-                                    <button type="submit" class="claim-btn btn-reject" onclick="return confirm('Reject this DMCA notice without taking further action?');">
-                                        <i class="fas fa-times"></i> Reject Notice
-                                    </button>
-                                </form>
+                                <button type="button" class="claim-btn btn-reject" onclick="openRejectNoticeModal('<%= claim._id %>')">
+                                    <i class="fas fa-times"></i> Reject Notice
+                                </button>
                             <% } else if (claim.status === 'false-claim') { %>
                                 <span style="color: var(--green); font-size: 0.9em; font-weight: 600;">
                                     <i class="fas fa-check-circle"></i> Restored to public download & uploader dashboard
@@ -779,6 +775,34 @@
     </div>
 </div>
 
+<!-- Immediately Hide Links Modal -->
+<div id="hide-links-modal" class="dmca-modal">
+    <div class="dmca-modal-content">
+        <h3 style="color: var(--gold);"><i class="fas fa-bolt" style="margin-right: 8px;"></i> Immediately Hide Links</h3>
+        <p>Are you sure you want to immediately restrict public download access for this claim ahead of the automated takedown timer?</p>
+        <form id="hide-links-form" method="POST" action="">
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="claim-btn btn-reject" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="claim-btn btn-hide-now"><i class="fas fa-bolt"></i> Hide Links Now</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reject DMCA Notice Modal -->
+<div id="reject-notice-modal" class="dmca-modal">
+    <div class="dmca-modal-content">
+        <h3 style="color: #ff3366;"><i class="fas fa-times-circle" style="margin-right: 8px;"></i> Reject DMCA Notice</h3>
+        <p>Reject this copyright takedown notice without taking further action? Files will remain accessible to users.</p>
+        <form id="reject-notice-form" method="POST" action="">
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="claim-btn btn-hide-now" onclick="closeModals()">Cancel</button>
+                <button type="submit" class="claim-btn btn-reject"><i class="fas fa-times"></i> Reject Notice</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     function filterClaims(status, btnElement) {
         document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
@@ -807,6 +831,20 @@
         const nameSpan = document.getElementById('delete-file-name');
         nameSpan.textContent = `"${fileName}"`;
         form.action = `/admin/dmca/${claimId}/delete-file/${fileId}`;
+        modal.classList.add('show');
+    }
+
+    function openHideLinksModal(claimId) {
+        const modal = document.getElementById('hide-links-modal');
+        const form = document.getElementById('hide-links-form');
+        form.action = `/admin/dmca/${claimId}/hide-now`;
+        modal.classList.add('show');
+    }
+
+    function openRejectNoticeModal(claimId) {
+        const modal = document.getElementById('reject-notice-modal');
+        const form = document.getElementById('reject-notice-form');
+        form.action = `/admin/dmca/${claimId}/reject`;
         modal.classList.add('show');
     }
 

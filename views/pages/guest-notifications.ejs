@@ -166,25 +166,57 @@
         background-color: #000;
     }
 
-    .btn-gold {
+    .btn-gold,
+    .btn-guest-gold {
         background: var(--gold);
         color: #000;
         font-weight: 700;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 22px;
+        border: 1px solid var(--gold);
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 0.88rem;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 8px;
         white-space: nowrap;
         text-decoration: none;
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
     }
 
-    .btn-gold:hover {
+    .btn-gold:hover,
+    .btn-guest-gold:hover {
+        background: #ffea70;
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        box-shadow: 0 6px 18px rgba(255, 215, 0, 0.35);
+        color: #000;
+    }
+
+    .btn-guest-secondary {
+        background: rgba(255, 255, 255, 0.06);
+        color: #fff;
+        font-weight: 600;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 0.88rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .btn-guest-secondary:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: var(--gold);
+        color: var(--gold);
+        transform: translateY(-2px);
     }
 
     .status-msg-banner {
@@ -297,11 +329,11 @@
                         To guarantee reliable background notifications, instant mod release alerts, and lock-screen sound updates on both mobile and desktop, GPLMods must be installed to your home screen or system as a Progressive Web App (PWA). Push alerts remain locked until installed.
                     </p>
 
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
-                        <button type="button" id="btnInstallPwaGuest" onclick="triggerGuestPwaInstall()" class="btn-gold" style="padding: 9px 18px; font-size: 0.88rem;">
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;">
+                        <button type="button" id="btnInstallPwaGuest" onclick="triggerGuestPwaInstall()" class="btn-guest-gold">
                             <i class="fas fa-download"></i> Install GPLMods App
                         </button>
-                        <button type="button" onclick="toggleGuestInstructions()" style="background: rgba(255, 255, 255, 0.08); border: 1px solid #555; color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <button type="button" onclick="toggleGuestInstructions()" class="btn-guest-secondary">
                             <i class="fas fa-info-circle" style="color: var(--gold);"></i> How to Install
                         </button>
                     </div>
@@ -452,7 +484,7 @@
                             <div style="font-size: 0.78em; color: var(--silver); margin-top: 2px;">Dispatch a live test notification to verify your device push connection</div>
                         </div>
                     </div>
-                    <button type="button" id="btnTestNotifGuest" onclick="triggerGuestTestNotification()" class="btn-gold" style="padding: 9px 20px; font-size: 0.88rem;">
+                    <button type="button" id="btnTestNotifGuest" onclick="triggerGuestTestNotification()" class="btn-guest-gold">
                         <i class="fas fa-bell"></i> Send Test Notification
                     </button>
                 </div>

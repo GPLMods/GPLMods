@@ -2,29 +2,66 @@
 
     <style>
         .ai-dir-container {
-            max-width: 1000px;
+            max-width: 1080px;
             margin: 40px auto;
-            background: var(--dark-gray);
+            background: linear-gradient(145deg, #16171f 0%, #0d0e14 100%);
             padding: 40px;
-            border-radius: 12px;
-            border: 1px solid #333;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-top: 3px solid var(--gold);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
         }
 
         .ai-dir-container h1 {
+            color: var(--white);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 14px;
+            margin-bottom: 18px;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-weight: 800;
+        }
+
+        .ai-jump-pills {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .ai-jump-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.25);
             color: var(--gold);
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .ai-jump-pill:hover {
+            background: var(--gold);
+            color: #000;
+            transform: translateY(-2px);
         }
 
         .ai-dir-container h2 {
-            color: var(--silver);
+            color: var(--gold);
             margin-top: 40px;
             text-transform: uppercase;
-            font-size: 1.4em;
-            border-bottom: 1px solid #222;
-            padding-bottom: 5px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 8px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         /* Rich Semantic Mod List */
@@ -32,73 +69,82 @@
             list-style-type: none;
             padding: 0;
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
         }
 
         .ai-dir-item {
             display: flex;
             align-items: flex-start;
-            gap: 15px;
-            background: var(--black);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #222;
+            gap: 14px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #282830;
+            transition: all 0.2s ease;
         }
 
         .ai-dir-item:hover {
             border-color: var(--gold);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.1);
         }
 
         .ai-dir-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 8px;
-            object-fit: contain;
+            width: 52px;
+            height: 52px;
+            border-radius: 10px;
+            object-fit: cover;
             background: #111;
-            padding: 5px;
+            border: 1px solid #333;
             flex-shrink: 0;
         }
 
         .ai-dir-info {
             flex-grow: 1;
+            min-width: 0;
         }
 
         .ai-dir-info a {
             color: var(--white);
             text-decoration: none;
             font-weight: 700;
-            font-size: 1.2em;
+            font-size: 1.05rem;
             transition: color 0.2s;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .ai-dir-info a:hover {
             color: var(--gold);
-            text-decoration: underline;
         }
 
         .ai-dir-meta {
-            font-size: 0.85em;
-            color: var(--gold);
-            margin: 5px 0;
+            font-size: 0.8rem;
+            color: var(--silver);
+            margin: 4px 0 6px 0;
         }
 
         .ai-dir-meta a {
-            color: var(--silver);
-            font-size: 1em;
-            font-weight: normal;
+            display: inline;
+            color: var(--gold);
+            font-size: 0.95em;
+            font-weight: 600;
             text-decoration: none;
         }
 
         .ai-dir-meta a:hover {
-            color: var(--white);
+            color: #fff;
             text-decoration: underline;
         }
 
         .ai-dir-desc {
-            color: var(--silver);
-            font-size: 0.9em;
+            color: #94a3b8;
+            font-size: 0.84rem;
             margin: 0;
+            line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             line-clamp: 2;
@@ -106,135 +152,143 @@
             overflow: hidden;
         }
 
-        /* Simple Grid for Users and Developers */
+        /* Grid for Users, Docs, Developers */
         .ai-tag-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 12px;
             list-style: none;
             padding: 0;
         }
 
         .ai-tag-grid li a {
-            display: block;
-            background: var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid #333;
-            padding: 10px 15px;
-            border-radius: 8px;
+            padding: 11px 16px;
+            border-radius: 10px;
             color: var(--silver);
             text-decoration: none;
             font-weight: 600;
+            font-size: 0.88rem;
             text-align: center;
             transition: all 0.2s;
         }
 
         .ai-tag-grid li a:hover {
             background: var(--gold);
-            color: var(--black);
+            color: #000;
             border-color: var(--gold);
+            transform: translateY(-2px);
         }
 
         @media (max-width: 768px) {
             .ai-dir-container {
-                padding: 20px;
+                padding: 22px 16px;
+            }
+
+            .ai-dir-rich-list {
+                grid-template-columns: 1fr;
             }
 
             .ai-tag-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
         }
     </style>
 
     <main class="container">
         <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 1000px; margin: 20px auto 0 auto; display: flex; justify-content: flex-start;' }) %>
+        <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 1080px; margin: 20px auto 0 auto; display: flex; justify-content: flex-start;' }) %>
         <!-- ======================================== -->
 
         <div class="ai-dir-container" style="margin-top: 1rem;">
-            <h1>GPL Mods - Complete Content Directory</h1>
-            <p style="color: var(--silver); margin-bottom: 30px;">
-                This index contains links to all publicly available modifications, applications, creators, and official
-                documentation on GPL Mods.
+            <h1>
+                <span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> Content &amp; AI Sitemap Directory
+            </h1>
+            <p style="color: var(--silver); margin-bottom: 20px; line-height: 1.6; font-size: 0.95rem;">
+                This comprehensive index contains public routes, verified modifications, active creators, application packages, and official documentation across GPL Mods.
             </p>
 
+            <div class="ai-jump-pills">
+                <a href="#sec-docs" class="ai-jump-pill"><i class="fas fa-book"></i> Documentation</a>
+                <a href="#sec-mods" class="ai-jump-pill"><i class="fas fa-boxes"></i> Modifications</a>
+                <a href="#sec-devs" class="ai-jump-pill"><i class="fas fa-building"></i> Developers</a>
+                <a href="#sec-creators" class="ai-jump-pill"><i class="fas fa-users"></i> Community Creators</a>
+            </div>
+
             <!-- Section 1: Crucial Site Knowledge for AI -->
-            <h2>Site Documentation & Policies</h2>
+            <h2 id="sec-docs"><i class="fas fa-book"></i> Site Documentation &amp; Policies</h2>
             <ul class="ai-tag-grid">
-                <li><a href="/about">About Us</a></li>
-                <li><a href="/faq">FAQ</a></li>
-                <li><a href="/tos">Terms of Service</a></li>
-                <li><a href="/privacy-policy">Privacy Policy</a></li>
-                <li><a href="/dmca">DMCA Policy</a></li>
+                <li><a href="/about"><i class="fas fa-info-circle"></i> About Us</a></li>
+                <li><a href="/faq"><i class="fas fa-question-circle"></i> FAQ</a></li>
+                <li><a href="/tos"><i class="fas fa-file-contract"></i> Terms of Service</a></li>
+                <li><a href="/privacy-policy"><i class="fas fa-user-shield"></i> Privacy Policy</a></li>
+                <li><a href="/dmca"><i class="fas fa-balance-scale"></i> DMCA Policy</a></li>
+                <li><a href="/licenses"><i class="fas fa-certificate"></i> Licenses Hub</a></li>
             </ul>
 
             <!-- Section 2: All Live Mods Organized by Category -->
-            <% Object.keys(modsByCategory).forEach(category=> { %>
-                <h2>
-                    <%= category.toUpperCase().replace('-', ' ' ) %> Mods
-                </h2>
-                <ul class="ai-dir-rich-list">
-                    <% modsByCategory[category].forEach(mod=> { %>
-                        <li class="ai-dir-item">
-                            <!-- loading="lazy" is CRITICAL here for SEO and performance -->
-                            <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="ai-dir-icon" loading="lazy">
+            <div id="sec-mods" style="margin-top: 30px;">
+                <% Object.keys(modsByCategory).forEach(category=> { %>
+                    <h2>
+                        <i class="fas fa-cube"></i> <%= category.toUpperCase().replace('-', ' ' ) %> Mods
+                    </h2>
+                    <ul class="ai-dir-rich-list">
+                        <% modsByCategory[category].forEach(mod=> { %>
+                            <li class="ai-dir-item">
+                                <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="ai-dir-icon" loading="lazy" onerror="this.src='/images/default-avatar.png'">
 
-                            <div class="ai-dir-info">
-                                <a href="/mods/<%= mod.category %>/<%= mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id) %>">
-                                    <%= mod.name %>
-                                </a>
-                                <div class="ai-dir-meta">
-                                    Dev: <a href="/developer?name=<%= encodeURIComponent(mod.developer) %>">
-                                        <%= mod.developer %>
-                                    </a> |
-                                    Uploader: <a href="/users/<%= slugify(mod.uploader) %>">
-                                        <%= mod.uploader %>
+                                <div class="ai-dir-info">
+                                    <a href="/mods/<%= mod.category %>/<%= mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id) %>">
+                                        <%= mod.name %>
                                     </a>
+                                    <div class="ai-dir-meta">
+                                        Dev: <a href="/developer?name=<%= encodeURIComponent(mod.developer) %>"><%= mod.developer %></a> |
+                                        Uploader: <a href="/user/<%= slugify(mod.uploader).toLowerCase() %>"><%= mod.uploader %></a>
+                                    </div>
+                                    <% 
+                                        const plainDesc = (mod.modDescription || '')
+                                            .replace(/<[^>]*>/g, '')
+                                            .replace(/&nbsp;/g, ' ')
+                                            .replace(/&amp;/g, '&')
+                                            .replace(/&quot;/g, '"')
+                                            .replace(/&#039;/g, "'")
+                                            .replace(/\s+/g, ' ')
+                                            .trim();
+                                    %>
+                                    <p class="ai-dir-desc">
+                                        <%= plainDesc.substring(0, 150) %><%= plainDesc.length > 150 ? '...' : '' %>
+                                    </p>
                                 </div>
-                                <% 
-                                    const plainDesc = (mod.modDescription || '')
-                                        .replace(/<[^>]*>/g, '')
-                                        .replace(/&nbsp;/g, ' ')
-                                        .replace(/&amp;/g, '&')
-                                        .replace(/&quot;/g, '"')
-                                        .replace(/&#039;/g, "'")
-                                        .replace(/\s+/g, ' ')
-                                        .trim();
-                                %>
-                                <p class="ai-dir-desc">
-                                    <%= plainDesc.substring(0, 150) %><%= plainDesc.length > 150 ? '...' : '' %>
-                                </p>
-                            </div>
-                        </li>
+                            </li>
                         <% }) %>
-                </ul>
+                    </ul>
                 <% }) %>
 
-                    <% if (Object.keys(modsByCategory).length===0) { %>
-                        <p style="color: var(--silver); padding: 20px; background: var(--black); border-radius: 8px;">No
-                            active mods available in the directory at this time.</p>
-                        <% } %>
+                <% if (Object.keys(modsByCategory).length===0) { %>
+                    <p style="color: var(--silver); padding: 20px; background: rgba(0,0,0,0.3); border-radius: 8px;">No active mods available in the directory at this time.</p>
+                <% } %>
+            </div>
 
-                            <!-- Section 3: Developer Index -->
-                            <h2>Developer Index</h2>
-                            <ul class="ai-tag-grid">
-                                <% developers.forEach(dev=> { %>
-                                    <li><a href="/developer?name=<%= encodeURIComponent(dev) %>"><i
-                                                class="fas fa-building" style="margin-right: 5px;"></i>
-                                            <%= dev %>
-                                        </a></li>
-                                    <% }) %>
-                            </ul>
+            <!-- Section 3: Developer Index -->
+            <h2 id="sec-devs"><i class="fas fa-building"></i> Developer Index</h2>
+            <ul class="ai-tag-grid">
+                <% developers.forEach(dev=> { %>
+                    <li><a href="/developer?name=<%= encodeURIComponent(dev) %>"><i class="fas fa-building"></i> <%= dev %></a></li>
+                <% }) %>
+            </ul>
 
-                            <!-- Section 4: Community Creators (Uploaders) Index -->
-                            <h2>Community Creators</h2>
-                            <ul class="ai-tag-grid">
-                                <% uploaders.forEach(uploader=> { %>
-                                    <li><a href="/users/<%= slugify(uploader) %>"><i class="fas fa-user"
-                                                style="margin-right: 5px;"></i>
-                                            <%= uploader %>
-                                        </a></li>
-                                    <% }) %>
-                            </ul>
+            <!-- Section 4: Community Creators (Uploaders) Index -->
+            <h2 id="sec-creators"><i class="fas fa-users"></i> Community Creators</h2>
+            <ul class="ai-tag-grid">
+                <% uploaders.forEach(uploader=> { %>
+                    <li><a href="/user/<%= slugify(uploader).toLowerCase() %>"><i class="fas fa-user"></i> <%= uploader %></a></li>
+                <% }) %>
+            </ul>
 
         </div>
     </main>

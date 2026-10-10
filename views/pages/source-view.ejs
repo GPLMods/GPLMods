@@ -447,7 +447,30 @@
 
     .file-table .col-action {
         text-align: right;
-        width: 80px;
+        width: 76px;
+        vertical-align: middle;
+        white-space: nowrap;
+        padding-right: 16px;
+    }
+
+    .file-table .col-action .btn-raw {
+        padding: 3px 10px !important;
+        font-size: 0.74rem !important;
+        line-height: 1.2 !important;
+        height: 24px;
+        min-width: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        vertical-align: middle;
+    }
+
+    .file-table .col-action-placeholder {
+        display: inline-block;
+        width: 46px;
+        height: 24px;
+        visibility: hidden;
     }
 
     .file-link-dir {
@@ -1014,8 +1037,16 @@
         }
 
         .file-table .col-action {
-            width: 54px;
-            padding-left: 0;
+            width: 58px;
+            padding: 8px 10px 8px 0;
+            text-align: right;
+            vertical-align: middle;
+        }
+
+        .file-table .col-action .btn-raw {
+            min-width: 42px;
+            padding: 2px 6px !important;
+            font-size: 0.70rem !important;
         }
 
         .code-viewer-box {
@@ -1414,9 +1445,11 @@
                                         <td class="col-action">
                                             <% if (item.type === 'file') { %>
                                                 <a href="/source/<%= encodeURIComponent(safeSlug) %>/raw?path=<%= encodeURIComponent(item.path) %><%= activeBranchQuery %>" 
-                                                   target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool" style="padding: 3px 8px; font-size: 0.75rem;" title="View raw file">
+                                                   target="_blank" rel="noopener noreferrer nofollow" class="btn-code-tool btn-raw" title="View raw file">
                                                     Raw
                                                 </a>
+                                            <% } else { %>
+                                                <span class="col-action-placeholder" aria-hidden="true">&nbsp;</span>
                                             <% } %>
                                         </td>
                                     </tr>

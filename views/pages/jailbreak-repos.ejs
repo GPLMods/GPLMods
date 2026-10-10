@@ -19,11 +19,13 @@
         }
 
         .arch-section {
-            margin-bottom: 60px;
+            margin-bottom: 50px;
             background: var(--dark-gray);
             padding: 30px;
             border-radius: 15px;
             border: 1px solid #333;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .arch-title {
@@ -35,46 +37,43 @@
             margin-bottom: 20px;
             border-bottom: 1px solid #444;
             padding-bottom: 15px;
+            flex-wrap: wrap;
+            word-break: break-word;
         }
 
         .arch-desc {
             color: var(--silver);
             margin-bottom: 25px;
             font-size: 1.05em;
+            line-height: 1.6;
         }
 
-        /* ✅ NEW: Styling for custom PNG icons inside repo buttons */
+        /* Styling for custom PNG icons inside repo buttons */
         .repo-icon {
             width: 24px;
-            /* Fixed width */
             height: 24px;
-            /* Fixed height */
             min-width: 24px;
-            /* Prevents flexbox from squishing it */
             max-width: 24px;
-            /* Prevents it from growing */
             object-fit: contain;
-            /* Ensures the whole icon is visible */
             display: block;
-            /* Removes inline spacing bugs */
             filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
-            /* Adds depth */
         }
 
-        /* Update repo-btn to align the new images properly */
+        /* Update repo-btn to align images properly */
         .repo-btn {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             background: #1a1a1a;
             color: var(--silver);
             border: 1px solid #444;
-            padding: 12px 15px;
+            padding: 12px 18px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: bold;
             transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
         .repo-btn:hover {
@@ -83,6 +82,30 @@
             border-color: var(--gold);
             transform: translateY(-3px);
             box-shadow: 0 5px 15px var(--glow-gold);
+        }
+
+        @media (max-width: 768px) {
+            .repo-header {
+                padding: 40px 15px;
+                margin-bottom: 25px;
+            }
+            .repo-header h1 {
+                font-size: 2.2em;
+            }
+            .arch-section {
+                padding: 18px 14px;
+                margin-bottom: 35px;
+                border-radius: 12px;
+            }
+            .arch-title {
+                font-size: 1.35em;
+                gap: 10px;
+            }
+            .repo-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 11px 14px;
+            }
         }
     </style>
 

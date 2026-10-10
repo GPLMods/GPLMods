@@ -728,6 +728,17 @@
         .chat-nav-action-btn#btnChatNewSession span {
             display: none; /* Keep icons clean and concise on mobile */
         }
+        @media (max-width: 560px) {
+            .chat-nav-action-btn#btnChatSwitchToTicket span,
+            .chat-nav-action-btn#btnChatBackToChoice span {
+                display: none;
+            }
+            .chat-nav-action-btn {
+                padding: 6px 9px;
+                min-width: 32px;
+                justify-content: center;
+            }
+        }
         .fullscreen-chat-messages {
             flex-grow: 1;
             padding: 12px 14px;
@@ -1095,6 +1106,21 @@
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Custom New Chat Confirmation Modal -->
+<div id="newChatConfirmModal" class="gpl-custom-modal-backdrop" style="display: none;">
+    <div class="gpl-custom-modal-card">
+        <div class="gpl-custom-modal-icon" style="background: rgba(255, 215, 0, 0.15); color: var(--gold);">
+            <i class="fas fa-plus"></i>
+        </div>
+        <h3 class="gpl-custom-modal-title">Start New Support Chat?</h3>
+        <p class="gpl-custom-modal-desc">Are you sure you want to start a fresh conversation? Your current live session will be reset.</p>
+        <div class="gpl-custom-modal-actions">
+            <button type="button" class="gpl-modal-btn cancel" id="btnCancelNewChat">Cancel</button>
+            <button type="button" class="gpl-modal-btn confirm" id="btnConfirmNewChat">Start New Chat</button>
+        </div>
     </div>
 </div>
 
@@ -1523,10 +1549,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // New Chat Button
-        if (btnChatNewSession) {
+        // New Chat Button & Modal Logic
+        const newChatModal = document.getElementById('newChatConfirmModal');
+        const btnCancelNewChat = document.getElementById('btnCancelNewChat');
+        const btnConfirmNewChat = document.getElementById('btnConfirmNewChat');
+
+        if (btnChatNewSession && newChatModal) {
             btnChatNewSession.addEventListener('click', () => {
-                if (confirm('Start a new support conversation?')) {
+                newChatModal.style.display = 'flex';
+                requestAnimationFrame(() => newChatModal.classList.add('show'));
+            });
+            if (btnCancelNewChat) {
+                btnCancelNewChat.addEventListener('click', () => {
+                    newChatModal.classList.remove('show');
+                    setTimeout(() => { newChatModal.style.display = 'none'; }, 260);
+                });
+            }
+            if (btnConfirmNewChat) {
+                btnConfirmNewChat.addEventListener('click', () => {
+                    newChatModal.classList.remove('show');
+                    setTimeout(() => { newChatModal.style.display = 'none'; }, 260);
                     localStorage.removeItem('gplChatSessionId');
                     sessionId = null;
                     currentFsStatus = 'bot';
@@ -1535,8 +1577,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     appendFsMessage("Starting a new conversation...", "system");
                     if (fsQuickReplies) fsQuickReplies.style.display = 'flex';
                     socket.emit('join_support_chat', { userId, guestId, sessionId: null, forceNew: true });
-                }
-            });
+                });
+            }
         }
     }
 

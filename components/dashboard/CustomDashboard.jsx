@@ -282,69 +282,69 @@ const CustomDashboard = () => {
         </div>
 
         {/* ═══ ADMIN SUITE SHORTCUT BUTTONS ═══ */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', maxWidth: '100%', marginTop: '6px' }}>
           <a 
             href="/dashboard" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: C.gold, backgroundColor: C.goldDim, border: `1px solid ${C.gold}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s', fontFamily: "'Poppins', sans-serif" }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: C.gold, backgroundColor: C.goldDim, border: `1px solid ${C.gold}`, padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,215,0,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = C.goldDim; }}
-            title="Go Back To Dashboard"
+            title="Go Back To User Dashboard"
           >
-            <Icon icon="ArrowLeft" size={14} /> Go Back To Dashboard
+            <Icon icon="ArrowLeft" size={13} /> Dashboard
           </a>
 
           <a 
             href="/admin/reports" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff6b6b', backgroundColor: 'rgba(229,57,53,0.12)', border: '1px solid rgba(229,57,53,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff6b6b', backgroundColor: 'rgba(229,57,53,0.12)', border: '1px solid rgba(229,57,53,0.3)', padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(229,57,53,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(229,57,53,0.12)'; }}
             title="Moderation & Mod Reports Console"
           >
-            <Icon icon="Flag" size={14} /> Reports
+            <Icon icon="Flag" size={13} /> Reports
           </a>
 
           <a 
             href="/admin/support" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#64b5f6', backgroundColor: 'rgba(33,150,243,0.12)', border: '1px solid rgba(33,150,243,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#64b5f6', backgroundColor: 'rgba(33,150,243,0.12)', border: '1px solid rgba(33,150,243,0.3)', padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(33,150,243,0.12)'; }}
             title="Live Support & Inquiries Console"
           >
-            <Icon icon="HelpCircle" size={14} /> Support
+            <Icon icon="HelpCircle" size={13} /> Support
           </a>
 
           <a 
-            href="/status" 
+            href="/admin/status" 
             target="_blank" 
             rel="noopener noreferrer" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#81c784', backgroundColor: 'rgba(67,160,71,0.12)', border: '1px solid rgba(67,160,71,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#81c784', backgroundColor: 'rgba(67,160,71,0.12)', border: '1px solid rgba(67,160,71,0.3)', padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(67,160,71,0.12)'; }}
-            title="Live Server Health & Diagnostics"
+            title="Live Server Diagnostics & Health"
           >
-            <Icon icon="Activity" size={14} /> Status
+            <Icon icon="Activity" size={13} /> Diagnostics
           </a>
 
           <a 
             href="/admin/music" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ba68c8', backgroundColor: 'rgba(186,104,200,0.12)', border: '1px solid rgba(186,104,200,0.3)', padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ba68c8', backgroundColor: 'rgba(186,104,200,0.12)', border: '1px solid rgba(186,104,200,0.3)', padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(186,104,200,0.25)'; }}
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(186,104,200,0.12)'; }}
             title="Music & Playlist Manager"
           >
-            <Icon icon="Music" size={14} /> Music
+            <Icon icon="Music" size={13} /> Music
           </a>
 
           <a 
             href="/home" 
             target="_blank" 
             rel="noopener noreferrer" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ffffff', backgroundColor: C.surfaceAlt, border: `1px solid ${C.border}`, padding: '8px 14px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '13px', transition: 'all 0.2s' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ffffff', backgroundColor: C.surfaceAlt, border: `1px solid ${C.border}`, padding: '7px 12px', borderRadius: '8px', textDecoration: 'none', fontWeight: 600, fontSize: '12px', lineHeight: 1.4, transition: 'all 0.2s', flexShrink: 0 }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = '#ffffff'; }}
             title="Open Live Public Site"
           >
-            <Icon icon="Globe" size={14} /> Live Site
+            <Icon icon="Globe" size={13} /> Live Site
           </a>
         </div>
       </div>

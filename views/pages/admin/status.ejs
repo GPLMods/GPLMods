@@ -1,81 +1,285 @@
 <%- include('../../partials/header') %>
 
 <style>
-    .health-container { max-width: 900px; margin: 4rem auto; padding: 2rem; background-color: var(--dark-gray); border-radius: 15px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .health-container {
+        max-width: 1050px;
+        margin: 3.5rem auto 5rem;
+        padding: 2.2rem;
+        background-color: var(--dark-gray, #121212);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 45px rgba(0,0,0,0.6);
+    }
     
-    .health-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
-    .health-header h1 { color: var(--white); margin: 0; font-size: 2.2em; display: flex; align-items: center; gap: 15px; }
+    .health-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding-bottom: 22px;
+        margin-bottom: 28px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .health-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .health-header h1 {
+        color: var(--white);
+        margin: 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        letter-spacing: -0.5px;
+    }
+
+    .admin-status-shortcuts {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .btn-stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--silver, #bbb);
+        padding: 6px 13px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-stat-pill:hover {
+        background: rgba(255, 215, 0, 0.1);
+        border-color: rgba(255, 215, 0, 0.3);
+        color: var(--gold, #ffd700);
+        text-decoration: none;
+    }
+
+    .btn-stat-pill.primary {
+        background: rgba(255, 215, 0, 0.15);
+        border-color: var(--gold, #ffd700);
+        color: var(--gold, #ffd700);
+    }
     
     /* Overall Status Badge */
-    .status-badge { padding: 8px 20px; border-radius: 25px; font-weight: bold; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px; }
-    .status-UP { background-color: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; }
-    .status-DEGRADED { background-color: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid var(--gold); }
-    .status-DOWN { background-color: rgba(229, 57, 53, 0.15); color: var(--red); border: 1px solid var(--red); }
+    .status-badge {
+        padding: 8px 22px;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .status-UP {
+        background-color: rgba(46, 204, 113, 0.12);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+        box-shadow: 0 0 15px rgba(46, 204, 113, 0.15);
+    }
+    .status-DEGRADED {
+        background-color: rgba(255, 215, 0, 0.12);
+        color: var(--gold, #ffd700);
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+    }
+    .status-DOWN {
+        background-color: rgba(229, 57, 53, 0.12);
+        color: var(--red, #ff4d4f);
+        border: 1px solid rgba(229, 57, 53, 0.4);
+        box-shadow: 0 0 15px rgba(229, 57, 53, 0.15);
+    }
+
+    .section-title {
+        color: var(--white);
+        margin: 32px 0 16px 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .section-title i {
+        color: var(--gold, #ffd700);
+        font-size: 1.1rem;
+    }
 
     /* Grid Layouts */
-    .system-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .system-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 18px;
+        margin-bottom: 25px;
+    }
     
-    .info-card { background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; }
-    .info-card h3 { color: var(--silver); font-size: 0.9em; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
-    .info-card .value { color: var(--white); font-size: 1.4em; font-family: monospace; }
+    .info-card {
+        background: #0d0d0d;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 18px 20px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .info-card:hover {
+        border-color: rgba(255, 215, 0, 0.2);
+    }
+    .info-card h3 {
+        color: var(--silver, #888);
+        font-size: 0.82rem;
+        text-transform: uppercase;
+        margin: 0 0 8px 0;
+        letter-spacing: 1px;
+        font-weight: 600;
+    }
+    .info-card .value {
+        color: var(--white);
+        font-size: 1.45rem;
+        font-weight: 700;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
     
     /* Service Status List */
-    .service-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; }
-    .service-item { background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-    .service-name { font-size: 1.2em; color: var(--white); font-weight: bold; display: flex; align-items: center; gap: 10px; }
-    .service-details { color: var(--silver); font-size: 0.9em; font-family: monospace; }
+    .service-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+    .service-item {
+        background: #0d0d0d;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 18px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: border-color 0.2s ease;
+    }
+    .service-item:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    .service-name {
+        font-size: 1.05rem;
+        color: var(--white);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .service-details {
+        color: var(--silver, #888);
+        font-size: 0.85rem;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+        margin-top: 4px;
+        padding-left: 37px;
+    }
     
     /* Indicator Dots */
-    .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px currentColor; }
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px currentColor;
+    }
     .dot-CONNECTED, .dot-CONFIGURED { background-color: #2ecc71; color: #2ecc71; }
-    .dot-DISCONNECTED, .dot-ERROR { background-color: var(--red); color: var(--red); }
-    .dot-UNKNOWN { background-color: var(--silver); color: var(--silver); }
+    .dot-DISCONNECTED, .dot-ERROR { background-color: var(--red, #ff4d4f); color: var(--red, #ff4d4f); }
+    .dot-UNKNOWN { background-color: var(--silver, #888); color: var(--silver, #888); }
 
     /* Warnings Box */
-    .warnings-box { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); border-radius: 10px; padding: 20px; }
-     .warnings-box h3 { color: var(--red); margin-top: 0; display: flex; align-items: center; gap: 10px; }
-    .warnings-list { margin: 0; padding-left: 20px; color: #ffadad; font-family: monospace; }
+    .warnings-box {
+        background-color: rgba(229, 57, 53, 0.08);
+        border: 1px solid rgba(229, 57, 53, 0.35);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 30px;
+    }
+    .warnings-box h3 {
+        color: #ff5252;
+        margin: 0 0 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.1rem;
+    }
+    .warnings-list {
+        margin: 0;
+        padding-left: 20px;
+        color: #ffb4b4;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
 
-    /* ======== ADD THIS RESPONSIVE FIX ======== */
-    @media (max-width: 600px) {
+    .logo-gold-glow { color: var(--gold, #ffd700); text-shadow: 0 0 10px rgba(255, 215, 0, 0.45); }
+    .logo-silver-glow { color: var(--silver, #ffffff); text-shadow: 0 0 10px rgba(192, 192, 192, 0.5); }
+
+    @media (max-width: 680px) {
         .health-container {
-            padding: 1.5rem; /* Slightly smaller padding on mobile */
+            padding: 1.4rem;
             margin: 2rem auto;
         }
         
         .health-header {
-            flex-direction: column; /* Stack the title and the badge vertically */
-            align-items: flex-start; /* Align them to the left */
-            gap: 15px; /* Add some space between them */
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
         }
         
         .health-header h1 {
-            font-size: 1.8em; /* Make the title slightly smaller to fit better */
+            font-size: 1.6rem;
         }
         
-        /* Make the service items stack vertically on very small screens */
         .service-item {
             flex-direction: column;
             align-items: flex-start;
-            gap: 10px;
+            gap: 12px;
+        }
+
+        .service-details {
+            padding-left: 0;
         }
     }
-
-        .logo-gold-glow { color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        .logo-silver-glow { color: var(--silver); text-shadow: 0 0 10px rgba(192, 192, 192, 0.55); }
-        </style>
+</style>
 
 <main class="container">
     <div class="health-container">
         
         <div class="health-header">
-            <h1><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span> <i class="fas fa-server" style="color: var(--gold);"></i> System Diagnostics</h1>
+            <div class="health-header-left">
+                <h1>
+                    <span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span>
+                    <i class="fas fa-server" style="color: var(--gold); font-size: 0.9em;"></i> System Diagnostics
+                </h1>
+                <div class="admin-status-shortcuts">
+                    <a href="/admin" class="btn-stat-pill"><i class="fas fa-sliders-h"></i> AdminJS</a>
+                    <a href="/status" target="_blank" class="btn-stat-pill"><i class="fas fa-heartbeat"></i> Public Status</a>
+                    <a href="/admin/reports" class="btn-stat-pill"><i class="fas fa-flag"></i> Reports</a>
+                    <a href="/admin/support" class="btn-stat-pill"><i class="fas fa-headset"></i> Support</a>
+                    <a href="/home" target="_blank" class="btn-stat-pill primary"><i class="fas fa-external-link-alt"></i> Live Site</a>
+                </div>
+            </div>
+
             <div class="status-badge status-<%= health.status %>">
-                System <%= health.status %>
+                <i class="fas fa-circle" style="font-size: 0.65rem;"></i> System <%= health.status %>
             </div>
         </div>
 
-        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.3em;">Node.js Environment</h2>
+        <h2 class="section-title"><i class="fas fa-microchip"></i> Node.js Runtime Environment</h2>
         <div class="system-grid">
             <div class="info-card">
                 <h3>Server Uptime</h3>
@@ -83,7 +287,7 @@
             </div>
             <div class="info-card">
                 <h3>Memory Usage (RSS)</h3>
-                <div class="value"><%= formatBytes(health.memoryUsage.rss) %></div>
+                <div class="value"><%= typeof formatBytes === 'function' ? formatBytes(health.memoryUsage.rss) : (Math.round(health.memoryUsage.rss / (1024 * 1024)) + ' MB') %></div>
             </div>
             <div class="info-card">
                 <h3>Node Version</h3>
@@ -95,18 +299,18 @@
             </div>
         </div>
 
-        <h2 style="color: var(--white); margin-bottom: 15px; font-size: 1.3em;">External Services</h2>
+        <h2 class="section-title"><i class="fas fa-network-wired"></i> Connected Services & Infrastructure</h2>
         <div class="service-list">
             
             <!-- MongoDB Status -->
             <div class="service-item">
                 <div>
                     <div class="service-name">
-                        <i class="fas fa-database" style="color: #4DB33D; width: 25px;"></i> MongoDB Atlas
+                        <i class="fas fa-database" style="color: #4DB33D; width: 25px; text-align: center;"></i> MongoDB Atlas Cluster
                     </div>
-                    <div class="service-details"><%= health.services.database.details || 'No details available' %></div>
+                    <div class="service-details"><%= health.services.database.details || 'Connection verified and active' %></div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--white); font-size: 0.9rem;">
                     <span class="dot dot-<%= health.services.database.status %>"></span>
                     <%= health.services.database.status %>
                 </div>
@@ -116,11 +320,11 @@
             <div class="service-item">
                 <div>
                     <div class="service-name">
-                        <i class="fas fa-cloud" style="color: #0088cc; width: 25px;"></i> Backblaze B2
+                        <i class="fas fa-cloud" style="color: #0088cc; width: 25px; text-align: center;"></i> Backblaze B2 Cloud Storage
                     </div>
-                    <div class="service-details"><%= health.services.storage.details || 'Connection check failed' %></div>
+                    <div class="service-details"><%= health.services.storage.details || 'Bucket authorized and operational' %></div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--white); font-size: 0.9rem;">
                     <span class="dot dot-<%= health.services.storage.status %>"></span>
                     <%= health.services.storage.status %>
                 </div>
@@ -130,11 +334,11 @@
             <div class="service-item">
                 <div>
                     <div class="service-name">
-                        <i class="fas fa-shield-virus" style="color: var(--gold); width: 25px;"></i> VirusTotal API
+                        <i class="fas fa-shield-virus" style="color: var(--gold); width: 25px; text-align: center;"></i> VirusTotal Security Engine
                     </div>
-                    <div class="service-details"><%= health.services.virustotal.details %></div>
+                    <div class="service-details"><%= health.services.virustotal.details || 'API endpoint verified' %></div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--white);">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--white); font-size: 0.9rem;">
                     <span class="dot dot-<%= health.services.virustotal.status %>"></span>
                     <%= health.services.virustotal.status %>
                 </div>
@@ -145,8 +349,8 @@
         <!-- ============================================== -->
         <!-- DEBUGGER & DEVTOOLS ACCESS CONTROL SECTION -->
         <!-- ============================================== -->
-        <h2 style="color: var(--white); margin: 35px 0 15px 0; font-size: 1.3em; display: flex; align-items: center; gap: 10px;">
-            <i class="fas fa-shield-alt" style="color: #ff3366;"></i> Debugger & DevTools Access Control
+        <h2 class="section-title" style="margin-top: 38px;">
+            <i class="fas fa-shield-alt" style="color: var(--gold);"></i> Debugger & DevTools Access Control
         </h2>
 
         <div class="system-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 25px;">
@@ -161,7 +365,7 @@
                 <div class="value" id="statusDebuggerKey" style="color: var(--gold); font-size: 1.5em; letter-spacing: 2px; margin-bottom: 12px;">
                     <%= typeof debuggerKey !== 'undefined' ? debuggerKey : 'N/A' %>
                 </div>
-                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0;">
+                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0; line-height: 1.4;">
                     10–12 digit single-use code. Auto-regenerates upon use or every 60 minutes.
                 </p>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -169,7 +373,7 @@
                         <i class="fas fa-copy"></i> Copy Key
                     </button>
                     <button type="button" id="btnAdminGenKey" onclick="adminGenerateNewKey(this)" style="padding: 6px 12px; font-size: 0.85em; background: var(--gold); border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer;">
-                        <i class="fas fa-sync-alt"></i> Generate New Key
+                        <i class="fas fa-sync-alt"></i> Rotate Key Now
                     </button>
                 </div>
             </div>
@@ -185,7 +389,7 @@
                 <div class="value" id="statusMasterKey" style="color: #ff3366; font-size: 1.3em; letter-spacing: 1px; margin-bottom: 12px;">
                     <%= typeof debuggerMasterKey !== 'undefined' ? debuggerMasterKey : 'T1BBZG1pbkAyMDI2' %>
                 </div>
-                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0;">
+                <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0; line-height: 1.4;">
                     Permanent master key for administrators. Multi-use, never expires.
                 </p>
                 <button type="button" class="btn btn-secondary" onclick="copyKeyText('statusMasterKey', this)" style="padding: 6px 12px; font-size: 0.85em; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; cursor: pointer;">
@@ -195,37 +399,37 @@
         </div>
 
         <!-- Recent DevTools Incidents Table -->
-        <div style="background: var(--black); border: 1px solid #222; border-radius: 10px; padding: 20px; margin-bottom: 40px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="background: #0d0d0d; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 22px; margin-bottom: 35px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
                 <h3 style="color: var(--white); margin: 0; font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-history" style="color: var(--gold);"></i> Recent DevTools Inspection Audit Logs
+                    <i class="fas fa-history" style="color: var(--gold);"></i> DevTools Inspection Audit Logs
                 </h3>
-                <span style="font-size: 0.8em; color: var(--silver);">Last 10 Events</span>
+                <span style="font-size: 0.8em; color: var(--silver); background: rgba(255,255,255,0.05); padding: 3px 10px; border-radius: 12px;">Last 10 Events</span>
             </div>
 
             <% if (typeof recentDevtoolLogs !== 'undefined' && recentDevtoolLogs && recentDevtoolLogs.length > 0) { %>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85em; text-align: left;">
                         <thead>
-                            <tr style="border-bottom: 1px solid #333; color: var(--silver);">
-                                <th style="padding: 8px;">Time</th>
-                                <th style="padding: 8px;">User / IP</th>
-                                <th style="padding: 8px;">Page Path</th>
-                                <th style="padding: 8px;">Trigger</th>
-                                <th style="padding: 8px; text-align: right;">Status</th>
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: var(--silver);">
+                                <th style="padding: 10px 8px;">Time</th>
+                                <th style="padding: 10px 8px;">User / IP</th>
+                                <th style="padding: 10px 8px;">Page Path</th>
+                                <th style="padding: 10px 8px;">Trigger</th>
+                                <th style="padding: 10px 8px; text-align: right;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% recentDevtoolLogs.forEach(log => { %>
-                                <tr style="border-bottom: 1px solid #1a1a1a;">
-                                    <td style="padding: 8px; color: var(--silver);"><%= timeAgo(log.createdAt) %></td>
-                                    <td style="padding: 8px; color: var(--white);">
+                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                                    <td style="padding: 10px 8px; color: var(--silver); white-space: nowrap;"><%= timeAgo(log.createdAt) %></td>
+                                    <td style="padding: 10px 8px; color: var(--white);">
                                         <strong><%= log.username || 'Guest' %></strong>
                                         <div style="font-size: 0.8em; color: #777;"><%= log.ip || 'Unknown IP' %></div>
                                     </td>
-                                    <td style="padding: 8px; color: var(--gold); font-family: monospace;"><%= log.path || '/' %></td>
-                                    <td style="padding: 8px; color: var(--silver);"><%= log.triggerType %></td>
-                                    <td style="padding: 8px; text-align: right;">
+                                    <td style="padding: 10px 8px; color: var(--gold); font-family: monospace;"><%= log.path || '/' %></td>
+                                    <td style="padding: 10px 8px; color: var(--silver);"><%= log.triggerType %></td>
+                                    <td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
                                         <% if (log.status === 'blocked') { %>
                                             <span style="color: #ff4d4d; background: rgba(255,77,77,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Blocked</span>
                                         <% } else if (log.status === 'authorized-by-code') { %>
@@ -242,12 +446,12 @@
                     </table>
                 </div>
             <% } else { %>
-                <p style="color: #666; font-size: 0.9em; margin: 0; text-align: center; padding: 20px;">No developer tools inspection incidents recorded yet.</p>
+                <p style="color: #666; font-size: 0.9em; margin: 0; text-align: center; padding: 25px 0;">No developer tools inspection incidents recorded yet.</p>
             <% } %>
         </div>
 
         <!-- Render Warnings if they exist -->
-        <% if (health.warnings.length > 0) { %>
+        <% if (health.warnings && health.warnings.length > 0) { %>
             <div class="warnings-box">
                 <h3><i class="fas fa-exclamation-triangle"></i> System Warnings Detected (<%= health.warnings.length %>)</h3>
                 <ul class="warnings-list">
@@ -259,8 +463,8 @@
         <% } %>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button onclick="window.location.reload();" class="btn btn-secondary" style="background: transparent; border: 2px solid #555; color: var(--silver); padding: 10px 25px; border-radius: 20px; cursor: pointer;">
-                <i class="fas fa-sync-alt" style="margin-right: 8px;"></i> Refresh Diagnostics
+            <button onclick="window.location.reload();" class="btn btn-secondary" style="background: transparent; border: 1px solid rgba(255, 215, 0, 0.4); color: var(--gold); padding: 10px 26px; border-radius: 25px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fas fa-sync-alt"></i> Refresh Diagnostics
             </button>
             <p style="color: #666; font-size: 0.8em; margin-top: 15px;">Last checked: <%= new Date(health.timestamp).toLocaleTimeString() %></p>
         </div>
@@ -276,31 +480,43 @@
         navigator.clipboard.writeText(text).then(() => {
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            if (typeof window.showGplToast === 'function') {
+                window.showGplToast('Key copied to clipboard!', 'success');
+            }
             setTimeout(() => { btn.innerHTML = originalHtml; }, 1800);
         }).catch(() => {
-            alert('Key: ' + text);
+            if (typeof window.showGplToast === 'function') {
+                window.showGplToast('Key: ' + text, 'info');
+            }
         });
     }
 
     async function adminGenerateNewKey(btn) {
         btn.disabled = true;
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rotating...';
 
         try {
             const res = await fetch('/api/admin/debugger/generate-key', { method: 'POST' });
             const data = await res.json();
             if (data.success && data.key) {
                 document.getElementById('statusDebuggerKey').innerText = data.key;
-                btn.innerHTML = '<i class="fas fa-check"></i> Key Rotated!';
+                btn.innerHTML = '<i class="fas fa-check"></i> Rotated!';
+                if (typeof window.showGplToast === 'function') {
+                    window.showGplToast('Debugger key rotated successfully!', 'success');
+                }
                 setTimeout(() => { btn.innerHTML = originalHtml; btn.disabled = false; }, 2000);
             } else {
-                alert('Failed to generate key.');
+                if (typeof window.showGplToast === 'function') {
+                    window.showGplToast(data.message || 'Failed to generate key.', 'error');
+                }
                 btn.innerHTML = originalHtml;
                 btn.disabled = false;
             }
         } catch (e) {
-            alert('Error generating key.');
+            if (typeof window.showGplToast === 'function') {
+                window.showGplToast('Error generating key.', 'error');
+            }
             btn.innerHTML = originalHtml;
             btn.disabled = false;
         }

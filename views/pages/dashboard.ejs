@@ -300,9 +300,80 @@
                     </div>
                     <% } %>
 
-                        <div class="dashboard-grid">
-                            <% if (user && (user.role==='distributor' || user.role==='support' || user.role==='admin' ||
-                                user.role==='owner' )) { %>
+                    <!-- ═══ SECTION 1: CREATOR STUDIO ═══ -->
+                    <div class="dash-category-section" style="max-width: 900px; margin: 0 auto 32px auto;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(33, 150, 243, 0.3); padding-bottom: 10px; margin-bottom: 18px;">
+                            <h2 style="color: #60a5fa; font-size: 1.2em; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-layer-group"></i> Creator Studio
+                            </h2>
+                            <span style="color: var(--silver); font-size: 0.8em;">Mod Management &amp; Analytics</span>
+                        </div>
+                        <div class="dashboard-grid" style="margin-bottom: 0;">
+                            <a href="/upload" class="dash-card" style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1f1b11, #141414);">
+                                <i class="fas fa-plus-circle" style="color: var(--gold);"></i>
+                                <h3 style="color: var(--gold);">Upload New Mod</h3>
+                                <p>Publish IPAs, APKs, DEBs or PC mods.</p>
+                            </a>
+                            <a href="/my-uploads" class="dash-card">
+                                <i class="fas fa-cloud-upload-alt" style="color: var(--blue);"></i>
+                                <h3>My Uploads</h3>
+                                <p>Manage your submitted mods.</p>
+                            </a>
+                            <a href="/promote" class="dash-card" style="border: 1px solid rgba(255, 152, 0, 0.45); background: linear-gradient(145deg, #23180c, #141414); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);">
+                                <i class="fas fa-bullhorn" style="color: #ff9800;"></i>
+                                <h3 style="color: #ff9800;">Promote My Mods</h3>
+                                <p>Featured ads &amp; surge downloads.</p>
+                            </a>
+                            <a href="/my-stats" class="dash-card">
+                                <i class="fa-solid fa-chart-column" style="color: #00bcd4;"></i>
+                                <h3>Statistics</h3>
+                                <p>Analytics for your uploads.</p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- ═══ SECTION 2: COMMUNITY & AUDIENCE ═══ -->
+                    <div class="dash-category-section" style="max-width: 900px; margin: 0 auto 32px auto;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(156, 39, 176, 0.3); padding-bottom: 10px; margin-bottom: 18px;">
+                            <h2 style="color: #c084fc; font-size: 1.2em; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-users"></i> Community &amp; Audience
+                            </h2>
+                            <span style="color: var(--silver); font-size: 0.8em;">Social Connections &amp; Wishlist</span>
+                        </div>
+                        <div class="dashboard-grid" style="margin-bottom: 0;">
+                            <div id="open-community-modal" class="dash-card" style="cursor: pointer;">
+                                <i class="fas fa-users" style="color: #9c27b0;"></i>
+                                <h3>Followers &amp; Following</h3>
+                                <p>Manage your audience &amp; connections.</p>
+                            </div>
+                            <a href="/user/<%= slugify(user.username).toLowerCase() %>" class="dash-card">
+                                <i class="fas fa-id-badge" style="color: var(--silver);"></i>
+                                <h3>Public Profile</h3>
+                                <p>See how others view your page.</p>
+                            </a>
+                            <a href="/wishlist" class="dash-card">
+                                <i class="fas fa-heart" style="color: var(--red);"></i>
+                                <h3>My Wishlist</h3>
+                                <p>View your saved mods.</p>
+                            </a>
+                            <a href="/rewards" class="dash-card">
+                                <i class="fas fa-star" style="color: #ff9800;"></i>
+                                <h3>Points &amp; Badges</h3>
+                                <p>View your forum rank progress.</p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- ═══ SECTION 3: ACCOUNT & MEMBERSHIP ═══ -->
+                    <div class="dash-category-section" style="max-width: 900px; margin: 0 auto 32px auto;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 215, 0, 0.3); padding-bottom: 10px; margin-bottom: 18px;">
+                            <h2 style="color: var(--gold); font-size: 1.2em; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-user-shield"></i> Account &amp; Membership
+                            </h2>
+                            <span style="color: var(--silver); font-size: 0.8em;">Security, VIP &amp; Preferences</span>
+                        </div>
+                        <div class="dashboard-grid" style="margin-bottom: 0;">
+                            <% if (user && (user.role==='distributor' || user.role==='support' || user.role==='admin' || user.role==='owner' )) { %>
                                 <% const isOwner=user.role==='owner' ; const isAdmin=user.role==='admin' ; const
                                     isSupport=user.role==='support' ; const cardTitle=isOwner ? 'Owner ID Card' :
                                     (isAdmin ? 'Admin ID Card' : (isSupport ? 'Support ID Card' : 'Distributor ID Card'
@@ -315,82 +386,42 @@
                                     ? 'linear-gradient(145deg, #241214, #141414)' : (isAdmin
                                     ? 'linear-gradient(145deg, #1f1b11, #141414)'
                                     : 'linear-gradient(145deg, #101925, #141414)' ); %>
-                                    <a href="/id-card" class="dash-card"
-                                        <%- `style="position: relative; padding-top: 32px; border: 1px solid ${borderColor}; background: ${bgGradient}; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);"` %>>
-                                        <span
-                                            <%- `style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: ${themeColor}; border: 1px solid ${borderColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;"` %>>
-                                            <%= roleBadge %>
-                                        </span>
-                                        <i class="fas fa-id-card" <%- `style="color: ${themeColor};"` %>></i>
-                                        <h3 <%- `style="color: ${themeColor};"` %>>
-                                            <%= cardTitle %>
-                                        </h3>
-                                        <p>Customize card, Safe QR &amp; Quick-Login.</p>
-                                    </a>
-                                    <% } %>
-                                        <a href="/my-membership" class="dash-card"
-                                            style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1d1912, #141414); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);">
-                                            <i class="fa-duotone fa-solid fa-credit-card"
-                                                style="color: var(--gold);"></i>
-                                            <h3 style="color: var(--gold);">My Membership</h3>
-                                            <p>Plan tier, renewals, upgrades &amp; refunds.</p>
-                                        </a>
-                                        <a href="/profile" class="dash-card">
-                                            <i class="fas fa-user-edit"></i>
-                                            <h3>Edit My Profile</h3>
-                                            <p>Update avatar, bio, and details.</p>
-                                        </a>
-                                        <a href="/my-uploads" class="dash-card">
-                                            <i class="fas fa-cloud-upload-alt" style="color: var(--blue);"></i>
-                                            <h3>My Uploads</h3>
-                                            <p>Manage your submitted mods.</p>
-                                        </a>
-                                        <a href="/promote" class="dash-card"
-                                            style="border: 1px solid rgba(255, 152, 0, 0.45); background: linear-gradient(145deg, #23180c, #141414); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.15);">
-                                            <i class="fas fa-bullhorn" style="color: #ff9800;"></i>
-                                            <h3 style="color: #ff9800;">Promote My Mods</h3>
-                                            <p>Play Store ads, top ranking &amp; surge downloads.</p>
-                                        </a>
-                                        <a href="/wishlist" class="dash-card">
-                                            <i class="fas fa-heart" style="color: var(--red);"></i>
-                                            <h3>My Wishlist</h3>
-                                            <p>View your saved mods.</p>
-                                        </a>
-                                        <a href="/users/<%= slugify(user.username) %>" class="dash-card">
-                                            <i class="fas fa-id-badge" style="color: var(--silver);"></i>
-                                            <h3>Public Profile</h3>
-                                            <p>See how others view your page.</p>
-                                        </a>
-
-                                        <!-- ✅ MODIFIED: Now triggers the modal -->
-                                        <div id="open-community-modal" class="dash-card">
-                                            <i class="fas fa-users" style="color: #9c27b0;"></i>
-                                            <h3>Community / Followers</h3>
-                                            <p>Manage your audience.</p>
-                                        </div>
-
-                                        <a href="/notifications" class="dash-card">
-                                            <i class="fas fa-envelope" style="color: #4caf50;"></i>
-                                            <h3>Inbox & Alerts</h3>
-                                            <p>Admin messages and updates.</p>
-                                        </a>
-                                        <a href="/rewards" class="dash-card">
-                                            <i class="fas fa-star" style="color: #ff9800;"></i>
-                                            <h3>Points History</h3>
-                                            <p>View your forum rank progress.</p>
-                                        </a>
-                                        <a href="/my-stats" class="dash-card">
-                                            <i class="fa-solid fa-chart-column"
-                                                style="color: #00bcd4;"></i>
-                                            <h3>Statistics</h3>
-                                            <p>Analytics for your uploads.</p>
-                                        </a>
-                                        <a href="/settings" class="dash-card" style="border-color: #555;">
-                                            <i class="fas fa-cog" style="color: var(--silver);"></i>
-                                            <h3>Additional Settings</h3>
-                                            <p>2FA, Newsletter, Logout & Security.</p>
-                                        </a>
+                                <a href="/id-card" class="dash-card"
+                                    <%- `style="position: relative; padding-top: 32px; border: 1px solid ${borderColor}; background: ${bgGradient}; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);"` %>>
+                                    <span
+                                        <%- `style="position: absolute; top: 10px; right: 10px; font-size: 0.65rem; padding: 3px 8px; border-radius: 12px; background: rgba(0, 0, 0, 0.5); color: ${themeColor}; border: 1px solid ${borderColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 2;"` %>>
+                                        <%= roleBadge %>
+                                    </span>
+                                    <i class="fas fa-id-card" <%- `style="color: ${themeColor};"` %>></i>
+                                    <h3 <%- `style="color: ${themeColor};"` %>>
+                                        <%= cardTitle %>
+                                    </h3>
+                                    <p>Customize card, Safe QR &amp; Quick-Login.</p>
+                                </a>
+                            <% } %>
+                            <a href="/my-membership" class="dash-card"
+                                style="border: 1px solid rgba(255, 215, 0, 0.4); background: linear-gradient(145deg, #1d1912, #141414); box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);">
+                                <i class="fa-duotone fa-solid fa-credit-card" style="color: var(--gold);"></i>
+                                <h3 style="color: var(--gold);">My Membership</h3>
+                                <p>Plan tier, renewals &amp; benefits.</p>
+                            </a>
+                            <a href="/notifications" class="dash-card">
+                                <i class="fas fa-envelope" style="color: #4caf50;"></i>
+                                <h3>Inbox &amp; Alerts</h3>
+                                <p>Admin messages and updates.</p>
+                            </a>
+                            <a href="/profile" class="dash-card">
+                                <i class="fas fa-user-edit"></i>
+                                <h3>Edit My Profile</h3>
+                                <p>Update avatar, bio, and details.</p>
+                            </a>
+                            <a href="/settings" class="dash-card" style="border-color: #555;">
+                                <i class="fas fa-cog" style="color: var(--silver);"></i>
+                                <h3>Settings &amp; 2FA</h3>
+                                <p>Security, notifications &amp; sessions.</p>
+                            </a>
                         </div>
+                    </div>
     </main>
 
     <!-- ======== COMMUNITY MODAL ======== -->
@@ -425,7 +456,7 @@
                                     <img src="<%= f.signedAvatarUrl %>"
                                         style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
                                     <div style="text-align: left;">
-                                        <a href="/users/<%= slugify(f.username) %>"
+                                        <a href="/user/<%= slugify(f.username).toLowerCase() %>"
                                             style="color: var(--white); font-weight: bold; text-decoration: none;">
                                             <%= f.username %>
                                         </a>
@@ -462,7 +493,7 @@
                                     <img src="<%= f.signedAvatarUrl %>"
                                         style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid #555;">
                                     <div style="text-align: left;">
-                                        <a href="/users/<%= slugify(f.username) %>"
+                                        <a href="/user/<%= slugify(f.username).toLowerCase() %>"
                                             style="color: var(--white); font-weight: bold; text-decoration: none;">
                                             <%= f.username %>
                                         </a>

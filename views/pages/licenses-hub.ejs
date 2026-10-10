@@ -1,53 +1,121 @@
 <%-include('../partials/header') %>
 
     <style>
+        .license-card {
+            background: linear-gradient(145deg, #16171f 0%, #0e0f14 100%);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            border-top: 3px solid var(--gold);
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+
+        .license-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--gold);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 215, 0, 0.15);
+        }
+
+        .license-type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.28);
+            color: var(--gold);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+
+        .license-card h2 {
+            color: var(--white);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .license-card p {
+            color: var(--silver);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin: 0 0 18px 0;
+            flex-grow: 1;
+        }
+
         .license-btn {
-            display: inline-block;
-            margin-top: 14px;
-            padding: 12px 35px;
-            border-radius: 25px;
-            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.88rem;
             text-decoration: none;
             background: var(--gold);
             color: var(--black);
-            border: none;
+            border: 1px solid var(--gold);
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(255, 215, 0, 0.25);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .license-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
-            background-color: #fff;
+            background-color: #ffea70;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+            color: #000;
         }
     </style>
 
-    <main class="container" style="padding: 50px 20px 70px;">
+    <main class="container" style="padding: 50px 20px 70px; max-width: 1100px; margin: 0 auto;">
         <%- include('../partials/go-back-button', { fallback: '/' }) %>
         <header style="max-width: 760px; margin: 0 auto 35px; text-align: center;">
-            <h1 style="color: var(--gold); margin-bottom: 12px;">Software Licenses</h1>
-            <p style="color: var(--silver);">Browse the licenses attached to GPL Mods releases.</p>
+            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.25); color: var(--gold); font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 14px; text-transform: uppercase; margin-bottom: 12px;">
+                <i class="fas fa-scale-balanced"></i> Legal &amp; Licensing Directory
+            </div>
+            <h1 style="color: var(--white); margin: 0 0 12px 0; font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800;">
+                <span class="logo-gold-glow">Software</span> <span class="logo-silver-glow">Licenses</span>
+            </h1>
+            <p style="color: var(--silver); font-size: 0.98rem; margin: 0; line-height: 1.6;">Browse and review official open-source licenses attached to GPL Mods applications, plugins, and repository tweaks.</p>
         </header>
 
         <% if (licenses.length) { %>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
-                <% licenses.forEach(license=> { %>
-                    <article
-                        style="padding: 22px; background: var(--dark-gray); border: 1px solid #333; border-radius: 8px;">
-                        <h2 style="color: var(--white); font-size: 1.2rem; margin-bottom: 10px;">
-                            <%= license.name %>
-                        </h2>
-                        <p style="color: var(--silver); min-height: 44px; line-height: 1.5;">
-                            <%= license.shortDescription || 'License details available in the reader.' %>
-                        </p>
-                        <a href="/licenses/<%= license.slug %>" class="license-btn">Read License</a>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 22px;">
+                <% licenses.forEach(license => { %>
+                    <article class="license-card">
+                        <div>
+                            <span class="license-type-badge"><i class="fas fa-certificate"></i> Free Software / GPL</span>
+                            <h2><i class="fas fa-file-contract" style="color: var(--gold); font-size: 0.95em;"></i> <%= license.name %></h2>
+                            <p><%= license.shortDescription || 'Full legal permissions, terms, conditions, and copyleft requirements.' %></p>
+                        </div>
+                        <a href="/licenses/<%= license.slug %>" class="license-btn">
+                            <span>Read License Document</span> <i class="fas fa-arrow-right" style="font-size: 0.85em;"></i>
+                        </a>
                     </article>
-                    <% }) %>
+                <% }) %>
             </div>
-            <% } else { %>
-                <p style="color: var(--silver); text-align: center;">No licenses have been published yet.</p>
-                <% } %>
+        <% } else { %>
+            <div style="text-align: center; padding: 50px 20px; background: rgba(0,0,0,0.3); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.15);">
+                <i class="fas fa-book-open" style="font-size: 2.5rem; color: #555; margin-bottom: 14px;"></i>
+                <p style="color: var(--silver); margin: 0; font-size: 1rem;">No licenses have been published yet.</p>
+            </div>
+        <% } %>
     </main>
     <%- include('../partials/video-ad-modal') %>
         <%- include('../partials/footer') %>

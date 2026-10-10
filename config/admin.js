@@ -1204,8 +1204,30 @@ async function createAdminRouter() {
                 resource: Dmca,
                 options: {
                     navigation: moderationNav,
-                    listProperties: ['fullName', 'infringingUrl', 'status', 'createdAt'],
-                    editProperties: ['status'],
+                    listProperties: ['fullName', 'copyrightHolder', 'infringingUrl', 'status', 'createdAt'],
+                    showProperties: [
+                        'status', 'fullName', 'email', 'copyrightHolder', 
+                        'originalWorkUrl', 'infringingUrl', 'signature', 
+                        'scheduledHideAt', 'isAutomatedHidden', 'hiddenAt', 
+                        'adminResolution.resolvedBy', 'adminResolution.resolvedAt', 
+                        'adminResolution.resolutionType', 'adminResolution.notes', 
+                        'createdAt', 'updatedAt'
+                    ],
+                    editProperties: ['status', 'adminResolution.notes'],
+                    properties: {
+                        status: {
+                            availableValues: [
+                                { value: 'open', label: 'Open' },
+                                { value: 'auto-hidden', label: 'Auto Hidden' },
+                                { value: 'action-taken', label: 'Action Taken (Infringement Deleted)' },
+                                { value: 'false-claim', label: 'False Claim (Restored)' },
+                                { value: 'rejected', label: 'Rejected' }
+                            ]
+                        },
+                        'adminResolution.notes': {
+                            type: 'textarea'
+                        }
+                    }
                 }
             },
 

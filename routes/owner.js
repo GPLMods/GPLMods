@@ -14,11 +14,41 @@ const catchAsync = (fn) => (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 };
 
-// ==========================================
-// PUBLIC FAILBACK.JS VIEWER & TELEMETRY
-// ==========================================
-router.get('/failback', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Failback.js/index.html'));
+// Middleware: Strictly ensure owner authentication only on owner routes
+const ensureOwner = (req, res, next) => {
+    const isAuth = Boolean(req.isAuthenticated && typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user);
+    const role = (isAuth && req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
+
+    if (isAuth && role === 'owner') {
+        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
+        return next();
+    }
+    
+    // Return 404 to hide the owner page from public & non-owners entirely
+    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || (req.path && req.path.startsWith('/api/'))) {
+        return res.status(404).json({ success: false, error: 'Not Found' });
+    }
+    return res.status(404).render('pages/error', {
+        errorCode: '404',
+        errorTitle: 'Page <span>Not Found</span>',
+        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
+    });
+};
+
+// Apply owner protection only to owner routes in this router
+router.use((req, res, next) => {
+    if (req.path === '/owner' || req.path.startsWith('/owner/') || req.path.startsWith('/api/owner')) {
+        return ensureOwner(req, res, next);
+    }
+    next();
+});
+
+router.get('/failback', ensureOwner, (req, res) => {
+    res.render('pages/owner/console');
+});
+
+router.get('/owner/console', ensureOwner, (req, res) => {
+    res.render('pages/owner/console');
 });
 
 router.get('/api/failback/status', catchAsync(async (req, res) => {
@@ -59,35 +89,6 @@ router.post('/api/failback/telemetry', catchAsync(async (req, res) => {
         res.json({ success: false, error: e.message });
     }
 }));
-
-// Middleware: Strictly ensure owner authentication only on owner routes
-const ensureOwner = (req, res, next) => {
-    const isAuth = Boolean(req.isAuthenticated && typeof req.isAuthenticated === 'function' && req.isAuthenticated() && req.user);
-    const role = (isAuth && req.user && req.user.role) ? String(req.user.role).trim().toLowerCase() : '';
-
-    if (isAuth && role === 'owner') {
-        res.set('Cache-Control', 'no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0');
-        return next();
-    }
-    
-    // Return 404 to hide the owner page from public & non-owners entirely
-    if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || (req.path && req.path.startsWith('/api/'))) {
-        return res.status(404).json({ success: false, error: 'Not Found' });
-    }
-    return res.status(404).render('pages/error', {
-        errorCode: '404',
-        errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
-    });
-};
-
-// Apply owner protection only to owner routes in this router
-router.use((req, res, next) => {
-    if (req.path === '/owner' || req.path.startsWith('/owner/') || req.path.startsWith('/api/owner')) {
-        return ensureOwner(req, res, next);
-    }
-    next();
-});
 
 // ==========================================
 // RENDER API

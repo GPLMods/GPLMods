@@ -287,6 +287,39 @@
 
 </div>
 
+<!-- Custom Council Edit/Add Description Modal -->
+<div id="councilDescModal" class="gpl-custom-modal-backdrop" style="display: none;">
+    <div class="gpl-custom-modal-card">
+        <div class="gpl-custom-modal-icon" style="background: rgba(255, 215, 0, 0.15); color: var(--gold);">
+            <i class="fas fa-edit"></i>
+        </div>
+        <h3 class="gpl-custom-modal-title" id="councilDescModalTitle">Editor's Choice Badge</h3>
+        <p class="gpl-custom-modal-desc" id="councilDescModalSubtitle">Enter a catchy description for this mod to highlight on featured showcases:</p>
+        <input type="text" id="councilDescInput" class="gpl-custom-modal-input" placeholder="e.g. Featured hand-picked mod on GPL Mods.">
+        <div class="gpl-custom-modal-actions">
+            <button type="button" class="gpl-modal-btn cancel" onclick="closeCouncilDescModal()">Cancel</button>
+            <button type="button" class="gpl-modal-btn confirm" id="councilDescSubmitBtn">Save Description</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Council Remove Confirmation Modal -->
+<div id="councilRemoveModal" class="gpl-custom-modal-backdrop" style="display: none;">
+    <div class="gpl-custom-modal-card">
+        <div class="gpl-custom-modal-icon" style="background: rgba(229, 57, 53, 0.15); color: #e53935;">
+            <i class="fas fa-trash-alt"></i>
+        </div>
+        <h3 class="gpl-custom-modal-title">Remove from Editor's Choice?</h3>
+        <p class="gpl-custom-modal-desc">
+            Are you sure you want to remove <strong id="councilRemoveModName" style="color: #fff;"></strong> from the <span id="councilRemovePlatform" style="color: var(--gold); text-transform: uppercase;"></span> showcase?
+        </p>
+        <div class="gpl-custom-modal-actions">
+            <button type="button" class="gpl-modal-btn cancel" onclick="closeCouncilRemoveModal()">Cancel</button>
+            <button type="button" class="gpl-modal-btn danger" id="councilRemoveConfirmBtn">Remove Mod</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let searchDebounceTimer = null;
 
@@ -354,70 +387,118 @@
         }, 300);
     }
 
-    async function addToCouncil(modId, platform, modName) {
-        const desc = prompt(`Enter a catchy featured description for "${modName}" (or leave blank for default):`, "Featured hand-picked mod on GPL Mods.");
-        if (desc === null) return; // cancelled
-
-        try {
-            const res = await fetch('/api/admin/editors-choice/toggle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert(`✔ "${modName}" featured in Editor Choice For ${platform.toUpperCase()}!`);
-                window.location.reload();
-            } else {
-                alert('✖ Failed: ' + (data.message || 'Error updating mod'));
-            }
-        } catch (err) {
-            alert('✖ Network error: ' + err.message);
-        }
+    function openCouncilModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.style.display = 'flex';
+        requestAnimationFrame(() => modal.classList.add('show'));
     }
 
-    async function removeFromCouncil(modId, platform, modName) {
-        if (!confirm(`Remove "${modName}" from Editor Choice For ${platform.toUpperCase()}?`)) return;
-
-        try {
-            const res = await fetch('/api/admin/editors-choice/toggle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId: modId, isEditorsChoice: false })
-            });
-            const data = await res.json();
-            if (data.success) {
-                const card = document.getElementById(`card-${modId}`);
-                if (card) card.remove();
-                const countBadge = document.getElementById(`count-${platform}`);
-                if (countBadge) countBadge.textContent = Math.max(0, parseInt(countBadge.textContent || '1') - 1);
-            } else {
-                alert('✖ Failed: ' + (data.message || 'Error updating mod'));
-            }
-        } catch (err) {
-            alert('✖ Network error: ' + err.message);
-        }
+    function closeCouncilModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 260);
     }
 
-    async function editDescription(modId, platform) {
-        const desc = prompt("Update the catchy council description for this mod:");
-        if (desc === null) return;
+    function closeCouncilDescModal() { closeCouncilModal('councilDescModal'); }
+    function closeCouncilRemoveModal() { closeCouncilModal('councilRemoveModal'); }
 
-        try {
-            const res = await fetch('/api/admin/editors-choice/toggle', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
-            });
-            const data = await res.json();
-            if (data.success) {
-                window.location.reload();
-            } else {
-                alert('✖ Failed: ' + (data.message || 'Error'));
+    function addToCouncil(modId, platform, modName) {
+        document.getElementById('councilDescModalTitle').textContent = `Feature in ${platform.toUpperCase()}`;
+        document.getElementById('councilDescModalSubtitle').textContent = `Enter a catchy featured description for "${modName}":`;
+        const input = document.getElementById('councilDescInput');
+        input.value = "Featured hand-picked mod on GPL Mods.";
+
+        const submitBtn = document.getElementById('councilDescSubmitBtn');
+        submitBtn.onclick = async () => {
+            const desc = input.value.trim() || "Featured hand-picked mod on GPL Mods.";
+            closeCouncilDescModal();
+
+            try {
+                const res = await fetch('/api/admin/editors-choice/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.showGplToast) window.showGplToast({ title: 'Editor Choice Updated', body: `"${modName}" is now featured.` });
+                    setTimeout(() => window.location.reload(), 600);
+                } else {
+                    if (window.showGplToast) window.showGplToast({ title: 'Failed', body: data.message || 'Error updating mod' });
+                }
+            } catch (err) {
+                if (window.showGplToast) window.showGplToast({ title: 'Network Error', body: err.message });
             }
-        } catch (err) {
-            alert('✖ Network error: ' + err.message);
-        }
+        };
+
+        openCouncilModal('councilDescModal');
+        setTimeout(() => input.focus(), 150);
+    }
+
+    function removeFromCouncil(modId, platform, modName) {
+        document.getElementById('councilRemoveModName').textContent = modName;
+        document.getElementById('councilRemovePlatform').textContent = platform;
+
+        const confirmBtn = document.getElementById('councilRemoveConfirmBtn');
+        confirmBtn.onclick = async () => {
+            closeCouncilRemoveModal();
+            try {
+                const res = await fetch('/api/admin/editors-choice/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: modId, isEditorsChoice: false })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const card = document.getElementById(`card-${modId}`);
+                    if (card) card.remove();
+                    const countBadge = document.getElementById(`count-${platform}`);
+                    if (countBadge) countBadge.textContent = Math.max(0, parseInt(countBadge.textContent || '1') - 1);
+                    if (window.showGplToast) window.showGplToast({ title: 'Removed', body: `"${modName}" removed from Editor Choice.` });
+                } else {
+                    if (window.showGplToast) window.showGplToast({ title: 'Failed', body: data.message || 'Error updating mod' });
+                }
+            } catch (err) {
+                if (window.showGplToast) window.showGplToast({ title: 'Network Error', body: err.message });
+            }
+        };
+
+        openCouncilModal('councilRemoveModal');
+    }
+
+    function editDescription(modId, platform) {
+        document.getElementById('councilDescModalTitle').textContent = `Edit Description`;
+        document.getElementById('councilDescModalSubtitle').textContent = `Update the catchy showcase description for this mod:`;
+        const input = document.getElementById('councilDescInput');
+        input.value = "";
+
+        const submitBtn = document.getElementById('councilDescSubmitBtn');
+        submitBtn.onclick = async () => {
+            const desc = input.value.trim();
+            closeCouncilDescModal();
+
+            try {
+                const res = await fetch('/api/admin/editors-choice/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileId: modId, isEditorsChoice: true, description: desc })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.showGplToast) window.showGplToast({ title: 'Saved', body: 'Council description updated.' });
+                    setTimeout(() => window.location.reload(), 600);
+                } else {
+                    if (window.showGplToast) window.showGplToast({ title: 'Failed', body: data.message || 'Error saving description' });
+                }
+            } catch (err) {
+                if (window.showGplToast) window.showGplToast({ title: 'Network Error', body: err.message });
+            }
+        };
+
+        openCouncilModal('councilDescModal');
+        setTimeout(() => input.focus(), 150);
     }
 </script>
 

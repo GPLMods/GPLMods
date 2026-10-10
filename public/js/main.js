@@ -1805,10 +1805,14 @@ function initializeNotificationsAndPWA() {
         if (curModsUpd > seenModsUpd) totalUnread += (curModsUpd - seenModsUpd);
 
         if (totalUnread > 0) {
-            badge.style.display = 'flex';
+            badge.classList.remove('hidden');
+            badge.removeAttribute('hidden');
+            badge.style.setProperty('display', 'flex', 'important');
             badge.textContent = totalUnread > 9 ? '9+' : totalUnread;
         } else {
-            badge.style.display = 'none';
+            badge.classList.add('hidden');
+            badge.setAttribute('hidden', 'true');
+            badge.style.setProperty('display', 'none', 'important');
             badge.textContent = '';
         }
     }
