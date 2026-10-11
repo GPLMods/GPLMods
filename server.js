@@ -10943,24 +10943,47 @@ app.get('/api/search/suggestions', async (req, res) => {
                 role: u.role,
                 isVerified: !!u.isVerified,
                 avatarUrl: avatarUrl,
-                url: `/users/${encodeURIComponent(u.username)}`
+                url: `/user/${encodeURIComponent(u.username.toLowerCase())}`
             };
         }));
 
-        // 3. Match quick categories
+        // 3. Match quick categories & competitor alternatives
         const categoryCatalog = [
-            { name: 'Android Mods', category: 'android', icon: 'fab fa-android', url: '/category?cat=android' },
-            { name: 'PC Software & Games', category: 'pc', icon: 'fab fa-windows', url: '/category?cat=pc' },
-            { name: 'iOS IPA Mods', category: 'ios', icon: 'fab fa-apple', url: '/category?cat=ios' },
-            { name: 'AI Directory', category: 'ai', icon: 'fas fa-robot', url: '/ai-directory' },
+            { name: 'Android Mods (HappyMod Safe Alternative)', category: 'android', icon: 'fab fa-android', url: '/category?cat=android' },
+            { name: 'PC Software & Games (IGG Games Alternative)', category: 'pc', icon: 'fab fa-windows', url: '/category?cat=pc' },
+            { name: 'iOS IPA Mods (iOSGods & Panda Helper Alternative)', category: 'ios', icon: 'fab fa-apple', url: '/category?cat=ios' },
+            { name: 'Sideload Repos (AltStore, SideStore, Scarlet)', category: 'repos', icon: 'fas fa-cubes', url: '/repos' },
+            { name: 'iOS Jailbreak Repos (Sileo, Cydia, Zebra)', category: 'jailbreak', icon: 'fas fa-terminal', url: '/jailbreak-repos' },
+            { name: 'AI Directory & 2026 Sitemap', category: 'ai', icon: 'fas fa-robot', url: '/ai-directory' },
             { name: 'Community Forum', category: 'forum', icon: 'fas fa-comments', url: '/community' },
             { name: 'Leaderboard', category: 'leaderboard', icon: 'fas fa-trophy', url: '/leaderboard' },
-            { name: 'Software Licenses', category: 'licenses', icon: 'fas fa-key', url: '/licenses' }
+            { name: 'Software Licenses & GPL Rights', category: 'licenses', icon: 'fas fa-key', url: '/licenses' }
         ];
 
         const matchedCategories = categoryCatalog.filter(c => 
             c.name.toLowerCase().includes(rawQuery.toLowerCase()) || 
             c.category.toLowerCase().includes(rawQuery.toLowerCase())
+        );
+
+        // Competitor & trending quick search tags
+        const competitorDictionary = [
+            { trigger: 'happy', title: 'HappyMod Safe Alternative (VirusTotal Scanned)', url: '/search?q=happymod+alternative' },
+            { trigger: 'iosgod', title: 'iOSGods Safe Alternative (No Revoke IPAs)', url: '/category?cat=ios' },
+            { trigger: 'panda', title: 'Panda Helper Alternative (Free VIP Sideload)', url: '/category?cat=ios' },
+            { trigger: 'igg', title: 'IGG Games Safe Alternative (Zero Adware)', url: '/category?cat=pc' },
+            { trigger: 'apptester', title: 'AppTesters Sideloading Repo Alternative', url: '/repos' },
+            { trigger: 'kemo', title: 'Kemo Hacks iOS Jailbreak Alternative', url: '/jailbreak-repos' },
+            { trigger: 'shinead', title: 'ShineAds GPL Alternative (Free GPL Themes)', url: '/category?cat=wordpress' },
+            { trigger: 'onehack', title: 'OneHack Community Alternative', url: '/community' },
+            { trigger: 'delta', title: 'Roblox Delta Executor iOS IPA', url: '/search?q=delta+executor' },
+            { trigger: 'minecraft', title: 'Minecraft PE iOS & Android Mods', url: '/search?q=minecraft' },
+            { trigger: 'lightroom', title: 'Adobe Lightroom Pro Mod APK', url: '/search?q=lightroom' },
+            { trigger: 'capcut', title: 'CapCut Pro Mod APK (Unlocked Filters)', url: '/search?q=capcut' },
+            { trigger: 'spotify', title: 'Spotify Premium Mod (No Ads)', url: '/search?q=spotify' }
+        ];
+
+        const matchedCompetitors = competitorDictionary.filter(item =>
+            rawQuery.toLowerCase().includes(item.trigger)
         );
 
         // 4. Match Community Forums & Docs
@@ -10974,7 +10997,10 @@ app.get('/api/search/suggestions', async (req, res) => {
             ...matchedIssues.map(i => ({ title: i.title, type: 'Forum', url: `/community/issue/${i._id}`, icon: 'fas fa-comments' }))
         ];
 
-        const suggestionNames = [...new Set(modsWithIcons.map(m => m.name))];
+        const suggestionNames = [...new Set([
+            ...modsWithIcons.map(m => m.name),
+            ...matchedCompetitors.map(c => c.title)
+        ])];
 
         res.json({
             success: true,
@@ -10983,6 +11009,7 @@ app.get('/api/search/suggestions', async (req, res) => {
             users: usersWithAvatars,
             community: communitySuggestions,
             categories: matchedCategories,
+            competitors: matchedCompetitors,
             names: suggestionNames
         });
 
@@ -10999,10 +11026,21 @@ app.get('/api/trending-searches', async (req, res) => {
             { name: 1, _id: 0 } 
         )
         .sort({ downloads: -1 }) 
-        .limit(5); 
+        .limit(6); 
 
-        const trendingNames = trendingFiles.map(file => file.name);
-        res.json(trendingNames); 
+        const dbTrending = trendingFiles.map(file => file.name);
+        const curatedTrending = [
+            'Minecraft PE',
+            'Roblox Delta Executor',
+            'Lightroom Pro',
+            'CapCut Mod APK',
+            'Spotify Premium',
+            'HappyMod Alternative',
+            'iOSGods Alternative'
+        ];
+
+        const combinedTrending = [...new Set([...dbTrending, ...curatedTrending])].slice(0, 8);
+        res.json(combinedTrending); 
 
     } catch (error) {
         console.error("API Trending Searches Error:", error);

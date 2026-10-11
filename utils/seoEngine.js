@@ -43,6 +43,336 @@ const BRAND_KEYWORDS = [
     'virustotal scanned mods'
 ];
 
+// High-Velocity Google Trends Rising Searches (Verified via Google Trends)
+const TRENDING_GOOGLE_KEYWORDS = [
+    'lightroom mod apk latest version',
+    'lightroom pro mod apk',
+    'trafic rider mod apk',
+    'traffic rider mod apk',
+    'telegram mod apk download',
+    'telegram premium mod apk',
+    'free fire mod apk advance server',
+    'free fire advance server apk',
+    'pizza ready mod apk',
+    'where winds meet mod apk',
+    'my supermarket simulator 3d mod apk',
+    'block crush mod apk',
+    'train simulator mod apk',
+    'indian train simulator mod apk',
+    'reelshort mod apk unlimited coins',
+    'reelshort mod apk',
+    'winkit mod apk ai video enhancer',
+    'winkit mod apk',
+    'truck simulator ultimate mod apk',
+    'dynamons world mod apk',
+    'granny chapter two mod apk',
+    'capcut mod apk for android',
+    'capcut pro mod apk',
+    'chatgpt mod apk download for android',
+    'chatgpt plus mod apk',
+    'movie box moviebox pro download',
+    'bus simulator indonesia mod apk',
+    'happy mod ios',
+    'happymod apk download',
+    'happy mod 2026'
+];
+
+// Competitor & Alternative Comparator Keywords (Targeting user flow seeking alternatives)
+const COMPETITOR_COMPARATOR_KEYWORDS = [
+    'happymod alternative',
+    'happy mod alternatives',
+    'happymod safe download',
+    'happymod apk alternative',
+    'happymod ios alternative',
+    'panda helper alternative',
+    'panda helper vip free',
+    'panda helper ios alternative',
+    'iosgods alternative',
+    'iosgods.com alternative',
+    'iosgods jailed cheats alternative',
+    'apptesters.org alternative',
+    'apptesters alternative',
+    'apptesters repo',
+    'arealgamer alternative',
+    'arealgamer.org',
+    'pcgamefreetop alternative',
+    'pcgamefreetop.net',
+    'igg-games alternative',
+    'igg games safe alternative',
+    'igg-games.com',
+    'pcgamestorrents alternative',
+    'pc games torrents safe',
+    'onehack.us alternative',
+    'onehack alternative',
+    'pdalife alternative',
+    'pda life alternative',
+    'pdalife english',
+    'an1.com alternative',
+    'an1 mod apk alternative',
+    'getmodapk alternative',
+    'get mod apka alternative',
+    'applites alternative',
+    'apklite alternative',
+    'apktg alternative',
+    'apktg.com',
+    'vanced alternative',
+    'youtube vanced apk alternative',
+    'vanced.to',
+    'gplastra alternative',
+    'gplastra.net',
+    'gplastra.me',
+    'shineads alternative',
+    'shineads.in',
+    'kemo hacks for ios',
+    'kemohacks',
+    'mixrootmods android',
+    'mixrootmod.com',
+    'you are finished mods',
+    'dayanch96 ytlite',
+    'fouadraheb watusi',
+    'whoeevee eeveespotify'
+];
+
+// Popular Games Keywords (High Search Volume 2026)
+const POPULAR_GAMES_KEYWORDS = [
+    'minecraft pe ipa',
+    'minecraft java bedrock edition free download',
+    'minecraft mod apk',
+    'geometry dash full version unlocked',
+    'geometry dash ipa',
+    'reds first flight ipa',
+    'red first flight free download',
+    'roblox delta executor ios',
+    'delta executor download',
+    'roblox mod apk 2026',
+    'roblox cheats ios',
+    'among us jailed cheats',
+    'among us mod apk all unlocked',
+    'subway surfers mod ipa apptesters',
+    'subway surfers unlimited coins keys',
+    'fortnite ezfn private server',
+    'fortnite mobile ios ipa',
+    'amethyst launcher minecraft ios',
+    'gta vice city gtavc ipa apk',
+    'gta san andreas gtasa mod apk ipa',
+    'gta 5 enhanced pc free download',
+    'poppy playtime chapter 4 free download',
+    'terraria full version ipa apk',
+    '8 ball pool auto update cheats long line',
+    'plants vs zombies 2 pvz2 unlimited currencies',
+    'township farm city building cheats',
+    'dude theft wars mod menu cheats',
+    'the sims 4 lovestruck pc free download',
+    'cyberpunk 2077 codex pc free download',
+    'forza horizon 6 pc free download',
+    'schedule 1 schedule i pc free download',
+    'the witcher 3 wild hunt all dlc pc',
+    'palworld pc free download',
+    'black myth wukong pc free download',
+    'red dead redemption 2 ultimate edition pc'
+];
+
+// Popular Apps & Media Tools Keywords
+const POPULAR_APPS_KEYWORDS = [
+    'ytlite youtube mod ios',
+    'ytmusicultimate premium unlocked',
+    'eeveespotifyreborn spotify premium ios',
+    'spotify premium mod apk 2026',
+    'watusi for whatsapp ios',
+    'regram for instagram ios',
+    'snapchat mod apk dark mode',
+    'adobe photoshop modded ipa',
+    'adobe lightroom pro mod apk',
+    'picsart gold subscription unlocked ipa apk',
+    'kinemaster pro mod apk without watermark',
+    'inshot pro mod apk unlocked',
+    'capcut mod apk for android pro unlocked',
+    'crunchyroll premium mod apk no ads',
+    'reelshort unlimited coins mod apk',
+    'movie box moviebox pro download',
+    'winkit ai video enhancer mod apk',
+    'chatgpt mod apk download for android',
+    'duolingo super premium unlocked',
+    'remini pro ai photo enhancer unlocked',
+    'truecaller premium gold unlocked',
+    'mimo pro learn coding unlocked',
+    'remote gamepad mod apk',
+    'microsoft swiftkey ai keyboard mod',
+    'telegram premium mod apk',
+    'dodo webview gplmods'
+];
+
+// WordPress GPL Themes & Plugins Keywords
+const WORDPRESS_GPL_KEYWORDS = [
+    'yoast seo premium gpl free download',
+    'rank math pro gpl free download',
+    'elementor pro gpl free download',
+    'wp rocket gpl free download',
+    'wp dark mode ultimate plugin free download',
+    'wordfence premium gpl free download',
+    'updraftplus premium gpl free download',
+    'wpforms pro gpl free download',
+    'wp mail smtp pro gpl free download',
+    'easy digital downloads pro free download',
+    'ultimate membership pro codecanyon gpl',
+    'astra pro addon gpl free download',
+    'astra premium starter templates',
+    'kadence theme pro gpl free download',
+    'avada themeforest theme gpl free download',
+    'generatepress premium gp premium gpl',
+    'flatsome woocommerce theme gpl free download',
+    'thegem creative theme gpl free download',
+    'salient multipurpose theme gpl free download',
+    'soledad blog magazine theme gpl free download',
+    'thrive theme builder gpl free download',
+    'betheme responsive theme gpl free download'
+];
+
+// Schema.org FAQ Schema for Search Engine Snippets (SERP Dropdown)
+const COMPETITOR_FAQ_SCHEMA = {
+    '@type': 'FAQPage',
+    mainEntity: [
+        {
+            '@type': 'Question',
+            name: 'Is GPL Mods safer than HappyMod, Panda Helper, and unverified mod sites?',
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Yes. Unlike HappyMod, Panda Helper, and unverified stores, every package on GPL Mods is tested and dual-scanned with Cloud VirusTotal engines. Files contain zero injected adware, miners, or malicious payloads, providing 100% clean, verified direct downloads.'
+            }
+        },
+        {
+            '@type': 'Question',
+            name: 'How does GPL Mods compare to iOSGods and AppTesters for iOS IPAs?',
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'GPL Mods offers direct sideloading IPAs compatible with AltStore, SideStore, and Scarlet, plus Sileo/Zebra/Cydia jailbreak repositories without mandatory VIP paywalls, broken ad-shorteners, or locked download mirrors.'
+            }
+        },
+        {
+            '@type': 'Question',
+            name: 'Are PC games and software on GPL Mods safe compared to IGG Games and torrent sites?',
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'Every Windows PC software, game, and tool on GPL Mods includes verified SHA256 checksums and real-time VirusTotal telemetry. Downloads are hosted on high-speed CDN mirrors without confusing torrent redirects, bundled adware, or crypto miners.'
+            }
+        },
+        {
+            '@type': 'Question',
+            name: 'What is the difference between GPL Mods and GPLAstra or ShineAds for WordPress items?',
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: 'GPL Mods provides 100% authentic, untouched GNU General Public Licensed (GPL) WordPress themes and plugins directly from developers. Files are verified malware-free with no backdoors or callback scripts.'
+            }
+        }
+    ]
+};
+
+/**
+ * Returns platform-specific competitor and trending keywords
+ */
+function getPlatformKeywords(cat) {
+    const c = String(cat || '').toLowerCase();
+    if (c === 'android') {
+        return [
+            'happymod alternative',
+            'pdalife alternative',
+            'an1 mod apk',
+            'getmodapk alternative',
+            'applites alternative',
+            'mixrootmods android',
+            'lightroom mod apk latest version',
+            'traffic rider mod apk',
+            'telegram premium mod apk',
+            'free fire advance server',
+            'capcut mod apk for android',
+            'chatgpt mod apk download for android',
+            'minecraft pe apk',
+            'subway surfers mod apk',
+            'spotify premium mod apk'
+        ];
+    }
+    if (c === 'ios-jailed') {
+        return [
+            'iosgods alternative',
+            'apptesters.org alternative',
+            'panda helper ios alternative',
+            'kemo hacks for ios',
+            'scarlet repo',
+            'altstore repo',
+            'sidestore repo',
+            'roblox delta executor ios',
+            'among us jailed cheats',
+            'subway surfers mod ipa apptesters',
+            'minecraft pe ipa',
+            'watusi for whatsapp',
+            'regram for instagram',
+            'eeveespotifyreborn',
+            'ytlite ios'
+        ];
+    }
+    if (c === 'ios-jailbroken') {
+        return [
+            'sileo repo',
+            'cydia repo',
+            'zebra repo',
+            'rootless jailbreak tweaks',
+            'iosgods jailed cheats alternative',
+            'kemo hacks for ios',
+            'watusi 3',
+            'eeveespotify',
+            'ytliteplus',
+            'amethyst launcher ios'
+        ];
+    }
+    if (c === 'windows') {
+        return [
+            'arealgamer alternative',
+            'pcgamefreetop alternative',
+            'igg-games alternative',
+            'igg games safe alternative',
+            'pcgamestorrents alternative',
+            'onehack.us alternative',
+            'minecraft java bedrock edition free download',
+            'the sims 4 lovestruck pc free download',
+            'cyberpunk 2077 pc free download',
+            'forza horizon 6 pc free download',
+            'gta 5 enhanced pc',
+            'the witcher 3 wild hunt pc',
+            'palworld pc free download',
+            'black myth wukong pc free download',
+            'red dead redemption 2 pc free download'
+        ];
+    }
+    if (c === 'wordpress') {
+        return [
+            'gplastra alternative',
+            'shineads alternative',
+            'yoast seo premium gpl',
+            'rank math pro gpl',
+            'elementor pro gpl free download',
+            'wp rocket gpl free download',
+            'wp dark mode ultimate',
+            'wordfence premium gpl',
+            'updraftplus premium gpl',
+            'wpforms pro gpl',
+            'wp mail smtp pro gpl',
+            'easy digital downloads pro',
+            'ultimate membership pro',
+            'astra pro addon gpl',
+            'kadence theme pro gpl',
+            'avada themeforest gpl',
+            'generatepress premium gp premium',
+            'flatsome woocommerce theme',
+            'thegem theme',
+            'salient theme',
+            'soledad theme',
+            'thrive theme builder',
+            'betheme gpl'
+        ];
+    }
+    return [];
+}
+
 /**
  * Strips HTML tags and collapses whitespace
  */
@@ -135,21 +465,36 @@ function isNoindexRoute(urlPath) {
  */
 const STATIC_PAGE_META = {
     '/': {
-        title: 'GPL Mods - 100% Safe & Working Premium Unlocked Mods',
-        description: 'Download 100% safe, verified Mod APKs, iOS IPAs, PC software, and GPL themes. Clean, VirusTotal scanned, and premium unlocked for free at GPL Mods.',
-        keywords: ['gpl mods', 'mod apk', 'mod ipa', 'safe apk download', 'gpl themes', 'windows software unlocked'],
+        title: 'GPL Mods - 100% Safe & Working Premium Unlocked Mods | Safe Alternative',
+        description: 'Download 100% safe, verified Mod APKs, iOS IPAs, PC software, and GPL themes. Clean, VirusTotal scanned alternative to HappyMod, iOSGods, Panda Helper & IGG Games.',
+        keywords: [
+            'gpl mods',
+            'happymod alternative',
+            'iosgods alternative',
+            'panda helper alternative',
+            'igg-games alternative',
+            'safe mod apk',
+            'mod ipa sideloading',
+            'minecraft pe ipa',
+            'roblox delta executor ios',
+            'spotify premium mod',
+            'lightroom pro mod',
+            'capcut mod apk for android',
+            'windows software unlocked',
+            'wordpress gpl themes free'
+        ],
         type: 'website'
     },
     '/about': {
         title: 'About GPL Mods - Open Source Modding & Safe Software Hub',
         description: 'Learn about GPL Mods, our mission for open-source software, transparent mod verification, VirusTotal dual-engine scanning, and creator attribution.',
-        keywords: ['about gpl mods', 'open source software', 'gpl verification', 'safe modding community'],
+        keywords: ['about gpl mods', 'open source software', 'gpl verification', 'safe modding community', 'clean apk alternative'],
         type: 'website'
     },
     '/faq': {
-        title: 'Frequently Asked Questions (FAQ) | GPL Mods Help Center',
-        description: 'Got questions about sideloading IPAs, installing Mod APKs, VirusTotal scanner reports, or memberships? Find quick answers in our official FAQ.',
-        keywords: ['gpl mods faq', 'how to sideload', 'mod apk guide', 'virustotal scan help', 'gpl questions'],
+        title: 'FAQ - Safe Alternative to HappyMod, iOSGods & IGG Games | GPL Mods',
+        description: 'Frequently asked questions: Why GPL Mods is safer than HappyMod and Panda Helper, how to sideload iOS IPAs, VirusTotal reports, and free VIP membership.',
+        keywords: ['gpl mods faq', 'happymod vs gpl mods', 'iosgods safe alternative', 'how to sideload ipa', 'mod apk guide', 'virustotal scan help'],
         type: 'website'
     },
     '/tos': {
@@ -195,9 +540,9 @@ const STATIC_PAGE_META = {
         type: 'website'
     },
     '/why-choose-us': {
-        title: 'Why Choose GPL Mods? 100% Verified, Clean & Transparent',
-        description: 'Discover why millions choose GPL Mods: dual VirusTotal cloud scans, zero malware, authentic GPL licenses, and direct high-speed mirror downloads.',
-        keywords: ['why choose gpl mods', 'trusted mod apk site', 'clean apk downloads', 'verified mods'],
+        title: 'Why Choose GPL Mods? 100% Verified Alternative to HappyMod & Panda Helper',
+        description: 'Discover why millions choose GPL Mods: dual VirusTotal cloud scans, zero adware or malware, authentic GPL licenses, and direct high-speed mirror downloads.',
+        keywords: ['why choose gpl mods', 'happymod alternative safe', 'panda helper alternative free', 'clean apk downloads', 'trusted mod apk site'],
         type: 'website'
     },
     '/understanding-scans': {
@@ -209,7 +554,7 @@ const STATIC_PAGE_META = {
     '/membership': {
         title: 'Supporter & VIP Membership Plans | GPL Mods Official',
         description: 'Upgrade your GPL Mods experience with ad-free browsing, unlimited parallel downloads, direct CDN bandwidth, and VIP creator access.',
-        keywords: ['gpl mods membership', 'vip supporter', 'fast direct download', 'ad free modding'],
+        keywords: ['gpl mods membership', 'vip supporter', 'fast direct download', 'ad free modding', 'panda helper vip alternative'],
         type: 'website'
     },
     '/upload-policy': {
@@ -219,21 +564,21 @@ const STATIC_PAGE_META = {
         type: 'website'
     },
     '/category': {
-        title: 'Browse Mods by Category & Platform | GPL Mods',
-        description: 'Explore Android APKs, iOS Sideloading IPAs, Jailbreak Tweaks, Windows Software, and WordPress GPL themes organized by category and platform.',
-        keywords: ['browse mods', 'mod categories', 'android mods', 'ios ipas', 'windows mods', 'wordpress themes'],
+        title: 'Browse Safe Mods by Platform - HappyMod & iOSGods Alternative | GPL Mods',
+        description: 'Explore Android APKs, iOS Sideloading IPAs, Jailbreak Tweaks, Windows PC Games, and WordPress GPL themes. 100% clean, VirusTotal scanned at GPL Mods.',
+        keywords: ['browse mods', 'happymod alternative', 'iosgods alternative', 'android mods', 'ios ipas', 'windows mods', 'wordpress themes'],
         type: 'website'
     },
     '/repos': {
-        title: 'Source & Sideload Repositories Hub | GPL Mods',
-        description: 'Official F-Droid Android repositories and AltStore, SideStore, and Scarlet iOS sideloading source directory on GPL Mods.',
-        keywords: ['sideloading repo', 'altstore repo', 'sidestore repo', 'scarlet repo', 'fdroid repository', 'gpl repos'],
+        title: 'Source & Sideload Repositories Hub - AppTesters & AltStore Alternative | GPL Mods',
+        description: 'Official F-Droid Android repositories and AltStore, SideStore, and Scarlet iOS sideloading source directory on GPL Mods. Safe iOSGods and AppTesters alternative.',
+        keywords: ['sideloading repo', 'apptesters alternative', 'altstore repo', 'sidestore repo', 'scarlet repo', 'fdroid repository', 'gpl repos'],
         type: 'website'
     },
     '/jailbreak-repos': {
-        title: 'iOS Jailbreak Repos (Sileo, Cydia, Zebra) | GPL Mods',
+        title: 'iOS Jailbreak Repos (Sileo, Cydia, Zebra) - Safe Kemo Hacks Alternative | GPL Mods',
         description: 'Add verified Rootless, Rootful, and Roothide jailbreak repos directly to Sileo, Zebra, and Cydia. 100% safe iOS packages on GPL Mods.',
-        keywords: ['jailbreak repo', 'sileo repo', 'cydia repo', 'zebra repo', 'rootless jailbreak', 'ios tweaks'],
+        keywords: ['jailbreak repo', 'sileo repo', 'cydia repo', 'zebra repo', 'kemo hacks for ios', 'rootless jailbreak', 'ios tweaks'],
         type: 'website'
     },
     '/licenses': {
@@ -244,7 +589,7 @@ const STATIC_PAGE_META = {
     },
     '/source-hub': {
         title: 'Open Source Repositories & GitHub Code Hub | GPL Mods',
-        description: 'Inspect open source repositories, browse commit trees, and download raw code files from verified developers on GPL Mods.',
+        description: 'Inspect open source repositories, browse commit trees, and download raw code files from verified developers on GPL Mods. Safe transparent modding.',
         keywords: ['source code viewer', 'open source git', 'github mirror', 'mod source code', 'inspect mod'],
         type: 'website'
     },
@@ -279,9 +624,9 @@ const STATIC_PAGE_META = {
         type: 'website'
     },
     '/ai-directory': {
-        title: 'Content & AI Sitemap Directory | GPL Mods Official',
-        description: 'Comprehensive HTML sitemap and structured AI directory indexing all verified mods, categories, creators, and open-source documentation.',
-        keywords: ['ai sitemap', 'gpl mods directory', 'content index', 'llm directory', 'all mods sitemap'],
+        title: 'Trending 2026 Mods, Competitors & AI Sitemap Directory | GPL Mods',
+        description: 'Comprehensive directory indexing trending mods (Minecraft, Roblox, CapCut, Lightroom, Spotify) and safe alternatives to HappyMod, Panda Helper, iOSGods & IGG Games.',
+        keywords: ['ai sitemap', 'happymod alternative', 'iosgods alternative', 'trending mods 2026', 'gpl mods directory', 'all mods sitemap'],
         type: 'website'
     }
 };
@@ -352,6 +697,7 @@ function buildModSeo(file, masterFile, req) {
                   DEFAULT_IMAGE;
 
     // Combine keywords
+    const platformKeywords = getPlatformKeywords(targetFile.category);
     const keywords = [
         name,
         `${name} mod`,
@@ -362,7 +708,8 @@ function buildModSeo(file, masterFile, req) {
         uploader,
         modType,
         ...normalTags,
-        ...BRAND_KEYWORDS
+        ...platformKeywords.slice(0, 8),
+        ...BRAND_KEYWORDS.slice(0, 10)
     ].filter(Boolean);
 
     // Schema.org SoftwareApplication JSON-LD
@@ -797,6 +1144,68 @@ function resolveSeo(req, locals = {}) {
         entitySeo = buildClubSeo(locals.club);
     }
 
+    // Dynamic search query SEO handling
+    if (rawPath === '/search' && req.query && req.query.q) {
+        const cleanQuery = cleanText(req.query.q);
+        if (cleanQuery) {
+            const searchTitle = truncateText(`Download ${cleanQuery} Mods, APKs & IPAs - Safe Alternatives | ${SITE_NAME}`, 65);
+            const searchDesc = truncateText(`Search results and 100% VirusTotal safe, verified mods for "${cleanQuery}". Clean, ad-free alternative to HappyMod, iOSGods, Panda Helper & IGG Games at GPL Mods.`, 160);
+            const searchKeywords = [
+                cleanQuery,
+                `${cleanQuery} mod`,
+                `${cleanQuery} apk`,
+                `${cleanQuery} ipa`,
+                `${cleanQuery} download`,
+                `${cleanQuery} safe alternative`,
+                ...COMPETITOR_COMPARATOR_KEYWORDS.slice(0, 8),
+                ...TRENDING_GOOGLE_KEYWORDS.slice(0, 6),
+                ...BRAND_KEYWORDS.slice(0, 8)
+            ].join(', ');
+
+            return {
+                title: searchTitle,
+                description: searchDesc,
+                keywords: searchKeywords,
+                canonicalUrl: `${BASE_URL}/search?q=${encodeURIComponent(cleanQuery)}`,
+                robots: 'index, follow',
+                googlebot: 'index, follow',
+                bingbot: 'index, follow',
+                isNoIndex: false,
+                siteName: SITE_NAME,
+                og: {
+                    title: searchTitle,
+                    description: searchDesc,
+                    url: `${BASE_URL}/search?q=${encodeURIComponent(cleanQuery)}`,
+                    image: DEFAULT_IMAGE,
+                    type: 'website',
+                    site_name: SITE_NAME,
+                    locale: 'en_US'
+                },
+                twitter: {
+                    card: 'summary_large_image',
+                    domain: new URL(BASE_URL).hostname,
+                    url: `${BASE_URL}/search?q=${encodeURIComponent(cleanQuery)}`,
+                    title: searchTitle,
+                    description: searchDesc,
+                    image: DEFAULT_IMAGE,
+                    site: TWITTER_HANDLE
+                },
+                jsonLd: {
+                    '@context': 'https://schema.org',
+                    '@graph': [
+                        ...defaultOrgAndWebSite,
+                        {
+                            '@type': 'SearchResultsPage',
+                            name: `Search results for ${cleanQuery}`,
+                            url: `${BASE_URL}/search?q=${encodeURIComponent(cleanQuery)}`,
+                            description: searchDesc
+                        }
+                    ]
+                }
+            };
+        }
+    }
+
     // Static page lookup
     const staticMeta = STATIC_PAGE_META[rawPath] || null;
 
@@ -866,6 +1275,12 @@ function resolveSeo(req, locals = {}) {
     ];
 
     let jsonLdGraph = [...defaultOrgAndWebSite];
+
+    // Inject FAQ Schema on homepage and FAQ page for Rich Snippet SERP dropdowns
+    if (rawPath === '/' || rawPath === '/home' || rawPath === '/faq') {
+        jsonLdGraph.push(COMPETITOR_FAQ_SCHEMA);
+    }
+
     if (entitySeo && entitySeo.jsonLd && entitySeo.jsonLd['@graph']) {
         jsonLdGraph = [...jsonLdGraph, ...entitySeo.jsonLd['@graph']];
     } else if (locals.seo && locals.seo.jsonLd && locals.seo.jsonLd['@graph']) {
@@ -916,6 +1331,11 @@ function seoMiddleware(req, res, next) {
     res.locals.BASE_URL = BASE_URL;
     res.locals.LIVE_DOMAIN = BASE_URL;
     res.locals.BRAND_KEYWORDS = BRAND_KEYWORDS;
+    res.locals.TRENDING_GOOGLE_KEYWORDS = TRENDING_GOOGLE_KEYWORDS;
+    res.locals.COMPETITOR_COMPARATOR_KEYWORDS = COMPETITOR_COMPARATOR_KEYWORDS;
+    res.locals.POPULAR_GAMES_KEYWORDS = POPULAR_GAMES_KEYWORDS;
+    res.locals.POPULAR_APPS_KEYWORDS = POPULAR_APPS_KEYWORDS;
+    res.locals.WORDPRESS_GPL_KEYWORDS = WORDPRESS_GPL_KEYWORDS;
 
     // Helper to override or extend SEO in any route
     res.locals.setSeo = function(customSeo) {
@@ -1000,6 +1420,13 @@ module.exports = {
     SITE_NAME,
     TWITTER_HANDLE,
     BRAND_KEYWORDS,
+    TRENDING_GOOGLE_KEYWORDS,
+    COMPETITOR_COMPARATOR_KEYWORDS,
+    POPULAR_GAMES_KEYWORDS,
+    POPULAR_APPS_KEYWORDS,
+    WORDPRESS_GPL_KEYWORDS,
+    COMPETITOR_FAQ_SCHEMA,
+    getPlatformKeywords,
     STATIC_PAGE_META,
     isNoindexRoute,
     cleanText,

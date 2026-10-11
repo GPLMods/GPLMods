@@ -477,16 +477,18 @@
         justify-content: center;
         margin: 0;
         vertical-align: middle;
-        float: right;
         box-sizing: border-box;
     }
 
     .file-table .col-action-placeholder {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 46px;
         height: 24px;
         visibility: hidden;
-        float: right;
+        margin: 0;
+        vertical-align: middle;
         box-sizing: border-box;
     }
 
@@ -1072,15 +1074,26 @@
 
         .file-table .col-action .btn-raw {
             min-width: 44px;
+            height: 22px;
             padding: 2px 8px !important;
             font-size: 0.70rem !important;
-            float: right;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin: 0;
+            box-sizing: border-box;
         }
 
         .file-table .col-action-placeholder {
             width: 44px;
-            height: 20px;
-            float: right;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            visibility: hidden;
+            box-sizing: border-box;
         }
 
         .code-viewer-box {
