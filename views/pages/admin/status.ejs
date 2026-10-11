@@ -1,11 +1,42 @@
 <%- include('../../partials/header') %>
 
+<%
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function formatTimeAgo(date) {
+        if (!date) return 'Recently';
+        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+        if (seconds < 5) return 'Just now';
+        if (seconds < 60) return seconds + 's ago';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + 'm ago';
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + 'h ago';
+        const days = Math.floor(hours / 24);
+        return days + 'd ago';
+    }
+
+    const memRss = (health && health.memoryUsage && health.memoryUsage.rss) ? health.memoryUsage.rss : 0;
+    const memHeapUsed = (health && health.memoryUsage && health.memoryUsage.heapUsed) ? health.memoryUsage.heapUsed : 0;
+    const memHeapTotal = (health && health.memoryUsage && health.memoryUsage.heapTotal) ? health.memoryUsage.heapTotal : 0;
+    const memSysTotal = (health && health.memoryUsage && health.memoryUsage.systemTotal) ? health.memoryUsage.systemTotal : 0;
+    const memPct = (health && health.memoryUsage && health.memoryUsage.percentage) ? health.memoryUsage.percentage : '0%';
+    const heapPctNum = memHeapTotal > 0 ? ((memHeapUsed / memHeapTotal) * 100).toFixed(1) : '0';
+    const rssPctNum = parseFloat(memPct) || 0;
+%>
+
 <style>
     .health-container {
         max-width: 1050px;
-        margin: 3.5rem auto 5rem;
+        margin: 3rem auto 5rem;
         padding: 2.2rem;
-        background-color: var(--dark-gray, #121212);
+        background-color: var(--dark-gray, #12141c);
         border-radius: 16px;
         border: 1px solid rgba(255, 255, 255, 0.08);
         box-shadow: 0 20px 45px rgba(0,0,0,0.6);
@@ -127,7 +158,7 @@
     }
     
     .info-card {
-        background: #0d0d0d;
+        background: #0d0f17;
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
         padding: 18px 20px;
@@ -136,7 +167,7 @@
         transition: transform 0.2s ease, border-color 0.2s ease;
     }
     .info-card:hover {
-        border-color: rgba(255, 215, 0, 0.2);
+        border-color: rgba(255, 215, 0, 0.25);
     }
     .info-card h3 {
         color: var(--silver, #888);
@@ -152,6 +183,37 @@
         font-weight: 700;
         font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     }
+
+    /* Memory Progress Bars */
+    .memory-progress-track {
+        background: rgba(255, 255, 255, 0.08);
+        height: 6px;
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 10px;
+        position: relative;
+    }
+    .memory-progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+    .memory-progress-fill.gold {
+        background: linear-gradient(90deg, #ffd700, #ffb300);
+        box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    }
+    .memory-progress-fill.cyan {
+        background: linear-gradient(90deg, #00e5ff, #00b0ff);
+        box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+    }
+    .memory-submeta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--silver, #a0a6b8);
+        margin-top: 6px;
+        font-family: monospace;
+    }
     
     /* Service Status List */
     .service-list {
@@ -161,7 +223,7 @@
         margin-bottom: 30px;
     }
     .service-item {
-        background: #0d0d0d;
+        background: #0d0f17;
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 12px;
         padding: 18px 22px;
@@ -171,7 +233,7 @@
         transition: border-color 0.2s ease;
     }
     .service-item:hover {
-        border-color: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.14);
     }
     .service-name {
         font-size: 1.05rem;
@@ -201,6 +263,90 @@
     .dot-DISCONNECTED, .dot-ERROR { background-color: var(--red, #ff4d4f); color: var(--red, #ff4d4f); }
     .dot-UNKNOWN { background-color: var(--silver, #888); color: var(--silver, #888); }
 
+    /* Key Buttons */
+    .btn-diag-copy {
+        padding: 7px 14px;
+        font-size: 0.82rem;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--white);
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .btn-diag-copy:hover {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: var(--gold);
+    }
+    .btn-diag-rotate {
+        padding: 7px 14px;
+        font-size: 0.82rem;
+        background: var(--gold);
+        border: 1px solid var(--gold);
+        color: #000;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+    .btn-diag-rotate:hover {
+        background: #ffe033;
+        box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+    }
+
+    /* DevTools Audit Logs Table */
+    .audit-card {
+        background: #0d0f17;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 22px;
+        margin-bottom: 35px;
+    }
+    .audit-table-wrapper {
+        overflow-x: auto;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #090a10;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 14px;
+    }
+    .audit-table {
+        width: 100%;
+        min-width: 650px;
+        border-collapse: collapse;
+        font-size: 0.86rem;
+        text-align: left;
+    }
+    .audit-table th {
+        padding: 12px 14px;
+        color: var(--silver, #a0a6b8);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.74rem;
+        letter-spacing: 0.5px;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .audit-table td {
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        vertical-align: middle;
+    }
+    .audit-table tr:last-child td {
+        border-bottom: none;
+    }
+    .audit-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
     /* Warnings Box */
     .warnings-box {
         background-color: rgba(229, 57, 53, 0.08);
@@ -223,6 +369,26 @@
         color: #ffb4b4;
         font-family: monospace;
         font-size: 0.9rem;
+    }
+
+    .btn-diag-refresh {
+        background: transparent;
+        border: 1px solid rgba(255, 215, 0, 0.4);
+        color: var(--gold);
+        padding: 10px 26px;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+    .btn-diag-refresh:hover {
+        background: rgba(255, 215, 0, 0.1);
+        border-color: var(--gold);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
     }
 
     .logo-gold-glow { color: var(--gold, #ffd700); text-shadow: 0 0 10px rgba(255, 215, 0, 0.45); }
@@ -259,6 +425,7 @@
 <main class="container">
     <div class="health-container">
         
+        <!-- Header -->
         <div class="health-header">
             <div class="health-header-left">
                 <h1>
@@ -279,6 +446,7 @@
             </div>
         </div>
 
+        <!-- Node.js Runtime Environment Cards -->
         <h2 class="section-title"><i class="fas fa-microchip"></i> Node.js Runtime Environment</h2>
         <div class="system-grid">
             <div class="info-card">
@@ -286,19 +454,58 @@
                 <div class="value"><%= health.uptime %></div>
             </div>
             <div class="info-card">
-                <h3>Memory Usage (RSS)</h3>
-                <div class="value"><%= typeof formatBytes === 'function' ? formatBytes(health.memoryUsage.rss) : (Math.round(health.memoryUsage.rss / (1024 * 1024)) + ' MB') %></div>
-            </div>
-            <div class="info-card">
-                <h3>Node Version</h3>
+                <h3>Node Engine Version</h3>
                 <div class="value"><%= health.nodeVersion %></div>
             </div>
             <div class="info-card">
-                <h3>Environment</h3>
+                <h3>Runtime Environment</h3>
                 <div class="value" <%- `style="color: ${health.environment === 'production' ? '#2ecc71' : 'var(--gold)'};"` %>><%= health.environment.toUpperCase() %></div>
+            </div>
+            <div class="info-card">
+                <h3>Total RAM Allocated</h3>
+                <div class="value"><%= formatBytes(memRss) %></div>
             </div>
         </div>
 
+        <!-- Detailed Memory & Heap Telemetry -->
+        <h2 class="section-title"><i class="fas fa-memory"></i> Memory & V8 Engine Allocation</h2>
+        <div class="system-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            
+            <!-- Resident Set Size (RSS) Card -->
+            <div class="info-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Process RSS (Allocated)</h3>
+                    <span style="font-size: 0.78rem; color: var(--gold); font-family: monospace; font-weight: 600;"><%= memPct %> of RAM</span>
+                </div>
+                <div class="value" style="color: var(--gold);"><%= formatBytes(memRss) %></div>
+                <div class="memory-progress-track">
+                    <div class="memory-progress-fill gold" style="width: <%= Math.min(rssPctNum, 100) %>%;"></div>
+                </div>
+                <div class="memory-submeta">
+                    <span>Server Total RAM: <%= formatBytes(memSysTotal) %></span>
+                    <span>System Share: <%= memPct %></span>
+                </div>
+            </div>
+
+            <!-- V8 Heap Usage Card -->
+            <div class="info-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>V8 Heap (Active JS Objects)</h3>
+                    <span style="font-size: 0.78rem; color: #00e5ff; font-family: monospace; font-weight: 600;"><%= heapPctNum %>% used</span>
+                </div>
+                <div class="value" style="color: #00e5ff;"><%= formatBytes(memHeapUsed) %></div>
+                <div class="memory-progress-track">
+                    <div class="memory-progress-fill cyan" style="width: <%= Math.min(parseFloat(heapPctNum) || 0, 100) %>%;"></div>
+                </div>
+                <div class="memory-submeta">
+                    <span>Heap Total: <%= formatBytes(memHeapTotal) %></span>
+                    <span>Active Usage: <%= heapPctNum %>%</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Connected Services & Infrastructure -->
         <h2 class="section-title"><i class="fas fa-network-wired"></i> Connected Services & Infrastructure</h2>
         <div class="service-list">
             
@@ -369,10 +576,10 @@
                     10–12 digit single-use code. Auto-regenerates upon use or every 60 minutes.
                 </p>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" class="btn btn-secondary" onclick="copyKeyText('statusDebuggerKey', this)" style="padding: 6px 12px; font-size: 0.85em; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; cursor: pointer;">
+                    <button type="button" class="btn-diag-copy" onclick="copyKeyText('statusDebuggerKey', this)">
                         <i class="fas fa-copy"></i> Copy Key
                     </button>
-                    <button type="button" id="btnAdminGenKey" onclick="adminGenerateNewKey(this)" style="padding: 6px 12px; font-size: 0.85em; background: var(--gold); border: none; color: #000; font-weight: 700; border-radius: 6px; cursor: pointer;">
+                    <button type="button" id="btnAdminGenKey" class="btn-diag-rotate" onclick="adminGenerateNewKey(this)">
                         <i class="fas fa-sync-alt"></i> Rotate Key Now
                     </button>
                 </div>
@@ -392,15 +599,15 @@
                 <p style="font-size: 0.8em; color: var(--silver); margin: 0 0 14px 0; line-height: 1.4;">
                     Permanent master key for administrators. Multi-use, never expires.
                 </p>
-                <button type="button" class="btn btn-secondary" onclick="copyKeyText('statusMasterKey', this)" style="padding: 6px 12px; font-size: 0.85em; background: #222; border: 1px solid #444; color: #fff; border-radius: 6px; cursor: pointer;">
+                <button type="button" class="btn-diag-copy" onclick="copyKeyText('statusMasterKey', this)">
                     <i class="fas fa-copy"></i> Copy Master Key
                 </button>
             </div>
         </div>
 
         <!-- Recent DevTools Incidents Table -->
-        <div style="background: #0d0d0d; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 22px; margin-bottom: 35px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+        <div class="audit-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
                 <h3 style="color: var(--white); margin: 0; font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-history" style="color: var(--gold);"></i> DevTools Inspection Audit Logs
                 </h3>
@@ -408,34 +615,34 @@
             </div>
 
             <% if (typeof recentDevtoolLogs !== 'undefined' && recentDevtoolLogs && recentDevtoolLogs.length > 0) { %>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85em; text-align: left;">
+                <div class="audit-table-wrapper">
+                    <table class="audit-table">
                         <thead>
-                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.08); color: var(--silver);">
-                                <th style="padding: 10px 8px;">Time</th>
-                                <th style="padding: 10px 8px;">User / IP</th>
-                                <th style="padding: 10px 8px;">Page Path</th>
-                                <th style="padding: 10px 8px;">Trigger</th>
-                                <th style="padding: 10px 8px; text-align: right;">Status</th>
+                            <tr>
+                                <th>Time</th>
+                                <th>User / IP</th>
+                                <th>Page Path</th>
+                                <th>Trigger</th>
+                                <th style="text-align: right;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% recentDevtoolLogs.forEach(log => { %>
-                                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
-                                    <td style="padding: 10px 8px; color: var(--silver); white-space: nowrap;"><%= timeAgo(log.createdAt) %></td>
-                                    <td style="padding: 10px 8px; color: var(--white);">
+                                <tr>
+                                    <td style="color: var(--silver); white-space: nowrap;"><%= formatTimeAgo(log.createdAt) %></td>
+                                    <td style="color: var(--white);">
                                         <strong><%= log.username || 'Guest' %></strong>
                                         <div style="font-size: 0.8em; color: #777;"><%= log.ip || 'Unknown IP' %></div>
                                     </td>
-                                    <td style="padding: 10px 8px; color: var(--gold); font-family: monospace;"><%= log.path || '/' %></td>
-                                    <td style="padding: 10px 8px; color: var(--silver);"><%= log.triggerType %></td>
-                                    <td style="padding: 10px 8px; text-align: right; white-space: nowrap;">
+                                    <td style="color: var(--gold); font-family: monospace;"><%= log.path || '/' %></td>
+                                    <td style="color: var(--silver);"><%= log.triggerType %></td>
+                                    <td style="text-align: right; white-space: nowrap;">
                                         <% if (log.status === 'blocked') { %>
-                                            <span style="color: #ff4d4d; background: rgba(255,77,77,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Blocked</span>
+                                            <span style="color: #ff4d4d; background: rgba(255,77,77,0.12); border: 1px solid rgba(255,77,77,0.3); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Blocked</span>
                                         <% } else if (log.status === 'authorized-by-code') { %>
-                                            <span style="color: #2ecc71; background: rgba(46,204,113,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Code)</span>
+                                            <span style="color: #2ecc71; background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Code)</span>
                                         <% } else if (log.status === 'authorized-by-master-key') { %>
-                                            <span style="color: #64b5f6; background: rgba(33,150,243,0.1); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Master)</span>
+                                            <span style="color: #64b5f6; background: rgba(33,150,243,0.12); border: 1px solid rgba(33,150,243,0.3); padding: 3px 8px; border-radius: 4px; font-weight: bold;">Unlocked (Master)</span>
                                         <% } else { %>
                                             <span style="color: #aaa;"><%= log.status %></span>
                                         <% } %>
@@ -463,8 +670,8 @@
         <% } %>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button onclick="window.location.reload();" class="btn btn-secondary" style="background: transparent; border: 1px solid rgba(255, 215, 0, 0.4); color: var(--gold); padding: 10px 26px; border-radius: 25px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fas fa-sync-alt"></i> Refresh Diagnostics
+            <button onclick="refreshDiagnosticsPage(this)" class="btn-diag-refresh">
+                <i class="fas fa-sync-alt" id="refreshSpinner"></i> Refresh Diagnostics
             </button>
             <p style="color: #666; font-size: 0.8em; margin-top: 15px;">Last checked: <%= new Date(health.timestamp).toLocaleTimeString() %></p>
         </div>
@@ -520,6 +727,15 @@
             btn.innerHTML = originalHtml;
             btn.disabled = false;
         }
+    }
+
+    function refreshDiagnosticsPage(btn) {
+        const spinner = document.getElementById('refreshSpinner');
+        if (spinner) spinner.classList.add('fa-spin');
+        if (btn) btn.disabled = true;
+        setTimeout(() => {
+            window.location.reload();
+        }, 300);
     }
 </script>
 

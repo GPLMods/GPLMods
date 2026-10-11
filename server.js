@@ -120,6 +120,7 @@ const { ensureDefaultClub } = require('./utils/clubSeed');
 const { validateMessageLinks } = require('./utils/linkSanitizer');
 const { saveClubChatArchive } = require('./utils/clubStorage');
 const ModPromotion = require('./models/modPromotion');
+const seoEngine = require('./utils/seoEngine');
 
 // Multer storage for Volunteer KYC documents
 const kycStorage = multer.diskStorage({
@@ -1966,6 +1967,13 @@ app.use(async (req, res, next) => {
         next(); 
     }
 });
+
+// =========================================================
+// 6b. Dynamic SEO Engine Middleware
+if (seoEngine && typeof seoEngine.seoMiddleware === 'function') {
+    app.use(seoEngine.seoMiddleware);
+}
+
 // =========================================================
 // 7. Banned User Trap
 app.use((req, res, next) => {

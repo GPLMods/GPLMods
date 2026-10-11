@@ -5,76 +5,103 @@
     <meta charset="UTF-8">
     <%- include('anti-zoom') %>
 
-    <% const siteName="GPL Mods Official" ; const defaultTitle="GPL Mods - 100% Safe & Working Premium Unlocked Mods" ;
-        const
-        defaultDesc="Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free."
-        ; const
-        defaultKeywords="gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked"
-        ; const defaultImage="https://gplmods.webredirect.org/images/logo.png" ; const
-        defaultUrl="https://gplmods.webredirect.org" ; const finalTitle=typeof pageTitle !=='undefined' ? `${pageTitle}
-        | ${siteName}` : defaultTitle; const finalDesc=typeof pageDescription !=='undefined' ? pageDescription :
-        defaultDesc; const finalKeywords=typeof pageKeywords !=='undefined' ? pageKeywords : defaultKeywords; const
-        finalImage=typeof pageImage !=='undefined' ? pageImage : defaultImage; const finalUrl=typeof pageUrl
-        !=='undefined' ? pageUrl : defaultUrl; %>
+    <% 
+        const s = (typeof seo !== 'undefined' && seo) ? seo : {};
+        const siteName = s.siteName || "GPL Mods";
+        const metaTitle = s.title || (typeof pageTitle !== 'undefined' ? `${pageTitle} | ${siteName}` : "GPL Mods - 100% Safe & Working Premium Unlocked Mods");
+        const metaDesc = s.description || (typeof pageDescription !== 'undefined' ? pageDescription : "Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free.");
+        const metaKeywords = s.keywords || (typeof pageKeywords !== 'undefined' ? pageKeywords : "gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked");
+        const metaCanonical = s.canonicalUrl || (typeof pageUrl !== 'undefined' ? pageUrl : "https://gplmods.webredirect.org");
+        const metaRobots = s.robots || ((typeof isNoIndex !== 'undefined' && isNoIndex) ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+        const metaGooglebot = s.googlebot || metaRobots;
+        const metaBingbot = s.bingbot || metaRobots;
+        
+        // Open Graph / Facebook
+        const ogTitle = (s.og && s.og.title) || metaTitle;
+        const ogDesc = (s.og && s.og.description) || metaDesc;
+        const ogUrl = (s.og && s.og.url) || metaCanonical;
+        const ogImage = (s.og && s.og.image) || (typeof pageImage !== 'undefined' ? pageImage : "https://gplmods.webredirect.org/images/logo.png");
+        const ogType = (s.og && s.og.type) || "website";
+        const ogSiteName = (s.og && s.og.site_name) || siteName;
+        const ogLocale = (s.og && s.og.locale) || "en_US";
 
-        <title>
-            <%= finalTitle %>
-        </title>
-        <meta name="description" content="<%= finalDesc %>">
-        <meta name="keywords" content="<%= finalKeywords %>">
-        <meta name="author" content="GPL Mods Team">
-        <link rel="canonical" href="<%= finalUrl %>">
-        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-        <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-        <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+        // Twitter Card
+        const twCard = (s.twitter && s.twitter.card) || "summary_large_image";
+        const twDomain = (s.twitter && s.twitter.domain) || "gplmods.webredirect.org";
+        const twUrl = (s.twitter && s.twitter.url) || metaCanonical;
+        const twTitle = (s.twitter && s.twitter.title) || metaTitle;
+        const twDesc = (s.twitter && s.twitter.description) || metaDesc;
+        const twImage = (s.twitter && s.twitter.image) || ogImage;
+        const twSite = (s.twitter && s.twitter.site) || "@GPLMods";
 
-        <meta property="og:site_name" content="<%= siteName %>">
-        <meta property="og:type" content="website">
-        <meta property="og:url" content="<%= finalUrl %>">
-        <meta property="og:title" content="<%= finalTitle %>">
-        <meta property="og:description" content="<%= finalDesc %>">
-        <meta property="og:image" content="<%= finalImage %>">
+        // Structured JSON-LD Data Graph
+        const jsonLdData = s.jsonLd || {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "Organization",
+                    "@id": "https://gplmods.webredirect.org/#organization",
+                    "name": "GPL Mods",
+                    "url": "https://gplmods.webredirect.org",
+                    "logo": {
+                        "@type": "ImageObject",
+                        "url": "https://gplmods.webredirect.org/images/logo.png"
+                    },
+                    "sameAs": [
+                        "https://t.me/gplmods",
+                        "https://github.com/GPLMods"
+                    ]
+                },
+                {
+                    "@type": "WebSite",
+                    "@id": "https://gplmods.webredirect.org/#website",
+                    "url": "https://gplmods.webredirect.org",
+                    "name": "GPL Mods",
+                    "publisher": {
+                        "@id": "https://gplmods.webredirect.org/#organization"
+                    },
+                    "potentialAction": {
+                        "@type": "SearchAction",
+                        "target": "https://gplmods.webredirect.org/search?q={search_term_string}",
+                        "query-input": "required name=search_term_string"
+                    }
+                }
+            ]
+        };
+    %>
 
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:url" content="<%= finalUrl %>">
-        <meta property="twitter:title" content="<%= finalTitle %>">
-        <meta property="twitter:description" content="<%= finalDesc %>">
-        <meta property="twitter:image" content="<%= finalImage %>">
+    <!-- Primary HTML Meta Tags -->
+    <title><%= metaTitle %></title>
+    <meta name="description" content="<%= metaDesc %>">
+    <meta name="keywords" content="<%= metaKeywords %>">
+    <meta name="author" content="GPL Mods Team">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="<%= metaCanonical %>">
+    <meta name="robots" content="<%= metaRobots %>">
+    <meta name="googlebot" content="<%= metaGooglebot %>">
+    <meta name="bingbot" content="<%= metaBingbot %>">
 
-        <!-- Schema.org JSON-LD Structured Data for Search Engine Bots -->
-        <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@graph": [
-        {
-          "@type": "Organization",
-          "@id": "https://gplmods.webredirect.org/#organization",
-          "name": "GPL Mods",
-          "url": "https://gplmods.webredirect.org",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://gplmods.webredirect.org/images/logo.png"
-          },
-          "sameAs": [
-            "https://t.me/gplmods"
-          ]
-        },
-        {
-          "@type": "WebSite",
-          "@id": "https://gplmods.webredirect.org/#website",
-          "url": "https://gplmods.webredirect.org",
-          "name": "GPL Mods",
-          "publisher": {
-            "@id": "https://gplmods.webredirect.org/#organization"
-          },
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://gplmods.webredirect.org/?search={search_term_string}",
-            "query-input": "required name=search_term_string"
-          }
-        }
-      ]
-    }
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:site_name" content="<%= ogSiteName %>">
+    <meta property="og:type" content="<%= ogType %>">
+    <meta property="og:url" content="<%= ogUrl %>">
+    <meta property="og:title" content="<%= ogTitle %>">
+    <meta property="og:description" content="<%= ogDesc %>">
+    <meta property="og:image" content="<%= ogImage %>">
+    <meta property="og:locale" content="<%= ogLocale %>">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="<%= twCard %>">
+    <meta property="twitter:domain" content="<%= twDomain %>">
+    <meta property="twitter:url" content="<%= twUrl %>">
+    <meta name="twitter:title" content="<%= twTitle %>">
+    <meta name="twitter:description" content="<%= twDesc %>">
+    <meta name="twitter:image" content="<%= twImage %>">
+    <meta name="twitter:site" content="<%= twSite %>">
+
+    <!-- Schema.org JSON-LD Structured Data for Search Engine Bots & AI Crawlers -->
+    <script type="application/ld+json">
+    <%- JSON.stringify(jsonLdData) %>
     </script>
 
         <link rel="icon" type="image/png" href="<%= cdnUrl %>/favicon.png">
