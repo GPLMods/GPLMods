@@ -1207,22 +1207,36 @@ app.use(cors({
 // --- NEW: PUBLIC HEALTH CHECK & STATUS PAGE ---
 // This MUST come before Maintenance Mode and Session/Auth
 app.get('/healthz', (req, res) => {
-    
-    // We do a very fast check to see if Mongoose is connected.
-    // 1 = connected. Anything else (0, 2, 3, 99) means there's an issue.
+    // Fast check to see if Mongoose is connected (1 = connected).
     const isDatabaseConnected = mongoose.connection.readyState === 1;
-    
-    // You can add more checks here later if needed (e.g., checking B2)
     const isHealthy = isDatabaseConnected;
+    const dynamicPort = process.env.PORT || req.socket.localPort || 10000;
+    const uptimeSec = process.uptime();
+    const memUsage = process.memoryUsage();
+    const memoryMb = Math.round(memUsage.rss / 1024 / 1024) + ' MB';
+
+    // Support JSON health checks for automated monitors
+    if (req.query.format === 'json' || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+        return res.status(isHealthy ? 200 : 503).json({
+            status: isHealthy ? 'ok' : 'degraded',
+            port: dynamicPort,
+            uptime: Math.round(uptimeSec),
+            uptimeFormatted: formatUptime(uptimeSec),
+            memory: memoryMb,
+            database: isDatabaseConnected ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString()
+        });
+    }
 
     // Render relies on the HTTP Status Code (200 = Good, 503 = Bad)
-    // We send the correct code, AND render our beautiful UI
-    if (isHealthy) {
-        res.status(200).render('pages/healthz', { isHealthy: true });
-    } else {
-        // 503 Service Unavailable
-        res.status(503).render('pages/healthz', { isHealthy: false });
-    }
+    res.status(isHealthy ? 200 : 503).render('pages/healthz', {
+        isHealthy,
+        dynamicPort,
+        uptime: formatUptime(uptimeSec),
+        memory: memoryMb,
+        databaseConnected: isDatabaseConnected,
+        environment: process.env.NODE_ENV || 'production'
+    });
 });
 
 // ===============================

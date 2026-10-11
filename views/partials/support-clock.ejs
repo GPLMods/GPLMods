@@ -1,0 +1,512 @@
+<!-- =================================================================== -->
+<!-- GPL MODS - INDIAN STANDARD TIME (IST) DIGITAL CLOCK & SUPPORT WIDGET -->
+<!-- =================================================================== -->
+<div class="ist-support-widget" id="istSupportClockWidget">
+    <div class="ist-widget-header">
+        <div class="ist-widget-badge">
+            <i class="fas fa-globe-asia" style="color: var(--gold);"></i>
+            <span>Indian Standard Time (IST &bull; GMT+5:30)</span>
+        </div>
+        <div class="ist-format-toggle-wrap">
+            <span class="ist-format-label">Format:</span>
+            <button type="button" class="ist-format-btn" id="istFormatToggleBtn" onclick="toggleIstClockFormat()" aria-label="Toggle 12h and 24h format">
+                <span class="ist-format-opt opt-12 active" id="istOpt12">12H</span>
+                <span class="ist-format-divider">/</span>
+                <span class="ist-format-opt opt-24" id="istOpt24">24H</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Clock Display Card -->
+    <div class="ist-clock-card">
+        <div class="ist-clock-display" id="istClockDisplay">
+            <span class="ist-digits" id="istDigits">--:--:--</span>
+            <span class="ist-ampm" id="istAmPm"></span>
+        </div>
+        <div class="ist-date-display" id="istDateDisplay">
+            <i class="far fa-calendar-alt"></i> <span id="istDateText">Loading current date...</span>
+        </div>
+        <div class="ist-live-status-pill" id="istLiveStatusPill">
+            <span class="ist-pulse-dot" id="istStatusDot"></span>
+            <span class="ist-status-text" id="istStatusText">Calculating Support Status...</span>
+        </div>
+    </div>
+
+    <!-- Contact & Operating Hours Details -->
+    <div class="ist-support-details">
+        <div class="ist-channels-grid">
+            <div class="ist-channel-item">
+                <div class="ist-channel-icon"><i class="fas fa-copyright"></i></div>
+                <div class="ist-channel-content">
+                    <span class="ist-channel-title">DMCA & Copyright Notices</span>
+                    <a href="mailto:dmca@gplmods.webredirect.org" class="ist-channel-email">dmca@gplmods.webredirect.org</a>
+                </div>
+            </div>
+            <div class="ist-channel-item">
+                <div class="ist-channel-icon"><i class="fas fa-shield-alt"></i></div>
+                <div class="ist-channel-content">
+                    <span class="ist-channel-title">Privacy & Legal Inquiries</span>
+                    <a href="mailto:support@gplmods.webredirect.org" class="ist-channel-email">support@gplmods.webredirect.org</a>
+                </div>
+            </div>
+            <div class="ist-channel-item">
+                <div class="ist-channel-icon"><i class="fas fa-life-ring"></i></div>
+                <div class="ist-channel-content">
+                    <span class="ist-channel-title">General Help & Community</span>
+                    <a href="mailto:help@gplmods.webredirect.org" class="ist-channel-email">help@gplmods.webredirect.org</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="ist-hours-block">
+            <div class="ist-hours-header">
+                <i class="fas fa-business-time" style="color: var(--gold);"></i>
+                <strong>Support Operating Hours</strong>
+                <span class="ist-tz-pill">(Timezone: GMT+5:30 / IST)</span>
+            </div>
+            <div class="ist-schedule-grid">
+                <div class="ist-schedule-row">
+                    <span class="ist-schedule-day"><i class="fas fa-calendar-week"></i> Monday to Friday</span>
+                    <div class="ist-schedule-shifts">
+                        <span class="ist-shift"><i class="fas fa-sun"></i> <strong>Morning:</strong> 8:00 AM to 10:00 AM</span>
+                        <span class="ist-shift"><i class="fas fa-moon"></i> <strong>Evening:</strong> 6:00 PM to 10:00 PM</span>
+                    </div>
+                </div>
+                <div class="ist-schedule-row weekend-row">
+                    <span class="ist-schedule-day"><i class="fas fa-bed"></i> Saturday & Sunday</span>
+                    <span class="ist-shift closed"><i class="fas fa-times-circle"></i> Closed (Self-service & Community FAQs active)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .ist-support-widget {
+        background: linear-gradient(145deg, #12131a 0%, #0a0b10 100%);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        border-top: 3px solid var(--gold);
+        border-radius: 14px;
+        padding: 24px;
+        margin: 25px 0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        color: var(--white);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .ist-widget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .ist-widget-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--silver);
+    }
+
+    .ist-format-toggle-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .ist-format-label {
+        font-size: 0.8rem;
+        color: var(--silver);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .ist-format-btn {
+        background: #181922;
+        border: 1px solid #333644;
+        color: var(--silver);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+    }
+
+    .ist-format-btn:hover {
+        border-color: var(--gold);
+        color: var(--white);
+    }
+
+    .ist-format-opt.active {
+        color: var(--gold);
+        font-weight: 700;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    }
+
+    .ist-format-divider {
+        opacity: 0.4;
+    }
+
+    /* Clock Display Box */
+    .ist-clock-card {
+        background: #0d0e14;
+        border: 1px solid #232530;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .ist-clock-display {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 8px;
+        font-family: 'Courier New', Courier, monospace;
+        margin-bottom: 6px;
+    }
+
+    .ist-digits {
+        font-size: 2.6rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: var(--gold);
+        text-shadow: 0 0 14px rgba(255, 215, 0, 0.45);
+        line-height: 1.1;
+    }
+
+    .ist-ampm {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--silver);
+        letter-spacing: 1px;
+    }
+
+    .ist-date-display {
+        font-size: 0.88rem;
+        color: var(--silver);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .ist-live-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 14px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .ist-live-status-pill.online {
+        background: rgba(46, 204, 113, 0.15);
+        border-color: rgba(46, 204, 113, 0.4);
+        color: #2ecc71;
+    }
+
+    .ist-live-status-pill.offline {
+        background: rgba(243, 156, 18, 0.15);
+        border-color: rgba(243, 156, 18, 0.4);
+        color: #f39c12;
+    }
+
+    .ist-pulse-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .ist-live-status-pill.online .ist-pulse-dot {
+        background: #2ecc71;
+        box-shadow: 0 0 10px #2ecc71;
+        animation: istPulseGreen 2s infinite ease-in-out;
+    }
+
+    .ist-live-status-pill.offline .ist-pulse-dot {
+        background: #f39c12;
+        box-shadow: 0 0 8px #f39c12;
+    }
+
+    @keyframes istPulseGreen {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(46, 204, 113, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+
+    /* Channels Grid */
+    .ist-channels-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .ist-channel-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ist-channel-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.25);
+        color: var(--gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+
+    .ist-channel-content {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ist-channel-title {
+        font-size: 0.8rem;
+        color: var(--silver);
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .ist-channel-email {
+        color: var(--gold);
+        font-weight: 600;
+        font-size: 0.92rem;
+        text-decoration: none;
+        word-break: break-all;
+        transition: text-shadow 0.2s ease;
+    }
+
+    .ist-channel-email:hover {
+        text-decoration: underline;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+    }
+
+    /* Hours Block */
+    .ist-hours-block {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 14px 16px;
+    }
+
+    .ist-hours-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 0.92rem;
+        color: var(--white);
+        flex-wrap: wrap;
+    }
+
+    .ist-tz-pill {
+        font-size: 0.78rem;
+        color: var(--silver);
+        background: rgba(255, 255, 255, 0.06);
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    .ist-schedule-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .ist-schedule-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .ist-schedule-day {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--white);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .ist-schedule-shifts {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .ist-shift {
+        font-size: 0.82rem;
+        color: var(--silver);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .ist-shift strong {
+        color: var(--gold);
+    }
+
+    .ist-shift.closed {
+        color: #888c99;
+    }
+
+    @media (max-width: 600px) {
+        .ist-support-widget {
+            padding: 16px 14px;
+        }
+
+        .ist-digits {
+            font-size: 2rem;
+        }
+
+        .ist-schedule-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .ist-schedule-shifts {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+    }
+</style>
+
+<script>
+    (function initIstClockWidget() {
+        const STORAGE_KEY = 'gpl_ist_clock_24h';
+        let is24Hour = localStorage.getItem(STORAGE_KEY) === 'true';
+
+        window.toggleIstClockFormat = function () {
+            is24Hour = !is24Hour;
+            try {
+                localStorage.setItem(STORAGE_KEY, String(is24Hour));
+            } catch (e) { }
+            updateIstClock();
+        };
+
+        function updateIstClock() {
+            try {
+                const now = new Date();
+                // Get IST Date string via Intl
+                const istTimeStr = now.toLocaleTimeString('en-US', {
+                    timeZone: 'Asia/Kolkata',
+                    hour12: !is24Hour,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                const digitsEl = document.getElementById('istDigits');
+                const ampmEl = document.getElementById('istAmPm');
+                const dateEl = document.getElementById('istDateText');
+                const opt12 = document.getElementById('istOpt12');
+                const opt24 = document.getElementById('istOpt24');
+
+                if (opt12 && opt24) {
+                    opt12.classList.toggle('active', !is24Hour);
+                    opt24.classList.toggle('active', is24Hour);
+                }
+
+                if (is24Hour) {
+                    if (digitsEl) digitsEl.textContent = istTimeStr;
+                    if (ampmEl) ampmEl.textContent = '';
+                } else {
+                    const parts = istTimeStr.split(' ');
+                    if (digitsEl) digitsEl.textContent = parts[0] || istTimeStr;
+                    if (ampmEl) ampmEl.textContent = parts[1] || '';
+                }
+
+                // Date string
+                const istDateStr = now.toLocaleDateString('en-US', {
+                    timeZone: 'Asia/Kolkata',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                if (dateEl) dateEl.textContent = istDateStr;
+
+                // Support Status check in IST
+                // Monday = 1, Friday = 5
+                // Shifts: 08:00 to 10:00 AND 18:00 to 22:00
+                const istDateObj = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+                const day = istDateObj.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+                const hour = istDateObj.getHours();
+                const minute = istDateObj.getMinutes();
+                const totalMinutes = hour * 60 + minute;
+
+                const isWeekday = day >= 1 && day <= 5;
+                const inMorningShift = totalMinutes >= (8 * 60) && totalMinutes < (10 * 60);
+                const inEveningShift = totalMinutes >= (18 * 60) && totalMinutes < (22 * 60);
+
+                const isOpen = isWeekday && (inMorningShift || inEveningShift);
+
+                const statusPill = document.getElementById('istLiveStatusPill');
+                const statusText = document.getElementById('istStatusText');
+
+                if (statusPill && statusText) {
+                    if (isOpen) {
+                        statusPill.className = 'ist-live-status-pill online';
+                        statusText.textContent = 'Live Support Desk is Active (Agents Online)';
+                    } else {
+                        statusPill.className = 'ist-live-status-pill offline';
+                        let nextMsg = 'Desk Closed';
+                        if (!isWeekday) {
+                            nextMsg += ' &bull; Resumes Monday 8:00 AM IST';
+                        } else if (totalMinutes < (8 * 60)) {
+                            nextMsg += ' &bull; Opens Today at 8:00 AM IST';
+                        } else if (totalMinutes < (18 * 60)) {
+                            nextMsg += ' &bull; Opens Today at 6:00 PM IST';
+                        } else {
+                            nextMsg += ' &bull; Resumes Tomorrow at 8:00 AM IST';
+                        }
+                        statusText.innerHTML = nextMsg;
+                    }
+                }
+            } catch (err) {
+                console.warn('IST clock tick error:', err);
+            }
+        }
+
+        // Run immediately, then interval
+        updateIstClock();
+        setInterval(updateIstClock, 1000);
+    })();
+</script>

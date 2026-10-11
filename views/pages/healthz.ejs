@@ -113,6 +113,20 @@
             </p>
         <% } %>
 
+        <% if (typeof uptime !== 'undefined' || typeof memory !== 'undefined') { %>
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 25px; font-size: 0.8rem; color: var(--silver); font-family: monospace;">
+                <% if (typeof uptime !== 'undefined') { %>
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);"><i class="fas fa-clock" style="color: var(--gold); margin-right: 4px;"></i> Uptime: <%= uptime %></span>
+                <% } %>
+                <% if (typeof memory !== 'undefined') { %>
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);"><i class="fas fa-memory" style="color: var(--gold); margin-right: 4px;"></i> RAM: <%= memory %></span>
+                <% } %>
+                <% if (typeof dynamicPort !== 'undefined') { %>
+                    <span style="background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);"><i class="fas fa-network-wired" style="color: var(--gold); margin-right: 4px;"></i> Port: <%= dynamicPort %></span>
+                <% } %>
+            </div>
+        <% } %>
+
         <a href="/" class="home-btn">Return to Homepage</a>
     </div>
 
