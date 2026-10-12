@@ -465,7 +465,7 @@ function isNoindexRoute(urlPath) {
  */
 const STATIC_PAGE_META = {
     '/': {
-        title: 'GPL Mods - 100% Safe & Working Premium Unlocked Mods | Safe Alternative',
+        title: 'GPL Mods - 100% Safe Mods, APKs & IPAs',
         description: 'Download 100% safe, verified Mod APKs, iOS IPAs, PC software, and GPL themes. Clean, VirusTotal scanned alternative to HappyMod, iOSGods, Panda Helper & IGG Games.',
         keywords: [
             'gpl mods',
@@ -486,145 +486,163 @@ const STATIC_PAGE_META = {
         type: 'website'
     },
     '/about': {
-        title: 'About GPL Mods - Open Source Modding & Safe Software Hub',
+        title: 'About GPL Mods - Open Source Modding Hub',
         description: 'Learn about GPL Mods, our mission for open-source software, transparent mod verification, VirusTotal dual-engine scanning, and creator attribution.',
         keywords: ['about gpl mods', 'open source software', 'gpl verification', 'safe modding community', 'clean apk alternative'],
         type: 'website'
     },
     '/faq': {
-        title: 'FAQ - Safe Alternative to HappyMod, iOSGods & IGG Games | GPL Mods',
+        title: 'FAQ - Safe Modding & Sideloading | GPL Mods',
         description: 'Frequently asked questions: Why GPL Mods is safer than HappyMod and Panda Helper, how to sideload iOS IPAs, VirusTotal reports, and free VIP membership.',
         keywords: ['gpl mods faq', 'happymod vs gpl mods', 'iosgods safe alternative', 'how to sideload ipa', 'mod apk guide', 'virustotal scan help'],
         type: 'website'
     },
     '/tos': {
-        title: 'Terms of Service & Platform Guidelines | GPL Mods',
+        title: 'Terms of Service | GPL Mods',
         description: 'Review the official terms of service, platform rules, permissible use policies, and community guidelines for users and creators on GPL Mods.',
         keywords: ['terms of service', 'gpl mods rules', 'platform agreement', 'user terms'],
         type: 'website'
     },
     '/dmca': {
-        title: 'DMCA Notice & Digital Copyright Compliance | GPL Mods',
+        title: 'DMCA Notice & Compliance | GPL Mods',
         description: 'GPL Mods complies with 17 U.S.C. § 512 and the Digital Millennium Copyright Act. Submit copyright infringement notifications and review compliance.',
         keywords: ['gpl mods dmca', 'copyright compliance', 'takedown request', 'intellectual property'],
         type: 'website'
     },
     '/privacy-policy': {
-        title: 'Privacy Policy & Data Security Protection | GPL Mods',
+        title: 'Privacy Policy | GPL Mods',
         description: 'Understand how GPL Mods protects your privacy, manages cookies, encrypts credentials, and ensures strict zero third-party data tracking.',
         keywords: ['privacy policy', 'user privacy', 'data protection', 'gpl mods security'],
         type: 'website'
     },
     '/refund-policy': {
-        title: 'Refund & Cancellation Policy | GPL Mods Membership',
+        title: 'Refund & Cancellation Policy | GPL Mods',
         description: 'Learn about our refund eligibility, supporter donation disclosures, cancellation policies, and automated billing terms on GPL Mods.',
         keywords: ['refund policy', 'cancellation policy', 'membership billing', 'supporter terms'],
         type: 'website'
     },
     '/donate': {
-        title: 'Support & Donate to GPL Mods - Fuel Open Source Growth',
+        title: 'Donate & Support Infrastructure | GPL Mods',
         description: 'Help support GPL Mods server hosting, high-speed CDN bandwidth, and automated virus scanning infrastructure with direct community contributions.',
         keywords: ['donate gpl mods', 'support open source', 'server sponsorship', 'community donation'],
         type: 'website'
     },
     '/partnership-policy': {
-        title: 'Partnership & Distribution Policy | GPL Mods Network',
+        title: 'Distributor & Creator Policy | GPL Mods',
         description: 'Collaborate with GPL Mods. Read our official distributor guidelines, creator partnership models, and verified developer requirements.',
         keywords: ['partnership policy', 'gpl mods distributor', 'creator program', 'app publishing'],
         type: 'website'
     },
     '/distributor-features': {
-        title: 'Distributor & Creator Features Console | GPL Mods',
+        title: 'Creator & Distributor Studio | GPL Mods',
         description: 'Unlock developer analytics, priority release feeds, verified creator badges, custom vanity URLs, and high-speed multi-channel uploads.',
         keywords: ['distributor features', 'creator studio', 'mod developer tools', 'verified uploader'],
         type: 'website'
     },
     '/why-choose-us': {
-        title: 'Why Choose GPL Mods? 100% Verified Alternative to HappyMod & Panda Helper',
+        title: 'Why Choose GPL Mods - 100% Verified Mods',
         description: 'Discover why millions choose GPL Mods: dual VirusTotal cloud scans, zero adware or malware, authentic GPL licenses, and direct high-speed mirror downloads.',
         keywords: ['why choose gpl mods', 'happymod alternative safe', 'panda helper alternative free', 'clean apk downloads', 'trusted mod apk site'],
         type: 'website'
     },
     '/understanding-scans': {
-        title: 'Understanding Malware & VirusTotal Scans | GPL Mods',
+        title: 'Understanding VirusTotal Scans | GPL Mods',
         description: 'Learn how GPL Mods verifies files using VirusTotal heuristics, SHA256 hashes, false-positive detection, and automated package sandbox checks.',
         keywords: ['virustotal scan', 'apk virus scan', 'malware analysis', 'safe mods', 'sha256 verify'],
         type: 'website'
     },
     '/membership': {
-        title: 'Supporter & VIP Membership Plans | GPL Mods Official',
+        title: 'VIP Supporter Membership Plans | GPL Mods',
         description: 'Upgrade your GPL Mods experience with ad-free browsing, unlimited parallel downloads, direct CDN bandwidth, and VIP creator access.',
         keywords: ['gpl mods membership', 'vip supporter', 'fast direct download', 'ad free modding', 'panda helper vip alternative'],
         type: 'website'
     },
     '/upload-policy': {
-        title: 'Mod Upload & Safety Verification Policy | GPL Mods',
+        title: 'Mod Upload & Safety Policy | GPL Mods',
         description: 'Standards and safety requirements for publishing mods, APKs, IPAs, and software on GPL Mods. Automated scanning and manual audit guidelines.',
         keywords: ['upload policy', 'mod submission rules', 'safe mod guidelines', 'uploader verification'],
         type: 'website'
     },
     '/category': {
-        title: 'Browse Safe Mods by Platform - HappyMod & iOSGods Alternative | GPL Mods',
+        title: 'Browse Mods by Platform | GPL Mods',
         description: 'Explore Android APKs, iOS Sideloading IPAs, Jailbreak Tweaks, Windows PC Games, and WordPress GPL themes. 100% clean, VirusTotal scanned at GPL Mods.',
         keywords: ['browse mods', 'happymod alternative', 'iosgods alternative', 'android mods', 'ios ipas', 'windows mods', 'wordpress themes'],
         type: 'website'
     },
     '/repos': {
-        title: 'Source & Sideload Repositories Hub - AppTesters & AltStore Alternative | GPL Mods',
+        title: 'Sideload Repos (AltStore & Scarlet) | GPL Mods',
         description: 'Official F-Droid Android repositories and AltStore, SideStore, and Scarlet iOS sideloading source directory on GPL Mods. Safe iOSGods and AppTesters alternative.',
         keywords: ['sideloading repo', 'apptesters alternative', 'altstore repo', 'sidestore repo', 'scarlet repo', 'fdroid repository', 'gpl repos'],
         type: 'website'
     },
     '/jailbreak-repos': {
-        title: 'iOS Jailbreak Repos (Sileo, Cydia, Zebra) - Safe Kemo Hacks Alternative | GPL Mods',
+        title: 'iOS Jailbreak Repos (Sileo & Zebra) | GPL Mods',
         description: 'Add verified Rootless, Rootful, and Roothide jailbreak repos directly to Sileo, Zebra, and Cydia. 100% safe iOS packages on GPL Mods.',
         keywords: ['jailbreak repo', 'sileo repo', 'cydia repo', 'zebra repo', 'kemo hacks for ios', 'rootless jailbreak', 'ios tweaks'],
         type: 'website'
     },
     '/licenses': {
-        title: 'Open Source & GPL Software Licenses Directory | GPL Mods',
+        title: 'Software Licenses Directory | GPL Mods',
         description: 'Explore free and open source software licenses (GPLv2, GPLv3, MIT, Apache, BSD). Review legal rights, permissions, and conditions.',
         keywords: ['gpl license', 'open source licenses', 'gplv3 terms', 'mit license', 'apache 2.0', 'software rights'],
         type: 'website'
     },
     '/source-hub': {
-        title: 'Open Source Repositories & GitHub Code Hub | GPL Mods',
+        title: 'Open Source Code Hub | GPL Mods',
         description: 'Inspect open source repositories, browse commit trees, and download raw code files from verified developers on GPL Mods. Safe transparent modding.',
         keywords: ['source code viewer', 'open source git', 'github mirror', 'mod source code', 'inspect mod'],
         type: 'website'
     },
+    '/source': {
+        title: 'Open Source Repositories | GPL Mods',
+        description: 'Inspect open source code, repositories, and releases on GPL Mods. Transparent, community-audited development.',
+        keywords: ['source code', 'open source git', 'repository browser', 'gpl source'],
+        type: 'website'
+    },
+    '/sponsor': {
+        title: 'Sponsor Infrastructure | GPL Mods',
+        description: 'Help keep GPL Mods fast, safe, and free. Sponsor hosting, email gateways, and virus scanning bandwidth.',
+        keywords: ['sponsor gpl mods', 'server funding', 'community sponsor'],
+        type: 'website'
+    },
+    '/notifications': {
+        title: 'Notifications & Updates | GPL Mods',
+        description: 'Stay updated with release alerts, security notices, and community announcements on GPL Mods.',
+        keywords: ['notifications', 'updates feed', 'mod alerts'],
+        type: 'website'
+    },
     '/community': {
-        title: 'Community Forum, Discussions & Modding Help | GPL Mods',
+        title: 'Community Forum & Discussions | GPL Mods',
         description: 'Join the GPL Mods community forum. Ask troubleshooting questions, share custom modding patches, and connect with developers.',
         keywords: ['modding forum', 'gpl community', 'mod help', 'android discussion', 'ios sideloading talk'],
         type: 'website'
     },
     '/clubs': {
-        title: 'Creator Clubs & Modding Communities | GPL Mods',
+        title: 'Creator Clubs & Communities | GPL Mods',
         description: 'Explore public community clubs on GPL Mods. Join platform-specific groups, share game mods, and collaborate with passionate enthusiasts.',
         keywords: ['creator clubs', 'modding groups', 'gaming clubs', 'gpl community clubs'],
         type: 'website'
     },
     '/leaderboard': {
-        title: 'Top Creators & Community Leaderboard | GPL Mods',
+        title: 'Top Creators Leaderboard | GPL Mods',
         description: 'See the top mod uploaders, most active contributors, and community leaders driving open-source modding forward on GPL Mods.',
         keywords: ['top modders', 'creator leaderboard', 'gpl mods ranking', 'verified creators'],
         type: 'website'
     },
     '/request-mod': {
-        title: 'Request a Mod, App, or Tweak | GPL Mods Community',
+        title: 'Request a Mod, App, or Tweak | GPL Mods',
         description: 'Can\'t find your favorite game or application? Submit a mod request to our community of verified creators and distributors on GPL Mods.',
         keywords: ['request mod', 'mod request', 'suggest game mod', 'request ipa', 'request apk'],
         type: 'website'
     },
     '/status': {
-        title: 'Live System Health & Operational Status | GPL Mods',
+        title: 'Live Server Status & Health | GPL Mods',
         description: 'Real-time service health, server uptime, database response metrics, and 90-day operational history for GPL Mods infrastructure.',
         keywords: ['system status', 'gpl mods uptime', 'server health', 'api operational status'],
         type: 'website'
     },
     '/ai-directory': {
-        title: 'Trending 2026 Mods, Competitors & AI Sitemap Directory | GPL Mods',
+        title: 'Trending Mods Directory 2026 | GPL Mods',
         description: 'Comprehensive directory indexing trending mods (Minecraft, Roblox, CapCut, Lightroom, Spotify) and safe alternatives to HappyMod, Panda Helper, iOSGods & IGG Games.',
         keywords: ['ai sitemap', 'happymod alternative', 'iosgods alternative', 'trending mods 2026', 'gpl mods directory', 'all mods sitemap'],
         type: 'website'
@@ -1117,12 +1135,45 @@ function buildClubSeo(club) {
  */
 function resolveSeo(req, locals = {}) {
     const rawPath = (req.originalUrl || req.path || '/').split('?')[0].toLowerCase();
-    const isNoIndex = isNoindexRoute(rawPath) || locals.noindex === true;
+    const isSourceFilePath = rawPath.startsWith('/source') && Boolean(req.query && req.query.path);
+    const isNoIndex = isNoindexRoute(rawPath) || locals.noindex === true || isSourceFilePath;
 
     // Robots directive
     const robots = isNoIndex 
         ? 'noindex, nofollow' 
         : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+
+    // Structured JSON-LD Base Organization & WebSite Graph (declared upfront to prevent TDZ)
+    const defaultOrgAndWebSite = [
+        {
+            '@type': 'Organization',
+            '@id': `${BASE_URL}/#organization`,
+            name: SITE_NAME,
+            url: BASE_URL,
+            logo: {
+                '@type': 'ImageObject',
+                url: DEFAULT_IMAGE
+            },
+            sameAs: [
+                'https://t.me/gplmods',
+                'https://github.com/GPLMods'
+            ]
+        },
+        {
+            '@type': 'WebSite',
+            '@id': `${BASE_URL}/#website`,
+            url: BASE_URL,
+            name: SITE_NAME,
+            publisher: {
+                '@id': `${BASE_URL}/#organization`
+            },
+            potentialAction: {
+                '@type': 'SearchAction',
+                target: `${BASE_URL}/search?q={search_term_string}`,
+                'query-input': 'required name=search_term_string'
+            }
+        }
+    ];
 
     // Check entity object in locals
     let entitySeo = null;
@@ -1148,7 +1199,7 @@ function resolveSeo(req, locals = {}) {
     if (rawPath === '/search' && req.query && req.query.q) {
         const cleanQuery = cleanText(req.query.q);
         if (cleanQuery) {
-            const searchTitle = truncateText(`Download ${cleanQuery} Mods, APKs & IPAs - Safe Alternatives | ${SITE_NAME}`, 65);
+            const searchTitle = truncateText(`Search "${cleanQuery}" Mods & IPAs | ${SITE_NAME}`, 60);
             const searchDesc = truncateText(`Search results and 100% VirusTotal safe, verified mods for "${cleanQuery}". Clean, ad-free alternative to HappyMod, iOSGods, Panda Helper & IGG Games at GPL Mods.`, 160);
             const searchKeywords = [
                 cleanQuery,
@@ -1210,10 +1261,13 @@ function resolveSeo(req, locals = {}) {
     const staticMeta = STATIC_PAGE_META[rawPath] || null;
 
     // Resolve properties with hierarchical fallbacks
-    const title = (locals.seo && locals.seo.title) ||
-                  (entitySeo && entitySeo.title) ||
-                  (staticMeta && staticMeta.title) ||
-                  (locals.pageTitle ? `${locals.pageTitle} | ${SITE_NAME}` : STATIC_PAGE_META['/'].title);
+    let rawTitle = (locals.seo && locals.seo.title) ||
+                   (entitySeo && entitySeo.title) ||
+                   (staticMeta && staticMeta.title) ||
+                   (locals.pageTitle ? (locals.pageTitle.includes(SITE_NAME) ? locals.pageTitle : `${locals.pageTitle} | ${SITE_NAME}`) : STATIC_PAGE_META['/'].title);
+
+    // Strictly enforce max 60 characters for Bing Webmaster Tools compliance
+    const title = truncateText(rawTitle, 60);
 
     const description = (locals.seo && locals.seo.description) ||
                         (entitySeo && entitySeo.description) ||
@@ -1241,38 +1295,6 @@ function resolveSeo(req, locals = {}) {
                   (entitySeo && entitySeo.image) ||
                   locals.pageImage ||
                   DEFAULT_IMAGE;
-
-    // Structured JSON-LD Graph
-    const defaultOrgAndWebSite = [
-        {
-            '@type': 'Organization',
-            '@id': `${BASE_URL}/#organization`,
-            name: SITE_NAME,
-            url: BASE_URL,
-            logo: {
-                '@type': 'ImageObject',
-                url: DEFAULT_IMAGE
-            },
-            sameAs: [
-                'https://t.me/gplmods',
-                'https://github.com/GPLMods'
-            ]
-        },
-        {
-            '@type': 'WebSite',
-            '@id': `${BASE_URL}/#website`,
-            url: BASE_URL,
-            name: SITE_NAME,
-            publisher: {
-                '@id': `${BASE_URL}/#organization`
-            },
-            potentialAction: {
-                '@type': 'SearchAction',
-                target: `${BASE_URL}/search?q={search_term_string}`,
-                'query-input': 'required name=search_term_string'
-            }
-        }
-    ];
 
     let jsonLdGraph = [...defaultOrgAndWebSite];
 

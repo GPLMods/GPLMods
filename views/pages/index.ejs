@@ -31,7 +31,14 @@
             }
         })();
     </script>
-    <section class="hero"></section>
+    <section class="hero-seo-header" style="text-align: center; padding: 28px 20px 10px 20px; max-width: 1200px; margin: 0 auto;">
+        <h1 style="font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 800; color: #ffffff; letter-spacing: -0.5px; margin-bottom: 8px; line-height: 1.25;">
+            Download <span style="color: var(--gold, #ffd700); text-shadow: 0 0 16px rgba(255, 215, 0, 0.45);">100% Safe &amp; Working</span> Open Source Mods, APKs &amp; IPAs
+        </h1>
+        <p style="color: var(--silver, #a0aec0); font-size: clamp(0.9rem, 2vw, 1.05rem); max-width: 800px; margin: 0 auto; line-height: 1.5;">
+            Explore verified community mods, IPA sideload repos, Android APKs, and open source utilities with source transparency.
+        </p>
+    </section>
 
     <!-- ======== STYLES FOR COUNCIL MOD-CARD UI & PLATFORM TAGS ======== -->
     <style>
@@ -177,7 +184,7 @@
     <% if (isGlobal) { %>
         <% if (allCouncilMods.length > 0) { %>
             <section class="featured-section council-featured-section" id="featured-council-global">
-                <img src="<%= allCouncilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-global" alt="">
+                <img src="<%= allCouncilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-global" alt="<%= allCouncilMods[0].name %> Backdrop">
 
                 <div class="container" style="position: relative;">
                     <div class="featured-carousel" id="featured-carousel-global">
@@ -275,7 +282,7 @@
             if (councilMods.length > 0) { 
         %>
             <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" <%- `style="${pIdx === 0 ? '' : 'display: none;'}"` %>>
-                <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="">
+                <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="<%= councilMods[0].name %> Backdrop">
 
                 <div class="container" style="position: relative;">
                     <div class="featured-carousel" id="featured-carousel-<%= platformName %>">

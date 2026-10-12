@@ -1,15 +1,25 @@
 <%-include('../partials/header') %>
 
     <style>
+        main.container {
+            width: 92%;
+            max-width: 1100px;
+            margin: auto;
+            box-sizing: border-box;
+        }
+
         .ai-dir-container {
             max-width: 1080px;
-            margin: 40px auto;
+            width: 100%;
+            margin: 30px auto;
             background: linear-gradient(145deg, #16171f 0%, #0d0e14 100%);
-            padding: 40px;
+            padding: 36px 32px;
             border-radius: 16px;
             border: 1px solid rgba(255, 215, 0, 0.2);
             border-top: 3px solid var(--gold);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .ai-dir-container h1 {
@@ -17,15 +27,18 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             padding-bottom: 14px;
             margin-bottom: 18px;
-            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            font-size: clamp(1.4rem, 4vw, 2.3rem);
             font-weight: 800;
+            line-height: 1.25;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .ai-jump-pills {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-bottom: 30px;
+            margin-bottom: 22px;
         }
 
         .ai-jump-pill {
@@ -41,6 +54,7 @@
             font-weight: 600;
             text-decoration: none;
             transition: all 0.2s ease;
+            box-sizing: border-box;
         }
 
         .ai-jump-pill:hover {
@@ -49,39 +63,106 @@
             transform: translateY(-2px);
         }
 
+        /* In-Page Fast Filter Bar */
+        .ai-dir-filter-wrapper {
+            position: relative;
+            margin-bottom: 28px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .ai-dir-filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 40px 12px 42px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1.5px solid rgba(255, 215, 0, 0.28);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.92rem;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .ai-dir-filter-input:focus {
+            border-color: var(--gold);
+            background: rgba(0, 0, 0, 0.75);
+            box-shadow: 0 0 16px rgba(255, 215, 0, 0.2);
+        }
+
+        .ai-dir-filter-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold);
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+
+        .ai-dir-filter-clear {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--silver);
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .ai-dir-filter-clear:hover {
+            color: var(--gold);
+        }
+
         .ai-dir-container h2 {
             color: var(--gold);
-            margin-top: 40px;
+            margin-top: 36px;
             text-transform: uppercase;
-            font-size: 1.25rem;
+            font-size: 1.18rem;
             font-weight: 700;
             letter-spacing: 0.6px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             padding-bottom: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         /* Rich Semantic Mod List */
         .ai-dir-rich-list {
             list-style-type: none;
             padding: 0;
+            margin: 0;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 16px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .ai-dir-item {
             display: flex;
             align-items: flex-start;
             gap: 14px;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 0, 0, 0.45);
             padding: 16px;
             border-radius: 12px;
             border: 1px solid #282830;
             transition: all 0.2s ease;
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .ai-dir-item:hover {
@@ -101,30 +182,54 @@
         }
 
         .ai-dir-info {
-            flex-grow: 1;
+            flex: 1 1 0%;
             min-width: 0;
+            max-width: 100%;
+            overflow: hidden;
         }
 
-        .ai-dir-info a {
+        .ai-dir-info .ai-dir-title {
             color: var(--white);
             text-decoration: none;
             font-weight: 700;
-            font-size: 1.05rem;
+            font-size: 1.02rem;
             transition: color 0.2s;
             display: block;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            max-width: 100%;
         }
 
-        .ai-dir-info a:hover {
+        .ai-dir-info .ai-dir-title:hover {
             color: var(--gold);
         }
 
         .ai-dir-meta {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--silver);
             margin: 4px 0 6px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px 6px;
+            line-height: 1.4;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 100%;
+        }
+
+        .ai-dir-meta .meta-part {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .ai-dir-meta .meta-sep {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 0.75rem;
         }
 
         .ai-dir-meta a {
@@ -133,6 +238,9 @@
             font-size: 0.95em;
             font-weight: 600;
             text-decoration: none;
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .ai-dir-meta a:hover {
@@ -142,7 +250,7 @@
 
         .ai-dir-desc {
             color: #94a3b8;
-            font-size: 0.84rem;
+            font-size: 0.83rem;
             margin: 0;
             line-height: 1.45;
             display: -webkit-box;
@@ -150,15 +258,27 @@
             line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 100%;
         }
 
         /* Grid for Users, Docs, Developers */
         .ai-tag-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 12px;
             list-style: none;
             padding: 0;
+            margin: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .ai-tag-grid li {
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
         }
 
         .ai-tag-grid li a {
@@ -168,14 +288,19 @@
             gap: 8px;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid #333;
-            padding: 11px 16px;
+            padding: 10px 14px;
             border-radius: 10px;
             color: var(--silver);
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             text-align: center;
             transition: all 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .ai-tag-grid li a:hover {
@@ -185,24 +310,94 @@
             transform: translateY(-2px);
         }
 
+        /* Responsive Breakpoints */
         @media (max-width: 768px) {
+            main.container {
+                width: 95% !important;
+                padding: 0 4px !important;
+            }
+
             .ai-dir-container {
-                padding: 22px 16px;
+                padding: 20px 14px;
+                margin: 15px auto;
+                border-radius: 14px;
             }
 
             .ai-dir-rich-list {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 12px;
+            }
+
+            .ai-dir-item {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .ai-dir-icon {
+                width: 46px;
+                height: 46px;
+                border-radius: 9px;
             }
 
             .ai-tag-grid {
-                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .ai-tag-grid li a {
+                padding: 9px 8px;
+                font-size: 0.8rem;
+                gap: 5px;
+            }
+
+            .ai-jump-pills {
+                gap: 6px;
+                margin-bottom: 20px;
+            }
+
+            .ai-jump-pill {
+                padding: 5px 11px;
+                font-size: 0.75rem;
+            }
+
+            .ai-dir-filter-input {
+                padding: 10px 36px 10px 38px;
+                font-size: 0.86rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            main.container {
+                width: 98% !important;
+                padding: 0 2px !important;
+            }
+
+            .ai-dir-container {
+                padding: 16px 10px;
+                border-radius: 12px;
+            }
+
+            .ai-tag-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+
+            .ai-tag-grid li a {
+                padding: 8px 6px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 340px) {
+            .ai-tag-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 
     <main class="container">
         <!-- ======== DYNAMIC GO BACK BUTTON ======== -->
-        <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 1080px; margin: 20px auto 0 auto; display: flex; justify-content: flex-start;' }) %>
+        <%- include('../partials/go-back-button', { fallback: '/', wrapperStyle: 'max-width: 1080px; width: 100%; margin: 15px auto 0 auto; display: flex; justify-content: flex-start;' }) %>
         <!-- ======================================== -->
 
         <div class="ai-dir-container" style="margin-top: 1rem;">
@@ -220,53 +415,65 @@
                 <a href="#sec-creators" class="ai-jump-pill"><i class="fas fa-users"></i> Community Creators</a>
             </div>
 
+            <!-- Fast Real-time In-Page Directory Filter -->
+            <div class="ai-dir-filter-wrapper">
+                <i class="fas fa-search ai-dir-filter-icon"></i>
+                <input type="text" id="aiDirFilterInput" class="ai-dir-filter-input" placeholder="Filter mods, docs, developers, or creators instantly..." autocomplete="off">
+                <button type="button" id="aiDirFilterClear" class="ai-dir-filter-clear" aria-label="Clear filter">&times;</button>
+            </div>
+
             <!-- Section 1: Crucial Site Knowledge for AI -->
-            <h2 id="sec-docs"><i class="fas fa-book"></i> Site Documentation &amp; Policies</h2>
-            <ul class="ai-tag-grid">
-                <li><a href="/about"><i class="fas fa-info-circle"></i> About Us</a></li>
-                <li><a href="/faq"><i class="fas fa-question-circle"></i> FAQ</a></li>
-                <li><a href="/tos"><i class="fas fa-file-contract"></i> Terms of Service</a></li>
-                <li><a href="/privacy-policy"><i class="fas fa-user-shield"></i> Privacy Policy</a></li>
-                <li><a href="/dmca"><i class="fas fa-balance-scale"></i> DMCA Policy</a></li>
-                <li><a href="/licenses"><i class="fas fa-certificate"></i> Licenses Hub</a></li>
-            </ul>
+            <div class="ai-section-block" id="block-sec-docs">
+                <h2 id="sec-docs"><i class="fas fa-book"></i> Site Documentation &amp; Policies</h2>
+                <ul class="ai-tag-grid">
+                    <li><a href="/about"><i class="fas fa-info-circle"></i> About Us</a></li>
+                    <li><a href="/faq"><i class="fas fa-question-circle"></i> FAQ</a></li>
+                    <li><a href="/tos"><i class="fas fa-file-contract"></i> Terms of Service</a></li>
+                    <li><a href="/privacy-policy"><i class="fas fa-user-shield"></i> Privacy Policy</a></li>
+                    <li><a href="/dmca"><i class="fas fa-balance-scale"></i> DMCA Policy</a></li>
+                    <li><a href="/licenses"><i class="fas fa-certificate"></i> Licenses Hub</a></li>
+                </ul>
+            </div>
 
             <!-- Section 2: All Live Mods Organized by Category -->
-            <div id="sec-mods" style="margin-top: 30px;">
+            <div id="sec-mods" class="ai-section-block" style="margin-top: 30px;">
                 <% Object.keys(modsByCategory).forEach(category=> { %>
-                    <h2>
-                        <i class="fas fa-cube"></i> <%= category.toUpperCase().replace('-', ' ' ) %> Mods
-                    </h2>
-                    <ul class="ai-dir-rich-list">
-                        <% modsByCategory[category].forEach(mod=> { %>
-                            <li class="ai-dir-item">
-                                <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="ai-dir-icon" loading="lazy" onerror="this.src='/images/default-avatar.png'">
+                    <div class="ai-cat-block" data-category="<%= category %>">
+                        <h2>
+                            <i class="fas fa-cube"></i> <%= category.toUpperCase().replace('-', ' ' ) %> Mods
+                        </h2>
+                        <ul class="ai-dir-rich-list">
+                            <% modsByCategory[category].forEach(mod=> { %>
+                                <li class="ai-dir-item" data-searchable="<%= `${mod.name} ${mod.developer || ''} ${mod.uploader || ''} ${category}`.toLowerCase() %>">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="ai-dir-icon" loading="lazy" onerror="this.src='/images/default-avatar.png'">
 
-                                <div class="ai-dir-info">
-                                    <a href="/mods/<%= mod.category %>/<%= mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id) %>">
-                                        <%= mod.name %>
-                                    </a>
-                                    <div class="ai-dir-meta">
-                                        Dev: <a href="/developer?name=<%= encodeURIComponent(mod.developer) %>"><%= mod.developer %></a> |
-                                        Uploader: <a href="/user/<%= slugify(mod.uploader).toLowerCase() %>"><%= mod.uploader %></a>
+                                    <div class="ai-dir-info">
+                                        <a href="/mods/<%= mod.category %>/<%= mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id) %>" class="ai-dir-title">
+                                            <%= mod.name %>
+                                        </a>
+                                        <div class="ai-dir-meta">
+                                            <span class="meta-part">Dev: <a href="/developer?name=<%= encodeURIComponent(mod.developer) %>"><%= mod.developer %></a></span>
+                                            <span class="meta-sep">|</span>
+                                            <span class="meta-part">Uploader: <a href="/user/<%= slugify(mod.uploader).toLowerCase() %>"><%= mod.uploader %></a></span>
+                                        </div>
+                                        <% 
+                                            const plainDesc = (mod.modDescription || '')
+                                                .replace(/<[^>]*>/g, '')
+                                                .replace(/&nbsp;/g, ' ')
+                                                .replace(/&amp;/g, '&')
+                                                .replace(/&quot;/g, '"')
+                                                .replace(/&#039;/g, "'")
+                                                .replace(/\s+/g, ' ')
+                                                .trim();
+                                        %>
+                                        <p class="ai-dir-desc">
+                                            <%= plainDesc.substring(0, 150) %><%= plainDesc.length > 150 ? '...' : '' %>
+                                        </p>
                                     </div>
-                                    <% 
-                                        const plainDesc = (mod.modDescription || '')
-                                            .replace(/<[^>]*>/g, '')
-                                            .replace(/&nbsp;/g, ' ')
-                                            .replace(/&amp;/g, '&')
-                                            .replace(/&quot;/g, '"')
-                                            .replace(/&#039;/g, "'")
-                                            .replace(/\s+/g, ' ')
-                                            .trim();
-                                    %>
-                                    <p class="ai-dir-desc">
-                                        <%= plainDesc.substring(0, 150) %><%= plainDesc.length > 150 ? '...' : '' %>
-                                    </p>
-                                </div>
-                            </li>
-                        <% }) %>
-                    </ul>
+                                </li>
+                            <% }) %>
+                        </ul>
+                    </div>
                 <% }) %>
 
                 <% if (Object.keys(modsByCategory).length===0) { %>
@@ -275,23 +482,141 @@
             </div>
 
             <!-- Section 3: Developer Index -->
-            <h2 id="sec-devs"><i class="fas fa-building"></i> Developer Index</h2>
-            <ul class="ai-tag-grid">
-                <% developers.forEach(dev=> { %>
-                    <li><a href="/developer?name=<%= encodeURIComponent(dev) %>"><i class="fas fa-building"></i> <%= dev %></a></li>
-                <% }) %>
-            </ul>
+            <div class="ai-section-block" id="block-sec-devs">
+                <h2 id="sec-devs"><i class="fas fa-building"></i> Developer Index</h2>
+                <ul class="ai-tag-grid">
+                    <% developers.forEach(dev=> { %>
+                        <li data-searchable="<%= dev.toLowerCase() %>"><a href="/developer?name=<%= encodeURIComponent(dev) %>"><i class="fas fa-building"></i> <%= dev %></a></li>
+                    <% }) %>
+                </ul>
+            </div>
 
             <!-- Section 4: Community Creators (Uploaders) Index -->
-            <h2 id="sec-creators"><i class="fas fa-users"></i> Community Creators</h2>
-            <ul class="ai-tag-grid">
-                <% uploaders.forEach(uploader=> { %>
-                    <li><a href="/user/<%= slugify(uploader).toLowerCase() %>"><i class="fas fa-user"></i> <%= uploader %></a></li>
-                <% }) %>
-            </ul>
+            <div class="ai-section-block" id="block-sec-creators">
+                <h2 id="sec-creators"><i class="fas fa-users"></i> Community Creators</h2>
+                <ul class="ai-tag-grid">
+                    <% uploaders.forEach(uploader=> { %>
+                        <li data-searchable="<%= uploader.toLowerCase() %>"><a href="/user/<%= slugify(uploader).toLowerCase() %>"><i class="fas fa-user"></i> <%= uploader %></a></li>
+                    <% }) %>
+                </ul>
+            </div>
+
+            <div id="aiDirNoResults" style="display: none; text-align: center; padding: 40px 20px; color: var(--silver);">
+                <i class="fas fa-search" style="font-size: 2.2rem; color: #555; margin-bottom: 12px; display: block;"></i>
+                <p style="font-size: 1rem; margin-bottom: 8px; color: #fff;">No directory items match your filter.</p>
+                <p style="font-size: 0.85rem; color: #888;">Try searching for a different keyword or app name.</p>
+            </div>
 
         </div>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterInput = document.getElementById('aiDirFilterInput');
+            const clearBtn = document.getElementById('aiDirFilterClear');
+            const noResultsEl = document.getElementById('aiDirNoResults');
+            if (!filterInput) return;
+
+            const modItems = document.querySelectorAll('.ai-dir-item');
+            const catBlocks = document.querySelectorAll('.ai-cat-block');
+            const devItems = document.querySelectorAll('#block-sec-devs .ai-tag-grid li');
+            const creatorItems = document.querySelectorAll('#block-sec-creators .ai-tag-grid li');
+            const docItems = document.querySelectorAll('#block-sec-docs .ai-tag-grid li');
+
+            function applyFilter() {
+                const query = filterInput.value.trim().toLowerCase();
+                if (clearBtn) {
+                    clearBtn.style.display = query ? 'block' : 'none';
+                }
+
+                if (!query) {
+                    modItems.forEach(item => item.style.display = '');
+                    catBlocks.forEach(block => block.style.display = '');
+                    devItems.forEach(item => item.style.display = '');
+                    creatorItems.forEach(item => item.style.display = '');
+                    docItems.forEach(item => item.style.display = '');
+                    document.getElementById('block-sec-docs').style.display = '';
+                    document.getElementById('block-sec-devs').style.display = '';
+                    document.getElementById('block-sec-creators').style.display = '';
+                    if (noResultsEl) noResultsEl.style.display = 'none';
+                    return;
+                }
+
+                let totalVisible = 0;
+
+                // Filter Mods & Categories
+                catBlocks.forEach(catBlock => {
+                    let catHasVisible = false;
+                    const itemsInCat = catBlock.querySelectorAll('.ai-dir-item');
+                    itemsInCat.forEach(item => {
+                        const searchKey = item.getAttribute('data-searchable') || item.textContent.toLowerCase();
+                        if (searchKey.includes(query)) {
+                            item.style.display = '';
+                            catHasVisible = true;
+                            totalVisible++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    catBlock.style.display = catHasVisible ? '' : 'none';
+                });
+
+                // Filter Docs
+                let docsVisible = 0;
+                docItems.forEach(item => {
+                    if (item.textContent.toLowerCase().includes(query)) {
+                        item.style.display = '';
+                        docsVisible++;
+                        totalVisible++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                document.getElementById('block-sec-docs').style.display = docsVisible ? '' : 'none';
+
+                // Filter Developers
+                let devsVisible = 0;
+                devItems.forEach(item => {
+                    if (item.textContent.toLowerCase().includes(query)) {
+                        item.style.display = '';
+                        devsVisible++;
+                        totalVisible++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                document.getElementById('block-sec-devs').style.display = devsVisible ? '' : 'none';
+
+                // Filter Creators
+                let creatorsVisible = 0;
+                creatorItems.forEach(item => {
+                    if (item.textContent.toLowerCase().includes(query)) {
+                        item.style.display = '';
+                        creatorsVisible++;
+                        totalVisible++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+                document.getElementById('block-sec-creators').style.display = creatorsVisible ? '' : 'none';
+
+                if (noResultsEl) {
+                    noResultsEl.style.display = totalVisible === 0 ? 'block' : 'none';
+                }
+            }
+
+            filterInput.addEventListener('input', applyFilter);
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function () {
+                    filterInput.value = '';
+                    filterInput.focus();
+                    applyFilter();
+                });
+            }
+        });
+    </script>
+
     <%- include('../partials/popunder-ads') %>
         <%- include('../partials/video-ad-modal') %>
             <%- include('../partials/footer') %>

@@ -3003,14 +3003,32 @@ app.get('/source/:slug', async (req, res) => {
                     }
                 }
 
+                let isTruncated = false;
+                let previewCode = rawCode || '';
+                const totalLines = !isImageFile && rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0;
+                const MAX_SOURCE_PREVIEW_BYTES = 60000;
+                const MAX_SOURCE_PREVIEW_LINES = 1000;
+
+                if (!isImageFile && previewCode) {
+                    if (previewCode.length > MAX_SOURCE_PREVIEW_BYTES || totalLines > MAX_SOURCE_PREVIEW_LINES) {
+                        isTruncated = true;
+                        const lineArray = previewCode.split('\n').slice(0, MAX_SOURCE_PREVIEW_LINES);
+                        previewCode = lineArray.join('\n');
+                        if (previewCode.length > MAX_SOURCE_PREVIEW_BYTES) {
+                            previewCode = previewCode.substring(0, MAX_SOURCE_PREVIEW_BYTES);
+                        }
+                    }
+                }
+
                 fileData = {
                     name: data.name,
                     path: data.path,
                     sizeFormatted: formatSourceFileSize(data.size),
                     size: data.size,
-                    lines: !isImageFile && rawCode ? (rawCode.match(/\n/g) || []).length + 1 : 0,
+                    lines: totalLines,
                     language: detectSourceLanguage(data.name),
-                    content: rawCode || '',
+                    content: previewCode,
+                    isTruncated: isTruncated,
                     dataUrl: dataUrl || null,
                     download_url: data.download_url || `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(currentRef)}/${encodedPath}`
                 };
@@ -3043,14 +3061,32 @@ app.get('/source/:slug', async (req, res) => {
                             rawCode = typeof rawRes.data === 'string' ? rawRes.data : Buffer.from(rawRes.data).toString('utf8');
                             byteSize = Buffer.byteLength(rawCode, 'utf8');
                         }
+                        let isTruncated = false;
+                        let previewCode = rawCode || '';
+                        const totalLines = isImageFile ? 0 : (previewCode.match(/\n/g) || []).length + 1;
+                        const MAX_SOURCE_PREVIEW_BYTES = 60000;
+                        const MAX_SOURCE_PREVIEW_LINES = 1000;
+
+                        if (!isImageFile && previewCode) {
+                            if (previewCode.length > MAX_SOURCE_PREVIEW_BYTES || totalLines > MAX_SOURCE_PREVIEW_LINES) {
+                                isTruncated = true;
+                                const lineArray = previewCode.split('\n').slice(0, MAX_SOURCE_PREVIEW_LINES);
+                                previewCode = lineArray.join('\n');
+                                if (previewCode.length > MAX_SOURCE_PREVIEW_BYTES) {
+                                    previewCode = previewCode.substring(0, MAX_SOURCE_PREVIEW_BYTES);
+                                }
+                            }
+                        }
+
                         fileData = {
                             name: fileName,
                             path: rawPath,
                             sizeFormatted: formatSourceFileSize(byteSize),
                             size: byteSize,
-                            lines: isImageFile ? 0 : (rawCode.match(/\n/g) || []).length + 1,
+                            lines: totalLines,
                             language: detectSourceLanguage(fileName),
-                            content: rawCode,
+                            content: previewCode,
+                            isTruncated: isTruncated,
                             dataUrl: dataUrl,
                             download_url: rawFallbackUrl
                         };
@@ -16011,6 +16047,10 @@ Allow: /licenses
 Allow: /request-mod
 Allow: /clubs
 Allow: /community
+Allow: /repos
+Allow: /jailbreak-repos
+Allow: /support
+Allow: /partnership
 
 Disallow: /admin/
 Disallow: /owner/
@@ -16027,8 +16067,6 @@ Disallow: /profile
 Disallow: /my-uploads
 Disallow: /settings
 Disallow: /wishlist
-Disallow: /support
-Disallow: /partnership
 Disallow: /upload
 Disallow: /upload-initial
 Disallow: /upload-finalize/
@@ -16037,8 +16075,6 @@ Disallow: /account/
 Disallow: /community-chat
 Disallow: /notifications/
 Disallow: /download-file/
-Disallow: /repos/
-Disallow: /jailbreak-repos/
 
 Sitemap: ${baseUrl}/sitemap_index.xml
 Sitemap: ${baseUrl}/sitemap-pages.xml

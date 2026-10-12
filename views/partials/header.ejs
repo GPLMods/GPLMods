@@ -8,7 +8,8 @@
     <% 
         const s = (typeof seo !== 'undefined' && seo) ? seo : {};
         const siteName = s.siteName || "GPL Mods";
-        const metaTitle = s.title || (typeof pageTitle !== 'undefined' ? `${pageTitle} | ${siteName}` : "GPL Mods - 100% Safe & Working Premium Unlocked Mods");
+        let rawMetaTitle = s.title || (typeof pageTitle !== 'undefined' ? (pageTitle.includes(siteName) ? pageTitle : `${pageTitle} | ${siteName}`) : "GPL Mods - 100% Safe Mods, APKs & IPAs");
+        const metaTitle = rawMetaTitle.length > 60 ? (rawMetaTitle.substring(0, 57).trim() + '...') : rawMetaTitle;
         const metaDesc = s.description || (typeof pageDescription !== 'undefined' ? pageDescription : "Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free.");
         const metaKeywords = s.keywords || (typeof pageKeywords !== 'undefined' ? pageKeywords : "gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked");
         const metaCanonical = s.canonicalUrl || (typeof pageUrl !== 'undefined' ? pageUrl : "https://gplmods.webredirect.org");
@@ -1335,12 +1336,12 @@
                                                                                 title="VIP Membership Plans">
                                                                                 <i class="fas fa-gem"></i> VIP
                                                                             </a>
-                                                                            <a href="/upload"
+                                                                            <a href="/upload" rel="nofollow"
                                                                                 class="btn btn-login">Upload A New
                                                                                 Mod</a>
-                                                                            <a href="/login"
+                                                                            <a href="/login" rel="nofollow"
                                                                                 class="btn btn-login">Login</a>
-                                                                            <a href="/register"
+                                                                            <a href="/register" rel="nofollow"
                                                                                 class="btn btn-signup">Sign Up</a>
                                                                             <% } %>
                                                 </div>
@@ -1423,7 +1424,7 @@
                                             <li><a href="/admin/support"><i class="fas fa-headset"
                                                         style="margin-right: 8px; color: #2196f3;"></i> Support
                                                     Tickets</a></li>
-                                            <li><a href="/status"><i class="fas fa-server"
+                                            <li><a href="https://gplmods.great-site.net/" target="_blank" rel="noopener noreferrer"><i class="fas fa-server"
                                                         style="margin-right: 8px; color: #43a047;"></i> Server
                                                     Health</a></li>
                                             <li><a href="/admin/music"><i class="fas fa-music"
@@ -1453,7 +1454,7 @@
                                                 <li><a href="/admin/support"><i class="fas fa-headset"
                                                             style="margin-right: 8px; color: #2196f3;"></i> Support
                                                         Tickets</a></li>
-                                                <li><a href="/status"><i class="fas fa-server"
+                                                <li><a href="https://gplmods.great-site.net/" target="_blank" rel="noopener noreferrer"><i class="fas fa-server"
                                                             style="margin-right: 8px; color: #43a047;"></i> Server
                                                         Health</a></li>
                                                 <li><a href="/admin/music"><i class="fas fa-music"
@@ -1477,7 +1478,7 @@
                                                     <li><a href="/admin/reports"><i class="fas fa-flag"
                                                                 style="margin-right: 8px; color: #e53935;"></i> Mod
                                                             Reports</a></li>
-                                                    <li><a href="/status"><i class="fas fa-server"
+                                                    <li><a href="https://gplmods.great-site.net/" target="_blank" rel="noopener noreferrer"><i class="fas fa-server"
                                                                 style="margin-right: 8px; color: #43a047;"></i> Server
                                                             Health</a></li>
                                                 </ul>
@@ -1523,8 +1524,8 @@
                                         <li><a href="/rewards"><i class="fas fa-medal" style="margin-right: 8px; color: #ffd700;"></i> Rewards &amp; Badges</a></li>
                                         <li><a href="/notifications"><i class="fas fa-bell" style="margin-right: 8px; color: #ff9800;"></i> Notifications Hub</a></li>
                                     <% } else { %>
-                                        <li><a href="/login"><i class="fas fa-sign-in-alt" style="margin-right: 8px; color: var(--gold);"></i> Sign In / Login</a></li>
-                                        <li><a href="/register"><i class="fas fa-user-plus" style="margin-right: 8px; color: #4caf50;"></i> Create Account / Sign Up</a></li>
+                                        <li><a href="/login" rel="nofollow"><i class="fas fa-sign-in-alt" style="margin-right: 8px; color: var(--gold);"></i> Sign In / Login</a></li>
+                                        <li><a href="/register" rel="nofollow"><i class="fas fa-user-plus" style="margin-right: 8px; color: #4caf50;"></i> Create Account / Sign Up</a></li>
                                         <li><a href="/membership"><i class="fas fa-gem" style="margin-right: 8px; color: #e91e63;"></i> VIP Membership Plans</a></li>
                                         <li><a href="/guest/notifications"><i class="fas fa-bell" style="margin-right: 8px; color: var(--gold);"></i> Guest Notifications</a></li>
                                     <% } %>
@@ -1563,14 +1564,14 @@
                                     <li><a href="/licenses"><i class="fas fa-file-contract" style="margin-right: 8px; color: #b0bec5;"></i> License Hub</a></li>
                                     <li><a href="/about"><i class="fas fa-info-circle" style="margin-right: 8px; color: #29b6f6;"></i> About Us</a></li>
                                     <li><a href="/support"><i class="fas fa-headset" style="margin-right: 8px; color: #ab47bc;"></i> Support Tickets</a></li>
-                                    <li><a href="/status"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health Status</a></li>
+                                    <li><a href="https://gplmods.great-site.net/" target="_blank" rel="noopener noreferrer"><i class="fas fa-server" style="margin-right: 8px; color: #43a047;"></i> Server Health Status</a></li>
                                     <li><a href="/ai-directory"><i class="fas fa-sitemap" style="margin-right: 8px; color: #90caf9;"></i> Site Map</a></li>
                                 </ul>
                             </li>
 
                             <!-- Quick Utilities (Cache & Logout) -->
                             <li style="margin-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 10px;">
-                                <a href="/cc" title="Purge Web Cache (/cc)"
+                                <a href="/cc" rel="nofollow" title="Purge Web Cache (/cc)"
                                     style="color: var(--gold); display: flex; align-items: center; gap: 8px; font-size: 0.9em; opacity: 0.95;">
                                     <i class="fas fa-broom"></i> Clear Web Cache (/cc)
                                 </a>

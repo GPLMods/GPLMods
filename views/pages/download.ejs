@@ -1323,7 +1323,7 @@
                                                             </a>
                                                             <% } else if (file.externalDownloadUrl) { %>
                                                                 <!-- ✅ New: Handle direct external links (Distributor/Admin) -->
-                                                                <a href="/download-file/<%= file._id %>"
+                                                                <a href="/download-file/<%= file._id %>" rel="nofollow"
                                                                     class="download-button" style="text-align: center;">
                                                                     <i class="fas fa-external-link-alt"
                                                                         style="margin-right: 10px;"></i> External
@@ -1331,7 +1331,7 @@
                                                                 </a>
                                                                 <% } else { %>
                                                                     <!-- Standard Single-File Download from B2 -->
-                                                                    <a href="<%= mainDownloadUrl %>"
+                                                                    <a href="<%= mainDownloadUrl %>" rel="nofollow"
                                                                         class="download-button"
                                                                         style="text-align: center;">
                                                                         <i class="fas fa-download"
@@ -1399,7 +1399,7 @@
                                                                                             <% } else if
                                                                                                 (file.externalDownloadUrl)
                                                                                                 { %>
-                                                                                                <a href="/download-file/<%= file._id %>"
+                                                                                                <a href="/download-file/<%= file._id %>" rel="nofollow"
                                                                                                     class="download-button"
                                                                                                     style="text-align: center;">
                                                                                                     <i class="fas fa-external-link-alt"
@@ -1407,7 +1407,7 @@
                                                                                                     External Download
                                                                                                 </a>
                                                                                                 <% } else { %>
-                                                                                                    <a href="<%= mainDownloadUrl %>"
+                                                                                                    <a href="<%= mainDownloadUrl %>" rel="nofollow"
                                                                                                         class="download-button"
                                                                                                         style="text-align: center;">
                                                                                                         <i class="fas fa-download"
@@ -1438,7 +1438,7 @@
                                                                                                 <% } else if
                                                                                                     (file.externalDownloadUrl)
                                                                                                     { %>
-                                                                                                    <a href="/download-file/<%= file._id %>"
+                                                                                                    <a href="/download-file/<%= file._id %>" rel="nofollow"
                                                                                                         class="download-button"
                                                                                                         style="text-align: center;">
                                                                                                         <i class="fas fa-external-link-alt"
@@ -1447,7 +1447,7 @@
                                                                                                         Download
                                                                                                     </a>
                                                                                                     <% } else { %>
-                                                                                                        <a href="<%= mainDownloadUrl %>" class="download-button" style="text-align: center;">
+                                                                                                        <a href="<%= mainDownloadUrl %>" rel="nofollow" class="download-button" style="text-align: center;">
                                                                                                             <i class="fas fa-download" style="margin-right: 10px;"></i>
                                                                                                             Download (<%= formatBytes(file.fileSize) %>)
                                                                                                         </a>
@@ -2209,7 +2209,7 @@
                                                 <%= new Date(version.createdAt).toLocaleDateString() %>
                                             </td>
                                             <td data-label="Link"><a
-                                                    href="/download-file/<%= version._id %>">Download</a></td>
+                                                    href="/download-file/<%= version._id %>" rel="nofollow">Download</a></td>
                                         </tr>
                                         <% }) %>
                                 </tbody>
