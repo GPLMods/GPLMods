@@ -1717,7 +1717,9 @@
                                                                             file.manualFileScanUrl ||
                                                                             file.manualSiteScanUrl) { %>
                                                                             <div class="safety-badge security-scan-panel"
-                                                                                style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--si                                                                                 <!-- If Automated Scan is Complete with engines reported -->
+                                                                                style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
+
+                                                                                <!-- If Automated Scan is Complete with engines reported -->
                                                                                 <% if (file.virusTotalScanDate && (file.virusTotalTotalScans > 0)) { %>
                                                                                     <div
                                                                                         style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
@@ -1766,7 +1768,7 @@
                                                                                                 title="Check VirusTotal Status"><i
                                                                                                     class="fas fa-sync-alt"></i> Refresh</button>
                                                                                         </div>
-                                                                                        <% } %>     <% } %>
+                                                                                        <% } %>
 
                                                                                             <!-- Scan Link Buttons Container -->
                                                                                             <div
