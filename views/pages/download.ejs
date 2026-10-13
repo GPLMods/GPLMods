@@ -1717,10 +1717,8 @@
                                                                             file.manualFileScanUrl ||
                                                                             file.manualSiteScanUrl) { %>
                                                                             <div class="safety-badge security-scan-panel"
-                                                                                style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--silver);">
-
-                                                                                <!-- If Automated Scan is Complete -->
-                                                                                <% if (file.virusTotalScanDate) { %>
+                                                                                style="flex-direction: column; align-items: flex-start; padding: 15px; border-color: var(--si                                                                                 <!-- If Automated Scan is Complete with engines reported -->
+                                                                                <% if (file.virusTotalScanDate && (file.virusTotalTotalScans > 0)) { %>
                                                                                     <div
                                                                                         style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
                                                                                         <i class="fas fa-shield-virus"
@@ -1736,6 +1734,22 @@
                                                                                                     %>
                                                                                         </span>
                                                                                     </div>
+                                                                                    <% } else if (file.virusTotalScanDate && (!file.virusTotalTotalScans || file.virusTotalTotalScans === 0)) { %>
+                                                                                        <!-- Automated Fallback when scan reports 0/0: show queued and manual refresh button -->
+                                                                                        <div id="vt-scan-pending-box"
+                                                                                            style="display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 10px;">
+                                                                                            <i class="fas fa-hourglass-half fa-spin"
+                                                                                                style="color: var(--gold); font-size: 1.2em;"></i>
+                                                                                            <span
+                                                                                                style="font-weight: bold; color: var(--white); flex-grow: 1;">Scan
+                                                                                                Queued (0/0 engines ready)</span>
+                                                                                            <button
+                                                                                                onclick="refreshVTScan('<%= file._id %>')"
+                                                                                                class="btn btn-secondary"
+                                                                                                style="padding: 4px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 4px;"
+                                                                                                title="Check VirusTotal Status"><i
+                                                                                                    class="fas fa-sync-alt"></i> Refresh</button>
+                                                                                        </div>
                                                                                     <% } else if (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) { %>
                                                                                         <!-- If Automated Scan is Pending -->
                                                                                         <div id="vt-scan-pending-box"
@@ -1748,11 +1762,11 @@
                                                                                             <button
                                                                                                 onclick="refreshVTScan('<%= file._id %>')"
                                                                                                 class="btn btn-secondary"
-                                                                                                style="padding: 4px 8px; font-size: 0.8em;"
+                                                                                                style="padding: 4px 8px; font-size: 0.8em; display: inline-flex; align-items: center; gap: 4px;"
                                                                                                 title="Check VirusTotal Status"><i
-                                                                                                    class="fas fa-sync-alt"></i></button>
+                                                                                                    class="fas fa-sync-alt"></i> Refresh</button>
                                                                                         </div>
-                                                                                        <% } %>
+                                                                                        <% } %>     <% } %>
 
                                                                                             <!-- Scan Link Buttons Container -->
                                                                                             <div
@@ -3032,7 +3046,7 @@
 
                 // Automatic background poller on Download Page
                 (function initVTAutoPoll() {
-                    const isScanPending = <%= Boolean(!file.virusTotalScanDate && (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com')))) %>;
+                    const isScanPending = <%= Boolean((!file.virusTotalScanDate || !file.virusTotalTotalScans || file.virusTotalTotalScans === 0) && (file.virusTotalAnalysisId || file.virusTotalId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com')))) %>;
                     if (!isScanPending) return;
 
                     let pollAttempts = 0;

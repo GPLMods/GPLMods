@@ -3,16 +3,44 @@
 <style>
     /* Custom Dropdown Styles (Reused from forum-ask) */
     .custom-select-wrapper { position: relative; user-select: none; width: 100%; }
-    .custom-select-wrapper.open { z-index: 1000 !important; position: relative; }
+    .custom-select-wrapper.open { z-index: 10001 !important; position: relative; }
     .custom-select { position: relative; display: flex; flex-direction: column; background: var(--black); border: 1px solid #333; border-radius: 8px; cursor: pointer; padding: 12px 15px; color: var(--white); font-family: 'Poppins', sans-serif; font-size: 1em; transition: border-color 0.3s; }
     .custom-select-wrapper.open .custom-select { border-color: var(--gold); border-bottom-left-radius: 0; border-bottom-right-radius: 0; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
     .custom-select-arrow { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); transition: transform 0.3s; color: var(--silver); }
     .custom-select-wrapper.open .custom-select-arrow { transform: translateY(-50%) rotate(180deg); color: var(--gold); }
-    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 1050 !important; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .custom-options { position: absolute; display: none; top: 100%; left: 0; right: 0; background: var(--black); border: 1px solid var(--gold); border-top: none; border-radius: 0 0 8px 8px; z-index: 10002 !important; max-height: 250px; overflow-y: auto; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     .custom-select-wrapper.open .custom-options { display: block; }
     .custom-option { padding: 12px 15px; color: var(--silver); cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; }
     .custom-option:hover { background-color: rgba(255, 215, 0, 0.1); color: var(--white); }
     .custom-option.selected { color: var(--gold); font-weight: bold; }
+
+    /* Elevation for section containing open dropdown to eliminate stacking context overlap */
+    .form-section:has(.custom-select-wrapper.open),
+    .form-section.select-open {
+        z-index: 10000 !important;
+        position: relative !important;
+        overflow: visible !important;
+    }
+
+    /* Live Username Feedback & Suggestions */
+    .feedback-msg { font-size: 0.85em; margin-top: 6px; font-weight: 500; }
+    .feedback-available { color: #2ecc71 !important; }
+    .feedback-taken { color: #e74c3c !important; }
+    .suggestion-tag {
+        display: inline-block;
+        background: rgba(255, 215, 0, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .suggestion-tag:hover {
+        background: var(--gold);
+        color: var(--black);
+    }
     
     /* Layout & Glassmorphism Adjustments */
     .edit-profile-layout {
@@ -382,7 +410,7 @@
             box-sizing: border-box;
             width: 100%;
             max-width: 100%;
-            overflow: hidden;
+            overflow: visible;
         }
         .form-section h2 {
             font-size: 1.3em;
@@ -579,7 +607,12 @@
                     
                     <div class="form-group">
                         <label for="username"><i class="fas fa-user" style="color: var(--gold); margin-right: 6px;"></i> Username</label>
-                        <input type="text" id="username" name="username" value="<%= user.username %>" required>
+                        <input type="text" id="username" name="username" value="<%= user.username %>" required autocomplete="off">
+                        <div id="profile-username-msg" class="feedback-msg" style="display: none;"></div>
+                        <div id="profile-suggestion-container" style="display: none; margin-top: 8px;">
+                            <span style="font-size: 0.82em; color: var(--silver); margin-right: 6px;">Suggestions:</span>
+                            <span id="profile-suggestion-list" style="display: inline-flex; gap: 6px; flex-wrap: wrap;"></span>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -1015,7 +1048,7 @@ GLOBAL|Earth
                         </div>
                     <% } %>
 
-                    <button type="submit" class="submit-button" style="margin-top: 30px;">
+                    <button type="submit" id="save-profile-btn" class="submit-button" style="margin-top: 30px;">
                         <i class="fas fa-save" style="margin-right: 8px;"></i> Save Profile Changes
                     </button>
                 </form>
@@ -1237,6 +1270,9 @@ GLOBAL|Earth
             <div id="gravatar-loading-indicator" style="display: none; margin-top: 20px; text-align: center; color: var(--gold); font-size: 0.9em;">
                 <i class="fas fa-spinner fa-spin" style="margin-right: 8px; font-size: 1.2em;"></i> Syncing image from Gravatar...
             </div>
+
+            <!-- Inline feedback banner inside modal -->
+            <div id="gravatar-inline-msg" style="display: none; margin-top: 15px; padding: 12px 14px; border-radius: 8px; font-size: 0.88em; text-align: left; line-height: 1.4;"></div>
         </div>
     </div>
 </div>
@@ -1254,9 +1290,14 @@ GLOBAL|Earth
             const customSelect = wrapper.querySelector('.custom-select');
             const selectedText = wrapper.querySelector('.selected-text');
             const optionsContainer = wrapper.querySelector('.custom-options');
+            const parentSection = wrapper.closest('.form-section');
 
             customSelect.addEventListener('click', (e) => {
-                wrapper.classList.toggle('open');
+                const isOpen = wrapper.classList.toggle('open');
+                if (parentSection) {
+                    if (isOpen) parentSection.classList.add('select-open');
+                    else parentSection.classList.remove('select-open');
+                }
                 e.stopPropagation(); 
             });
 
@@ -1270,10 +1311,12 @@ GLOBAL|Earth
                 wrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
                 optionEl.classList.add('selected');
                 wrapper.classList.remove('open');
+                if (parentSection) parentSection.classList.remove('select-open');
             });
 
             document.addEventListener('click', () => {
                 wrapper.classList.remove('open');
+                if (parentSection) parentSection.classList.remove('select-open');
             });
         }
 
@@ -1368,10 +1411,33 @@ GLOBAL|Earth
         }
 
         // Option 2: Fetch from Gravatar
+        const gravatarInlineMsg = document.getElementById('gravatar-inline-msg');
+        function showGravatarMsg(text, isError = false) {
+            if (!gravatarInlineMsg) return;
+            gravatarInlineMsg.style.display = 'block';
+            if (isError) {
+                gravatarInlineMsg.style.background = 'rgba(231, 76, 60, 0.15)';
+                gravatarInlineMsg.style.border = '1px solid rgba(231, 76, 60, 0.4)';
+                gravatarInlineMsg.style.color = '#ff8a80';
+                gravatarInlineMsg.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> ${text}`;
+            } else {
+                gravatarInlineMsg.style.background = 'rgba(46, 204, 113, 0.15)';
+                gravatarInlineMsg.style.border = '1px solid rgba(46, 204, 113, 0.4)';
+                gravatarInlineMsg.style.color = '#2ecc71';
+                gravatarInlineMsg.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> ${text}`;
+            }
+        }
+
         if (optionFetchGravatar) {
             optionFetchGravatar.addEventListener('click', async () => {
+                if (optionFetchGravatar.dataset.loading === 'true') return;
+                optionFetchGravatar.dataset.loading = 'true';
+                optionFetchGravatar.style.opacity = '0.6';
+                optionFetchGravatar.style.pointerEvents = 'none';
+
                 if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'block';
                 if (modalUploadPreview) modalUploadPreview.style.display = 'none';
+                if (gravatarInlineMsg) gravatarInlineMsg.style.display = 'none';
 
                 try {
                     const response = await fetch('/account/fetch-gravatar', {
@@ -1385,17 +1451,136 @@ GLOBAL|Earth
                     }
 
                     if (response.ok) {
-                        window.location.href = '/profile?success=' + encodeURIComponent('Gravatar image synced successfully.');
+                        showGravatarMsg('Gravatar image synced successfully! Reloading...');
+                        setTimeout(() => {
+                            window.location.href = '/profile?success=' + encodeURIComponent('Gravatar image synced successfully.');
+                        }, 900);
                     } else {
                         const errorData = await response.json().catch(() => null);
-                        alert(errorData?.error || 'Could not fetch Gravatar. Ensure your email is registered at gravatar.com');
+                        const msg = errorData?.error || 'Could not fetch Gravatar. Ensure your email is registered at gravatar.com';
+                        showGravatarMsg(msg, true);
                         if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'none';
+                        optionFetchGravatar.style.opacity = '1';
+                        optionFetchGravatar.style.pointerEvents = 'auto';
+                        optionFetchGravatar.dataset.loading = 'false';
                     }
                 } catch (err) {
                     console.error('Gravatar fetch error:', err);
-                    alert('Network error occurred while fetching Gravatar.');
+                    showGravatarMsg('Network error occurred while fetching Gravatar. Please check your internet connection.', true);
                     if (gravatarLoadingIndicator) gravatarLoadingIndicator.style.display = 'none';
+                    optionFetchGravatar.style.opacity = '1';
+                    optionFetchGravatar.style.pointerEvents = 'auto';
+                    optionFetchGravatar.dataset.loading = 'false';
                 }
+            });
+        }
+
+        // ==========================================
+        // 2B. LIVE REAL-TIME USERNAME CHECKER
+        // ==========================================
+        const usernameInput = document.getElementById('username');
+        const usernameMsg = document.getElementById('profile-username-msg');
+        const suggestionContainer = document.getElementById('profile-suggestion-container');
+        const suggestionList = document.getElementById('profile-suggestion-list');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        const currentUsername = <%- JSON.stringify(user.username) %>;
+        let usernameTypingTimer = null;
+
+        const reservedUsernames = [
+            'admin', 'administrator', 'gplmods', 'gpl_mods', 'support', 'owner',
+            'system', 'root', 'moderator', 'mod', 'official', 'bot', 'help', 'api'
+        ];
+
+        function isReservedUsername(name) {
+            return reservedUsernames.includes(name.trim().toLowerCase());
+        }
+
+        function isValidUsernameFormat(name) {
+            return /^[a-zA-Z0-9\s]+$/.test(name);
+        }
+
+        if (usernameInput && usernameMsg) {
+            usernameInput.addEventListener('input', () => {
+                clearTimeout(usernameTypingTimer);
+                const val = usernameInput.value.trim();
+
+                usernameMsg.className = 'feedback-msg';
+                usernameMsg.style.display = 'block';
+                if (suggestionContainer) suggestionContainer.style.display = 'none';
+                if (suggestionList) suggestionList.innerHTML = '';
+
+                if (val.length === 0) {
+                    usernameMsg.textContent = 'Username is required.';
+                    usernameMsg.classList.add('feedback-taken');
+                    if (saveProfileBtn) saveProfileBtn.disabled = true;
+                    return;
+                }
+
+                if (val.length < 3) {
+                    usernameMsg.textContent = 'Username must be at least 3 characters.';
+                    usernameMsg.classList.add('feedback-taken');
+                    if (saveProfileBtn) saveProfileBtn.disabled = true;
+                    return;
+                }
+
+                if (!isValidUsernameFormat(val)) {
+                    usernameMsg.textContent = 'Letters, numbers, and spaces only. No emojis or special symbols.';
+                    usernameMsg.classList.add('feedback-taken');
+                    if (saveProfileBtn) saveProfileBtn.disabled = true;
+                    return;
+                }
+
+                if (isReservedUsername(val)) {
+                    usernameMsg.textContent = 'That username is reserved and cannot be used.';
+                    usernameMsg.classList.add('feedback-taken');
+                    if (saveProfileBtn) saveProfileBtn.disabled = true;
+                    return;
+                }
+
+                // If user didn't change their current username
+                if (val.toLowerCase() === currentUsername.toLowerCase()) {
+                    usernameMsg.textContent = 'Current username';
+                    usernameMsg.classList.add('feedback-available');
+                    if (saveProfileBtn) saveProfileBtn.disabled = false;
+                    return;
+                }
+
+                usernameMsg.textContent = 'Checking availability...';
+                usernameMsg.style.color = 'var(--silver)';
+
+                usernameTypingTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/check-username?username=${encodeURIComponent(val)}`);
+                        const data = await response.json();
+
+                        if (data.available) {
+                            usernameMsg.textContent = data.message || 'Username is available!';
+                            usernameMsg.classList.add('feedback-available');
+                            if (saveProfileBtn) saveProfileBtn.disabled = false;
+                        } else {
+                            usernameMsg.textContent = data.message || 'Username is taken.';
+                            usernameMsg.classList.add('feedback-taken');
+                            if (saveProfileBtn) saveProfileBtn.disabled = true;
+
+                            if (data.suggestions && data.suggestions.length > 0 && suggestionContainer && suggestionList) {
+                                suggestionContainer.style.display = 'block';
+                                data.suggestions.forEach(suggestion => {
+                                    const tag = document.createElement('span');
+                                    tag.className = 'suggestion-tag';
+                                    tag.textContent = suggestion;
+                                    tag.addEventListener('click', () => {
+                                        usernameInput.value = suggestion;
+                                        usernameInput.dispatchEvent(new Event('input'));
+                                    });
+                                    suggestionList.appendChild(tag);
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        usernameMsg.textContent = 'Error checking username availability.';
+                        usernameMsg.classList.add('feedback-taken');
+                    }
+                }, 500);
             });
         }
 

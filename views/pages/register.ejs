@@ -179,6 +179,16 @@
         @media (max-width: 480px) {
             .auth-container { padding: 25px; border-radius: 0; border: none; box-shadow: none; }
             .auth-page-wrapper { padding: 0; align-items: flex-start; }
+            .custom-calendar-popup {
+                position: absolute !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                left: 0 !important;
+                right: 0 !important;
+                transform: none !important;
+                box-sizing: border-box !important;
+                z-index: 99999 !important;
+            }
         }
 /* New Styles for Username Suggestions */
         .username-feedback {
@@ -473,8 +483,8 @@
                 <form id="signup-form" action="/register" method="POST">
                     <!-- UPDATED Username Group -->
                     <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" name="username" placeholder="e.g. YourName" required autocomplete="off">
+                        <label for="username">Username <span style="color: var(--error); font-weight: 600; font-size: 0.85em;">* Required</span></label>
+                        <input type="text" id="username" name="username" placeholder="e.g. YourName" required autocomplete="off" value="<%= (typeof formData !== 'undefined' && formData && formData.username) ? formData.username : '' %>">
                         
                         <!-- NEW: Feedback and Suggestions -->
                         <span id="username-msg" class="username-feedback"></span>
@@ -486,13 +496,13 @@
 
 
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="youremail@example.com" required>
+                        <label for="email">Email <span style="color: var(--error); font-weight: 600; font-size: 0.85em;">* Required</span></label>
+                        <input type="email" id="email" name="email" placeholder="youremail@example.com" required value="<%= (typeof formData !== 'undefined' && formData && formData.email) ? formData.email : '' %>">
                         <p style="font-size: 0.8rem; color: var(--silver); margin-top: 5px;"><i class="fas fa-shield-alt" style="color: var(--gold); margin-right: 4px;"></i> Disposable &amp; temporary email addresses are not allowed.</p>
                     </div>
 
                     <div class="form-group">
-                        <label for="password">Password</label>
+                        <label for="password">Password <span style="color: var(--error); font-weight: 600; font-size: 0.85em;">* Required</span></label>
                         <div class="password-input-wrapper">
                             <input type="password" id="password" name="password" placeholder="********" required>
                             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password', this)" aria-label="Toggle password visibility">
@@ -506,7 +516,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="confirmPassword">Confirm Password</label>
+                        <label for="confirmPassword">Confirm Password <span style="color: var(--error); font-weight: 600; font-size: 0.85em;">* Required</span></label>
                         <div class="password-input-wrapper">
                             <input type="password" id="confirmPassword" name="confirmPassword" placeholder="********" required>
                             <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirmPassword', this)" aria-label="Toggle confirm password visibility">
@@ -516,9 +526,9 @@
                     </div>
                     <!-- ======== CUSTOM CALENDAR UI FOR DATE OF BIRTH ======== -->
                     <div class="form-group">
-                        <label for="dob-calendar-trigger"><i class="fas fa-calendar-alt" style="color: var(--gold); margin-right: 6px;"></i> Date of Birth</label>
+                        <label for="dob-calendar-trigger"><i class="fas fa-calendar-alt" style="color: var(--gold); margin-right: 6px;"></i> Date of Birth <span style="color: var(--error); font-weight: 600; font-size: 0.85em;">* Required</span></label>
                         <div class="custom-calendar-container" id="dob-calendar-container">
-                            <input type="hidden" name="dateOfBirth" id="dateOfBirth" required>
+                            <input type="hidden" name="dateOfBirth" id="dateOfBirth" required value="<%= (typeof formData !== 'undefined' && formData && formData.dateOfBirth) ? formData.dateOfBirth : '' %>">
                             
                             <div class="custom-calendar-trigger" id="dob-calendar-trigger" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
                                 <span class="dob-display-text placeholder" id="dob-display-text">Select your Date of Birth</span>
@@ -569,7 +579,7 @@
                     <!-- ======== NEW: REFERRAL CODE INPUT ======== -->
                     <div class="form-group">
                         <label for="referralCode">Referral Code <span style="color: var(--silver); font-weight: normal;">(Optional)</span></label>
-                        <input type="text" id="referralCode" name="referralCode" placeholder="Enter code if you have one" style="text-transform: uppercase;">
+                        <input type="text" id="referralCode" name="referralCode" placeholder="Enter code if you have one" style="text-transform: uppercase;" value="<%= (typeof formData !== 'undefined' && formData && formData.referralCode) ? formData.referralCode : '' %>">
                     </div>
                     <!-- ========================================== -->
 
@@ -653,6 +663,9 @@
         const submitBtn = document.getElementById('register-submit-btn');
         let typingTimer;
 
+        const reservedUsernames = ['admin', 'administrator', 'root', 'support', 'owner', 'gplmods', 'moderator', 'mod', 'official', 'staff', 'system', 'help'];
+        const validNameRegex = /^[a-zA-Z0-9\s]+$/;
+
         usernameInput.addEventListener('input', function() {
             clearTimeout(typingTimer);
             const val = this.value.trim();
@@ -670,6 +683,22 @@
                     usernameMsg.classList.add('feedback-taken');
                     submitBtn.disabled = true;
                 }
+                return;
+            }
+
+            // Real-time character & emoji check
+            if (!validNameRegex.test(val)) {
+                usernameMsg.textContent = 'Username can only contain letters, numbers, and spaces. No emojis or symbols.';
+                usernameMsg.classList.add('feedback-taken');
+                submitBtn.disabled = true;
+                return;
+            }
+
+            // Reserved names check
+            if (reservedUsernames.includes(val.toLowerCase())) {
+                usernameMsg.textContent = 'That username is reserved and cannot be used.';
+                usernameMsg.classList.add('feedback-taken');
+                submitBtn.disabled = true;
                 return;
             }
 

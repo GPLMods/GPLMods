@@ -6520,7 +6520,12 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
     try {
         const { username, email, password, dateOfBirth, referralCode} = req.body;
         if (!username || !email || !password || !dateOfBirth) {
-            return res.status(400).send("All fields are required, including Date of Birth.");
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: "All fields are required, including Date of Birth.",
+                formData: req.body
+            });
         }
 
         const birthDate = new Date(`${dateOfBirth}T00:00:00`);
@@ -6533,7 +6538,8 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
             return res.status(400).render('pages/register', {
                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
                 message: null,
-                error: 'Please enter a valid date of birth.'
+                error: 'Please enter a valid date of birth.',
+                formData: req.body
             });
         }
 
@@ -6541,23 +6547,39 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
             return res.status(400).render('pages/register', {
                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
                 message: null,
-                error: 'You are not old enough to register. You must be at least 13 years old.'
+                error: 'You are not old enough to register. You must be at least 13 years old.',
+                formData: req.body
             });
         }
         
         // Validation Check
         if (!isValidName(username)) {
-            return res.status(400).send("Username can only contain letters, numbers, and spaces. No emojis.");
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: "Username can only contain letters, numbers, and spaces. No emojis.",
+                formData: req.body
+            });
         }
 
         // Security Check (Reserved Names)
         if (isNameReserved(username)) {
-            return res.status(400).send("That username is reserved and cannot be used.");
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: "That username is reserved and cannot be used.",
+                formData: req.body
+            });
         }
 
         // Profanity Check
         if (global.profanityFilter.isProfane(username)) {
-             return res.status(400).send("That username contains inappropriate language.");
+             return res.status(400).render('pages/register', {
+                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                 message: null,
+                 error: "That username contains inappropriate language.",
+                 formData: req.body
+             });
         }
 
         // Anti-Temp Mail Check
@@ -6566,13 +6588,19 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
             return res.status(400).render('pages/register', { 
                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, 
                 message: null,
-                error: "Registration failed. Disposable or temporary email addresses are not allowed. Please use a valid, permanent email." 
+                error: "Registration failed. Disposable or temporary email addresses are not allowed. Please use a valid, permanent email.",
+                formData: req.body
             });
         }
 
         let user = await User.findOne({ email: email.toLowerCase() });
         if (user && user.isVerified) {
-            return res.status(400).send("An account with this email already exists.");
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: "An account with this email already exists.",
+                formData: req.body
+            });
         }
 
         // Generate Unique Username (Discriminator)
@@ -6685,7 +6713,7 @@ app.post('/verify-otp', async (req, res, next) => {
         // Log them in and finalize session
         req.login(user, (err) => {
             if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
-            finalizeLogin(req, res, user, '/profile?success=Account verified successfully!');
+            finalizeLogin(req, res, user, '/home?success=Account verified successfully!');
         });
 
     } catch (error) {
@@ -9225,6 +9253,136 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     }
 }); // <--- ADD THIS CLOSING BRACE AND PARENTHESIS HERE
 
+// ==========================================
+// CLOUD LINK DIRECT CONVERTER UTILITY
+// ==========================================
+function convertCloudToDirectLink(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return null;
+    const url = rawUrl.trim();
+    if (!url) return null;
+
+    // 1. Dropbox
+    if (/dropbox\.com/i.test(url)) {
+        let direct = url;
+        if (direct.includes('dl=0')) {
+            direct = direct.replace('dl=0', 'dl=1');
+        } else if (!direct.includes('dl=1')) {
+            direct += (direct.includes('?') ? '&' : '?') + 'dl=1';
+        }
+        return {
+            providerName: 'Dropbox (Direct)',
+            directUrl: direct,
+            originalUrl: url
+        };
+    }
+
+    // 2. Google Drive
+    const gDriveMatch = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/i);
+    if (gDriveMatch && gDriveMatch[1]) {
+        return {
+            providerName: 'Google Drive (Direct)',
+            directUrl: `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`,
+            originalUrl: url
+        };
+    }
+
+    // 3. OneDrive
+    if (/onedrive\.live\.com/i.test(url) || /1drv\.ms/i.test(url)) {
+        let direct = url;
+        if (direct.includes('/redir?')) {
+            direct = direct.replace('/redir?', '/download?');
+        } else if (!direct.includes('download=1')) {
+            direct += (direct.includes('?') ? '&' : '?') + 'download=1';
+        }
+        return {
+            providerName: 'OneDrive (Direct)',
+            directUrl: direct,
+            originalUrl: url
+        };
+    }
+
+    // 4. Box
+    const boxMatch = url.match(/app\.box\.com\/s\/([a-zA-Z0-9_-]+)/i);
+    if (boxMatch && boxMatch[1]) {
+        return {
+            providerName: 'Box (Direct)',
+            directUrl: `https://app.box.com/shared/static/${boxMatch[1]}`,
+            originalUrl: url
+        };
+    }
+
+    // 5. MediaFire
+    if (/mediafire\.com/i.test(url)) {
+        return {
+            providerName: 'MediaFire',
+            directUrl: url,
+            originalUrl: url
+        };
+    }
+
+    // 6. Mega
+    if (/mega\.nz/i.test(url) || /mega\.io/i.test(url)) {
+        return {
+            providerName: 'Mega Cloud',
+            directUrl: url,
+            originalUrl: url
+        };
+    }
+
+    // 7. Proton Drive
+    if (/drive\.proton\.me/i.test(url) || /proton\.me\/drive/i.test(url)) {
+        return {
+            providerName: 'Proton Drive',
+            directUrl: url,
+            originalUrl: url
+        };
+    }
+
+    return null;
+}
+
+// ==========================================
+// MIN OS VERSION FORMATTING HELPER
+// ==========================================
+function formatMinOsVersion(rawOs, platformHint = '') {
+    if (!rawOs || typeof rawOs !== 'string') return '';
+    let cleaned = rawOs.replace(/<[^>]*>?/gm, '').trim();
+    if (!cleaned) return '';
+
+    // Check iOS
+    if (platformHint === 'appstore' || platformHint === 'ios' || /ios|ipad/i.test(cleaned)) {
+        const verMatch = cleaned.match(/(\d+(?:\.\d+)?)/);
+        if (verMatch) {
+            return `iOS ${verMatch[1]} Or Above`;
+        }
+        return `iOS ${cleaned} Or Above`;
+    }
+
+    // Check Android
+    if (platformHint === 'playstore' || platformHint === 'android' || /android/i.test(cleaned)) {
+        if (/varies with device/i.test(cleaned)) return 'Android 8.0 Or Above';
+        const verMatch = cleaned.match(/(\d+(?:\.\d+)?)/);
+        if (verMatch) {
+            return `Android ${verMatch[1]} Or Above`;
+        }
+        return `Android ${cleaned} Or Above`;
+    }
+
+    // Check Windows (Steam, Epic, Windows)
+    if (platformHint === 'steam' || platformHint === 'epic' || platformHint === 'windows' || /windows|win/i.test(cleaned)) {
+        if (/windows\s*11|win\s*11/i.test(cleaned)) return 'Windows 11 Or Above';
+        if (/windows\s*10|win\s*10/i.test(cleaned)) return 'Windows 10 Or Above';
+        if (/windows\s*8|win\s*8/i.test(cleaned)) return 'Windows 8.1 Or Above';
+        if (/windows\s*7|win\s*7/i.test(cleaned)) return 'Windows 7 Or Above';
+        const verMatch = cleaned.match(/windows\s*(\d+)/i);
+        if (verMatch) return `Windows ${verMatch[1]} Or Above`;
+        return 'Windows 10 Or Above';
+    }
+
+    if (/or above/i.test(cleaned)) return cleaned;
+    return `${cleaned} Or Above`;
+}
+
 app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
     try {
         const fileId = req.params.fileId;
@@ -9753,7 +9911,22 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         }
 
         if (formData.directDownloadUrl !== undefined) {
-            file.directDownloadUrl = directDownloadUrlValue;
+            let finalDirectUrl = directDownloadUrlValue;
+            if (finalDirectUrl) {
+                const cloudConverted = convertCloudToDirectLink(finalDirectUrl);
+                if (cloudConverted) {
+                    finalDirectUrl = cloudConverted.directUrl;
+                    if (!file.alternativeLinks) file.alternativeLinks = [];
+                    const exists = file.alternativeLinks.some(link => link.url === cloudConverted.directUrl || link.url === cloudConverted.originalUrl);
+                    if (!exists) {
+                        file.alternativeLinks.push({
+                            providerName: cloudConverted.providerName,
+                            url: cloudConverted.directUrl
+                        });
+                    }
+                }
+            }
+            file.directDownloadUrl = finalDirectUrl;
         }
         if (formData.iosPackageId !== undefined) {
             file.iosPackageId = formData.iosPackageId;
@@ -9847,12 +10020,15 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const LARGE_FILE_THRESHOLD = 640 * 1024 * 1024;
         if (actionType === 'submit') {
             if (isDistributor && !directDownloadUrlValue) {
+                await file.save();
                 return res.redirect(`/mods/${file._id}/edit?error=Distributor uploads must include a direct download link before publishing.`);
             }
             if (currentFileSize > LARGE_FILE_THRESHOLD && !manualFileScanUrlValue && !manualSiteScanUrlValue) {
+                await file.save();
                 return res.redirect(`/mods/${file._id}/edit?error=Files larger than 640MB require a VirusTotal or manual scan URL before publishing.`);
             }
             if (!file.screenshotKeys || file.screenshotKeys.length === 0) {
+                await file.save();
                 return res.redirect(`/mods/${file._id}/edit?error=At least one screenshot is required to submit the mod.`);
             }
         }
@@ -10100,6 +10276,23 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
         }
 
+        // --- CLOUD LINK CONVERTER & MIRRORS ---
+        let finalDirectDownloadUrl = directDownloadUrlValue || '';
+        let currentAltLinks = Array.isArray(fileToUpdate.alternativeLinks) ? [...fileToUpdate.alternativeLinks] : [];
+        if (finalDirectDownloadUrl) {
+            const cloudConverted = convertCloudToDirectLink(finalDirectDownloadUrl);
+            if (cloudConverted) {
+                finalDirectDownloadUrl = cloudConverted.directUrl;
+                const exists = currentAltLinks.some(link => link.url === cloudConverted.directUrl || link.url === cloudConverted.originalUrl);
+                if (!exists) {
+                    currentAltLinks.push({
+                        providerName: cloudConverted.providerName,
+                        url: cloudConverted.directUrl
+                    });
+                }
+            }
+        }
+
         const validationErrors = getSubmissionValidationErrors({
             actionType,
             formData,
@@ -10111,15 +10304,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             isDistributor,
             ageRating: req.body.ageRating,
             fileSize: fileToUpdate.fileSize,
-            directDownloadUrlValue,
+            directDownloadUrlValue: finalDirectDownloadUrl,
             manualFileScanUrlValue,
             manualSiteScanUrlValue,
             isValidNameFn: isValidModName
         });
-
-        if (actionType === 'submit' && validationErrors.length > 0) {
-            return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(validationErrors[0])}`);
-        }
 
         // --- Sanitize Mod Details ---
         const safeClean = (value) => {
@@ -10184,7 +10373,8 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             category: formData.modPlatform || fileToUpdate.category,
             license: formData.modLicense || null,
             platforms: formData.modCategory ? [formData.modCategory] : fileToUpdate.platforms,
-            directDownloadUrl: directDownloadUrlValue || '',
+            directDownloadUrl: finalDirectDownloadUrl || '',
+            alternativeLinks: currentAltLinks,
             externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
             architectures: archData,
             minOsVersion: formData.minOsVersion || '',
@@ -10196,6 +10386,17 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             requiresDisableAntivirus,
             status: finalStatus
         };
+
+        if (actionType === 'submit' && validationErrors.length > 0) {
+            // CRITICAL FIX: Persist all entered fields as a draft before redirecting on error!
+            // Never wipe or reset the user's hard work!
+            try {
+                await File.findByIdAndUpdate(fileId, { ...updateData, status: 'draft' });
+            } catch (saveDraftErr) {
+                console.error("Draft save on submission validation error failed:", saveDraftErr);
+            }
+            return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(validationErrors[0])}`);
+        }
 
         updateData.isMultiPart = isMultiPart;
         if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
@@ -10576,7 +10777,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.description = normalizeText(app.description);
             data.developer = normalizeText(app.developer);
             data.whatsNew = normalizeText(app.recentChanges);
-            data.minOsVersion = normalizeText(app.androidVersionText || app.androidVersion);
+            data.minOsVersion = formatMinOsVersion(app.androidVersionText || app.androidVersion, 'android');
             data.ageRating = normalizeAgeRating(app.contentRating);
             data.version = normalizeText(app.version);
             data.tags = (app.categories || [])
@@ -10609,7 +10810,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.description = normalizeText(app.description);
             data.developer = normalizeText(app.developer);
             data.whatsNew = normalizeText(app.releaseNotes);
-            data.minOsVersion = normalizeText(app.requiredOsVersion ? `iOS ${app.requiredOsVersion}` : '');
+            data.minOsVersion = formatMinOsVersion(app.requiredOsVersion, 'ios');
             data.ageRating = normalizeAgeRating(app.contentRating);
             data.version = normalizeText(app.version);
             data.tags = (app.genres || [])
@@ -10647,7 +10848,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.title = normalizeText(game.name);
             data.description = normalizeText(game.detailed_description || game.about_the_game || game.short_description);
             data.developer = normalizeText((game.developers || [])[0]);
-            data.minOsVersion = normalizeText((game.pc_requirements && game.pc_requirements.minimum) || '');
+            data.minOsVersion = formatMinOsVersion((game.pc_requirements && game.pc_requirements.minimum) || '', 'windows');
             data.ageRating = game.required_age ? normalizeAgeRating(`${game.required_age}+`) : '3+';
             data.version = '';
             data.tags = [...(game.genres || []).map(genre => genre.description), ...(game.categories || []).map(category => category.description)]
@@ -10689,7 +10890,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
             data.title = normalizeText(epicProduct.productName || about.title || epicData.seo?.title);
             data.description = normalizeText(about.description || about.shortDescription || epicData.seo?.description);
             data.developer = normalizeText((meta.developer || [])[0] || about.developerAttribution);
-            data.minOsVersion = normalizeText(minimumOs);
+            data.minOsVersion = formatMinOsVersion(minimumOs, 'windows');
             data.ageRating = '3+';
             data.version = '';
             data.tags = (meta.tags || [])
@@ -11129,7 +11330,7 @@ app.get('/api/check-username', async (req, res) => {
             username: { $regex: new RegExp(`^${requestedName}$`, 'i') } 
         });
 
-        if (!exactMatch) {
+        if (!exactMatch || (req.session && req.session.userId && exactMatch._id.toString() === req.session.userId.toString())) {
             return res.json({ available: true, message: 'Username is available!' });
         }
 
@@ -11341,7 +11542,7 @@ async function checkAndUpdateFileVirusTotal(fileId) {
         if (!vtId) return null;
 
         // If already completed and has full stats, return immediately
-        if (file.virusTotalScanDate && file.virusTotalId && (file.virusTotalTotalScans > 0 || file.virusTotalPositiveCount >= 0)) {
+        if (file.virusTotalScanDate && file.virusTotalId && file.virusTotalTotalScans > 0) {
             return {
                 status: 'completed',
                 stats: {
@@ -11399,19 +11600,29 @@ async function checkAndUpdateFileVirusTotal(fileId) {
         if (isCompleted && stats) {
             const pos = (stats.malicious || 0) + (stats.suspicious || 0);
             const total = (stats.harmless || 0) + (stats.malicious || 0) + (stats.suspicious || 0) + (stats.undetected || 0);
-            await File.findByIdAndUpdate(fileId, {
-                virusTotalScanDate: new Date(),
-                virusTotalPositiveCount: pos,
-                virusTotalTotalScans: total,
-                virusTotalId: trueHash || vtId
-            });
-            return {
-                status: 'completed',
-                stats: stats,
-                positiveCount: pos,
-                totalScans: total,
-                id: trueHash || vtId
-            };
+            if (total > 0) {
+                await File.findByIdAndUpdate(fileId, {
+                    virusTotalScanDate: new Date(),
+                    virusTotalPositiveCount: pos,
+                    virusTotalTotalScans: total,
+                    virusTotalId: trueHash || vtId
+                });
+                return {
+                    status: 'completed',
+                    stats: stats,
+                    positiveCount: pos,
+                    totalScans: total,
+                    id: trueHash || vtId
+                };
+            } else {
+                return {
+                    status: 'queued',
+                    stats: stats,
+                    positiveCount: 0,
+                    totalScans: 0,
+                    id: trueHash || vtId
+                };
+            }
         }
 
         return { status: vtResponse?.data?.data?.attributes?.status || 'pending' };
@@ -11502,7 +11713,7 @@ function pollVirusTotalInBackground(fileId, maxAttempts = 12, intervalMs = 15000
         attempts++;
         try {
             const res = await checkAndUpdateFileVirusTotal(fileId);
-            if (res && res.status === 'completed') {
+            if (res && res.status === 'completed' && res.totalScans > 0) {
                 clearInterval(interval);
             } else if (attempts >= maxAttempts) {
                 clearInterval(interval);
@@ -11511,6 +11722,18 @@ function pollVirusTotalInBackground(fileId, maxAttempts = 12, intervalMs = 15000
             clearInterval(interval);
         }
     }, intervalMs);
+
+    // Explicit 120-second automatic fallback check
+    setTimeout(async () => {
+        try {
+            const fileCheck = await File.findById(fileId);
+            if (fileCheck && (!fileCheck.virusTotalTotalScans || fileCheck.virusTotalTotalScans === 0)) {
+                await checkAndUpdateFileVirusTotal(fileId);
+            }
+        } catch (err) {
+            console.error("120s VT background fallback error:", err.message);
+        }
+    }, 120000);
 }
 
 // Expose VT functions globally for AdminJS and background workers

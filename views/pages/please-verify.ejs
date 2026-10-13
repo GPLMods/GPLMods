@@ -40,13 +40,38 @@
             text-align: center;
         }
         .logo-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-size: 1.8em;
             font-weight: 700;
             color: var(--gold);
             text-decoration: none;
-            display: block;
+        }
+        .logo-texture-img {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 16px rgba(255, 215, 0, 0.45);
+            flex-shrink: 0;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .logo-area:hover .logo-texture-img {
+            transform: scale(1.05);
+            box-shadow: 0 0 22px rgba(255, 215, 0, 0.65);
+        }
+        .logo-gold-glow {
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 22px rgba(255, 215, 0, 0.3);
+        }
+        .logo-silver-glow {
+            color: #e2e8f0;
+            text-shadow: 0 0 10px rgba(226, 232, 240, 0.55), 0 0 22px rgba(226, 232, 240, 0.25);
         }
         
         .form-container h2 { 
@@ -153,7 +178,10 @@
 <body>
 
     <div class="auth-container">
-        <a href="/" class="logo-area"><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></a>
+        <a href="/" class="logo-area">
+            <img src="/images/team-logo.png" alt="GPL Mods Logo" class="logo-texture-img">
+            <span><span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span></span>
+        </a>
         
         <section class="form-container">
             <h2>Check Your Email</h2>
