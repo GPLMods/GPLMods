@@ -57,10 +57,15 @@
             box-sizing: border-box;
         }
 
-        .ai-jump-pill:hover {
-            background: var(--gold);
-            color: #000;
+        .ai-jump-pill:hover,
+        .ai-jump-pill:focus,
+        .ai-jump-pill:active {
+            background: rgba(255, 215, 0, 0.12);
+            color: var(--gold);
+            border-color: var(--gold);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
             transform: translateY(-2px);
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* In-Page Fast Filter Bar */
@@ -303,11 +308,15 @@
             box-sizing: border-box;
         }
 
-        .ai-tag-grid li a:hover {
-            background: var(--gold);
-            color: #000;
+        .ai-tag-grid li a:hover,
+        .ai-tag-grid li a:focus,
+        .ai-tag-grid li a:active {
+            background: rgba(255, 215, 0, 0.12);
+            color: var(--gold);
             border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.25);
             transform: translateY(-2px);
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Responsive Breakpoints */

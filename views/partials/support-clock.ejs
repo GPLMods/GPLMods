@@ -231,8 +231,14 @@
     .ist-pulse-dot {
         width: 10px;
         height: 10px;
-        border-radius: 50%;
+        min-width: 10px;
+        min-height: 10px;
+        max-width: 10px;
+        max-height: 10px;
+        aspect-ratio: 1 / 1;
+        border-radius: 50% !important;
         display: inline-block;
+        flex-shrink: 0;
     }
 
     .ist-live-status-pill.online .ist-pulse-dot {

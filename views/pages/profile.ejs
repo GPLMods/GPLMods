@@ -1234,11 +1234,11 @@ GLOBAL|Earth
                     <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 215, 0, 0.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                         <i class="fas fa-cloud-upload-alt" style="color: var(--gold); font-size: 1.4em;"></i>
                     </div>
-                    <div style="flex-grow: 1;">
+                    <div style="flex-grow: 1; min-width: 0;">
                         <div style="font-weight: 700; color: var(--white); margin-bottom: 3px; font-size: 1em;">Upload from Device / Cloud</div>
                         <div style="color: var(--silver); font-size: 0.82em; line-height: 1.4;">Select an image file (PNG, JPG, WebP) from your device or cloud storage</div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em;"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em; flex-shrink: 0; margin-left: auto;"></i>
                 </div>
 
                 <!-- Option 2: Fetch from Gravatar -->
@@ -1248,11 +1248,11 @@ GLOBAL|Earth
                             <path d="M12 24C5.383 24 0 18.617 0 12c0-3.203 1.248-6.217 3.513-8.486 1.059-1.059 2.903-1.06 3.962 0a2.804 2.804 0 0 1 0 3.961A6.354 6.354 0 0 0 5.601 12c0 3.528 2.871 6.398 6.399 6.398s6.399-2.871 6.399-6.399A6.414 6.414 0 0 0 14.8 6.244v4.606c0 1.543-1.256 2.798-2.8 2.798s-2.8-1.255-2.8-2.798V2.8C9.2 1.256 10.456 0 12 0c6.617 0 12 5.383 12 12s-5.383 12-12 12zM5.494 3.692c-.481 0-.934.188-1.274.528A10.945 10.945 0 0 0 1 12c0 6.065 4.935 11 11 11s11-4.935 11-11S18.065 1 12 1c-.992 0-1.8.808-1.8 1.8v8.05c0 .991.808 1.798 1.8 1.798s1.8-.807 1.8-1.798V5.493a.5.5 0 0 1 .667-.471A7.416 7.416 0 0 1 19.399 12c0 4.08-3.319 7.399-7.399 7.399S4.601 16.079 4.601 12c0-1.978.77-3.836 2.167-5.232a1.803 1.803 0 0 0-1.274-3.076z"></path>
                         </svg>
                     </div>
-                    <div style="flex-grow: 1;">
+                    <div style="flex-grow: 1; min-width: 0;">
                         <div style="font-weight: 700; color: var(--white); margin-bottom: 3px; font-size: 1em;">Fetch from Gravatar</div>
-                        <div style="color: var(--silver); font-size: 0.82em; line-height: 1.4;">Automatically sync avatar linked to <span style="color: var(--gold); font-weight: 600;"><%= user.email %></span></div>
+                        <div style="color: var(--silver); font-size: 0.82em; line-height: 1.4; word-break: break-word;">Automatically sync avatar linked to <span style="color: var(--gold); font-weight: 600; word-break: break-all;"><%= user.email %></span></div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em;"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--silver); font-size: 0.9em; flex-shrink: 0; margin-left: auto;"></i>
                 </div>
             </div>
 
