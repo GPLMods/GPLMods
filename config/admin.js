@@ -577,7 +577,7 @@ async function createAdminRouter() {
                         modFeatures: { type: 'richtext' }, 
                         whatsNew: { type: 'richtext' },
                         importantNote: { type: 'richtext' }, 
-                        installationInstructions: { type: 'textarea', description: 'Step-by-step instructions for installing this mod.' },
+                        installationInstructions: { type: 'richtext', description: 'Step-by-step instructions for installing this mod.' },
                         showInRepo: { description: 'Uncheck this to hide this mod from F-Droid, Sileo, AltStore, repo etc.' },
                         iosPackageId: { description: 'Optional: For iOS Jailbroken (DEB) tweaks ONLY.' },
                         isEditorsChoice: { description: 'Check this to feature this mod in the Editor\'s Choice banner.' },
@@ -867,9 +867,9 @@ async function createAdminRouter() {
                     showProperties: ['title', 'targetField', 'category', 'content', 'isActive', 'sortOrder', 'createdAt', 'updatedAt'],
                     properties: {
                         content: {
-                            type: 'textarea',
+                            type: 'richtext',
                             props: {
-                                rows: 8
+                                rows: 10
                             }
                         },
                         targetField: {
@@ -1101,7 +1101,7 @@ async function createAdminRouter() {
                     listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
                     showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
                     editProperties: ['name', 'slug', 'shortDescription', 'content'],
-                    properties: { content: { type: 'textarea' }, shortDescription: { type: 'textarea' } }
+                    properties: { content: { type: 'richtext' }, shortDescription: { type: 'textarea' } }
                 }
             },
             {

@@ -500,7 +500,7 @@ function hasEmoji(str) {
     return emojiRegex.test(str);
 }
 
-// --- HELPER: VALIDATE MOD NAMES (Letters, Numbers, Spaces, ':', and '-' ONLY) ---
+// --- HELPER: VALIDATE MOD NAMES (Letters, Numbers, Spaces, ':', '-', and '&' ONLY) ---
 function isValidModName(str) {
     if (!str || typeof str !== 'string') return false;
     const trimmed = str.trim();
@@ -509,8 +509,8 @@ function isValidModName(str) {
     if (!/[a-zA-Z0-9]/.test(trimmed)) return false;
     // Strictly forbids emojis
     if (hasEmoji(trimmed)) return false;
-    // Only letters, numbers, spaces, colons (:), and hyphens (-)
-    const regex = /^[a-zA-Z0-9 :\-]+$/;
+    // Only letters, numbers, spaces, colons (:), hyphens (-), and ampersands (&)
+    const regex = /^[a-zA-Z0-9 :\-&]+$/;
     return regex.test(trimmed);
 }
 
@@ -525,9 +525,9 @@ function getModNameValidationError(str) {
     if (hasEmoji(trimmed)) {
         return 'Emojis are not allowed in Mod Name.';
     }
-    if (!/^[a-zA-Z0-9 :\-]+$/.test(trimmed)) {
-        const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-]/i.test(c)))).join(' ');
-        return `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', and '-' are allowed.`;
+    if (!/^[a-zA-Z0-9 :\-&]+$/.test(trimmed)) {
+        const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&]/i.test(c)))).join(' ');
+        return `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', '-', and '&' are allowed.`;
     }
     return null;
 }
@@ -11216,7 +11216,7 @@ app.get('/api/search/suggestions', async (req, res) => {
             c.category.toLowerCase().includes(rawQuery.toLowerCase())
         );
 
-        // Competitor & trending quick search tags
+        // Competitor alternative quick search tags
         const competitorDictionary = [
             { trigger: 'happy', title: 'HappyMod Safe Alternative (VirusTotal Scanned)', url: '/search?q=happymod+alternative' },
             { trigger: 'iosgod', title: 'iOSGods Safe Alternative (No Revoke IPAs)', url: '/category?cat=ios' },
@@ -11225,12 +11225,7 @@ app.get('/api/search/suggestions', async (req, res) => {
             { trigger: 'apptester', title: 'AppTesters Sideloading Repo Alternative', url: '/repos' },
             { trigger: 'kemo', title: 'Kemo Hacks iOS Jailbreak Alternative', url: '/jailbreak-repos' },
             { trigger: 'shinead', title: 'ShineAds GPL Alternative (Free GPL Themes)', url: '/category?cat=wordpress' },
-            { trigger: 'onehack', title: 'OneHack Community Alternative', url: '/community' },
-            { trigger: 'delta', title: 'Roblox Delta Executor iOS IPA', url: '/search?q=delta+executor' },
-            { trigger: 'minecraft', title: 'Minecraft PE iOS & Android Mods', url: '/search?q=minecraft' },
-            { trigger: 'lightroom', title: 'Adobe Lightroom Pro Mod APK', url: '/search?q=lightroom' },
-            { trigger: 'capcut', title: 'CapCut Pro Mod APK (Unlocked Filters)', url: '/search?q=capcut' },
-            { trigger: 'spotify', title: 'Spotify Premium Mod (No Ads)', url: '/search?q=spotify' }
+            { trigger: 'onehack', title: 'OneHack Community Alternative', url: '/community' }
         ];
 
         const matchedCompetitors = competitorDictionary.filter(item =>
@@ -11279,23 +11274,17 @@ app.get('/api/trending-searches', async (req, res) => {
         .sort({ downloads: -1 }) 
         .limit(6); 
 
-        const dbTrending = trendingFiles.map(file => file.name);
-        const curatedTrending = [
-            'Minecraft PE',
-            'Roblox Delta Executor',
-            'Lightroom Pro',
-            'CapCut Mod APK',
-            'Spotify Premium',
-            'HappyMod Alternative',
-            'iOSGods Alternative'
-        ];
+        const dbTrending = trendingFiles.map(file => file.name).filter(Boolean);
+        if (dbTrending.length > 0) {
+            return res.json(dbTrending);
+        }
 
-        const combinedTrending = [...new Set([...dbTrending, ...curatedTrending])].slice(0, 8);
-        res.json(combinedTrending); 
+        // If no mods found in database, return 'No Mods Found'
+        res.json(['No Mods Found']);
 
     } catch (error) {
         console.error("API Trending Searches Error:", error);
-        res.status(500).json({ error: 'Could not fetch trending searches.' });
+        res.status(500).json(['No Mods Found']);
     }
 });
 

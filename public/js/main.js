@@ -552,10 +552,19 @@ async function initializeSearchBar() {
         const response = await fetch('/api/trending-searches');
         if (response.ok) {
             const trending = await response.json();
-            if (trending.length > 0) searchTerms = trending.map(term => `${term}...`);
+            if (Array.isArray(trending) && trending.length > 0) {
+                if (trending.length === 1 && trending[0] === 'No Mods Found') {
+                    searchTerms = ["No Mods Found"];
+                } else {
+                    searchTerms = trending.map(term => term === 'No Mods Found' ? term : `${term}...`);
+                }
+            } else {
+                searchTerms = ["No Mods Found"];
+            }
         }
     } catch (error) {
         console.error("Could not fetch trending searches:", error);
+        searchTerms = ["No Mods Found"];
     }
 
     const themeColors = ["var(--gold)", "var(--silver)"];
@@ -715,7 +724,7 @@ async function fetchAndDisplaySuggestions(query) {
         if (!hasResults) {
             suggestionsBox.innerHTML = `
                 <div class="suggestion-empty" style="padding: 16px 20px; text-align: center; color: var(--silver); font-size: 0.9em;">
-                    <i class="fas fa-search" style="margin-right: 6px; color: var(--gold);"></i> No quick matches for "<strong>${safeEscapeHtml(query)}</strong>"
+                    <i class="fas fa-search" style="margin-right: 6px; color: var(--gold);"></i> No Mods Found for "<strong>${safeEscapeHtml(query)}</strong>"
                     <div style="margin-top: 6px;">
                         <a href="/search?q=${encodeURIComponent(query)}" style="color: var(--gold); text-decoration: underline; font-weight: 600;">Press Enter to search all mods &amp; users &rarr;</a>
                     </div>

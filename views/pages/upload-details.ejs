@@ -1595,9 +1595,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emojiRegex.test(trimmed)) {
             return { valid: false, error: 'Emojis are not allowed in Mod Name.' };
         }
-        if (!/^[a-zA-Z0-9 :\-]+$/.test(trimmed)) {
-            const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-]/i.test(c)))).join(' ');
-            return { valid: false, error: `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', and '-' are allowed.` };
+        if (!/^[a-zA-Z0-9 :\-&]+$/.test(trimmed)) {
+            const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&]/i.test(c)))).join(' ');
+            return { valid: false, error: `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', '-', and '&' are allowed.` };
         }
         return { valid: true };
     }
@@ -1631,7 +1631,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modNameLiveStatus.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
             modNameLiveStatus.style.border = '1px solid #2ecc71';
             modNameLiveStatus.style.color = '#2ecc71';
-            modNameLiveStatus.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> Valid Mod Name (letters, numbers, spaces, ':', and '-' allowed)`;
+            modNameLiveStatus.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> Valid Mod Name (letters, numbers, spaces, ':', '-', and '&' allowed)`;
             modNameInput.style.borderColor = '#2ecc71';
             modNameInput.style.boxShadow = '0 0 8px rgba(46, 204, 113, 0.3)';
         }

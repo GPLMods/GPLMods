@@ -531,7 +531,7 @@
                             <input type="hidden" name="dateOfBirth" id="dateOfBirth" required value="<%= (typeof formData !== 'undefined' && formData && formData.dateOfBirth) ? formData.dateOfBirth : '' %>">
                             
                             <div class="custom-calendar-trigger" id="dob-calendar-trigger" tabindex="0" role="button" aria-haspopup="dialog" aria-expanded="false">
-                                <span class="dob-display-text placeholder" id="dob-display-text">Select your Date of Birth</span>
+                                <span class="dob-display-text <%= (typeof formData !== 'undefined' && formData && formData.dateOfBirth) ? '' : 'placeholder' %>" id="dob-display-text"><%= (typeof formData !== 'undefined' && formData && formData.dateOfBirth) ? new Date(formData.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) : 'Select your Date of Birth' %></span>
                                 <div class="calendar-trigger-icons">
                                     <i class="fas fa-calendar-alt calendar-icon"></i>
                                     <i class="fas fa-chevron-down calendar-arrow"></i>
@@ -556,7 +556,11 @@
                                             <option value="10">November</option>
                                             <option value="11">December</option>
                                         </select>
-                                        <select class="cal-select" id="cal-year-select" aria-label="Select Year"></select>
+                                        <select class="cal-select" id="cal-year-select" aria-label="Select Year">
+                                            <% const regCurrentYr = new Date().getFullYear(); for (let y = regCurrentYr; y >= 1920; y--) { %>
+                                                <option value="<%= y %>"><%= y %></option>
+                                            <% } %>
+                                        </select>
                                     </div>
                                     <button type="button" class="cal-nav-btn" id="cal-next-month" title="Next Month"><i class="fas fa-chevron-right"></i></button>
                                 </div>
@@ -928,15 +932,25 @@
                 }
             });
 
+            if (popup) {
+                popup.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+            }
+
             if (monthSelect) {
+                monthSelect.addEventListener('click', (e) => e.stopPropagation());
                 monthSelect.addEventListener('change', (e) => {
+                    e.stopPropagation();
                     viewMonth = parseInt(e.target.value);
                     renderCalendar();
                 });
             }
 
             if (yearSelect) {
+                yearSelect.addEventListener('click', (e) => e.stopPropagation());
                 yearSelect.addEventListener('change', (e) => {
+                    e.stopPropagation();
                     viewYear = parseInt(e.target.value);
                     renderCalendar();
                 });
@@ -996,7 +1010,11 @@
             updateTriggerDisplay();
         }
 
-        initRegisterDobCalendar();
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRegisterDobCalendar);
+        } else {
+            initRegisterDobCalendar();
+        }
 
         if (registrationForm) {
             registrationForm.addEventListener('submit', (event) => {
