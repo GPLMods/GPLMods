@@ -625,6 +625,49 @@
     }
     .template-helper-btn:hover { background: var(--gold); color: var(--black); }
 
+    .docs-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #15181e;
+        border: 1px solid #00e676;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        z-index: 105;
+        display: none;
+        overflow: hidden;
+        margin-top: 5px;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+    .doc-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #282d38;
+        transition: background 0.2s;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .doc-option:last-child { border-bottom: none; }
+    .doc-option:hover { background: rgba(0, 230, 118, 0.12); }
+    .doc-option-title { color: #00e676; font-weight: 600; font-size: 0.9em; display: flex; align-items: center; gap: 6px; }
+    .doc-option-slug { color: #8892b0; font-size: 0.78em; font-family: monospace; }
+    .doc-helper-btn {
+        background: rgba(0, 230, 118, 0.1);
+        color: #00e676;
+        border: 1px solid rgba(0, 230, 118, 0.4);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        user-select: none;
+    }
+    .doc-helper-btn:hover { background: #00e676; color: var(--black); }
+
     /* Dynamic Screenshot Editor Styles */
     .screenshot-editor-grid {
         display: grid;
@@ -1082,12 +1125,16 @@
 
                  <div class="form-group" style="position: relative;">
                     <label for="importantNote" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        Important Note / Installation Instructions (Optional)
-                        <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
+                        <span>Important Note / Installation Instructions (Optional)</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="doc-helper-btn" id="btn-attach-docs" data-target="importantNote" title="Attach an official doc link (/docs)"><i class="fas fa-book"></i> Attach Docs (/docs)</span>
+                            <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
+                        </div>
                     </label>
                     <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
                     <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
                     <div id="dropdown-importantNote" class="template-dropdown"></div>
+                    <div id="dropdown-docs-importantNote" class="docs-dropdown"></div>
                 </div>
                 
                 <div class="form-group" style="position: relative;">
@@ -1247,6 +1294,9 @@
         </div>
     </div>
 </div>
+
+<script type="application/json" id="server-custom-templates-data"><%- JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : []).replace(/</g, '\\u003c') %></script>
+<script type="application/json" id="server-official-docs-data"><%- JSON.stringify(typeof officialDocs !== 'undefined' ? officialDocs : []).replace(/</g, '\\u003c') %></script>
 
 <script>
 // Helper to control the Error/Success Alert Box (Globally available)
@@ -2078,13 +2128,24 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
-    // Merge custom admin templates directly from admin panel
-    const serverTemplates = JSON.parse(decodeURIComponent('<%- encodeURIComponent(JSON.stringify(typeof customTemplates !== 'undefined' ? customTemplates : [])) %>'));
+    // Merge custom admin templates directly from admin panel safely
+    let serverTemplates = [];
+    try {
+        const el = document.getElementById('server-custom-templates-data');
+        if (el && el.textContent) serverTemplates = JSON.parse(el.textContent);
+    } catch(e) { console.error("Could not parse server templates:", e); }
+
+    let officialDocsList = [];
+    try {
+        const docsEl = document.getElementById('server-official-docs-data');
+        if (docsEl && docsEl.textContent) officialDocsList = JSON.parse(docsEl.textContent);
+    } catch(e) { console.error("Could not parse official docs:", e); }
+
     if (Array.isArray(serverTemplates) && serverTemplates.length > 0) {
         serverTemplates.forEach(t => {
             if (t.targetField && t.content) {
                 if (!smartTemplates[t.targetField]) smartTemplates[t.targetField] = [];
-                smartTemplates[t.targetField].push({ title: t.title, text: t.content });
+                smartTemplates[t.targetField].push({ title: t.title || "Custom Template", text: t.content });
             }
         });
     }
@@ -2098,6 +2159,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatTemplateHtml(text) {
+        if (!text) return '';
+        if (/<[a-z][\s\S]*>/i.test(text)) {
+            return text;
+        }
         return text.split('\n\n').map(p => `<p>${p.split('\n').join('<br>')}</p>`).join('');
     }
 
@@ -2106,65 +2171,78 @@ document.addEventListener('DOMContentLoaded', () => {
         const dropdown = document.getElementById(`dropdown-${textareaId}`);
         if (!dropdown) return;
 
-        const templates = smartTemplates[textareaId];
-        if (!templates) return;
+        const templates = smartTemplates[textareaId] || [];
 
-        // Build the Dropdown HTML
-        dropdown.innerHTML = templates.map((tmpl, index) => `
-            <div class="template-option" data-index="${index}">
-                <span class="template-option-title">${tmpl.title}</span>
-                <span class="template-option-preview">${tmpl.text.replace(/\n/g, ' ')}</span>
-            </div>
-        `).join('');
+        function renderTemplatesDropdown() {
+            if (!templates || templates.length === 0) {
+                dropdown.innerHTML = `
+                    <div class="template-option empty" style="padding: 14px 16px; color: var(--silver); cursor: default; text-align: center;">
+                        <span class="template-option-title" style="display: block; font-weight: 700; color: #ff9800; margin-bottom: 4px;"><i class="fas fa-circle-exclamation" style="margin-right: 6px;"></i>No Template Found</span>
+                        <span class="template-option-preview" style="font-size: 0.82em; color: #888;">No templates have been configured for this field yet.</span>
+                    </div>
+                `;
+                return;
+            }
 
-        // Handle clicking an option
-        dropdown.querySelectorAll('.template-option').forEach(opt => {
-            opt.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const selectedTemplate = templates[this.getAttribute('data-index')].text;
-                const quill = getQuillForField(textareaId);
+            // Build the Dropdown HTML
+            dropdown.innerHTML = templates.map((tmpl, index) => `
+                <div class="template-option" data-index="${index}">
+                    <span class="template-option-title">${tmpl.title}</span>
+                    <span class="template-option-preview">${tmpl.text.replace(/<[^>]+>/g, ' ').replace(/\n/g, ' ')}</span>
+                </div>
+            `).join('');
 
-                if (quill) {
-                    const rawText = quill.getText();
-                    const match = rawText.match(/\/?TEMPLATE\s*$/i);
-                    if (match && match.index !== undefined) {
-                        quill.deleteText(match.index, match[0].length);
-                        if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
-                            quill.clipboard.dangerouslyPasteHTML(match.index, formatTemplateHtml(selectedTemplate));
-                        } else {
-                            quill.insertText(match.index, selectedTemplate);
-                        }
-                    } else {
-                        const currentHtml = quill.root.innerHTML;
-                        if (!currentHtml || currentHtml === '<p><br></p>') {
+            // Handle clicking an option
+            dropdown.querySelectorAll('.template-option:not(.empty)').forEach(opt => {
+                opt.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const selectedTemplate = templates[this.getAttribute('data-index')].text;
+                    const quill = getQuillForField(textareaId);
+
+                    if (quill) {
+                        const rawText = quill.getText();
+                        const match = rawText.match(/\/?TEMPLATE\s*$/i);
+                        if (match && match.index !== undefined) {
+                            quill.deleteText(match.index, match[0].length);
                             if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
-                                quill.clipboard.dangerouslyPasteHTML(formatTemplateHtml(selectedTemplate));
+                                quill.clipboard.dangerouslyPasteHTML(match.index, formatTemplateHtml(selectedTemplate));
                             } else {
-                                quill.setText(selectedTemplate + '\n');
+                                quill.insertText(match.index, selectedTemplate);
                             }
                         } else {
-                            const length = quill.getLength();
-                            if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
-                                quill.clipboard.dangerouslyPasteHTML(length, formatTemplateHtml(selectedTemplate));
+                            const currentHtml = quill.root.innerHTML;
+                            if (!currentHtml || currentHtml === '<p><br></p>') {
+                                if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                    quill.clipboard.dangerouslyPasteHTML(formatTemplateHtml(selectedTemplate));
+                                } else {
+                                    quill.setText(selectedTemplate + '\n');
+                                }
                             } else {
-                                quill.insertText(length, '\n\n' + selectedTemplate);
+                                const length = Math.max(0, quill.getLength() - 1);
+                                if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                    quill.clipboard.dangerouslyPasteHTML(length, formatTemplateHtml(selectedTemplate));
+                                } else {
+                                    quill.insertText(length, '\n\n' + selectedTemplate);
+                                }
                             }
                         }
+                        syncQuillData();
+                        quill.focus();
+                    } else if (textarea) {
+                        textarea.value = textarea.value.replace(/\/?TEMPLATE$/i, selectedTemplate);
+                        if (!textarea.value.includes(selectedTemplate)) {
+                            textarea.value = textarea.value ? textarea.value + '\n\n' + selectedTemplate : selectedTemplate;
+                        }
+                        textarea.focus();
                     }
-                    syncQuillData();
-                    quill.focus();
-                } else if (textarea) {
-                    textarea.value = textarea.value.replace(/\/?TEMPLATE$/i, selectedTemplate);
-                    if (!textarea.value.includes(selectedTemplate)) {
-                        textarea.value = textarea.value ? textarea.value + '\n\n' + selectedTemplate : selectedTemplate;
-                    }
-                    textarea.focus();
-                }
 
-                dropdown.style.display = 'none';
+                    dropdown.style.display = 'none';
+                });
             });
-        });
+        }
+
+        renderTemplatesDropdown();
 
         // Listen for keyword in Quill if attached
         const quill = getQuillForField(textareaId);
@@ -2172,6 +2250,8 @@ document.addEventListener('DOMContentLoaded', () => {
             quill.on('text-change', function() {
                 const txt = quill.getText().trim().toUpperCase();
                 if (txt.endsWith('/TEMPLATE') || txt.endsWith('TEMPLATE')) {
+                    renderTemplatesDropdown();
+                    document.querySelectorAll('.docs-dropdown').forEach(d => d.style.display = 'none');
                     dropdown.style.display = 'block';
                 } else if (!dropdown.contains(document.activeElement)) {
                     if (!txt.includes('TEMPLATE')) {
@@ -2183,6 +2263,8 @@ document.addEventListener('DOMContentLoaded', () => {
             textarea.addEventListener('input', function() {
                 const val = this.value.toUpperCase().trim();
                 if (val.endsWith('/TEMPLATE') || val.endsWith('TEMPLATE')) {
+                    renderTemplatesDropdown();
+                    document.querySelectorAll('.docs-dropdown').forEach(d => d.style.display = 'none');
                     dropdown.style.display = 'block';
                 } else {
                     dropdown.style.display = 'none';
@@ -2206,6 +2288,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const dropdown = document.getElementById(`dropdown-${targetId}`);
             if (!dropdown) return;
 
+            // Close all docs dropdowns
+            document.querySelectorAll('.docs-dropdown').forEach(d => d.style.display = 'none');
+
             const isCurrentlyOpen = dropdown.style.display === 'block';
             document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
             dropdown.style.display = isCurrentlyOpen ? 'none' : 'block';
@@ -2220,10 +2305,131 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Hide dropdown if clicked outside
+    // =======================================================
+    // --- SMART DOCS ATTACHMENT SYSTEM (/docs in importantNote) ---
+    // =======================================================
+    function setupDocsAttachmentSystem() {
+        const docsDropdown = document.getElementById('dropdown-docs-importantNote');
+        const attachDocsBtn = document.getElementById('btn-attach-docs');
+        const textarea = document.getElementById('importantNote');
+        const quill = quillNote;
+
+        if (!docsDropdown) return;
+
+        function renderDocsDropdown() {
+            if (!officialDocsList || officialDocsList.length === 0) {
+                docsDropdown.innerHTML = `
+                    <div class="doc-option empty" style="padding: 14px 16px; color: var(--silver); cursor: default; text-align: center;">
+                        <span class="doc-option-title" style="display: block; font-weight: 700; color: #ff9800; margin-bottom: 4px;"><i class="fas fa-circle-exclamation" style="margin-right: 6px;"></i>No docs Found</span>
+                        <span class="doc-option-slug" style="font-size: 0.82em; color: #888;">No official documentation guides available to attach.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            docsDropdown.innerHTML = officialDocsList.map(doc => `
+                <div class="doc-option" data-title="${doc.title.replace(/"/g, '&quot;')}" data-slug="${doc.slug}">
+                    <span class="doc-option-title"><i class="fas fa-book-bookmark" style="color: #00e676;"></i> ${doc.title}</span>
+                    <span class="doc-option-slug">/docs/${doc.slug}</span>
+                </div>
+            `).join('');
+
+            docsDropdown.querySelectorAll('.doc-option:not(.empty)').forEach(opt => {
+                opt.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const docTitle = this.getAttribute('data-title');
+                    const docSlug = this.getAttribute('data-slug');
+                    const docLinkHtml = `<a href="/docs/${docSlug}" target="_blank" style="color: #00e676; text-decoration: underline; font-weight: 600;">📖 ${docTitle} Guide</a>&nbsp;`;
+                    const docLinkMd = `[${docTitle}](/docs/${docSlug}) `;
+
+                    if (quill) {
+                        const rawText = quill.getText();
+                        const match = rawText.match(/\/?docs\s*$/i);
+                        if (match && match.index !== undefined) {
+                            quill.deleteText(match.index, match[0].length);
+                            if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                quill.clipboard.dangerouslyPasteHTML(match.index, docLinkHtml);
+                            } else {
+                                quill.insertText(match.index, docLinkMd);
+                            }
+                        } else {
+                            const length = Math.max(0, quill.getLength() - 1);
+                            if (quill.clipboard && typeof quill.clipboard.dangerouslyPasteHTML === 'function') {
+                                quill.clipboard.dangerouslyPasteHTML(length, (quill.getText().trim() ? '<p>' : '') + docLinkHtml + (quill.getText().trim() ? '</p>' : ''));
+                            } else {
+                                quill.insertText(length, (quill.getText().trim() ? '\n' : '') + docLinkMd);
+                            }
+                        }
+                        syncQuillData();
+                        quill.focus();
+                    } else if (textarea) {
+                        if (/\/?docs$/i.test(textarea.value.trim())) {
+                            textarea.value = textarea.value.replace(/\/?docs\s*$/i, docLinkMd);
+                        } else {
+                            textarea.value = textarea.value ? textarea.value + '\n' + docLinkMd : docLinkMd;
+                        }
+                        textarea.focus();
+                    }
+
+                    docsDropdown.style.display = 'none';
+                });
+            });
+        }
+
+        renderDocsDropdown();
+
+        // Listen for /docs trigger in quillNote
+        if (quill) {
+            quill.on('text-change', function() {
+                const txt = quill.getText().trim().toLowerCase();
+                if (txt.endsWith('/docs') || txt.endsWith('docs') && txt.match(/(?:^|\s)\/docs$/i)) {
+                    renderDocsDropdown();
+                    document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+                    docsDropdown.style.display = 'block';
+                } else if (!docsDropdown.contains(document.activeElement)) {
+                    if (!txt.includes('docs')) {
+                        docsDropdown.style.display = 'none';
+                    }
+                }
+            });
+        } else if (textarea) {
+            textarea.addEventListener('input', function() {
+                const val = this.value.toLowerCase().trim();
+                if (val.endsWith('/docs') || val.match(/(?:^|\s)\/docs$/i)) {
+                    renderDocsDropdown();
+                    document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+                    docsDropdown.style.display = 'block';
+                } else {
+                    docsDropdown.style.display = 'none';
+                }
+            });
+        }
+
+        // Click on Attach Docs button
+        if (attachDocsBtn) {
+            attachDocsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                renderDocsDropdown();
+                document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+                const isCurrentlyOpen = docsDropdown.style.display === 'block';
+                docsDropdown.style.display = isCurrentlyOpen ? 'none' : 'block';
+                if (quill) quill.focus();
+                else if (textarea) textarea.focus();
+            });
+        }
+    }
+
+    setupDocsAttachmentSystem();
+
+    // Hide dropdowns if clicked outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.template-dropdown') && !e.target.closest('.template-helper-btn')) {
             document.querySelectorAll('.template-dropdown').forEach(d => d.style.display = 'none');
+        }
+        if (!e.target.closest('.docs-dropdown') && !e.target.closest('.doc-helper-btn')) {
+            document.querySelectorAll('.docs-dropdown').forEach(d => d.style.display = 'none');
         }
     });
 

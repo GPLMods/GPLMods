@@ -263,6 +263,171 @@ const aiDebuggerStatus = {
     totalErrors: 0
 };
 
+// --- COMPREHENSIVE GEMINI SUPPORT CONTEXT ENGINE ---
+// Gives the Gemini support chatbot real-time access to:
+// 1. Registered verified users & official staff
+// 2. Live approved mods (catalog, top mods, searched mods)
+// 3. Official documentation guides & installation guides
+// 4. Software licenses & legal safe harbor
+// 5. Site policies & static pages (Terms, Privacy, DMCA, etc.)
+// 6. Curated AI knowledge base
+async function getGeminiSupportSystemContext(userQueryText = '') {
+    let context = `You are the official GPL AI Support Assistant for GPL Mods (https://gplmods.webredirect.org).
+Your tone is helpful, friendly, transparent, and accurate. Use emojis naturally.
+You have direct real-time access to the GPL Mods platform databases including:
+- Registered & verified members, creators, distributors, and staff
+- Live approved game & app mods across Android, iOS (IPA/DEB), Windows, and WordPress
+- Official documentation guides and sideloading instructions
+- Licenses (OCOM, GPL v2/v3, MIT, Upstream OSS) and safe-harbor policies
+- Static policy and info pages (Privacy Policy, Terms of Service, DMCA Policy, About Us, Contact)
+
+When answering users:
+1. Provide concise, clear, and direct answers.
+2. If they ask about mods, check our live catalog and provide mod details, current versions, and platform notes.
+3. If they ask about sideloading or installation, refer to our official guides (e.g. /docs/ipa-installation-guide, /docs/apk-installation-guide).
+4. If they ask about user verification or verified members, explain that verified members have verified emails, completed KYC/distributor status, or badge credentials.
+5. If they need human team support, tell them they can type "human" anytime to connect with an agent.\n\n`;
+
+    try {
+        // 1. Registered Verified Users Summary
+        const verifiedCount = await User.countDocuments({ isVerified: true });
+        const staffUsers = await User.find({ role: { $in: ['admin', 'owner', 'moderator', 'distributor', 'support'] } })
+            .select('username role isPremium badges isVerified')
+            .limit(20)
+            .lean();
+        
+        context += `=== REGISTERED VERIFIED USERS & STAFF ===\n`;
+        context += `- Total Verified Members on GPL Mods: ${verifiedCount}+\n`;
+        context += `- Official Staff & Key Distributors:\n`;
+        staffUsers.forEach(u => {
+            context += `  * @${u.username} (${u.role.toUpperCase()}${u.isPremium ? ', Premium' : ''}${u.isVerified ? ', Verified' : ''})\n`;
+        });
+        
+        // If query mentions a specific user, look them up
+        if (userQueryText) {
+            const words = userQueryText.match(/@?([a-zA-Z0-9_\-\.]{3,30})/g) || [];
+            for (const rawWord of words.slice(0, 3)) {
+                const cleanWord = rawWord.replace(/^@/, '');
+                const matchedUser = await User.findOne({ username: new RegExp(`^${cleanWord}$`, 'i') })
+                    .select('username role isVerified isPremium badges createdAt')
+                    .lean();
+                if (matchedUser) {
+                    context += `- Queried User Lookup for "@${matchedUser.username}": Role: ${matchedUser.role}, Verified: ${matchedUser.isVerified ? 'YES' : 'NO'}, Premium: ${matchedUser.isPremium ? 'YES' : 'NO'}, Joined: ${new Date(matchedUser.createdAt).toLocaleDateString()}.\n`;
+                }
+            }
+        }
+        context += `\n`;
+    } catch (e) {
+        console.warn("[Gemini Context] Error loading users:", e.message);
+    }
+
+    try {
+        // 2. Live Approved Mods
+        const totalLiveMods = await File.countDocuments({ status: 'approved' });
+        context += `=== LIVE MODS REPOSITORY ===\n`;
+        context += `- Total Live Mods Available: ${totalLiveMods}\n`;
+        context += `- Supported Platforms: Android (APK), iOS Jailed (IPA sideloading via SideStore/AltStore/TrollStore), iOS Jailbroken (DEB tweaks), Windows (PC mods), WordPress (GPL themes & plugins).\n`;
+
+        // Top popular mods
+        const topMods = await File.find({ status: 'approved' })
+            .select('name version category platforms slug downloads views uploader developer averageRating')
+            .sort({ downloads: -1 })
+            .limit(15)
+            .lean();
+        
+        context += `- Popular Featured Live Mods:\n`;
+        topMods.forEach(m => {
+            const platformStr = (m.platforms && m.platforms.length) ? m.platforms.join(', ') : (m.category || 'mods');
+            context += `  * ${m.name} (v${m.version || '1.0'}) [${platformStr}] by @${m.uploader || 'GPL Community'} - Downloads: ${m.downloads || 0}, Views: ${m.views || 0}, URL: /download/${m.slug || m._id}\n`;
+        });
+
+        // Search live mods if user asked about a specific app/game
+        if (userQueryText && userQueryText.length > 2) {
+            const searchClean = userQueryText.replace(/[^a-zA-Z0-9\s]/g, ' ').trim();
+            const terms = searchClean.split(/\s+/).filter(t => t.length > 2 && !['mod', 'apk', 'ipa', 'download', 'free', 'how', 'what', 'the', 'and', 'for', 'can', 'you', 'app'].includes(t.toLowerCase()));
+            if (terms.length > 0) {
+                const regexPattern = terms.map(t => `(?=.*${t})`).join('');
+                const matchingMods = await File.find({ 
+                    status: 'approved', 
+                    name: { $regex: regexPattern, $options: 'i' } 
+                }).select('name version category platforms slug downloads averageRating importantNote').limit(5).lean();
+                
+                if (matchingMods && matchingMods.length > 0) {
+                    context += `- Relevant Mod Search Matches for "${terms.join(' ')}":\n`;
+                    matchingMods.forEach(mm => {
+                        context += `  * MATCH: ${mm.name} (v${mm.version || '1.0'}) [${(mm.platforms || []).join(', ') || mm.category}] - Download: /download/${mm.slug || mm._id}\n`;
+                    });
+                }
+            }
+        }
+        context += `\n`;
+    } catch (e) {
+        console.warn("[Gemini Context] Error loading mods:", e.message);
+    }
+
+    try {
+        // 3. Official Documentation Guides
+        const docPages = await DocPage.find({})
+            .populate('category', 'name')
+            .select('title slug category content assignedPlatform')
+            .sort({ order: 1 })
+            .limit(20)
+            .lean();
+        
+        if (docPages && docPages.length > 0) {
+            context += `=== OFFICIAL DOCUMENTATION & GUIDES ===\n`;
+            docPages.forEach(d => {
+                const cleanSummary = (d.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 160);
+                context += `  * [${d.title}] (Category: ${(d.category && d.category.name) || 'Guides'}, URL: /docs/${d.slug}${d.assignedPlatform ? ', Platform: ' + d.assignedPlatform : ''}): ${cleanSummary}...\n`;
+            });
+            context += `\n`;
+        }
+    } catch (e) {
+        console.warn("[Gemini Context] Error loading docs:", e.message);
+    }
+
+    try {
+        // 4. Licenses & Policies
+        const licenses = await License.find({}).select('name slug content requiresAttribution allowsCommercialUse allowsModification').lean();
+        if (licenses && licenses.length > 0) {
+            context += `=== SOFTWARE LICENSES & LEGAL ATTRIBUTION ===\n`;
+            licenses.forEach(l => {
+                const licSummary = (l.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 130);
+                context += `  * ${l.name} (/licenses/${l.slug}): ${licSummary}...\n`;
+            });
+            context += `\n`;
+        }
+
+        const staticPages = await StaticPage.find({ isActive: { $ne: false } }).select('title slug content').lean();
+        if (staticPages && staticPages.length > 0) {
+            context += `=== OFFICIAL SITE POLICIES & STATIC PAGES ===\n`;
+            staticPages.forEach(p => {
+                const pageSummary = (p.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 150);
+                context += `  * ${p.title} (URL: /${p.slug}): ${pageSummary}...\n`;
+            });
+            context += `\n`;
+        }
+    } catch (e) {
+        console.warn("[Gemini Context] Error loading licenses/policies:", e.message);
+    }
+
+    try {
+        // 5. Active Knowledge Base Rules
+        const activeKnowledge = await AIKnowledge.find({ isActive: true }).select('topic keywords response').lean();
+        if (activeKnowledge && activeKnowledge.length > 0) {
+            context += `=== SPECIALIZED KNOWLEDGE BASE & FAQS ===\n`;
+            activeKnowledge.forEach(k => {
+                context += `- [Topic: ${k.topic}] (Keywords: ${k.keywords}): ${k.response}\n`;
+            });
+            context += `\n`;
+        }
+    } catch (e) {
+        console.warn("[Gemini Context] Error loading AIKnowledge:", e.message);
+    }
+
+    return context;
+}
+
 // ===============================
 // 1. INITIALIZATION & CONFIGURATION
 // ===============================
@@ -4512,6 +4677,73 @@ async function getTopTrendingTags() {
     }
 }
 
+// --- HELPER: Resolve Platform Installation Guide Doc for Download Page ---
+async function resolvePlatformGuideDoc(file) {
+    if (!file) return null;
+    try {
+        const rawPlatform = (file.platforms && file.platforms[0]) || file.category || '';
+        const normPlatform = String(rawPlatform).toLowerCase().trim();
+        
+        // 1. Try SiteState downloadPagePlatformDocs configuration
+        const siteState = await SiteState.findOne({ singletonId: 'master-state' })
+            .populate([
+                { path: 'downloadPagePlatformDocs.android' },
+                { path: 'downloadPagePlatformDocs.ios' },
+                { path: 'downloadPagePlatformDocs.windows' },
+                { path: 'downloadPagePlatformDocs.wordpress' }
+            ])
+            .lean();
+
+        if (siteState && siteState.downloadPagePlatformDocs) {
+            if (normPlatform.includes('android') && siteState.downloadPagePlatformDocs.android) {
+                return siteState.downloadPagePlatformDocs.android;
+            }
+            if (normPlatform.includes('ios') && siteState.downloadPagePlatformDocs.ios) {
+                return siteState.downloadPagePlatformDocs.ios;
+            }
+            if (normPlatform.includes('windows') && siteState.downloadPagePlatformDocs.windows) {
+                return siteState.downloadPagePlatformDocs.windows;
+            }
+            if (normPlatform.includes('wordpress') && siteState.downloadPagePlatformDocs.wordpress) {
+                return siteState.downloadPagePlatformDocs.wordpress;
+            }
+        }
+
+        // 2. Try direct DocPage platform assignment
+        const platformQuery = [normPlatform];
+        if (normPlatform.includes('ios')) {
+            platformQuery.push('ios', 'ios-jailed', 'ios-jailbroken');
+        }
+        if (normPlatform.includes('android')) platformQuery.push('android');
+        if (normPlatform.includes('windows')) platformQuery.push('windows');
+        if (normPlatform.includes('wordpress')) platformQuery.push('wordpress');
+
+        let doc = await DocPage.findOne({
+            showOnDownloadPage: true,
+            assignedPlatform: { $in: platformQuery }
+        }).sort({ order: 1, updatedAt: -1 }).lean();
+
+        if (doc) return doc;
+
+        // 3. Fallback to slug matching (e.g. ipa-installation-guide, apk-installation-guide)
+        let slugRegex = null;
+        if (normPlatform.includes('ios')) slugRegex = /(?:ipa|ios).*install/i;
+        else if (normPlatform.includes('android')) slugRegex = /(?:apk|android).*install/i;
+        else if (normPlatform.includes('windows')) slugRegex = /(?:exe|pc|windows).*install/i;
+        else if (normPlatform.includes('wordpress')) slugRegex = /(?:wp|wordpress).*install/i;
+
+        if (slugRegex) {
+            doc = await DocPage.findOne({ slug: slugRegex }).lean();
+            if (doc) return doc;
+        }
+
+        return null;
+    } catch (e) {
+        console.warn("[resolvePlatformGuideDoc Error]:", e.message);
+        return null;
+    }
+}
+
 async function renderModDownloadPage(req, res, next, { category, slug, variantId }) {
     try {
         category = (category || '').toLowerCase();
@@ -4718,8 +4950,12 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const hasCookie = req.cookies && req.cookies[cookieName];
 
         // Direct shared link visits (or external referrers) and visits outside a 5-minute window increment views accurately
+        const isPreviewMode = req.query.preview === 'true' || 
+                              Boolean(req.headers.referer && req.headers.referer.includes('/preview')) ||
+                              (masterFile.status !== 'live') ||
+                              Boolean(req.user && (masterFile.uploader === req.user.username || req.user.role === 'admin' || req.user.role === 'owner'));
         const isDirectShare = Boolean(req.query.ref || req.query.share || req.query.source || req.query.v || (req.headers.referer && !req.headers.referer.includes(req.headers.host || '')));
-        if (isDirectShare || !hasCookie || (now - lastViewedAt > 5 * 60 * 1000)) {
+        if (!isPreviewMode && (isDirectShare || !hasCookie || (now - lastViewedAt > 5 * 60 * 1000))) {
             shouldIncrementView = true;
             req.session.viewedMods[trackingId] = now;
             try {
@@ -4950,6 +5186,8 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             topModsTags = [];
         }
 
+        const platformGuideDoc = await resolvePlatformGuideDoc(displayFile || masterFile);
+
         res.render('pages/download', {
             file: { ...(displayFile.toObject ? displayFile.toObject() : displayFile), iconUrl, screenshotUrls },
             masterFile: masterFile,
@@ -4969,6 +5207,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             moreByDeveloper,
             otherPlatformMods,
             topModsTags,
+            platformGuideDoc,
             themeMusic: displayFile.themeMusic,
             musicSettings: req.user ? req.user.musicSettings : { allowThemeMusic: true, autoPlayTheme: true },
             pageTitle: seoTitle,
@@ -9461,7 +9700,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             iosPackageId: defaultIosPackageId
         };
 
-        const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        const customTemplates = await ModTemplate.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        const officialDocs = await DocPage.find({}).select('title slug category').sort({ order: 1, title: 1 }).lean();
 
         res.render('pages/upload-details', { 
             fileId: pendingFile._id,
@@ -9473,7 +9713,8 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             defaultPlatform: savedPlatform,
             file: renderedFile,
             licenses,
-            customTemplates
+            customTemplates,
+            officialDocs
         });
 
     } catch (error) {
@@ -9510,7 +9751,8 @@ app.get('/mods/:id/preview', ensureAuthenticated, async (req, res) => {
         file.screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));
         const youtubeMatch = String(file.videoUrl || '').match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([^&#?\/]+)/i);
         file.youtubeVideoId = youtubeMatch && youtubeMatch[1].length === 11 ? youtubeMatch[1] : null;
-        res.render('pages/mod-preview', { file });
+        const platformGuideDoc = await resolvePlatformGuideDoc(file);
+        res.render('pages/mod-preview', { file, platformGuideDoc });
     } catch (error) {
         console.error('Draft preview error:', error);
         res.status(500).render('pages/500');
@@ -9736,12 +9978,14 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
         const screenshotUrls = await Promise.all((file.screenshotKeys ||[]).map(key => getSmartImageUrl(key)));
         const licenses = await License.find().sort({ name: 1 }).lean();
 
-        const customTemplates = await ModTemplate.find({ isActive: true }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        const customTemplates = await ModTemplate.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: 1 }).lean();
+        const officialDocs = await DocPage.find({}).select('title slug category').sort({ order: 1, title: 1 }).lean();
 
         res.render('pages/edit-mod', { 
             file: { ...file.toObject(), iconUrl, screenshotUrls },
             licenses,
-            customTemplates
+            customTemplates,
+            officialDocs
         });
     } catch (error) {
         console.error("Error loading edit page:", error);
@@ -20205,20 +20449,8 @@ const startServer = async () => {
                                 throw new Error("Gemini AI is not configured or missing API key.");
                             }
 
-                            // Fetch active knowledge base for customized prompt context safely
-                            let systemKnowledgePrompt = `You are the official GPL AI Support Assistant for GPL Mods. Answer user inquiries politely, concisely, and accurately based on our services.\n\n`;
-                            
-                            try {
-                                const activeKnowledge = await AIKnowledge.find({ isActive: true }).select('topic keywords response').lean();
-                                if (activeKnowledge && activeKnowledge.length) {
-                                    systemKnowledgePrompt += `Knowledge Base Rules & Context:\n`;
-                                    activeKnowledge.slice(0, 15).forEach(k => {
-                                        systemKnowledgePrompt += `- [Topic: ${k.topic}] (Keywords: ${k.keywords}): ${k.response}\n`;
-                                    });
-                                }
-                            } catch (kbErr) {
-                                console.warn("Could not load AIKnowledge for chat prompt:", kbErr.message);
-                            }
+                            // Fetch comprehensive live platform context (verified users, live mods, official docs, licenses, static pages/policies, AI knowledge)
+                            const systemKnowledgePrompt = await getGeminiSupportSystemContext(text || '');
 
                             const aiResponseText = await executeGeminiWithFallback(async (modelToUse, modelName) => {
                                 aiDebuggerStatus.model = modelName;

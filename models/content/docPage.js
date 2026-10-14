@@ -30,6 +30,16 @@ const DocPageSchema = new Schema({
     order: { 
         type: Number, 
         default: 0 
+    },
+    assignedPlatform: {
+        type: String,
+        enum: ['', 'all', 'android', 'ios', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'],
+        default: '',
+        trim: true
+    },
+    showOnDownloadPage: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

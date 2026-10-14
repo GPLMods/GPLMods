@@ -823,6 +823,23 @@
                     </div>
                 <% } %>
 
+                <!-- Platform-Specific Installation Guide Preview -->
+                <% if (typeof platformGuideDoc !== 'undefined' && platformGuideDoc && platformGuideDoc.content) { %>
+                    <div class="info-box platform-guide-panel" style="border-left: 3px solid #00e676; background: rgba(0, 230, 118, 0.04); margin-bottom: 25px; border-radius: 12px; padding: 22px; box-shadow: 0 4px 20px rgba(0, 230, 118, 0.06);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid rgba(0, 230, 118, 0.2); padding-bottom: 10px;">
+                            <h2 style="color: #00e676; margin: 0; font-size: 1.25em; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-book-bookmark"></i> <%= platformGuideDoc.title %>
+                            </h2>
+                            <span style="color: #00e676; font-size: 0.82em; font-weight: 600; background: rgba(0, 230, 118, 0.12); padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(0, 230, 118, 0.3);">
+                                Platform Guide
+                            </span>
+                        </div>
+                        <div class="raw-features-text platform-guide-body" style="color: var(--silver); line-height: 1.65; font-size: 0.95em;">
+                            <%- platformGuideDoc.content %>
+                        </div>
+                    </div>
+                <% } %>
+
                 <!-- What's New Panel -->
                 <% if (file.whatsNew && file.whatsNew.trim() !== '' && file.whatsNew !== '<p><br></p>') { %>
                     <div class="info-box whats-new-panel silver">

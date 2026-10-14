@@ -1055,13 +1055,29 @@ async function createAdminRouter() {
                 resource: DocPage,
                 options: {
                     navigation: docsNav,
-                    listProperties: ['title', 'category', 'order', 'slug'],
-                    editProperties: ['title', 'category', 'order', 'featuredImageKey', 'content'], 
-                    showProperties: ['title', 'category', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
+                    listProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug'],
+                    editProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'featuredImageKey', 'content'], 
+                    showProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
                     properties: {
                         content: { type: 'richtext' },
                         featuredImageKey: { description: 'Optional: Paste a direct image URL (https://...) or B2 Key for the cover image.' },
-                        category: { isSortable: true }
+                        category: { isSortable: true },
+                        assignedPlatform: { 
+                            availableValues: [
+                                { value: '', label: 'None' },
+                                { value: 'all', label: 'All Platforms' },
+                                { value: 'android', label: 'Android (APK)' },
+                                { value: 'ios', label: 'iOS (All)' },
+                                { value: 'ios-jailed', label: 'iOS - Jailed (IPA)' },
+                                { value: 'ios-jailbroken', label: 'iOS - Jailbroken (DEB)' },
+                                { value: 'windows', label: 'Windows (EXE/ZIP)' },
+                                { value: 'wordpress', label: 'WordPress (Plugins/Themes)' }
+                            ],
+                            description: 'Assign this doc to display on the download page of this platform (e.g. IPA Installation Guide, APK Installation Guide).' 
+                        },
+                        showOnDownloadPage: { 
+                            description: 'Enable to display this guide automatically on every download page of the assigned platform.' 
+                        }
                     },
                     actions: {
                         new: {
@@ -1251,7 +1267,9 @@ async function createAdminRouter() {
                         'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
                         'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
-                        'socialLinks.threads', 'socialLinks.gravatar', 'updatedAt'
+                        'socialLinks.threads', 'socialLinks.gravatar',
+                        'downloadPagePlatformDocs.android', 'downloadPagePlatformDocs.ios', 'downloadPagePlatformDocs.windows', 'downloadPagePlatformDocs.wordpress',
+                        'updatedAt'
                     ],
                     editProperties: [
                         'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
@@ -1261,9 +1279,14 @@ async function createAdminRouter() {
                         'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
                         'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook',
-                        'socialLinks.threads', 'socialLinks.gravatar'
+                        'socialLinks.threads', 'socialLinks.gravatar',
+                        'downloadPagePlatformDocs.android', 'downloadPagePlatformDocs.ios', 'downloadPagePlatformDocs.windows', 'downloadPagePlatformDocs.wordpress'
                     ],
                     properties: {
+                        'downloadPagePlatformDocs.android': { description: 'Platform Guide: Select DocPage displayed on all Android download pages (e.g. APK Guide).' },
+                        'downloadPagePlatformDocs.ios': { description: 'Platform Guide: Select DocPage displayed on all iOS download pages (e.g. IPA Guide).' },
+                        'downloadPagePlatformDocs.windows': { description: 'Platform Guide: Select DocPage displayed on all Windows download pages.' },
+                        'downloadPagePlatformDocs.wordpress': { description: 'Platform Guide: Select DocPage displayed on all WordPress download pages.' },
                         enableGeminiChatbot: { description: 'Master toggle to show or hide the Google Gemini Support Chatbot on the website.' },
                         geminiHiddenPages: { description: 'Pages or URL slug patterns where Gemini Chatbot should be hidden (e.g. /admin, /upload, /mods/:id, /status).' },
                         maintenanceMessage: { type: 'richtext' },

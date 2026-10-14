@@ -103,6 +103,14 @@ const SiteStateSchema = new Schema({
         totalFailoversCount: { type: Number, default: 0 },
         lastFailoverAt: { type: Date, default: null }
     },
+    downloadPagePlatformDocs: {
+        android: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
+        ios: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
+        'ios-jailed': { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
+        'ios-jailbroken': { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
+        windows: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
+        wordpress: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null }
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);
