@@ -216,6 +216,31 @@
                 <input type="text" id="minOsVersion" name="minOsVersion" value="<%= parentFile.minOsVersion || '' %>" placeholder="e.g., Required Android 8.0 or above">
             </div>
 
+            <!-- ARCHITECTURE SUPPORT -->
+            <% 
+                const archMap = {
+                    'android': ['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86', 'universal'],
+                    'windows': ['x64', 'x86', 'arm64', 'universal'],
+                    'ios-jailed': ['arm64', 'arm64e', 'armv7 / armv7s', 'Apple Silicon Mac (arm64)', 'Intel Mac (x86-64)', 'universal'],
+                    'ios-jailbroken': ['arm', 'arm64', 'arm64e', 'armv7 / armv7s', 'universal'],
+                    'wordpress': ['universal']
+                };
+                const availableArchs = archMap[parentFile.category] || ['universal'];
+                const parentArchs = parentFile.architectures || [];
+            %>
+            <div class="form-group" id="arch-group" style="background: rgba(255, 215, 0, 0.05); padding: 20px; border-radius: 8px; border: 1px solid #333; margin-top: 15px; width: 100%; box-sizing: border-box;">
+                <label style="color: var(--gold);"><i class="fas fa-microchip"></i> Architecture Support</label>
+                <p style="font-size: 0.85em; color: var(--silver); margin-bottom: 12px;">Select all hardware architectures this version supports.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                    <% availableArchs.forEach(arch => { %>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
+                            <input type="checkbox" name="architectures" value="<%= arch %>" class="arch-checkbox" <%= parentArchs.includes(arch) ? 'checked' : '' %> style="accent-color: var(--gold); width: 16px; height: 16px; cursor: pointer;">
+                            <span><%= arch %></span>
+                        </label>
+                    <% }); %>
+                </div>
+            </div>
+
             <!-- PLATFORM COMPATIBILITY FLAGS -->
             <% if (parentFile.category === 'android') { %>
                 <div class="form-group" style="background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25);">
@@ -473,7 +498,7 @@
                     <span style="color: #fff; font-size: 0.9em; font-weight: 600;">Max File Size: <strong style="color: var(--gold);"><%= limitText %></strong></span>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="filePickerGroupVersion">
                     <label for="modFile" class="file-input-label" id="drop-zone">
                         <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                         Click to Choose New File
@@ -641,10 +666,18 @@
 
         let lastFetchedMetadata = null;
 
+        let scrollPosBeforeModal = 0;
+
         const closeMetadataModal = () => {
             if (fetchMetadataModal) {
                 fetchMetadataModal.style.display = 'none';
                 document.body.style.overflow = '';
+                if (document.activeElement && fetchMetadataModal.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                }
+                if (typeof scrollPosBeforeModal === 'number') {
+                    window.scrollTo({ top: scrollPosBeforeModal, behavior: 'instant' });
+                }
             }
         };
 
@@ -677,6 +710,7 @@
 
         if (fetchBtn) {
             fetchBtn.addEventListener('click', async function() {
+                scrollPosBeforeModal = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
                 const platform = fetchPlatformSelect ? fetchPlatformSelect.value : 'auto';
                 const url = fetchUrlInput ? fetchUrlInput.value.trim() : '';
                 const statusSpan = document.getElementById('fetchStatus');
@@ -805,6 +839,17 @@
                 }
 
                 closeMetadataModal();
+
+                // Restore scroll position so user never jumps to bottom
+                setTimeout(() => {
+                    if (typeof scrollPosBeforeModal === 'number') {
+                        window.scrollTo({ top: scrollPosBeforeModal, behavior: 'instant' });
+                    }
+                    const toggleBtn = document.getElementById('toggleAutoFetch') || document.getElementById('softwareVersion');
+                    if (toggleBtn && typeof toggleBtn.focus === 'function') {
+                        toggleBtn.focus({ preventScroll: true });
+                    }
+                }, 10);
             });
         }
 
@@ -1145,6 +1190,73 @@
                     minOsInput.value = detectedOs;
                 }
             }
+
+            // 3. Architecture Auto-Detection (checks individual checkboxes)
+            const archCheckboxes = document.querySelectorAll('.arch-checkbox, input[name="architectures"]');
+            if (archCheckboxes.length > 0) {
+                const detectedArchs = new Set();
+                // 64-bit ARM
+                if (/arm64[-_]?v8a?|aarch64|\bv8a?\b|\barmv8a?\b|\barm64\b/i.test(lower)) detectedArchs.add('arm64-v8a');
+                // 32-bit ARM
+                if (/armeabi[-_]?v7a?|\bv7a?\b|\barmv7a?\b|\barmeabi\b/i.test(lower)) detectedArchs.add('armeabi-v7a');
+                // x86_64
+                if (/x86[-_]?64|\bx64\b|amd64/i.test(lower)) detectedArchs.add('x86_64');
+                // x86
+                if (/(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)|i[3-6]86|\b32[-_]?bit\b|\bia32\b/i.test(lower)) detectedArchs.add('x86');
+                // Windows x64 / x86
+                if (/x64|amd64|64[-_]?bit|win64/i.test(lower)) detectedArchs.add('x64');
+                if (/win32|32[-_]?bit/i.test(lower)) detectedArchs.add('x86');
+                // iOS
+                if (/iphoneos[-_]arm64e|\barm64e\b/i.test(lower)) detectedArchs.add('arm64e');
+                if (/iphoneos[-_]arm64|\barm64\b/i.test(lower)) detectedArchs.add('arm64');
+                if (/iphoneos[-_]arm\b|rootful/i.test(lower)) detectedArchs.add('arm');
+                if (/armv7s?|\bv7s?\b/i.test(lower)) detectedArchs.add('armv7 / armv7s');
+                // Universal
+                if (/universal|all[-_]arch|allarch|multilib/i.test(lower)) detectedArchs.add('universal');
+
+                if (detectedArchs.size > 0) {
+                    archCheckboxes.forEach(cb => {
+                        if (detectedArchs.has(cb.value)) {
+                            cb.checked = true;
+                        }
+                    });
+                }
+            }
+
+            // 4. Platform Flags Auto-Detection
+            const chkRoot = document.getElementById('requiresRoot');
+            if (chkRoot) {
+                if (/(?:^|[_\-. ])(?:non[-_]?root|no[-_]?root|noroot)(?:[_\-. ]|$)/i.test(lower)) {
+                    chkRoot.checked = false;
+                } else if (/(?:^|[_\-. ])(?:root|rooted|magisk|kernelsu|apatch)(?:[_\-. ]|$)/i.test(lower)) {
+                    chkRoot.checked = true;
+                }
+            }
+
+            const chkDevMode = document.getElementById('requiresDevMode') || document.getElementById('requiresDevModeAndroid') || document.getElementById('requiresDevModeWindows');
+            if (chkDevMode && /(?:^|[_\-. ])(?:dev[-_]?mode|developer[-_]?mode|test[-_]?signing|test[-_]?mode|developer)(?:[_\-. ]|$)/i.test(lower)) {
+                chkDevMode.checked = true;
+            }
+
+            const chkTweak = document.getElementById('isTweakConvertible');
+            if (chkTweak && (/(?:^|[_\-. ])(?:rootless|roothide|rootful|convertible|tweak|dylib)(?:[_\-. ]|$)/i.test(lower) || /\.deb$/i.test(lower))) {
+                chkTweak.checked = true;
+            }
+
+            const chkDeps = document.getElementById('requiresDependencies');
+            if (chkDeps && /(?:^|[_\-. ])(?:deps?|dependencies|cydia[-_]?substrate|ellekit|preferenceloader|cephei)(?:[_\-. ]|$)/i.test(lower)) {
+                chkDeps.checked = true;
+            }
+
+            const chkAv = document.getElementById('requiresDisableAntivirus');
+            if (chkAv && /(?:^|[_\-. ])(?:antivirus|disable[-_]?av|disable[-_]?defender|bypass[-_]?av|av[-_]?off|defender[-_]?off)(?:[_\-. ]|$)/i.test(lower)) {
+                chkAv.checked = true;
+            }
+
+            const chkMultiPart = document.getElementById('isMultiPartDistributor');
+            if (chkMultiPart && /part[-_.]?0*1\b|split[-_.]?0*1\b|\.part1\b|\.001\b|\bpt1\b/i.test(lower)) {
+                chkMultiPart.checked = true;
+            }
         }
 
         if (modFileInput) {
@@ -1175,6 +1287,8 @@
                 autoDetectFromFilename(this.value.trim());
             });
         }
+
+        const filePickerGroupVersion = document.getElementById('filePickerGroupVersion');
 
         form.addEventListener('submit', function(e) {
             e.preventDefault(); 
@@ -1209,9 +1323,6 @@
                 }
             }
 
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = 'Processing...';
-
             if (uploadIdInput && !uploadIdInput.value) {
                 uploadIdInput.value = 'up_' + Date.now();
             }
@@ -1220,43 +1331,57 @@
             const xhr = new XMLHttpRequest();
             xhr.open('POST', form.action, true);
 
-            // ONLY show progress bar if we are actually uploading a file
+            // Hide file chooser and submit button during upload, and show accurate 0-100% progress
             if (currentMode === 'file') {
+                if (filePickerGroupVersion) filePickerGroupVersion.style.display = 'none';
+                submitBtn.style.display = 'none';
+                submitBtn.disabled = true;
+
                 progressWrapper.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 progressBar.classList.remove('processing-pulse');
-                statusText.innerHTML = 'Uploading file... Do not close this page.';
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing upload...';
 
-                // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
+                const startTime = Date.now();
+
+                // --- Listen for Cloud Replication progress via Socket.IO ---
                 const uploadId = uploadIdInput.value;
                 const socket = io();
                 socket.on(`b2_progress_${uploadId}`, (data) => {
-                    const totalPercent = 50 + Math.round(data.percent / 2);
-                    progressBar.style.width = totalPercent + '%';
-                    progressBar.textContent = totalPercent + '%';
-                    statusText.innerHTML = `Uploading... ${totalPercent}%`;
-                    
-                    if (data.percent === 100) {
+                    if (data.percent < 100) {
+                        statusText.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Storing in cloud replica: <strong>${data.percent}%</strong> (${data.loaded || 0} MB / ${data.total || 0} MB)`;
+                    } else if (data.percent === 100) {
                         progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Finalizing and scanning... Almost done!';
+                        statusText.innerHTML = '<i class="fas fa-check-circle" style="color:var(--gold);"></i> Cloud sync complete! Finalizing...';
                     }
                 });
 
-                // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
+                // --- Listen for Browser-to-Server progress via XHR (Accurate 0% to 100%) ---
                 xhr.upload.addEventListener('progress', function(event) {
-                    if (event.lengthComputable) {
-                        const percentComplete = Math.round((event.loaded / event.total) * 50); 
-                        progressBar.style.width = percentComplete + '%';
-                        progressBar.textContent = percentComplete + '%';
-                        
-                        if (percentComplete === 50) {
-                            statusText.innerHTML = 'Processing upload... Do not close this page.';
-                        } else {
-                            statusText.innerHTML = `Uploading... ${percentComplete}%`;
-                        }
+                    if (event.lengthComputable && event.total > 0) {
+                        const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                        progressBar.style.width = percent + '%';
+                        progressBar.textContent = percent + '%';
+
+                        const loadedMB = (event.loaded / (1024 * 1024)).toFixed(1);
+                        const totalMB = (event.total / (1024 * 1024)).toFixed(1);
+                        const elapsedSec = (Date.now() - startTime) / 1000;
+                        const speedMBps = elapsedSec > 0 ? (event.loaded / (1024 * 1024) / elapsedSec).toFixed(1) : '0.0';
+
+                        statusText.innerHTML = `<i class="fas fa-arrow-up"></i> Uploading: <strong>${percent}%</strong> &bull; ${loadedMB} / ${totalMB} MB (${speedMBps} MB/s)`;
                     }
                 });
+
+                xhr.upload.addEventListener('load', function() {
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    progressBar.classList.add('processing-pulse');
+                    statusText.innerHTML = '<i class="fas fa-sync fa-spin"></i> Upload 100% complete! Verifying & storing on cloud...';
+                });
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = 'Processing...';
             }
 
             xhr.onload = function() {
@@ -1270,7 +1395,6 @@
                             resetUI();
                         }
                     } catch(e) {
-                        // Fallback if response isn't JSON
                         window.location.href = xhr.responseURL || '/my-uploads'; 
                     }
                 } else {
@@ -1292,6 +1416,8 @@
             xhr.send(formData);
 
             function resetUI() {
+                if (filePickerGroupVersion) filePickerGroupVersion.style.display = 'block';
+                submitBtn.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Publish Update';
                 if (currentMode === 'file') {

@@ -665,7 +665,15 @@ function hasEmoji(str) {
     return emojiRegex.test(str);
 }
 
-// --- HELPER: VALIDATE MOD NAMES (Letters, Numbers, Spaces, ':', '-', and '&' ONLY) ---
+// --- HELPER: ESCAPE REGEX CHARACTERS ---
+function escapeRegex(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// --- HELPER: VALIDATE MOD NAMES (Letters, Numbers, Spaces, and Common Developer Characters) ---
+const MOD_NAME_REGEX = /^[a-zA-Z0-9 :\-&.,+()_\[\]'!/\\%#~;@|?=*"'`]+$/;
+
 function isValidModName(str) {
     if (!str || typeof str !== 'string') return false;
     const trimmed = str.trim();
@@ -674,9 +682,8 @@ function isValidModName(str) {
     if (!/[a-zA-Z0-9]/.test(trimmed)) return false;
     // Strictly forbids emojis
     if (hasEmoji(trimmed)) return false;
-    // Only letters, numbers, spaces, colons (:), hyphens (-), and ampersands (&)
-    const regex = /^[a-zA-Z0-9 :\-&]+$/;
-    return regex.test(trimmed);
+    // Whitelist letters, numbers, spaces, and developer characters
+    return MOD_NAME_REGEX.test(trimmed);
 }
 
 function getModNameValidationError(str) {
@@ -690,9 +697,9 @@ function getModNameValidationError(str) {
     if (hasEmoji(trimmed)) {
         return 'Emojis are not allowed in Mod Name.';
     }
-    if (!/^[a-zA-Z0-9 :\-&]+$/.test(trimmed)) {
-        const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&]/i.test(c)))).join(' ');
-        return `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', '-', and '&' are allowed.`;
+    if (!MOD_NAME_REGEX.test(trimmed)) {
+        const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&.,+()_\[\]'!/\\%#~;@|?=*"'`]/i.test(c)))).join(' ');
+        return `Mod Name contains illegal character(s): ${illegalChars}. Emojis and unsupported special symbols are not allowed.`;
     }
     return null;
 }
@@ -4181,9 +4188,6 @@ app.get('/leave', (req, res) => {
 // SEARCH ROUTE
 // ===================================
 
-// ✅ FIX: Removed \s so it completely ignores spaces!
-const escapeRegex = (text) => text.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&");
-
 app.get('/search', async (req, res, next) => {
     try {
         const rawQuery = (req.query.q || '').trim();
@@ -6270,6 +6274,11 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             if (formData.requiresDevMode !== undefined) newRequiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
         }
 
+        const combinedOlderVersions = [
+            ...(previousVersion.olderVersions || []),
+            previousVersion._id
+        ];
+
         const newVersion = new File({
             name: previousVersion.name,
             developer: previousVersion.developer,
@@ -6302,19 +6311,29 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             directDownloadUrl: normalizeSingleValue(formData.directDownloadUrl) || '',
             manualFileScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualFileScanUrl) || '') : '',
             manualSiteScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualSiteScanUrl) || '') : '',
-            isLatestVersion: false,
+            isLatestVersion: true,
             parentFile: parentFileId,
-            status: 'live'
+            status: 'live',
+            isVariant: Boolean(previousVersion.isVariant),
+            masterFile: previousVersion.masterFile || null,
+            olderVersions: combinedOlderVersions
         });
 
         await newVersion.save();
         await File.findByIdAndUpdate(parentFileId, {
-            $push: { olderVersions: newVersion._id },
             isLatestVersion: false
         });
 
-        newVersion.isLatestVersion = true;
-        await newVersion.save();
+        // If the updated mod is a variant, update master's variants array to reference the new active version
+        if (previousVersion.isVariant && previousVersion.masterFile) {
+            await File.findByIdAndUpdate(previousVersion.masterFile, {
+                $pull: { variants: previousVersion._id }
+            });
+            await File.findByIdAndUpdate(previousVersion.masterFile, {
+                $addToSet: { variants: newVersion._id }
+            });
+        }
+
         saveModMetadata(newVersion);
 
         // Archive previous live version file to old-version/ subfolder in B2
@@ -6347,6 +6366,10 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
         } catch (archiveErr) {
             console.warn('[Storage] Notice: Could not archive previous version file in B2:', archiveErr.message);
         }
+
+        // Enforce storage limits: Max 4 older versions if min OS requirement and architectures are the same
+        // Versions with different min OS or architectures are retained separately
+        await enforceOldVersionStorageLimits(newVersion._id);
 
         notifyClubModFeeds(newVersion, true, req.body.whatsNew);
 
@@ -6394,6 +6417,74 @@ const deleteFromB2 = async (fileKey) => {
         console.error(`Failed to delete ${fileKey} from B2:`, error.message);
     }
 };
+
+// --- STORAGE RETENTION: ENFORCE OLD VERSION STORAGE LIMITS ---
+// Stores at most 4 older versions of a file if min OS requirement and architectures are the same.
+// Retains versions with differences in min OS requirement or architectures so older devices can download compatible builds.
+async function enforceOldVersionStorageLimits(activeFileId) {
+    if (!activeFileId) return;
+    try {
+        const activeFile = await File.findById(activeFileId).populate('olderVersions');
+        if (!activeFile || !Array.isArray(activeFile.olderVersions) || activeFile.olderVersions.length <= 4) {
+            return;
+        }
+
+        // Sort older versions descending by creation date (newest first)
+        const olderDocs = [...activeFile.olderVersions].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Group by compatibility signature: minOsVersion + sorted architectures
+        const buckets = new Map();
+        for (const doc of olderDocs) {
+            if (!doc || !doc._id) continue;
+            const minOs = String(doc.minOsVersion || '').trim().toLowerCase();
+            const archs = Array.isArray(doc.architectures)
+                ? [...doc.architectures].map(a => String(a).trim().toLowerCase()).sort().join(',')
+                : String(doc.architectures || '').trim().toLowerCase();
+            const key = `${minOs}:::${archs}`;
+            if (!buckets.has(key)) {
+                buckets.set(key, []);
+            }
+            buckets.get(key).push(doc);
+        }
+
+        const idsToRemove = [];
+        for (const [key, docs] of buckets.entries()) {
+            if (docs.length > 4) {
+                // Keep the 4 newest versions for this OS/arch bucket
+                const docsToPrune = docs.slice(4);
+                for (const toPrune of docsToPrune) {
+                    idsToRemove.push(toPrune._id);
+                    try {
+                        if (toPrune.fileKey && toPrune.fileKey !== 'external-link') {
+                            await deleteFromB2(toPrune.fileKey);
+                        }
+                        if (toPrune.isMultiPart && Array.isArray(toPrune.downloadParts)) {
+                            for (const part of toPrune.downloadParts) {
+                                if (part.fileKey && part.fileKey !== 'external-link') {
+                                    await deleteFromB2(part.fileKey);
+                                }
+                            }
+                        }
+                        await File.findByIdAndDelete(toPrune._id);
+                        console.log(`[Storage Retention] Pruned excess old version ${toPrune._id} (${toPrune.version}) for bucket [${key}]`);
+                    } catch (pruneErr) {
+                        console.error(`[Storage Retention] Error deleting pruned version ${toPrune._id}:`, pruneErr.message);
+                    }
+                }
+            }
+        }
+
+        if (idsToRemove.length > 0) {
+            await File.findByIdAndUpdate(activeFileId, {
+                $pull: { olderVersions: { $in: idsToRemove } }
+            });
+            console.log(`[Storage Retention] Successfully enforced storage limits on mod ${activeFileId}. Removed ${idsToRemove.length} older versions.`);
+        }
+    } catch (err) {
+        console.error('[Storage Retention] Failed to enforce old version storage limits:', err);
+    }
+}
+
 // Download Action - UPDATED for External Links & Presigned URLs
 app.get('/download-file/:id', async (req, res) => {
     try {
@@ -7753,14 +7844,18 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 // My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
-        // 1. Fetch ONLY the user's active, non-DMCA-hidden uploads
+        // 1. Fetch ONLY the user's active, non-DMCA-hidden uploads (including variants)
         const userUploads = await File.find({ 
             uploader: req.user.username,
             isDmcaHidden: { $ne: true },
-            $or: [ { isLatestVersion: true }, { status: { $in:['processing', 'draft'] } } ]
+            $or: [
+                { isLatestVersion: true },
+                { isVariant: true, parentFile: null },
+                { status: { $in:['processing', 'draft', 'pending'] } }
+            ]
         })
         .sort({ createdAt: -1 })
-        .populate('olderVersions', 'version fileSize createdAt')
+        .populate('olderVersions', 'version fileSize createdAt architectures minOsVersion')
         .lean();
         
         // 2. Map through the uploads to generate signed image URLs
@@ -9697,7 +9792,13 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             minOsVersion: savedMinOs,
             architectures: savedArchitectures,
             developer: defaultDeveloper,
-            iosPackageId: defaultIosPackageId
+            iosPackageId: defaultIosPackageId,
+            requiresRoot: pendingFile.requiresRoot !== undefined ? pendingFile.requiresRoot : Boolean(analysis.requiresRoot),
+            requiresDevMode: pendingFile.requiresDevMode !== undefined ? pendingFile.requiresDevMode : Boolean(analysis.requiresDevMode),
+            isTweakConvertible: pendingFile.isTweakConvertible !== undefined ? pendingFile.isTweakConvertible : Boolean(analysis.isTweakConvertible),
+            requiresDependencies: pendingFile.requiresDependencies !== undefined ? pendingFile.requiresDependencies : Boolean(analysis.requiresDependencies),
+            requiresDisableAntivirus: pendingFile.requiresDisableAntivirus !== undefined ? pendingFile.requiresDisableAntivirus : Boolean(analysis.requiresDisableAntivirus),
+            isMultiPart: pendingFile.isMultiPart !== undefined ? pendingFile.isMultiPart : Boolean(analysis.isMultiPart)
         };
 
         const customTemplates = await ModTemplate.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: 1 }).lean();
@@ -10362,21 +10463,34 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const isDistributor = req.user.role === 'distributor';
 
         // --- 1. THE VARIANT CHECK ---
-        const existingMasterFile = await File.findOne({
-            name: { $regex: new RegExp(`^${formData.modName}$`, 'i') }, 
-            category: formData.modPlatform,
-            isLatestVersion: true,
-            status: 'live',
-            _id: { $ne: fileId } 
-        });
+        const escapedModName = escapeRegex(formData.modName ? formData.modName.trim() : '');
+        let matchedFile = null;
+        if (escapedModName) {
+            matchedFile = await File.findOne({
+                name: { $regex: new RegExp(`^${escapedModName}$`, 'i') }, 
+                category: formData.modPlatform,
+                _id: { $ne: fileId },
+                $or: [
+                    { status: 'live' },
+                    { uploader: req.user.username }
+                ]
+            }).sort({ createdAt: 1 });
+        }
 
         let isVariant = false;
         let masterFileId = null;
+        let existingMasterFile = null;
 
-        if (existingMasterFile) {
-            console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant.`);
+        if (matchedFile) {
             isVariant = true;
-            masterFileId = existingMasterFile._id;
+            if (matchedFile.isVariant && matchedFile.masterFile) {
+                masterFileId = matchedFile.masterFile;
+                existingMasterFile = await File.findById(masterFileId);
+            } else {
+                masterFileId = matchedFile._id;
+                existingMasterFile = matchedFile;
+            }
+            console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant of master: ${masterFileId}`);
         }
 
         const modNameDraftErr = formData.modName ? getModNameValidationError(formData.modName) : (actionType === 'draft' ? null : 'Mod Name is required.');
@@ -10394,10 +10508,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             masterSlug: existingMasterFile ? slugify(existingMasterFile.name) : null
         };
 
-        if (isVariant && existingMasterFile) {
-            // Variant uses shared icon from master file
-            iconKey = existingMasterFile.iconKey;
-        } else if (softwareIcon && softwareIcon.length > 0) {
+        if (softwareIcon && softwareIcon.length > 0) {
             const iconTargetKey = getModStorageKey({
                 category: formData.modPlatform,
                 modName: formData.modName,
@@ -10409,6 +10520,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 originalFilename: softwareIcon[0].originalname
             });
             iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, null, { exactKey: iconTargetKey });
+        } else if (isVariant && existingMasterFile) {
+            // Variant uses shared icon from master file
+            iconKey = existingMasterFile.iconKey;
         }
 
         // --- HANDLE DYNAMIC SCREENSHOTS ---
@@ -10648,12 +10762,13 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         if (isVariant) {
             updateData.isVariant = true;
             updateData.masterFile = masterFileId;
-            updateData.isLatestVersion = false;
+            updateData.isLatestVersion = true;
+            updateData.iconKey = iconKey;
             
             await File.findByIdAndUpdate(fileId, updateData);
             
             if (actionType === 'submit') {
-                await File.findByIdAndUpdate(masterFileId, { $push: { variants: fileId } });
+                await File.findByIdAndUpdate(masterFileId, { $addToSet: { variants: fileId } });
             }
         } else {
             updateData.slug = finalSlug;

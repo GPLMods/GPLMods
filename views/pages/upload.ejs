@@ -258,7 +258,7 @@
                 </div>
             <% } else { %>
                 <form action="/upload-initial" method="POST" enctype="multipart/form-data" id="initialUploadForm">
-                    <div class="form-group">
+                    <div class="form-group" id="filePickerGroup">
                         <label for="modFile" class="file-input-label" id="drop-zone">
                             <i class="fas fa-cloud-upload-alt" style="font-size: 2em; display: block; margin-bottom: 10px;"></i>
                             Click to Choose File
@@ -347,64 +347,66 @@
             });
 
             // AJAX Form Submission for TRUE End-to-End Live Progress
+            const filePickerGroup = document.getElementById('filePickerGroup');
+            
             form.addEventListener('submit', function(e) {
                 e.preventDefault(); 
                 if (fileInput.files.length === 0) {
                     return showErrorModal("Please select a file to upload first.");
                 }
                 
+                // Hide choose file option and submit button when user clicks upload & continue
+                if (filePickerGroup) filePickerGroup.style.display = 'none';
+                submitBtn.style.display = 'none';
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = 'Uploading... Please wait';
+
                 progressWrapper.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 progressBar.classList.remove('processing-pulse');
-                
-                // ✅ FIX: Simplified, generic status text to hide B2 infrastructure
-                statusText.innerHTML = 'Uploading file... Do not close this page.';
+                statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing upload...';
 
                 const formData = new FormData(form);
-                
                 const uploadId = 'up_' + Date.now();
                 formData.append('uploadId', uploadId);
 
-                // --- PHASE 2: Listen for Server-to-Cloud progress via Socket.IO ---
+                const startTime = Date.now();
+
+                // --- Listen for Cloud Replication progress via Socket.IO ---
                 const socket = io();
                 socket.on(`b2_progress_${uploadId}`, (data) => {
-                    // Map the 0-100% B2 progress to the 50-100% portion of our visual bar
-                    const totalPercent = 50 + Math.round(data.percent / 2);
-                    
-                    progressBar.style.width = totalPercent + '%';
-                    progressBar.textContent = totalPercent + '%';
-                    
-                    // Keep the text generic
-                    statusText.innerHTML = `Uploading... ${totalPercent}%`;
-                    
-                    if (data.percent === 100) {
+                    if (data.percent < 100) {
+                        statusText.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> Storing in cloud replica: <strong>${data.percent}%</strong> (${data.loaded || 0} MB / ${data.total || 0} MB)`;
+                    } else if (data.percent === 100) {
                         progressBar.classList.add('processing-pulse');
-                        statusText.innerHTML = 'Finalizing and scanning... Almost done!';
+                        statusText.innerHTML = '<i class="fas fa-check-circle" style="color:var(--gold);"></i> Cloud sync complete! Finalizing and scanning...';
                     }
                 });
 
                 const xhr = new XMLHttpRequest();
                 xhr.open('POST', form.action, true);
 
-                // --- PHASE 1: Listen for Browser-to-Server progress via XHR ---
+                // --- Listen for Browser-to-Server progress via XHR (Accurate 0% to 100%) ---
                 xhr.upload.addEventListener('progress', function(event) {
-                    if (event.lengthComputable) {
-                        // Map the 0-100% browser upload to the 0-50% portion of our visual bar
-                        const percentComplete = Math.round((event.loaded / event.total) * 50);
-                        
-                        progressBar.style.width = percentComplete + '%';
-                        progressBar.textContent = percentComplete + '%';
+                    if (event.lengthComputable && event.total > 0) {
+                        const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
+                        progressBar.style.width = percent + '%';
+                        progressBar.textContent = percent + '%';
 
-                        if (percentComplete === 50) {
-                            // When the browser finishes sending, we wait for the Socket.IO events to take over
-                            statusText.innerHTML = 'Processing upload... Do not close this page.';
-                        } else {
-                            statusText.innerHTML = `Uploading... ${percentComplete}%`;
-                        }
+                        const loadedMB = (event.loaded / (1024 * 1024)).toFixed(1);
+                        const totalMB = (event.total / (1024 * 1024)).toFixed(1);
+                        const elapsedSec = (Date.now() - startTime) / 1000;
+                        const speedMBps = elapsedSec > 0 ? (event.loaded / (1024 * 1024) / elapsedSec).toFixed(1) : '0.0';
+
+                        statusText.innerHTML = `<i class="fas fa-arrow-up"></i> Uploading: <strong>${percent}%</strong> &bull; ${loadedMB} / ${totalMB} MB (${speedMBps} MB/s)`;
                     }
+                });
+
+                xhr.upload.addEventListener('load', function() {
+                    progressBar.style.width = '100%';
+                    progressBar.textContent = '100%';
+                    progressBar.classList.add('processing-pulse');
+                    statusText.innerHTML = '<i class="fas fa-sync fa-spin"></i> Upload 100% complete! Verifying & storing on cloud...';
                 });
 
                 xhr.onload = function() {
@@ -430,6 +432,8 @@
             });
 
             function resetUI() {
+                if (filePickerGroup) filePickerGroup.style.display = 'block';
+                submitBtn.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Upload & Continue';
                 progressWrapper.style.display = 'none';

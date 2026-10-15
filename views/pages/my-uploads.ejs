@@ -342,6 +342,12 @@
                             <span class="status-badge-top status-<%= file.status === 'processing' ? 'pending' : file.status %>">
                                     <%= file.status === 'processing' ? 'Processing...' : (file.status === 'draft' ? 'Draft' : file.status) %>
                             </span>
+
+                            <% if (file.isVariant) { %>
+                                <span class="badge-variant-tag" style="position: absolute; bottom: 10px; left: 10px; z-index: 2; font-size: 0.72em; font-weight: 700; padding: 4px 10px; border-radius: 12px; background: rgba(168, 85, 247, 0.25); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.45); text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(4px);">
+                                    <i class="fas fa-code-branch"></i> Variant
+                                </span>
+                            <% } %>
                             
                             <!-- Absolute Platform Tag -->
                             <span class="platform-tag <%= (!file.category || file.category.toLowerCase().includes('n/a') || file.category.toLowerCase() === 'na') ? 'na' : file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
@@ -352,7 +358,12 @@
                         </div>
                         
                         <div class="mod-card-content">
-                            <h3><%= file.name %></h3>
+                            <h3>
+                                <%= file.name %>
+                                <% if (file.isVariant) { %>
+                                    <span style="font-size: 0.6em; vertical-align: middle; padding: 2px 7px; border-radius: 8px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); font-weight: 700; text-transform: uppercase; margin-left: 6px;">Variant</span>
+                                <% } %>
+                            </h3>
                             
                             <div class="item-stats">
                                 <div class="stat-row">

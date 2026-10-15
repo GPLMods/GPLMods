@@ -1475,9 +1475,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emojiRegex.test(trimmed)) {
             return { valid: false, error: 'Emojis are not allowed in Mod Name.' };
         }
-        if (!/^[a-zA-Z0-9 :\-&]+$/.test(trimmed)) {
-            const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&]/i.test(c)))).join(' ');
-            return { valid: false, error: `Mod Name contains illegal character(s): ${illegalChars}. Only letters, numbers, spaces, ':', '-', and '&' are allowed.` };
+        const validModNameRegex = /^[a-zA-Z0-9 :\-&.,+()_\[\]'!/\\%#~;@|?=*"'`]+$/;
+        if (!validModNameRegex.test(trimmed)) {
+            const illegalChars = Array.from(new Set(trimmed.split('').filter(c => !/[a-zA-Z0-9 :\-&.,+()_\[\]'!/\\%#~;@|?=*"'`]/i.test(c)))).join(' ');
+            return { valid: false, error: `Mod Name contains illegal character(s): ${illegalChars}. Emojis and unsupported symbols are not allowed.` };
         }
         return { valid: true };
     }
@@ -1511,7 +1512,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modNameLiveStatus.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
             modNameLiveStatus.style.border = '1px solid #2ecc71';
             modNameLiveStatus.style.color = '#2ecc71';
-            modNameLiveStatus.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> Valid Mod Name (letters, numbers, spaces, ':', '-', and '&' allowed)`;
+            modNameLiveStatus.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 6px;"></i> Valid Mod Name`;
             modNameInput.style.borderColor = '#2ecc71';
             modNameInput.style.boxShadow = '0 0 8px rgba(46, 204, 113, 0.3)';
         }
@@ -2493,11 +2494,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    let scrollPosBeforeModal = 0;
+
     const closeMetadataModal = () => {
         if (fetchMetadataModal) {
             fetchMetadataModal.classList.remove('show');
             fetchMetadataModal.style.display = 'none';
             document.body.style.overflow = '';
+            if (document.activeElement && fetchMetadataModal.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+            if (typeof scrollPosBeforeModal === 'number') {
+                window.scrollTo({ top: scrollPosBeforeModal, behavior: 'instant' });
+            }
         }
     };
 
@@ -2524,6 +2533,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (fetchBtn) {
         fetchBtn.addEventListener('click', async function() {
+            scrollPosBeforeModal = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
             const platform = fetchPlatformSelect ? fetchPlatformSelect.value : 'auto';
             const url = fetchUrlInput ? fetchUrlInput.value.trim() : '';
 
@@ -2719,6 +2729,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusSpan.textContent = `✓ Successfully applied ${appliedCount} selected fields!`;
                 statusSpan.style.color = 'var(--green, #2ecc71)';
             }
+
+            // Restore scroll and gently focus the form element so page never jumps to bottom
+            setTimeout(() => {
+                if (typeof scrollPosBeforeModal === 'number') {
+                    window.scrollTo({ top: scrollPosBeforeModal, behavior: 'instant' });
+                }
+                const autoFetchToggle = document.getElementById('toggleAutoFetch') || document.getElementById('modName');
+                if (autoFetchToggle && typeof autoFetchToggle.focus === 'function') {
+                    autoFetchToggle.focus({ preventScroll: true });
+                }
+            }, 10);
         });
     }
 });

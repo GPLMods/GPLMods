@@ -2219,10 +2219,13 @@
 
                             <!-- Section 1: Previous Versions (Same Uploader) -->
                             <h2>Version History</h2>
-                            <table class="versions-table" style="margin-bottom: 40px;">
+                            <table class="versions-table" style="margin-bottom: 40px; width: 100%;">
                                 <thead>
                                     <tr>
                                         <th>Version</th>
+                                        <th>Architecture</th>
+                                        <th>Min OS</th>
+                                        <th>Flags / Requirements</th>
                                         <th>Size</th>
                                         <th>Date</th>
                                         <th>Download</th>
@@ -2232,17 +2235,68 @@
                                     <% versionHistory.forEach(version=> { %>
                                         <tr>
                                             <td data-label="Version">
-                                                <%= version.version %>
-                                                    <% if(version._id.equals(file._id)) { %>(Latest)<% } %>
+                                                <strong><%= version.version || 'v1.0' %></strong>
+                                                <% if(version._id.toString() === file._id.toString()) { %>
+                                                    <span class="badge badge-latest" style="background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.4); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; margin-left: 6px; font-weight: 700; text-transform: uppercase;">Latest</span>
+                                                <% } %>
+                                            </td>
+                                            <td data-label="Architecture">
+                                                <% if (version.architectures && version.architectures.length > 0) { %>
+                                                    <div style="display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle;">
+                                                        <% version.architectures.forEach(arch => { %>
+                                                            <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-family: monospace;"><%= arch %></span>
+                                                        <% }) %>
+                                                    </div>
+                                                <% } else { %>
+                                                    <span style="color: var(--silver, #888); font-size: 0.85rem;">Universal</span>
+                                                <% } %>
+                                            </td>
+                                            <td data-label="Min OS">
+                                                <% if (version.minOsVersion) { %>
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.85rem; color: #f1f5f9;">
+                                                        <i class="fas fa-microchip" style="font-size: 0.8rem; color: var(--gold, #ffd700);"></i>
+                                                        <%= version.minOsVersion %>
+                                                    </span>
+                                                <% } else { %>
+                                                    <span style="color: var(--silver, #888); font-size: 0.85rem;">Any</span>
+                                                <% } %>
+                                            </td>
+                                            <td data-label="Flags">
+                                                <div style="display: inline-flex; flex-wrap: wrap; gap: 4px; vertical-align: middle;">
+                                                    <% if (version.requiresRoot) { %>
+                                                        <span title="Root Required" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35);"><i class="fas fa-hashtag"></i> Root</span>
+                                                    <% } %>
+                                                    <% if (version.requiresDevMode) { %>
+                                                        <span title="Developer Mode Required" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35);"><i class="fas fa-laptop-code"></i> Dev Mode</span>
+                                                    <% } %>
+                                                    <% if (version.isTweakConvertible) { %>
+                                                        <span title="Tweak Convertible" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35);"><i class="fas fa-magic"></i> Tweak</span>
+                                                    <% } %>
+                                                    <% if (version.requiresDependencies) { %>
+                                                        <span title="Requires Dependencies" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.35);"><i class="fas fa-cubes"></i> Deps</span>
+                                                    <% } %>
+                                                    <% if (version.requiresDisableAntivirus) { %>
+                                                        <span title="Requires Antivirus Whitelisting" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.35);"><i class="fas fa-shield-virus"></i> AV Whitelist</span>
+                                                    <% } %>
+                                                    <% if (version.isMultiPart) { %>
+                                                        <span title="Multi-Part Archive" style="padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35);"><i class="fas fa-layer-group"></i> Multipart</span>
+                                                    <% } %>
+                                                    <% if (!version.requiresRoot && !version.requiresDevMode && !version.isTweakConvertible && !version.requiresDependencies && !version.requiresDisableAntivirus && !version.isMultiPart) { %>
+                                                        <span style="color: var(--silver, #888); font-size: 0.82rem;">None</span>
+                                                    <% } %>
+                                                </div>
                                             </td>
                                             <td data-label="Size">
                                                 <%= formatBytes(version.fileSize) %>
-                                            </td> <!-- ADDED THIS -->
+                                            </td>
                                             <td data-label="Date">
                                                 <%= new Date(version.createdAt).toLocaleDateString() %>
                                             </td>
-                                            <td data-label="Link"><a
-                                                    href="/download-file/<%= version._id %>" rel="nofollow">Download</a></td>
+                                            <td data-label="Link">
+                                                <a href="/download-file/<%= version._id %>" rel="nofollow" style="color: var(--gold, #ffd700); font-weight: 600; text-decoration: none;">
+                                                    <i class="fas fa-download"></i> Download
+                                                </a>
+                                            </td>
                                         </tr>
                                         <% }) %>
                                 </tbody>

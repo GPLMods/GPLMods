@@ -37,7 +37,7 @@ function getSubmissionValidationErrors({
     if (!modName) {
         errors.push('Mod name is required to submit the mod.');
     } else if (isValidNameFn && !isValidNameFn(modName)) {
-        errors.push("Mod name can only contain letters, numbers, spaces, ':', '-', and '&'. Emojis and other symbols are not allowed.");
+        errors.push("Mod name can only contain letters, numbers, spaces, and standard developer characters (. , : - & + ( ) [ ] _ ' \" ! / \\ % # ~). Emojis and unsupported special symbols are not allowed.");
     }
 
     if (!formData.modPlatform) {

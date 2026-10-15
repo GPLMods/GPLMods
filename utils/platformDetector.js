@@ -108,19 +108,47 @@ function detectArchitectures(filename, platform) {
     if (!filename || typeof filename !== 'string') return [];
     const lower = filename.toLowerCase();
     const detected = new Set();
+    const effPlatform = platform || detectPlatformFromFilename(filename) || '';
 
-    if (platform === 'android') {
-        if (/arm64[-_]?v8a?|aarch64/i.test(lower)) detected.add('arm64-v8a');
-        if (/armeabi[-_]?v7a?|armv7/i.test(lower)) detected.add('armeabi-v7a');
-        if (/x86[-_]?64/i.test(lower)) detected.add('x86_64');
-        else if (/(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)|i[3-6]86/i.test(lower)) detected.add('x86');
-        if (/universal|all[-_]arch/i.test(lower)) detected.add('universal');
-    } else if (platform === 'ios-jailbroken') {
-        if (/iphoneos[-_]arm64e|arm64e/i.test(lower)) detected.add('arm64e');
-        else if (/iphoneos[-_]arm64|arm64/i.test(lower)) detected.add('arm64');
-        else if (/iphoneos[-_]arm\b|rootful/i.test(lower) || (/(?:^|[^a-z0-9])arm(?:[^a-z0-9]|$)/i.test(lower) && !lower.includes('arm64'))) detected.add('arm');
-        if (/armv7/i.test(lower)) detected.add('armv7 / armv7s');
-    } else if (platform === 'ios-jailed') {
+    if (effPlatform === 'android' || !effPlatform) {
+        // Individual tokens for 64-bit ARM
+        if (/arm64[-_]?v8a?|aarch64|\bv8a?\b|\barmv8a?\b|\barm64\b/i.test(lower)) {
+            detected.add('arm64-v8a');
+        }
+        // Individual tokens for 32-bit ARM
+        if (/armeabi[-_]?v7a?|\bv7a?\b|\barmv7a?\b|\barmeabi\b/i.test(lower)) {
+            detected.add('armeabi-v7a');
+        }
+        // Individual tokens for x86_64
+        if (/x86[-_]?64|\bx64\b|amd64/i.test(lower)) {
+            detected.add('x86_64');
+        }
+        // Individual tokens for x86 (32-bit)
+        if (/(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)|i[3-6]86|\b32[-_]?bit\b|\bia32\b/i.test(lower)) {
+            detected.add('x86');
+        }
+        if (/universal|all[-_]arch|allarch|multilib/i.test(lower)) {
+            detected.add('universal');
+        }
+    }
+    
+    if (effPlatform === 'ios-jailbroken') {
+        if (/iphoneos[-_]arm64e|\barm64e\b/i.test(lower)) {
+            detected.add('arm64e');
+        }
+        if (/iphoneos[-_]arm64|\barm64\b/i.test(lower) && !lower.includes('arm64e')) {
+            detected.add('arm64');
+        }
+        if (/iphoneos[-_]arm\b|rootful|(?:^|[^a-z0-9])arm(?:[^a-z0-9]|$)/i.test(lower) && !lower.includes('arm64')) {
+            detected.add('arm');
+        }
+        if (/armv7s?|\bv7s?\b/i.test(lower)) {
+            detected.add('armv7 / armv7s');
+        }
+        if (/universal|allarch|fat[-_]binary/i.test(lower)) {
+            detected.add('universal');
+        }
+    } else if (effPlatform === 'ios-jailed') {
         if (/apple[-_ ]?silicon|m1|m2|m3|m4/i.test(lower)) {
             detected.add('Apple Silicon Mac (arm64)');
         }
@@ -132,14 +160,26 @@ function detectArchitectures(filename, platform) {
         } else if (/arm64/i.test(lower) && !detected.has('Apple Silicon Mac (arm64)')) {
             detected.add('arm64');
         }
-        if (/armv7/i.test(lower)) detected.add('armv7 / armv7s');
-        if (/universal/i.test(lower)) detected.add('universal');
-    } else if (platform === 'windows') {
-        if (/x64|amd64|64[-_]?bit/i.test(lower)) detected.add('x64');
-        if (/(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)|i386|32[-_]?bit/i.test(lower)) detected.add('x86');
-        if (/arm64|aarch64/i.test(lower)) detected.add('arm64');
-        if (/universal|multi/i.test(lower)) detected.add('universal');
-    } else if (platform === 'wordpress') {
+        if (/armv7s?|\bv7s?\b/i.test(lower)) {
+            detected.add('armv7 / armv7s');
+        }
+        if (/universal|allarch/i.test(lower)) {
+            detected.add('universal');
+        }
+    } else if (effPlatform === 'windows') {
+        if (/x64|amd64|64[-_]?bit|win64|x86[-_]?64/i.test(lower)) {
+            detected.add('x64');
+        }
+        if (/(?:^|[^a-z0-9])x86(?:[^a-z0-9]|$)|i[3-6]86|32[-_]?bit|win32|ia32/i.test(lower)) {
+            detected.add('x86');
+        }
+        if (/arm64|aarch64|arm64ec/i.test(lower)) {
+            detected.add('arm64');
+        }
+        if (/universal|multi|all/i.test(lower)) {
+            detected.add('universal');
+        }
+    } else if (effPlatform === 'wordpress') {
         detected.add('universal');
     }
 
@@ -320,6 +360,59 @@ function parseDebianTweakPackage(filename) {
 }
 
 /**
+ * Detect Platform Compatibility and Feature Flags from filename
+ * @param {string} filename 
+ * @param {string} [platform] 
+ * @returns {object}
+ */
+function detectFlags(filename, platform) {
+    if (!filename || typeof filename !== 'string') return {};
+    const lower = filename.toLowerCase();
+    const effPlatform = platform || detectPlatformFromFilename(filename) || '';
+
+    const flags = {
+        requiresRoot: false,
+        requiresDevMode: false,
+        isTweakConvertible: false,
+        requiresDependencies: false,
+        requiresDisableAntivirus: false,
+        isMultiPart: false
+    };
+
+    // 1. Root Detection (Android)
+    if (/(?:^|[_\-. ])(?:non[-_]?root|no[-_]?root|noroot)(?:[_\-. ]|$)/i.test(lower)) {
+        flags.requiresRoot = false;
+    } else if (/(?:^|[_\-. ])(?:root|rooted|magisk|kernelsu|apatch)(?:[_\-. ]|$)/i.test(lower)) {
+        flags.requiresRoot = true;
+    }
+
+    // 2. Developer Mode (Android / Windows)
+    if (/(?:^|[_\-. ])(?:dev[-_]?mode|developer[-_]?mode|test[-_]?signing|test[-_]?mode|developer)(?:[_\-. ]|$)/i.test(lower)) {
+        flags.requiresDevMode = true;
+    }
+
+    // 3. Jailbreak Tweak Convertible / Dependencies (iOS)
+    if (/(?:^|[_\-. ])(?:rootless|roothide|rootful|convertible|tweak|dylib)(?:[_\-. ]|$)/i.test(lower) || /\.deb$/i.test(lower)) {
+        flags.isTweakConvertible = true;
+    }
+    if (/(?:^|[_\-. ])(?:deps?|dependencies|cydia[-_]?substrate|ellekit|preferenceloader|cephei)(?:[_\-. ]|$)/i.test(lower)) {
+        flags.requiresDependencies = true;
+    }
+
+    // 4. Windows Antivirus Exclusion
+    if (/(?:^|[_\-. ])(?:antivirus|disable[-_]?av|disable[-_]?defender|bypass[-_]?av|av[-_]?off|defender[-_]?off)(?:[_\-. ]|$)/i.test(lower)) {
+        flags.requiresDisableAntivirus = true;
+    }
+
+    // 5. Multi-Part Detection
+    if (/part[-_.]?0*1\b|split[-_.]?0*1\b|\.part1\b|\.001\b|\bpt1\b/i.test(lower)) {
+        flags.isMultiPart = true;
+    }
+
+    return flags;
+}
+
+/**
  * Complete Auto-Detection Analysis for a file name
  * @param {string} filename 
  */
@@ -328,6 +421,7 @@ function analyzeFileDetails(filename) {
     const architectures = detectArchitectures(filename, platform);
     const minOsVersion = detectMinOsVersion(filename, platform);
     const tweakInfo = parseDebianTweakPackage(filename);
+    const flags = detectFlags(filename, platform);
 
     return {
         platform,
@@ -335,6 +429,13 @@ function analyzeFileDetails(filename) {
         architectures,
         minOsVersion,
         tweakInfo,
+        flags,
+        requiresRoot: flags.requiresRoot,
+        requiresDevMode: flags.requiresDevMode,
+        isTweakConvertible: flags.isTweakConvertible,
+        requiresDependencies: flags.requiresDependencies,
+        requiresDisableAntivirus: flags.requiresDisableAntivirus,
+        isMultiPart: flags.isMultiPart,
         packageId: tweakInfo ? tweakInfo.packageId : '',
         developer: tweakInfo ? tweakInfo.developer : '',
         modName: tweakInfo ? tweakInfo.tweakName : '',
@@ -348,6 +449,7 @@ module.exports = {
     detectPlatformFromFilename,
     detectArchitectures,
     detectMinOsVersion,
+    detectFlags,
     parseDebianTweakPackage,
     analyzeFileDetails
 };
