@@ -378,18 +378,16 @@
 
     /* --- NEW: Smart Template Dropdown Styles --- */
     .template-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--dark-gray);
+        position: relative;
+        background: #18181b;
         border: 1px solid var(--gold);
         border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 100;
         display: none; /* Hidden by default */
-        overflow: hidden;
-        margin-top: 5px;
+        overflow-y: auto;
+        max-height: 280px;
+        margin: 8px 0 12px 0;
     }
     .template-option {
         padding: 12px 15px;
@@ -418,20 +416,16 @@
     .template-helper-btn:hover { background: var(--gold); color: var(--black); }
 
     .docs-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
+        position: relative;
         background: #15181e;
         border: 1px solid #00e676;
         border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 105;
         display: none;
-        overflow: hidden;
-        margin-top: 5px;
-        max-height: 280px;
         overflow-y: auto;
+        max-height: 280px;
+        margin: 8px 0 12px 0;
     }
     .doc-option {
         padding: 12px 15px;
@@ -791,9 +785,9 @@
                         Mod Description* 
                         <span class="template-helper-btn" data-target="modDescription"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-modDescription" class="template-dropdown"></div>
                     <textarea id="modDescription" name="modDescription" style="display:none;"><%- file.modDescription %></textarea>
                     <div id="editor-modDescription"><%- file.modDescription %></div>
-                    <div id="dropdown-modDescription" class="template-dropdown"></div>
                 </div>
 
                 <div class="form-group" style="position: relative;">
@@ -801,9 +795,9 @@
                         Mod Features* (One per line)
                         <span class="template-helper-btn" data-target="modFeatures"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-modFeatures" class="template-dropdown"></div>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file.modFeatures %></textarea>
                     <div id="editor-modFeatures"><%- file.modFeatures %></div>
-                    <div id="dropdown-modFeatures" class="template-dropdown"></div>
                 </div>
 
                 <% if (!file.isVariant) { %>
@@ -822,10 +816,10 @@
                             <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                         </div>
                     </label>
-                    <textarea id="importantNote" name="importantNote" style="display:none;"><%- file.importantNote %></textarea>
-                    <div id="editor-importantNote"><%- file.importantNote %></div>
                     <div id="dropdown-importantNote" class="template-dropdown"></div>
                     <div id="dropdown-docs-importantNote" class="docs-dropdown"></div>
+                    <textarea id="importantNote" name="importantNote" style="display:none;"><%- file.importantNote %></textarea>
+                    <div id="editor-importantNote"><%- file.importantNote %></div>
                 </div>
                 
                 <div class="form-group" style="position: relative;">
@@ -833,9 +827,9 @@
                         What's New (Optional)
                         <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-whatsNew" class="template-dropdown"></div>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file.whatsNew %></textarea>
                     <div id="editor-whatsNew"><%- file.whatsNew %></div>
-                    <div id="dropdown-whatsNew" class="template-dropdown"></div>
                 </div>
             </fieldset>
 

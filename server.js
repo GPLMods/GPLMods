@@ -10481,16 +10481,32 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         let masterFileId = null;
         let existingMasterFile = null;
 
+        // Manual variant checkbox from the client
+        const isVariantSubmitted = formData.variantDetectionSubmitted === '1' || formData.variantDetectionSubmitted === 'true';
+        const isVariantChecked = (formData.isVariant === 'true' || formData.isVariant === true || formData.isVariant === 'on');
+
         if (matchedFile) {
-            isVariant = true;
-            if (matchedFile.isVariant && matchedFile.masterFile) {
-                masterFileId = matchedFile.masterFile;
-                existingMasterFile = await File.findById(masterFileId);
+            // Mod name and platform match an existing file -> considered as variant unless user explicitly untoggled it
+            if (!isVariantSubmitted || isVariantChecked) {
+                isVariant = true;
+                if (matchedFile.isVariant && matchedFile.masterFile) {
+                    masterFileId = matchedFile.masterFile;
+                    existingMasterFile = await File.findById(masterFileId);
+                } else {
+                    masterFileId = matchedFile._id;
+                    existingMasterFile = matchedFile;
+                }
+                console.log(`Matching mod detected for "${formData.modName}" (${formData.modPlatform}). Considered as variant of master: ${masterFileId}`);
             } else {
-                masterFileId = matchedFile._id;
-                existingMasterFile = matchedFile;
+                console.log(`Matching mod exists for "${formData.modName}", but user manually unchecked variant checkbox. Keeping as independent mod.`);
             }
-            console.log(`Duplicate upload detected for "${formData.modName}". Converting to Variant of master: ${masterFileId}`);
+        } else if (isVariantChecked && formData.masterFileId && Types.ObjectId.isValid(formData.masterFileId)) {
+            existingMasterFile = await File.findById(formData.masterFileId);
+            if (existingMasterFile) {
+                isVariant = true;
+                masterFileId = existingMasterFile._id;
+                console.log(`Manual variant checkbox selected for "${formData.modName}". Linking to master: ${masterFileId}`);
+            }
         }
 
         const modNameDraftErr = formData.modName ? getModNameValidationError(formData.modName) : (actionType === 'draft' ? null : 'Mod Name is required.');
@@ -11644,6 +11660,57 @@ app.get('/api/trending-searches', async (req, res) => {
     } catch (error) {
         console.error("API Trending Searches Error:", error);
         res.status(500).json(['No Mods Found']);
+    }
+});
+
+// --- API: Check if mod exists for live variant detection ---
+app.get('/api/check-mod-exists', ensureAuthenticated, async (req, res) => {
+    try {
+        const name = (req.query.name || '').trim();
+        const platform = (req.query.platform || '').trim();
+        const currentId = req.query.currentId;
+
+        if (!name || !platform) {
+            return res.json({ exists: false });
+        }
+
+        const escapedModName = escapeRegex(name);
+        const query = {
+            name: { $regex: new RegExp(`^${escapedModName}$`, 'i') },
+            category: platform,
+            $or: [
+                { status: 'live' },
+                { uploader: req.user.username }
+            ]
+        };
+        if (currentId && Types.ObjectId.isValid(currentId)) {
+            query._id = { $ne: currentId };
+        }
+
+        const matchedFile = await File.findOne(query).sort({ createdAt: 1 }).lean();
+        if (!matchedFile) {
+            return res.json({ exists: false });
+        }
+
+        let master = matchedFile;
+        if (matchedFile.isVariant && matchedFile.masterFile) {
+            const resolvedMaster = await File.findById(matchedFile.masterFile).lean();
+            if (resolvedMaster) master = resolvedMaster;
+        }
+
+        return res.json({
+            exists: true,
+            masterFile: {
+                _id: master._id,
+                name: master.name,
+                category: master.category,
+                version: master.version,
+                uploader: master.uploader
+            }
+        });
+    } catch (err) {
+        console.error("Error in /api/check-mod-exists:", err);
+        return res.json({ exists: false });
     }
 });
 

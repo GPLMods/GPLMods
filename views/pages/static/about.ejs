@@ -448,6 +448,10 @@
             <p style="text-align: center; color: var(--silver); margin-bottom: 30px;">Join the conversation, report
                 bugs, and request new mods on our official channels.</p>
             <div class="social-grid">
+                <a href="<%= (typeof socialLinks !== 'undefined' && socialLinks.telegram) ? socialLinks.telegram : 'https://t.me/+PFCCNra6NEk0YmRl' %>" target="_blank"
+                    class="social-card telegram" style="border-color: rgba(41, 182, 246, 0.4); background: rgba(41, 182, 246, 0.08); color: #29b6f6;">
+                    <i class="fab fa-telegram"></i> Telegram Channel
+                </a>
                 <a href="<%= socialLinks.discord || 'https://discord.gg/d7FEDp4vm' %>" target="_blank"
                     class="social-card discord">
                     <i class="fab fa-discord"></i> Discord Server

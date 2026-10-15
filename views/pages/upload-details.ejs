@@ -586,18 +586,16 @@
 
     /* --- NEW: Smart Template Dropdown Styles --- */
     .template-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--dark-gray);
+        position: relative;
+        background: #18181b;
         border: 1px solid var(--gold);
         border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 100;
         display: none; /* Hidden by default */
-        overflow: hidden;
-        margin-top: 5px;
+        overflow-y: auto;
+        max-height: 280px;
+        margin: 8px 0 12px 0;
     }
     .template-option {
         padding: 12px 15px;
@@ -626,20 +624,16 @@
     .template-helper-btn:hover { background: var(--gold); color: var(--black); }
 
     .docs-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
+        position: relative;
         background: #15181e;
         border: 1px solid #00e676;
         border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
         z-index: 105;
         display: none;
-        overflow: hidden;
-        margin-top: 5px;
-        max-height: 280px;
         overflow-y: auto;
+        max-height: 280px;
+        margin: 8px 0 12px 0;
     }
     .doc-option {
         padding: 12px 15px;
@@ -935,6 +929,35 @@
                     </div>
                 </div>
 
+                <!-- ======== VARIANT DETECTION & MANUAL CHECKBOX BLOCK ======== -->
+                <div id="variant-group" style="display: none; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 10px; padding: 16px 20px; margin-bottom: 25px; transition: all 0.3s ease;">
+                    <div style="display: flex; align-items: flex-start; gap: 14px;">
+                        <div style="background: rgba(168, 85, 247, 0.2); color: #c084fc; width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.25em;">
+                            <i class="fas fa-code-branch"></i>
+                        </div>
+                        <div style="flex-grow: 1;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                <h4 style="margin: 0; color: #c084fc; font-size: 1.05em; display: flex; align-items: center; gap: 8px;">
+                                    Existing Mod Detected
+                                    <span style="background: rgba(168, 85, 247, 0.25); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.5); font-size: 0.72em; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; font-weight: 700;">Variant</span>
+                                </h4>
+                            </div>
+                            <p id="variant-info-text" style="color: var(--silver); font-size: 0.9em; margin: 6px 0 12px 0; line-height: 1.5;">
+                                A main file with this mod name and platform already exists.
+                            </p>
+                            
+                            <label style="display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; background: rgba(0,0,0,0.3); padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.35);">
+                                <input type="checkbox" id="isVariantCheckbox" name="isVariant" value="true" checked style="width: 18px; height: 18px; accent-color: #a855f7; cursor: pointer;">
+                                <span style="color: #fff; font-size: 0.92em; font-weight: 600;">
+                                    Upload as a Variant of this existing mod
+                                </span>
+                            </label>
+                            <input type="hidden" id="detectedMasterId" name="masterFileId" value="">
+                            <input type="hidden" id="variantDetectionSubmitted" name="variantDetectionSubmitted" value="0">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="minOsVersion">Minimum Required OS Version <span id="os-req-star" style="color: var(--red); display: none;">*</span></label>
                     <input type="text" id="minOsVersion" name="minOsVersion" value="<%= file && file.minOsVersion ? file.minOsVersion : '' %>" placeholder="e.g., iOS 14.0, Android 8.0, Windows 10">
@@ -1102,9 +1125,9 @@
                         Mod Description* 
                         <span class="template-helper-btn" data-target="modDescription"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-modDescription" class="template-dropdown"></div>
                     <textarea id="modDescription" name="modDescription" style="display:none;"><%- file && file.modDescription ? file.modDescription : '' %></textarea>
                     <div id="editor-modDescription"><%- file && file.modDescription ? file.modDescription : '' %></div>
-                    <div id="dropdown-modDescription" class="template-dropdown"></div>
                 </div>
 
                 <div class="form-group" style="position: relative;">
@@ -1112,9 +1135,9 @@
                         Mod Features* (One per line)
                         <span class="template-helper-btn" data-target="modFeatures"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-modFeatures" class="template-dropdown"></div>
                     <textarea id="modFeatures" name="modFeatures" style="display:none;"><%- file && file.modFeatures ? file.modFeatures : '' %></textarea>
                     <div id="editor-modFeatures"><%- file && file.modFeatures ? file.modFeatures : '' %></div>
-                    <div id="dropdown-modFeatures" class="template-dropdown"></div>
                 </div>
 
                 <div class="form-group">
@@ -1131,10 +1154,10 @@
                             <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                         </div>
                     </label>
-                    <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
-                    <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
                     <div id="dropdown-importantNote" class="template-dropdown"></div>
                     <div id="dropdown-docs-importantNote" class="docs-dropdown"></div>
+                    <textarea id="importantNote" name="importantNote" style="display:none;"><%- file && file.importantNote ? file.importantNote : '' %></textarea>
+                    <div id="editor-importantNote"><%- file && file.importantNote ? file.importantNote : '' %></div>
                 </div>
                 
                 <div class="form-group" style="position: relative;">
@@ -1142,9 +1165,9 @@
                         What's New (Optional)
                         <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                     </label>
+                    <div id="dropdown-whatsNew" class="template-dropdown"></div>
                     <textarea id="whatsNew" name="whatsNew" style="display:none;"><%- file && file.whatsNew ? file.whatsNew : '' %></textarea>
                     <div id="editor-whatsNew"><%- file && file.whatsNew ? file.whatsNew : '' %></div>
-                    <div id="dropdown-whatsNew" class="template-dropdown"></div>
                 </div>
             </fieldset>
 
@@ -1861,6 +1884,90 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.classList.remove('open');
         });
     });
+
+    // --- Live Variant Detection & Manual Checkbox Handling ---
+    const variantGroup = document.getElementById('variant-group');
+    const variantInfoText = document.getElementById('variant-info-text');
+    const isVariantCheckbox = document.getElementById('isVariantCheckbox');
+    const detectedMasterId = document.getElementById('detectedMasterId');
+    const variantDetectionSubmitted = document.getElementById('variantDetectionSubmitted');
+    let variantCheckTimer = null;
+    let cachedMasterFile = null;
+
+    async function checkVariantMatch() {
+        if (!variantGroup || !modNameInput || !nativePlatformSelect) return;
+        const name = (modNameInput.value || '').trim();
+        const platform = (nativePlatformSelect.value || '').trim();
+
+        if (!name || !platform) {
+            variantGroup.style.display = 'none';
+            if (variantDetectionSubmitted) variantDetectionSubmitted.value = '0';
+            if (detectedMasterId) detectedMasterId.value = '';
+            cachedMasterFile = null;
+            return;
+        }
+
+        try {
+            const currentFileId = '<%= fileId %>';
+            const url = `/api/check-mod-exists?name=${encodeURIComponent(name)}&platform=${encodeURIComponent(platform)}&currentId=${encodeURIComponent(currentFileId)}`;
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.exists && data.masterFile) {
+                cachedMasterFile = data.masterFile;
+                variantGroup.style.display = 'block';
+                if (variantDetectionSubmitted) variantDetectionSubmitted.value = '1';
+                if (detectedMasterId) detectedMasterId.value = data.masterFile._id;
+                if (isVariantCheckbox) isVariantCheckbox.checked = true;
+                if (variantInfoText) {
+                    variantInfoText.innerHTML = `Found an existing mod <strong>"${data.masterFile.name}"</strong> on platform <strong>${data.masterFile.category}</strong> (v${data.masterFile.version || '1.0'}, uploaded by @${data.masterFile.uploader}). This mod will be linked as a variant.`;
+                }
+            } else {
+                cachedMasterFile = null;
+                variantGroup.style.display = 'none';
+                if (variantDetectionSubmitted) variantDetectionSubmitted.value = '0';
+                if (detectedMasterId) detectedMasterId.value = '';
+                if (isVariantCheckbox) isVariantCheckbox.checked = false;
+            }
+        } catch (err) {
+            console.error('Error checking variant match:', err);
+        }
+    }
+
+    function scheduleVariantCheck() {
+        clearTimeout(variantCheckTimer);
+        variantCheckTimer = setTimeout(checkVariantMatch, 400);
+    }
+
+    if (modNameInput) {
+        modNameInput.addEventListener('input', scheduleVariantCheck);
+    }
+    if (nativePlatformSelect) {
+        nativePlatformSelect.addEventListener('change', scheduleVariantCheck);
+    }
+    if (isVariantCheckbox) {
+        isVariantCheckbox.addEventListener('change', function() {
+            if (!this.checked) {
+                if (variantInfoText) {
+                    variantInfoText.innerHTML = `<span style="color: #fca5a5;"><i class="fas fa-info-circle"></i> Variant linking disabled. This mod will be published as an independent mod entry instead.</span>`;
+                }
+            } else {
+                if (cachedMasterFile) {
+                    if (detectedMasterId) detectedMasterId.value = cachedMasterFile._id;
+                    if (variantInfoText) {
+                        variantInfoText.innerHTML = `Found an existing mod <strong>"${cachedMasterFile.name}"</strong> on platform <strong>${cachedMasterFile.category}</strong> (v${cachedMasterFile.version || '1.0'}, uploaded by @${cachedMasterFile.uploader}). This mod will be linked as a variant.`;
+                    }
+                } else {
+                    checkVariantMatch();
+                }
+            }
+        });
+    }
+
+    if (modNameInput && modNameInput.value && nativePlatformSelect && nativePlatformSelect.value) {
+        checkVariantMatch();
+    }
 
     const manualFileScanGroup = document.getElementById('manualFileScanGroup');
     const manualSiteScanGroup = document.getElementById('manualSiteScanGroup');

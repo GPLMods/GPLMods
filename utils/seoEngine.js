@@ -694,15 +694,30 @@ function buildModSeo(file, masterFile, req) {
         }
     });
 
+    const isVariant = Boolean(targetFile.isVariant);
+    const archList = Array.isArray(targetFile.architectures) ? targetFile.architectures : (targetFile.architectures ? [targetFile.architectures] : []);
+    const architecture = archList.join(', ');
+    const archLabel = archList.length > 0 ? `[${archList.join('/')}]` : '';
+    const minOs = targetFile.minOsVersion || '';
+    const masterModName = (masterFile && masterFile.name) ? cleanText(masterFile.name) : name;
+    const hasVariants = Boolean(masterFile && Array.isArray(masterFile.variants) && masterFile.variants.length > 0);
+    const variantCount = hasVariants ? masterFile.variants.length : 0;
+
     // 50-60 character title target
     let titleParts = [`Download ${name}`];
+    if (isVariant && archLabel) titleParts.push(archLabel);
     if (version) titleParts.push(version);
-    titleParts.push(`Mod (${platform})`);
+    if (isVariant) {
+        titleParts.push(`Variant Mod (${platform})`);
+    } else {
+        titleParts.push(`Mod (${platform})`);
+    }
     if (developer) titleParts.push(`by ${developer}`);
     const title = truncateText(`${titleParts.join(' ')} | ${SITE_NAME}`, 65);
 
     // 140-160 character description target
-    const descPrefix = `Download ${name}${version ? ' ' + version : ''} ${platform} mod${developer ? ' by ' + developer : ''}, uploaded by ${uploader}.`;
+    const variantDescTag = isVariant ? ` (Variant${archLabel ? ' ' + archLabel : ''}${minOs ? ' for ' + minOs + '+' : ''})` : '';
+    const descPrefix = `Download ${name}${variantDescTag}${version ? ' ' + version : ''} ${platform} mod${developer ? ' by ' + developer : ''}, uploaded by ${uploader}.`;
     const descFeatures = ` 100% VirusTotal safe, ${modType} unlocked${hashtags.length > 0 ? ' with ' + hashtags.slice(0, 3).join(' ') : ''}. Free direct download at GPL Mods.`;
     const description = truncateText(descPrefix + descFeatures, 160);
 
@@ -719,6 +734,8 @@ function buildModSeo(file, masterFile, req) {
     const keywords = [
         name,
         `${name} mod`,
+        isVariant ? `${name} variant` : '',
+        architecture ? `${name} ${architecture}` : '',
         `${name} ${platform}`,
         `${name} download`,
         `${name} ${version}`.trim(),
@@ -737,8 +754,8 @@ function buildModSeo(file, masterFile, req) {
             {
                 '@type': 'SoftwareApplication',
                 '@id': `${canonicalUrl}#software`,
-                name: `${name} Mod`,
-                operatingSystem: platform,
+                name: isVariant ? `${name} Mod [Variant${archLabel ? ' ' + archLabel : ''}]` : `${name} Mod`,
+                operatingSystem: minOs ? `${platform} (${minOs}+)` : platform,
                 applicationCategory: targetFile.subCategory || targetFile.category || 'GameApplication',
                 softwareVersion: targetFile.version || '1.0',
                 description: description,
@@ -785,6 +802,14 @@ function buildModSeo(file, masterFile, req) {
         canonicalUrl,
         type: 'website',
         image,
+        og: {
+            isVariant,
+            masterModName,
+            architecture,
+            minOs,
+            hasVariants,
+            variantCount
+        },
         jsonLd
     };
 }
@@ -1328,7 +1353,8 @@ function resolveSeo(req, locals = {}) {
             image,
             type,
             site_name: SITE_NAME,
-            locale: 'en_US'
+            locale: 'en_US',
+            ...(entitySeo && entitySeo.og ? entitySeo.og : {})
         },
         twitter: {
             card: 'summary_large_image',

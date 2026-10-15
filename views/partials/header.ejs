@@ -49,7 +49,7 @@
                         "url": "https://gplmods.webredirect.org/images/logo.png"
                     },
                     "sameAs": [
-                        "https://t.me/gplmods",
+                        "https://t.me/+PFCCNra6NEk0YmRl",
                         "https://github.com/GPLMods"
                     ]
                 },
@@ -90,6 +90,16 @@
     <meta property="og:description" content="<%= ogDesc %>">
     <meta property="og:image" content="<%= ogImage %>">
     <meta property="og:locale" content="<%= ogLocale %>">
+    <% if (s && s.og && s.og.isVariant) { %>
+    <meta property="mod:is_variant" content="true">
+    <% if (s.og.masterModName) { %><meta property="mod:master_name" content="<%= s.og.masterModName %>"><% } %>
+    <% if (s.og.architecture) { %><meta property="mod:architecture" content="<%= s.og.architecture %>"><% } %>
+    <% if (s.og.minOs) { %><meta property="mod:min_os" content="<%= s.og.minOs %>"><% } %>
+    <% } %>
+    <% if (s && s.og && s.og.hasVariants) { %>
+    <meta property="mod:has_variants" content="true">
+    <meta property="mod:variant_count" content="<%= s.og.variantCount %>">
+    <% } %>
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="<%= twCard %>">

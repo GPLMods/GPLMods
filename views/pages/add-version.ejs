@@ -53,17 +53,15 @@
     /* Template Helper & Dropdown Styles */
     .template-dropdown {
         display: none;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: #111;
+        position: relative;
+        background: #18181b;
         border: 1px solid var(--gold);
         border-radius: 8px;
         z-index: 100;
-        max-height: 250px;
+        max-height: 280px;
         overflow-y: auto;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        margin: 8px 0 12px 0;
     }
     .template-option {
         padding: 12px 15px;
@@ -298,8 +296,8 @@
                     What's New in this Version? (Optional)
                     <span class="template-helper-btn" data-target="whatsNew"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
-                <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
                 <div id="dropdown-whatsNew" class="template-dropdown"></div>
+                <div id="editor-container"><%- parentFile.whatsNew || '' %></div>
                 <input type="hidden" name="whatsNew" id="hiddenWhatsNew">
                 <p style="color: var(--silver); font-size: 0.85em; margin-top: 5px;">List changes. If left blank, the old notes will be used.</p>
             </div>
@@ -310,9 +308,9 @@
                     Important Note / Installation Instructions (Optional)
                     <span class="template-helper-btn" data-target="importantNote"><i class="fa-solid fa-lightbulb"></i> Use Template</span>
                 </label>
+                <div id="dropdown-importantNote" class="template-dropdown"></div>
                 <input type="hidden" id="hiddenImportantNote" name="importantNote" value="<%= parentFile.importantNote || '' %>">
                 <div id="importantNote-editor-container"><%- parentFile.importantNote || '' %></div>
-                <div id="dropdown-importantNote" class="template-dropdown"></div>
                 <span style="font-size: 0.85em; color: var(--silver); display: block; margin-top: 5px;">Leave blank to keep the previous version's instructions.</span>
             </div>
 
