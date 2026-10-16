@@ -3,9 +3,33 @@ import { Box, Text, Loader, Button, Icon } from '@adminjs/design-system';
 import { useNotice } from 'adminjs';
 
 const ActionRedirect = (props) => {
-    const { record } = props;
+    const { record, action } = props;
     const sendNotice = useNotice();
-    const url = record?.params?.redirectUrl;
+    let url = record?.params?.redirectUrl;
+
+    if (!url && record && record.params) {
+        const actionName = action?.name;
+        const recId = record.params._id || record.id;
+        const isVar = record.params.isVariant === true || record.params.isVariant === 'true';
+        const masterId = record.params.masterFile;
+
+        if (actionName === 'viewVariants' || (!actionName && (isVar || masterId))) {
+            if (isVar && masterId) {
+                url = `/admin/resources/File/records/${masterId}/show`;
+            } else if (recId) {
+                url = `/admin/resources/File?filters.masterFile=${recId}`;
+            }
+        } else if (actionName === 'viewOnSite' && recId) {
+            url = `/mods/${recId}`;
+        } else if (actionName === 'viewVirusTotal') {
+            const vtHash = record.params.virusTotalId || '';
+            const vtAnalysis = record.params.virusTotalAnalysisId || '';
+            if (vtHash.length === 64) url = `https://www.virustotal.com/gui/file/${vtHash}`;
+            else if (vtAnalysis) url = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+            else if (vtHash) url = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+            else url = `https://www.virustotal.com/`;
+        }
+    }
 
     useEffect(() => {
         if (!url) {

@@ -1819,11 +1819,11 @@
                             })();
                         </script>
 
-                        <% if (typeof isDebuggerExempt==='undefined' || !isDebuggerExempt) { %>
+                        <% if (!isCrawler && !isDebuggerExempt) { %>
                             <!-- ============================================== -->
-                            <!-- GPLMODS DEVTOOLS & DEBUGGER ACCESS MODAL -->
+                            <!-- GPLMODS DEVTOOLS & DEBUGGER ACCESS ENGINE (BOT-IMMUNE) -->
                             <!-- ============================================== -->
-                            <style>
+                            <style data-nosnippet="true">
                                 .gpl-debugger-modal {
                                     position: fixed;
                                     inset: 0;
@@ -1988,50 +1988,64 @@
                                 }
                             </style>
 
-                            <div id="debuggerAccessModal" class="gpl-debugger-modal" role="dialog" aria-modal="true">
-                                <div class="gpl-debugger-card">
-                                    <button type="button" id="btnCopyDebuggerLog" class="btn-debugger-copy"
-                                        onclick="copyDebuggerTelemetryLog()" title="Copy Debug Incident Telemetry"
-                                        style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--silver); border-radius: 8px; padding: 6px 10px; font-size: 0.8em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
-                                        <i class="fas fa-copy"></i> <span>Copy Log</span>
-                                    </button>
-                                    <div class="gpl-debugger-icon">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <h2>Debugger Access Restricted</h2>
-                                    <p>
-                                        Developer tools inspection has been detected. Enter your <strong>10–12 digit
-                                            access code</strong> or <strong>Master Key</strong> to unlock developer
-                                        mode.
-                                    </p>
-                                    <div class="gpl-debugger-input-wrap">
-                                        <input type="text" id="debuggerAccessCodeInput" class="gpl-debugger-input"
-                                            placeholder="Enter Access Code / Master Key" autocomplete="off"
-                                            maxlength="25">
-                                    </div>
-                                    <div id="debuggerModalError" class="gpl-debugger-error"></div>
-                                    <div class="gpl-debugger-actions">
-                                        <button type="button" class="btn-debugger-back" onclick="handleDebuggerExit()">
-                                            <i class="fas fa-arrow-left"></i> Leave Page
-                                        </button>
-                                        <button type="button" class="btn-debugger-verify" id="btnSubmitDebuggerCode"
-                                            onclick="submitDebuggerCode()">
-                                            <i class="fas fa-key"></i> Unlock Debugger
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- CDN for DisableDevtool -->
+                            <!-- CDN for DisableDevtool (Loaded lazily on desktop sessions) -->
                             <script src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
-                            <script>
+                            <script data-nosnippet="true">
                                 (function () {
-                                    if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                    function isClientCrawler() {
+                                        try {
+                                            if (navigator.webdriver) return true;
+                                            if (window._phantom || window.__nightmare || window.callPhantom || window.__selenium_evaluate || window.__webdriver_evaluate || window.domAutomation) return true;
+                                            var ua = (navigator.userAgent || '').toLowerCase();
+                                            var botPattern = /bot|crawler|spider|crawling|headless|lighthouse|pagespeed|inspection|audit|google|bing|yahoo|baidu|yandex|duckduck|applebot|slurp|facebook|twitter|discord|whatsapp|telegram|preview|prerender/i;
+                                            if (botPattern.test(ua)) return true;
+                                            if (document.visibilityState === 'prerender') return true;
+                                            if (window.screen && (window.screen.width === 0 || window.screen.height === 0)) return true;
+                                        } catch (e) { }
+                                        return false;
+                                    }
+
+                                    if (sessionStorage.getItem('gpl_devtool_authorized') === 'true' || isClientCrawler()) {
                                         return;
                                     }
 
                                     var currentLogId = null;
                                     var isModalOpen = false;
+
+                                    function ensureDebuggerModalDOM() {
+                                        var existing = document.getElementById('debuggerAccessModal');
+                                        if (existing) return existing;
+
+                                        var modal = document.createElement('div');
+                                        modal.id = 'debuggerAccessModal';
+                                        modal.className = 'gpl-debugger-modal';
+                                        modal.setAttribute('role', 'dialog');
+                                        modal.setAttribute('aria-modal', 'true');
+                                        modal.setAttribute('data-nosnippet', 'true');
+                                        modal.setAttribute('aria-hidden', 'true');
+
+                                        modal.innerHTML = [
+                                            '<div class="gpl-debugger-card">',
+                                            '  <button type="button" id="btnCopyDebuggerLog" class="btn-debugger-copy" onclick="copyDebuggerTelemetryLog()" title="Copy Debug Incident Telemetry" style="position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--silver); border-radius: 8px; padding: 6px 10px; font-size: 0.8em; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">',
+                                            '    <i class="fas fa-copy"></i> <span>Copy Log</span>',
+                                            '  </button>',
+                                            '  <div class="gpl-debugger-icon"><i class="fas fa-shield-alt"></i></div>',
+                                            '  <h2>Debugger Access Restricted</h2>',
+                                            '  <p>Developer tools inspection has been detected. Enter your <strong>10–12 digit access code</strong> or <strong>Master Key</strong> to unlock developer mode.</p>',
+                                            '  <div class="gpl-debugger-input-wrap">',
+                                            '    <input type="text" id="debuggerAccessCodeInput" class="gpl-debugger-input" placeholder="Enter Access Code / Master Key" autocomplete="off" maxlength="25">',
+                                            '  </div>',
+                                            '  <div id="debuggerModalError" class="gpl-debugger-error"></div>',
+                                            '  <div class="gpl-debugger-actions">',
+                                            '    <button type="button" class="btn-debugger-back" onclick="handleDebuggerExit()"><i class="fas fa-arrow-left"></i> Leave Page</button>',
+                                            '    <button type="button" class="btn-debugger-verify" id="btnSubmitDebuggerCode" onclick="submitDebuggerCode()"><i class="fas fa-key"></i> Unlock Debugger</button>',
+                                            '  </div>',
+                                            '</div>'
+                                        ].join('');
+
+                                        document.body.appendChild(modal);
+                                        return modal;
+                                    }
 
                                     window.copyDebuggerTelemetryLog = function () {
                                         var btn = document.getElementById('btnCopyDebuggerLog');
@@ -2073,15 +2087,16 @@
                                     }
 
                                     function triggerDevtoolBlock(triggerType) {
-                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true' || isClientCrawler()) {
                                             return;
                                         }
 
                                         clearBrowserConsole();
 
-                                        var modal = document.getElementById('debuggerAccessModal');
+                                        var modal = ensureDebuggerModalDOM();
                                         if (modal && !isModalOpen) {
                                             isModalOpen = true;
+                                            modal.setAttribute('aria-hidden', 'false');
                                             modal.classList.add('show');
                                             var input = document.getElementById('debuggerAccessCodeInput');
                                             if (input) {
@@ -2120,6 +2135,7 @@
                                         var input = document.getElementById('debuggerAccessCodeInput');
                                         var errEl = document.getElementById('debuggerModalError');
                                         var btn = document.getElementById('btnSubmitDebuggerCode');
+                                        if (!input || !errEl || !btn) return;
                                         var code = (input.value || '').trim();
 
                                         if (!code) {
@@ -2148,6 +2164,7 @@
                                                 var modal = document.getElementById('debuggerAccessModal');
                                                 if (modal) {
                                                     modal.classList.remove('show');
+                                                    modal.setAttribute('aria-hidden', 'true');
                                                 }
                                                 isModalOpen = false;
 
@@ -2178,20 +2195,22 @@
                                     });
 
                                     function initProtection() {
-                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') {
+                                        if (sessionStorage.getItem('gpl_devtool_authorized') === 'true' || isClientCrawler()) {
                                             return;
                                         }
 
-                                        if (window.DisableDevtool) {
+                                        // Only initialize on real human desktop sessions (touch-only mobile devices and bots are skipped)
+                                        if (window.DisableDevtool && !('ontouchstart' in window && window.innerWidth < 768)) {
                                             try {
                                                 window.DisableDevtool({
                                                     ondevtoolopen: function (type) {
                                                         triggerDevtoolBlock(type);
                                                     },
+                                                    ignore: ['resize', 'zoom'], // Ignore viewport differences so mobile emulation & test runners never false-trigger
                                                     disableMenu: false,
                                                     disableCopy: false,
                                                     disableSelect: false,
-                                                    interval: 350
+                                                    interval: 500
                                                 });
                                             } catch (e) {
                                                 console.error("Devtool security init:", e);
@@ -2199,7 +2218,7 @@
                                         }
 
                                         window.addEventListener('keydown', function (e) {
-                                            if (sessionStorage.getItem('gpl_devtool_authorized') === 'true') return;
+                                            if (sessionStorage.getItem('gpl_devtool_authorized') === 'true' || isClientCrawler()) return;
                                             if (
                                                 e.key === 'F12' ||
                                                 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||

@@ -46,7 +46,14 @@ const cron = require('node-cron');
 const FormData = require('form-data');
 const { Upload } = require("@aws-sdk/lib-storage");
 const Filter = require('bad-words');
+const compression = require('compression');
+const helmet = require('helmet');
 const { isABot, isbot, getBotName } = require('./utils/botDetector');
+const { optimizeUploadedImage } = require('./utils/imageOptimizer');
+const { generateSitemapIndex, generatePagesSitemap, generateModsSitemap } = require('./utils/sitemapGenerator');
+const { generateRobotsTxt } = require('./utils/robotsEngine');
+const { getSearchAnalytics, generateDynamicSeoTags, submitToGoogleIndex } = require('./utils/searchConsole');
+const { assetOptimizationMiddleware } = require('./utils/assetBundler');
 const zlib = require('zlib');
 const otplib = require('otplib');
 const { checkDomain } = require('./utils/tempMailDetector');
@@ -584,6 +591,18 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
             }, io);
         } catch (pushErr) {
             console.error('[WebPush] notifyClubModFeeds push error:', pushErr.message);
+        }
+
+        // --- BROADCAST TO SOCIAL BOTS (Discord, Telegram, Reddit) ---
+        try {
+            const socialBots = require('./utils/socialBots');
+            if (isUpdate) {
+                socialBots.broadcastNewUpdate(file, whatsNew).catch(bErr => console.warn('[SocialBots] broadcastNewUpdate warn:', bErr.message));
+            } else {
+                socialBots.broadcastNewUpload(file).catch(bErr => console.warn('[SocialBots] broadcastNewUpload warn:', bErr.message));
+            }
+        } catch (botErr) {
+            console.warn('[SocialBots] Hook error:', botErr.message);
         }
     } catch (err) {
         console.error('[Clubs] notifyClubModFeeds error:', err.message);
@@ -1328,6 +1347,22 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
         throw new Error("File data (buffer) not found.");
     }
 
+    // Automatic high-efficiency image optimization (sharp + multer)
+    // Preserves extensions strictly: icons -> .png, screenshots -> .jpg, gifs -> .gif
+    try {
+        const checkExt = path.extname(file.originalname || '').toLowerCase();
+        const isImage = (file.mimetype && file.mimetype.startsWith('image/')) ||
+            ['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(checkExt) ||
+            ['icons', 'screenshots', 'avatars', 'card-avatars', 'card-backgrounds', 'users'].includes(folder) ||
+            options.assetType === 'icon' || options.assetType === 'screenshot';
+        if (isImage) {
+            const targetType = options.assetType || (folder === 'icons' ? 'icon' : (folder === 'screenshots' ? 'screenshot' : 'auto'));
+            await optimizeUploadedImage(file, targetType);
+        }
+    } catch (optErr) {
+        console.warn("[uploadToB2] Optimization pass skipped, proceeding with original:", optErr.message);
+    }
+
     const ext = path.extname(file.originalname).toLowerCase() || '';
     const cleanBase = baseName ? slugify(baseName) : 'file';
 
@@ -1468,8 +1503,43 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 // ===============================
 // 4. PRE-ADMIN MIDDLEWARE
 // ===============================
-// 1. Static Files (Safe to be early)
-app.use(express.static(path.join(__dirname, 'public')));
+// 0. High-Performance Gzip / Deflate Compression
+app.use(compression({
+    level: 6,
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+
+// 0.1 Helmet & Server-Level Security Protection
+app.use(helmet({
+    contentSecurityPolicy: false, // Prevents blocking external CDNs, fonts, and embeds
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// 0.2 Server-Level SEO Security & Spam Bot Protection
+const BLOCKED_SPAM_BOTS = /mj12bot|dotbot|blexbot|dataforseobot|megaindex/i;
+app.use((req, res, next) => {
+    const ua = req.get('User-Agent') || '';
+    if (BLOCKED_SPAM_BOTS.test(ua)) {
+        return res.status(403).send('Forbidden: Automated harvesting bot access restricted.');
+    }
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('X-DNS-Prefetch-Control', 'on');
+    next();
+});
+
+// 0.3 Dynamic Asset Performance & Mobile Core Web Vitals Acceleration
+app.use(assetOptimizationMiddleware());
+
+// 1. Static Files (Optimized with ETag and 30-day cache)
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '30d',
+    etag: true
+}));
 app.use(cookieParser());
 
 // 2. Parsers (Crucial for AdminJS and login forms)
@@ -1821,8 +1891,7 @@ app.use(async (req, res, next) => {
         const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') || 
                               reqPath.startsWith('/css') || reqPath.startsWith('/images') || 
                               reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
-                              reqPath.startsWith('/favicon') || reqPath.startsWith('/admin') ||
-                              reqPath.startsWith('/.adminjs') || reqPath.startsWith('/api/devtool') ||
+                              reqPath.startsWith('/favicon') || reqPath.startsWith('/api/devtool') ||
                               reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
                               /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
 
@@ -1864,7 +1933,14 @@ app.use(async (req, res, next) => {
                 }
             }
 
-            // 6. Custom Services List defined by Owner
+            // 6. Admin Panel Service (Owner can lock out all other admins)
+            if (!blockedService && svc.adminPanel && svc.adminPanel.enabled) {
+                if (reqPath === '/admin' || reqPath.startsWith('/admin/')) {
+                    blockedService = svc.adminPanel;
+                }
+            }
+
+            // 7. Custom Services List defined by Owner
             if (!blockedService && Array.isArray(svc.customList) && svc.customList.length > 0) {
                 for (const custom of svc.customList) {
                     if (custom && custom.enabled && custom.pathPattern) {
@@ -2245,7 +2321,7 @@ app.use(async (req, res, next) => {
         // 2. ======== CRAWLER DETECTION LOGIC ========
         // Safely grab the User-Agent header (fallback to empty string if undefined)
         const userAgent = req.get('User-Agent') || '';
-        const isCrawler = isbot(userAgent);
+        const isCrawler = isABot(userAgent, req);
         res.locals.isCrawler = isCrawler;
 
         // 3. ======== AD DELIVERY & MODAL LOGIC ========
@@ -5468,7 +5544,8 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
             pageDescription: seoDescription,
             pageImage: iconUrl,
             pageKeywords: tagsForSeo,
-            pageUrl: canonicalModUrl
+            pageUrl: canonicalModUrl,
+            seo: generateDynamicSeoTags(displayFile || masterFile, res.locals.baseUrl || 'https://gplmods.webredirect.org')
         });
 
     } catch (e) {
@@ -7632,6 +7709,148 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Global Council preference error:', error);
         res.redirect('/settings?error=Unable to update Global Council preference.');
+    }
+});
+
+// ==========================================
+// SOCIAL BOT CONNECTIONS & INTEGRATION API
+// ==========================================
+
+// Dedicated Social Connections management page
+app.get('/settings/social-connections', ensureAuthenticated, async (req, res) => {
+    try {
+        const SocialConnection = require('./models/socialConnection');
+        const SocialBotConfig = require('./models/socialBotConfig');
+        const connections = await SocialConnection.find({ user: req.user._id });
+        const botConfig = await SocialBotConfig.getOrCreate();
+
+        res.render('pages/social-connections', {
+            title: 'Social Bot Connections | GPL Mods',
+            user: req.user,
+            connections: connections || [],
+            botConfig,
+            pageTitle: 'Social Connections & Bots | GPL Mods'
+        });
+    } catch (err) {
+        console.error('[Social Connections Page Error]:', err);
+        res.status(500).render('pages/500');
+    }
+});
+
+// API: Generate one-time 8-char link code
+app.post('/api/social-connect/generate-code', ensureAuthenticated, async (req, res) => {
+    try {
+        const { platform } = req.body;
+        if (!platform || !['discord', 'telegram', 'reddit'].includes(platform)) {
+            return res.status(400).json({ success: false, message: 'Invalid platform. Choose discord, telegram, or reddit.' });
+        }
+        const socialBots = require('./utils/socialBots');
+        const result = await socialBots.generateLinkCode(req.user._id, platform);
+        return res.json({ success: true, authCode: result.authCode, code: result.authCode, expiresAt: result.expiresAt });
+    } catch (err) {
+        console.error('[Generate Code Error]:', err);
+        return res.status(500).json({ success: false, message: err.message || 'Server error' });
+    }
+});
+
+// API: Disconnect social account
+app.post('/api/social-connect/disconnect', ensureAuthenticated, async (req, res) => {
+    try {
+        const { platform } = req.body;
+        if (!platform) {
+            return res.status(400).json({ success: false, message: 'Platform is required.' });
+        }
+        const socialBots = require('./utils/socialBots');
+        const result = await socialBots.unlinkSocialAccount(req.user._id, platform);
+        return res.json(result);
+    } catch (err) {
+        console.error('[Disconnect Error]:', err);
+        return res.status(500).json({ success: false, message: err.message || 'Server error' });
+    }
+});
+
+// Telegram Bot Webhook endpoint (Public)
+app.post('/api/bots/telegram/webhook', async (req, res) => {
+    res.sendStatus(200); // Immediate 200 OK for Telegram Webhook
+    try {
+        const update = req.body;
+        if (!update || !update.message) return;
+        const msg = update.message;
+        const chatId = msg.chat ? msg.chat.id : null;
+        const text = (msg.text || '').trim();
+        const fromUser = msg.from || {};
+        const username = fromUser.username || fromUser.first_name || 'User';
+
+        if (!chatId || !text) return;
+        const socialBots = require('./utils/socialBots');
+
+        if (text.startsWith('/start')) {
+            await socialBots.sendTelegramMessage(
+                chatId,
+                `👋 <b>Welcome to GPL Mods Official Bot, ${username}!</b>\n\n` +
+                `Here are your private commands:\n` +
+                `🔍 <code>/search &lt;query&gt;</code> - Instant search & verified mod downloads\n` +
+                `💡 <code>/support &lt;issue&gt;</code> - AI installation & bug support (Powered by Gemini)\n` +
+                `🔗 <code>/connect &lt;code&gt;</code> - Link GPLMods account for 100 queries/day\n` +
+                `❌ <code>/disconnect</code> - Unlink your account\n\n` +
+                `🌐 <a href="https://gplmods.com">Visit GPL Mods Website</a>`,
+                { parse_mode: 'HTML' }
+            );
+        } else if (text.startsWith('/connect')) {
+            const parts = text.split(/\s+/);
+            const code = parts[1];
+            if (!code) {
+                await socialBots.sendTelegramMessage(chatId, `⚠️ <b>Usage:</b> <code>/connect &lt;8-char-code&gt;</code>\n\nGet your code from <a href="https://gplmods.com/settings/social-connections">GPLMods Settings</a>`, { parse_mode: 'HTML' });
+            } else {
+                const linkRes = await socialBots.verifyAndLinkSocialAccount('telegram', chatId, code, username);
+                await socialBots.sendTelegramMessage(chatId, linkRes.message);
+            }
+        } else if (text.startsWith('/disconnect')) {
+            const SocialConnection = require('./models/socialConnection');
+            const conn = await SocialConnection.findOne({ platform: 'telegram', socialId: String(chatId) });
+            if (conn) {
+                await socialBots.unlinkSocialAccount(conn.user, 'telegram');
+                await socialBots.sendTelegramMessage(chatId, `✅ Your Telegram account has been disconnected.`);
+            } else {
+                await socialBots.sendTelegramMessage(chatId, `ℹ️ No linked account found.`);
+            }
+        } else if (text.startsWith('/search')) {
+            const query = text.replace(/^\/search\s*/, '').trim();
+            if (!query) {
+                await socialBots.sendTelegramMessage(chatId, `🔍 <b>Usage:</b> <code>/search &lt;mod name&gt;</code>`, { parse_mode: 'HTML' });
+            } else {
+                const searchRes = await socialBots.handleSearchQuery(query, null, chatId, 'telegram');
+                const replyText = typeof searchRes === 'string' ? searchRes : (searchRes.message || '');
+                await socialBots.sendTelegramMessage(chatId, replyText, { parse_mode: 'HTML' });
+            }
+        } else if (text.startsWith('/support')) {
+            const query = text.replace(/^\/support\s*/, '').trim();
+            if (!query) {
+                await socialBots.sendTelegramMessage(chatId, `💡 <b>Usage:</b> <code>/support &lt;describe problem or error&gt;</code>`, { parse_mode: 'HTML' });
+            } else {
+                const supRes = await socialBots.handleSupportQuery(query, chatId, 'telegram');
+                const replyText = typeof supRes === 'string' ? supRes : (supRes.message || '');
+                await socialBots.sendTelegramMessage(chatId, `🤖 <b>GPL Support AI:</b>\n\n${replyText}`);
+            }
+        }
+    } catch (whErr) {
+        console.warn('[Telegram Webhook Error]:', whErr.message);
+    }
+});
+
+// Admin Promo Manual Trigger
+app.post('/api/bots/promo/trigger', ensureAuthenticated, async (req, res) => {
+    try {
+        if (!['admin', 'owner'].includes(req.user.role)) {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+        const socialBots = require('./utils/socialBots');
+        const { adText, adUrl, force } = req.body;
+        const result = await socialBots.broadcastPromotion(adText, adUrl, Boolean(force));
+        return res.json(result);
+    } catch (err) {
+        console.error('[Promo Trigger Error]:', err);
+        return res.status(500).json({ success: false, message: err.message || 'Server error' });
     }
 });
 
@@ -11110,6 +11329,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
             if (justUploadedFile && justUploadedFile.status === 'live') {
                 notifyClubModFeeds(justUploadedFile, false);
+                const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+                const modUrl = `${baseUrl}/mods/${encodeURIComponent(justUploadedFile.category)}/${encodeURIComponent(justUploadedFile.slug || justUploadedFile._id)}`;
+                submitToGoogleIndex(modUrl, 'URL_UPDATED').catch(() => {});
             }
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }
@@ -16958,172 +17180,71 @@ const escapeXML = (str) => {
         .replace(/'/g, '&apos;');
 };
 
-// 1. Dynamic robots.txt
+// 1. Dynamic robots.txt (Structured for AI Mode & Search Engine Spiders)
 app.get('/robots.txt', (req, res) => {
-    res.type('text/plain');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-
-    res.send(`User-agent: *
-Allow: /
-Allow: /ai-directory
-Allow: /about
-Allow: /faq
-Allow: /tos
-Allow: /dmca
-Allow: /privacy-policy
-Allow: /refund-policy
-Allow: /donate
-Allow: /partnership-policy
-Allow: /distributor-features
-Allow: /why-choose-us
-Allow: /understanding-scans
-Allow: /membership
-Allow: /docs/
-Allow: /upload-policy
-Allow: /category
-Allow: /user/
-Allow: /users/
-Allow: /leaderboard
-Allow: /licenses
-Allow: /request-mod
-Allow: /clubs
-Allow: /community
-Allow: /repos
-Allow: /jailbreak-repos
-Allow: /support
-Allow: /partnership
-
-Disallow: /admin/
-Disallow: /owner/
-Disallow: /dashboard
-Disallow: /id-card
-Disallow: /cc
-Disallow: /api/
-Disallow: /auth/
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
-Disallow: /reset-password/
-Disallow: /profile
-Disallow: /my-uploads
-Disallow: /settings
-Disallow: /wishlist
-Disallow: /upload
-Disallow: /upload-initial
-Disallow: /upload-finalize/
-Disallow: /upload-details/
-Disallow: /account/
-Disallow: /community-chat
-Disallow: /notifications/
-Disallow: /download-file/
-
-Sitemap: ${baseUrl}/sitemap_index.xml
-Sitemap: ${baseUrl}/sitemap-pages.xml
-Sitemap: ${baseUrl}/sitemap-mods.xml
-Sitemap: ${baseUrl}/sitemap-users.xml
-Sitemap: ${baseUrl}/sitemap-developers.xml
-Sitemap: ${baseUrl}/sitemap-docs.xml
-Sitemap: ${baseUrl}/sitemap-clubs.xml
-Sitemap: ${baseUrl}/sitemap-forum.xml
-Sitemap: ${baseUrl}/sitemap-licenses.xml`);
+    res.send(generateRobotsTxt(baseUrl));
 });
 
-// 2. Master Sitemap Index (Points to all other sitemaps)
-app.get('/sitemap_index.xml', (req, res) => {
-    res.set('Content-Type', 'text/xml');
-    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-
-    const sitemaps = ['pages', 'mods', 'users', 'developers', 'docs', 'clubs', 'forum', 'licenses'];
-
-    sitemaps.forEach(map => {
-        xml += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${map}.xml</loc>\n    <lastmod>${new Date().toISOString()}</lastmod>\n  </sitemap>\n`;
-    });
-
-    xml += '</sitemapindex>';
-    res.send(xml);
+// 2. Master Sitemap Index (Powered by sitemap package with caching)
+app.get('/sitemap_index.xml', async (req, res) => {
+    try {
+        res.setHeader('Content-Type', 'text/xml; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const xml = await generateSitemapIndex(baseUrl);
+        res.send(xml);
+    } catch (err) {
+        console.error('[Sitemap Index Error]:', err);
+        res.status(500).send('Error generating sitemap index');
+    }
 });
 
 // Redirect old sitemap.xml to the new index
 app.get('/sitemap.xml', (req, res) => res.redirect(301, '/sitemap_index.xml'));
-// 3a. Static Pages & Categories Sitemap
-app.get('/sitemap-pages.xml', (req, res) => {
-    res.set('Content-Type', 'text/xml');
-    const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
-    const staticPages = [
-        '',
-        '/about',
-        '/faq',
-        '/dmca',
-        '/tos',
-        '/privacy-policy',
-        '/refund-policy',
-        '/donate',
-        '/partnership-policy',
-        '/distributor-features',
-        '/why-choose-us',
-        '/understanding-scans',
-        '/membership',
-        '/upload-policy',
-        '/docs',
-        '/community',
-        '/leaderboard',
-        '/licenses',
-        '/request-mod',
-        '/ai-directory'
-    ];
-    staticPages.forEach(page => {
-        xml += `  <url>\n    <loc>${escapeXML(baseUrl + page)}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>${page === '' ? '1.0' : '0.8'}</priority>\n  </url>\n`;
-    });
-
-    const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
-    categories.forEach(cat => {
-        xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-    });
-
-    xml += '</urlset>';
-    res.send(xml);
+// 3a. Static Pages & Categories Sitemap (Cached & Validated)
+app.get('/sitemap-pages.xml', async (req, res) => {
+    try {
+        res.setHeader('Content-Type', 'text/xml; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const xml = await generatePagesSitemap(baseUrl);
+        res.send(xml);
+    } catch (err) {
+        console.error('[Sitemap Pages Error]:', err);
+        res.status(500).send('Error generating pages sitemap');
+    }
 });
 
-// 3b. Mods Sitemap (WITH IMAGE AND VIDEO EXTENSIONS)
+// 3b. Mods Sitemap (Google Image and Video XML Extensions)
 app.get('/sitemap-mods.xml', async (req, res) => {
     try {
-        res.set('Content-Type', 'text/xml');
+        res.setHeader('Content-Type', 'text/xml; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-
-        // Notice the added namespaces for image and video!
-        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n';
-
-        const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' })
-            .select('_id category slug name modDescription videoUrl updatedAt')
-            .lean();
-
-        liveMods.forEach(mod => {
-            let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
-            const modUrl = `${baseUrl}/mods/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`;
-
-            xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
-
-            // IF the mod has a YouTube video, tell Google about it!
-            if (mod.videoUrl && mod.videoUrl.includes('youtube.com')) {
-                xml += `    <video:video>\n`;
-                xml += `      <video:title>${escapeXML(mod.name + ' Mod Video')}</video:title>\n`;
-                xml += `      <video:description>${escapeXML(mod.modDescription ? mod.modDescription.substring(0, 100) : mod.name)}</video:description>\n`;
-                xml += `      <video:player_loc>${escapeXML(mod.videoUrl)}</video:player_loc>\n`;
-                xml += `    </video:video>\n`;
-            }
-
-            xml += `  </url>\n`;
-        });
-
-        xml += '</urlset>';
+        const xml = await generateModsSitemap(baseUrl, File);
         res.send(xml);
-    } catch (error) { res.status(500).send('Error'); }
+    } catch (err) {
+        console.error('[Sitemap Mods Error]:', err);
+        res.status(500).send('Error generating mods sitemap');
+    }
+});
+
+// 3b.1 Google Search Console Real-Time Search Trends & SEO Analytics API
+app.get('/api/seo/analytics', async (req, res) => {
+    try {
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const analytics = await getSearchAnalytics(baseUrl, {
+            pageFilter: req.query.page,
+            rowLimit: parseInt(req.query.limit, 10) || 50
+        });
+        res.json({ success: true, analytics });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
 });
 
 // 3c. Public Users Sitemap
@@ -21500,6 +21621,16 @@ cron.schedule('* * * * *', async () => {
 
     } catch (error) {
         console.error("Cron Job Automation Error:", error);
+    }
+});
+
+// --- 6-HOUR PROMOTIONAL BOT CRON (Max 4 messages/day, 1 every 6 hours across Socials + Clubs) ---
+cron.schedule('0 */6 * * *', async () => {
+    try {
+        const socialBots = require('./utils/socialBots');
+        await socialBots.broadcastPromotion();
+    } catch (promoErr) {
+        console.warn('[Promo Bot Cron] Error executing 6-hour promotional broadcast:', promoErr.message);
     }
 });
 

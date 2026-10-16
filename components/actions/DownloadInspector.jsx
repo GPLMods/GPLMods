@@ -6,6 +6,9 @@ const DownloadInspector = (props) => {
     const { record } = props;
     const sendNotice = useNotice();
     const [copied, setCopied] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [verificationResult, setVerificationResult] = useState(null);
+    const [showDownloadConfirm, setShowDownloadConfirm] = useState(false);
 
     if (!record || !record.params) {
         return (
@@ -38,9 +41,57 @@ const DownloadInspector = (props) => {
         });
     };
 
-    const handleStartDownload = (targetUrl) => {
-        sendNotice({ message: 'Initiating file download in new tab...', type: 'info' });
-        window.open(targetUrl || primaryDownloadUrl, '_blank');
+    // Safely test/verify the download endpoint without triggering browser file download
+    const handleVerifyEndpoint = async () => {
+        setVerifying(true);
+        setVerificationResult(null);
+        try {
+            // Using fetch with HEAD or abort controller to check status code without consuming body
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6000);
+            
+            const response = await fetch(primaryDownloadUrl, {
+                method: 'GET',
+                signal: controller.signal,
+                headers: { 'Range': 'bytes=0-0' } // Only request 1 byte so file is never downloaded
+            });
+            clearTimeout(timeoutId);
+
+            const isOk = response.status >= 200 && response.status < 400;
+            const contentType = response.headers.get('content-type') || 'application/octet-stream';
+            const contentLength = response.headers.get('content-length') || fileSize;
+
+            setVerificationResult({
+                status: response.status,
+                statusText: response.statusText || (isOk ? 'OK' : 'Error'),
+                isOk,
+                contentType,
+                contentLength,
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            if (isOk) {
+                sendNotice({ message: `✓ Download route verified! HTTP ${response.status} (Valid & Reachable)`, type: 'success' });
+            } else {
+                sendNotice({ message: `⚠️ Download route returned HTTP ${response.status}`, type: 'alert' });
+            }
+        } catch (err) {
+            setVerificationResult({
+                status: 'Error',
+                statusText: err.name === 'AbortError' ? 'Timeout (Server responding slowly)' : err.message,
+                isOk: false,
+                timestamp: new Date().toLocaleTimeString()
+            });
+            sendNotice({ message: `Verification check: ${err.message}`, type: 'error' });
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const handleConfirmDownload = () => {
+        setShowDownloadConfirm(false);
+        sendNotice({ message: 'Initiating file download to your device...', type: 'info' });
+        window.open(primaryDownloadUrl, '_blank');
     };
 
     const handleBack = () => {
@@ -52,7 +103,7 @@ const DownloadInspector = (props) => {
     };
 
     return (
-        <Box p="xxl" style={{ maxWidth: '820px', margin: '0 auto', fontFamily: "'Poppins', sans-serif" }}>
+        <Box p="xxl" style={{ maxWidth: '840px', margin: '0 auto', fontFamily: "'Poppins', sans-serif" }}>
             <Box
                 p="xl"
                 style={{
@@ -67,7 +118,7 @@ const DownloadInspector = (props) => {
                     <Box>
                         <Text variant="h3" style={{ color: '#FFD700', margin: 0, fontWeight: 700 }}>
                             <Icon icon="Download" style={{ marginRight: '10px' }} />
-                            Download Inspector
+                            Download Inspector & URL Validator
                         </Text>
                         <Text style={{ color: '#aaa', fontSize: '13px', marginTop: '4px' }}>
                             Inspect, verify, copy or test download URLs safely without unwanted downloads
@@ -143,14 +194,40 @@ const DownloadInspector = (props) => {
                             <Button
                                 size="sm"
                                 variant="primary"
-                                onClick={() => handleStartDownload(primaryDownloadUrl)}
-                                style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 600, cursor: 'pointer' }}
+                                onClick={handleVerifyEndpoint}
+                                disabled={verifying}
+                                style={{ backgroundColor: '#00c853', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
                             >
-                                <Icon icon="ExternalLink" style={{ marginRight: '6px' }} />
-                                Test Download
+                                <Icon icon={verifying ? 'Loader' : 'CheckCircle'} style={{ marginRight: '6px' }} />
+                                {verifying ? 'Testing...' : 'Test Validity (Safe)'}
                             </Button>
                         </Box>
                     </Box>
+
+                    {/* Verification Result Feedback Card */}
+                    {verificationResult && (
+                        <Box
+                            mt="md"
+                            p="md"
+                            style={{
+                                backgroundColor: verificationResult.isOk ? 'rgba(0, 200, 83, 0.12)' : 'rgba(231, 76, 60, 0.15)',
+                                border: `1px solid ${verificationResult.isOk ? 'rgba(0, 200, 83, 0.4)' : 'rgba(231, 76, 60, 0.4)'}`,
+                                borderRadius: '8px'
+                            }}
+                        >
+                            <Box flex justifyContent="space-between" alignItems="center">
+                                <Text style={{ color: verificationResult.isOk ? '#2ecc71' : '#e74c3c', fontWeight: 600, fontSize: '13px' }}>
+                                    {verificationResult.isOk ? '✓ Route Verified Active & Healthy' : '⚠️ Verification Issue Detected'}
+                                </Text>
+                                <Text style={{ color: '#888', fontSize: '11px' }}>
+                                    Tested at {verificationResult.timestamp}
+                                </Text>
+                            </Box>
+                            <Text style={{ color: '#ccc', fontSize: '12px', marginTop: '4px' }}>
+                                HTTP Status: <strong>{verificationResult.status} {verificationResult.statusText}</strong> &bull; Content-Type: <strong>{verificationResult.contentType}</strong> &bull; Safe Test (no local download triggered)
+                            </Text>
+                        </Box>
+                    )}
                 </Box>
 
                 {/* Additional Endpoints & Cloud Storage Info */}
@@ -198,19 +275,69 @@ const DownloadInspector = (props) => {
                     )}
                 </Box>
 
-                {/* Footer Buttons */}
-                <Box flex justifyContent="flex-end" style={{ gap: '10px' }} mt="xl" pt="lg" borderTop="1px solid rgba(255, 255, 255, 0.08)">
-                    <Button variant="light" onClick={handleBack} style={{ cursor: 'pointer' }}>
-                        Done
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={() => handleStartDownload(primaryDownloadUrl)}
-                        style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 600, cursor: 'pointer' }}
+                {/* Explicit Download Confirmation Modal / Card */}
+                {showDownloadConfirm && (
+                    <Box
+                        p="lg"
+                        mb="lg"
+                        style={{
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            border: '1.5px solid #ffc107',
+                            borderRadius: '10px'
+                        }}
                     >
-                        <Icon icon="Download" style={{ marginRight: '6px' }} />
-                        Launch Download
+                        <Text style={{ color: '#ffd54f', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>
+                            <Icon icon="AlertTriangle" style={{ marginRight: '6px' }} />
+                            Confirm Real Download
+                        </Text>
+                        <Text style={{ color: '#eee', fontSize: '13px', marginBottom: '12px' }}>
+                            You are about to start downloading the actual mod file ({fileName}, {fileSize}) directly onto your computer. Are you sure?
+                        </Text>
+                        <Box flex style={{ gap: '10px' }}>
+                            <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={handleConfirmDownload}
+                                style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                                <Icon icon="Download" style={{ marginRight: '6px' }} />
+                                Yes, Download File to PC
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="light"
+                                onClick={() => setShowDownloadConfirm(false)}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                Cancel
+                            </Button>
+                        </Box>
+                    </Box>
+                )}
+
+                {/* Footer Buttons */}
+                <Box flex justifyContent="space-between" alignItems="center" mt="xl" pt="lg" borderTop="1px solid rgba(255, 255, 255, 0.08)">
+                    <Button
+                        variant="text"
+                        onClick={() => window.open(`/mods/${fileId}`, '_blank')}
+                        style={{ color: '#64b5f6', cursor: 'pointer' }}
+                    >
+                        <Icon icon="ExternalLink" style={{ marginRight: '6px' }} />
+                        View Public Mod Page
                     </Button>
+                    <Box flex style={{ gap: '10px' }}>
+                        <Button variant="light" onClick={handleBack} style={{ cursor: 'pointer' }}>
+                            Done
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowDownloadConfirm(true)}
+                            style={{ cursor: 'pointer', borderColor: '#FFD700', color: '#FFD700' }}
+                        >
+                            <Icon icon="Download" style={{ marginRight: '6px' }} />
+                            Download to Local Device...
+                        </Button>
+                    </Box>
                 </Box>
             </Box>
         </Box>
@@ -218,3 +345,4 @@ const DownloadInspector = (props) => {
 };
 
 export default DownloadInspector;
+

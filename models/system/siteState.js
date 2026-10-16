@@ -138,6 +138,11 @@ const SiteStateSchema = new Schema({
             title: { type: String, default: 'iOS DNS & Store Temporarily Unavailable' },
             message: { type: String, default: 'The iOS signing certificates and DNS service endpoints are temporarily offline.' }
         },
+        adminPanel: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'Admin Panel Unavailable' },
+            message: { type: String, default: 'The Admin Panel is temporarily closed for maintenance by the Site Owner.' }
+        },
         customList: [{
             serviceName: { type: String, default: '' },
             pathPattern: { type: String, default: '' },

@@ -1,7 +1,7 @@
 /**
  * GPLMods Bot & Search Engine Crawler Detection Engine
  * Accurately detects Googlebot, Bingbot, and all major search engine crawlers,
- * SEO audit tools, and social preview scrapers.
+ * SEO audit tools, AI search spiders, and social preview scrapers.
  * 
  * Ensures bots have 100% clean, unobstructed access to:
  * - HTML page content and metadata
@@ -19,6 +19,8 @@ const CRAWLER_REGEX = new RegExp([
     'googlebot', 'googlebot-image', 'googlebot-news', 'googlebot-video',
     'google-inspectiontool', 'storebot-google', 'googleother', 'adsbot-google',
     'feedfetcher-google', 'mediapartners-google', 'google-read-aloud',
+    'google-safety', 'apis-google', 'google-site-verification', 'googleproducer',
+    'google-xrawler', 'google-extended',
 
     // Microsoft / Bing Family
     'bingbot', 'msnbot', 'bingpreview', 'adidxbot', 'bing-site-auth',
@@ -32,52 +34,74 @@ const CRAWLER_REGEX = new RegExp([
     'applebot', 'applebot-extended',
 
     // Social Media & Messaging Preview Spiders
-    'facebookexternalhit', 'facebot', 'facebookcatalog', 'twitterbot',
-    'linkedinbot', 'pinterestbot', 'slackbot', 'telegrambot', 'whatsapp',
-    'skypeuripreview', 'discordbot', 'redditbot', 'tiktokbot', 'snapchat',
+    'facebookexternalhit', 'facebot', 'facebookcatalog', 'meta-externalagent',
+    'twitterbot', 'linkedinbot', 'pinterestbot', 'slackbot', 'telegrambot',
+    'whatsapp', 'skypeuripreview', 'discordbot', 'redditbot', 'tiktokbot', 'snapchat',
 
-    // AI & Search Indexing Crawlers
+    // AI & Search Indexing Crawlers (Google AI Overviews, OpenAI, Claude, Perplexity, etc.)
     'gptbot', 'chatgpt-user', 'oai-searchbot', 'claudebot', 'claude-web',
     'anthropic-ai', 'perplexitybot', 'bytespider', 'ccbot', 'cohere-ai', 'diffbot',
+    'omgili', 'youbot',
 
     // SEO, Quality, Performance & Auditing Tools
     'screaming frog', 'semrushbot', 'ahrefsbot', 'mj12bot', 'dotbot',
     'rogerbot', 'siteauditbot', 'sitebulb', 'lighthouse', 'chrome-lighthouse',
     'pagespeed', 'google-pagespeed', 'headlesschrome', 'w3c_validator',
-    'validator.w3.org', 'archive.org_bot', 'ia_archiver'
+    'validator.w3.org', 'archive.org_bot', 'ia_archiver',
+
+    // Headless Browser & Automated Verification Engines
+    'phantomjs', 'puppeteer', 'playwright', 'selenium', 'webdriver', 'prerender'
 ].join('|'), 'i');
 
 /**
  * Determines whether the given request or User-Agent originates from a bot or search engine crawler.
  * 
- * @param {string} userAgent - The User-Agent string from the client
+ * @param {string|object} userAgent - The User-Agent string from the client or req object
  * @param {object} [req] - Optional Express request object for header inspections
  * @returns {boolean} True if crawler/bot, false otherwise
  */
 function isABot(userAgent, req) {
-    // 1. Resolve User-Agent string
+    // 1. Resolve User-Agent string and req object
     let ua = '';
+    let requestObj = req;
+
     if (typeof userAgent === 'string') {
         ua = userAgent;
-    } else if (req && typeof req.get === 'function') {
-        ua = req.get('User-Agent') || '';
-    } else if (userAgent && typeof userAgent === 'object' && userAgent.headers) {
-        ua = userAgent.headers['user-agent'] || '';
+    } else if (userAgent && typeof userAgent === 'object') {
+        if (typeof userAgent.get === 'function') {
+            requestObj = userAgent;
+            ua = userAgent.get('User-Agent') || '';
+        } else if (userAgent.headers) {
+            requestObj = userAgent;
+            ua = userAgent.headers['user-agent'] || '';
+        }
     }
 
-    // 2. Testing query override (e.g. ?crawler=1 or ?bot=1)
-    if (req && req.query && (req.query.crawler === '1' || req.query.bot === '1')) {
-        return true;
+    if (!requestObj && req) {
+        requestObj = req;
     }
 
-    // 3. Header-based preview flags sent by bots & prefetchers
-    if (req && req.headers) {
-        const purpose = (req.headers['purpose'] || req.headers['x-purpose'] || '').toLowerCase();
+    // 2. Testing query override (e.g. ?crawler=1 or ?bot=1 or ?gsc=1)
+    if (requestObj && requestObj.query) {
+        if (requestObj.query.crawler === '1' || requestObj.query.bot === '1' || requestObj.query.gsc === '1') {
+            return true;
+        }
+    }
+
+    // 3. Header-based preview flags sent by search engines, bots & prefetchers
+    if (requestObj && requestObj.headers) {
+        const purpose = (requestObj.headers['purpose'] || requestObj.headers['x-purpose'] || '').toLowerCase();
         if (purpose === 'preview') return true;
-        if (req.headers['x-moz'] === 'prefetch') return true;
+        if (requestObj.headers['x-moz'] === 'prefetch') return true;
+        if (requestObj.headers['x-google-inspectiontool']) return true;
+        if (requestObj.headers['x-bufferbot']) return true;
+        if (requestObj.headers['cf-worker']) return true;
     }
 
-    if (!ua || typeof ua !== 'string') return false;
+    if (!ua || typeof ua !== 'string') {
+        // If there's no User-Agent at all on an external HTTP request, treat as automated/bot
+        return false;
+    }
 
     // 4. Primary Regex check for major engines (Googlebot, Bingbot, etc.)
     if (CRAWLER_REGEX.test(ua)) {
@@ -86,7 +110,7 @@ function isABot(userAgent, req) {
 
     // 5. Fallback check with npm isbot package for any generic or regional spiders
     try {
-        if (isbot(ua)) {
+        if (typeof isbot === 'function' && isbot(ua)) {
             return true;
         }
     } catch (e) {
@@ -105,9 +129,10 @@ function isABot(userAgent, req) {
 function getBotName(userAgent) {
     if (!userAgent || typeof userAgent !== 'string') return null;
     const ua = userAgent.toLowerCase();
-    if (ua.includes('googlebot')) return 'Googlebot';
     if (ua.includes('google-inspectiontool')) return 'Google InspectionTool';
+    if (ua.includes('googlebot')) return 'Googlebot';
     if (ua.includes('googleother')) return 'GoogleOther';
+    if (ua.includes('google-extended')) return 'Google-Extended';
     if (ua.includes('bingbot')) return 'Bingbot';
     if (ua.includes('bingpreview')) return 'BingPreview';
     if (ua.includes('duckduckbot')) return 'DuckDuckBot';
@@ -119,7 +144,12 @@ function getBotName(userAgent) {
     if (ua.includes('facebookexternalhit')) return 'FacebookBot';
     if (ua.includes('discordbot')) return 'Discordbot';
     if (ua.includes('telegrambot')) return 'TelegramBot';
+    if (ua.includes('whatsapp')) return 'WhatsAppBot';
+    if (ua.includes('oai-searchbot') || ua.includes('chatgpt-user') || ua.includes('gptbot')) return 'OpenAI Bot';
+    if (ua.includes('claudebot') || ua.includes('claude-web')) return 'Anthropic Claude';
+    if (ua.includes('perplexitybot')) return 'PerplexityBot';
     if (ua.includes('lighthouse')) return 'Lighthouse';
+    if (ua.includes('pagespeed')) return 'PageSpeed';
     if (ua.includes('semrushbot')) return 'SemrushBot';
     if (ua.includes('ahrefsbot')) return 'AhrefsBot';
     if (isABot(userAgent)) return 'Generic Search Bot';
@@ -128,6 +158,6 @@ function getBotName(userAgent) {
 
 module.exports = {
     isABot,
-    isbot: isABot, // Alias for backward compatibility with isbot library calls
+    isbot: isABot, // Alias for backward compatibility
     getBotName
 };

@@ -1,0 +1,276 @@
+<%- include('../partials/header') %>
+
+<div class="container" style="max-width: 900px; margin: 40px auto; padding: 0 20px; font-family: 'Poppins', sans-serif;">
+
+    <!-- Breadcrumb & Header -->
+    <div style="margin-bottom: 30px;">
+        <nav style="font-size: 0.9em; margin-bottom: 12px; color: var(--silver);">
+            <a href="/" style="color: var(--silver); text-decoration: none;"><i class="fas fa-home"></i> Home</a>
+            <span style="margin: 0 8px;">/</span>
+            <a href="/settings" style="color: var(--silver); text-decoration: none;">Settings</a>
+            <span style="margin: 0 8px;">/</span>
+            <span style="color: var(--gold);">Social Bots & Account Linking</span>
+        </nav>
+        <h1 style="color: #fff; font-size: 2em; font-weight: 700; margin: 0 0 8px 0; display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-robot" style="color: var(--gold);"></i> Social Bots & Account Linking
+        </h1>
+        <p style="color: var(--silver); font-size: 1em; line-height: 1.6; margin: 0;">
+            Connect your Discord, Telegram, or Reddit account to unlock elevated search and AI support limits, personalized mod updates, and priority developer channels.
+        </p>
+    </div>
+
+    <!-- Elevated Perks Banner -->
+    <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(0, 255, 136, 0.08)); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 14px; padding: 22px; margin-bottom: 35px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255, 215, 0, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: var(--gold);">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div>
+                <h3 style="color: #fff; margin: 0 0 4px 0; font-size: 1.15em;">Connected Member Privileges</h3>
+                <p style="color: var(--silver); margin: 0; font-size: 0.92em;">
+                    • <strong>100 Daily AI Support Queries</strong> (vs 5 for guests) &nbsp;|&nbsp;
+                    • <strong>50 Live Mod Searches</strong> &nbsp;|&nbsp;
+                    • <strong>Private DM Answers</strong>
+                </p>
+            </div>
+        </div>
+        <span style="background: rgba(0, 255, 136, 0.15); border: 1px solid rgba(0, 255, 136, 0.3); color: #00FF88; font-size: 0.85em; font-weight: 700; padding: 6px 14px; border-radius: 20px;">
+            <i class="fas fa-check-circle"></i> Live Sync
+        </span>
+    </div>
+
+    <!-- Social Platforms Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 40px;">
+
+        <!-- 1. DISCORD -->
+        <div class="social-card" style="background: #141414; border: 1px solid #2a2a2a; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; position: relative;">
+            <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(88, 101, 242, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: #5865F2;">
+                        <i class="fab fa-discord"></i>
+                    </div>
+                    <% if (connections && connections.discord) { %>
+                        <span style="background: rgba(0, 255, 136, 0.12); color: #00FF88; border: 1px solid rgba(0, 255, 136, 0.3); font-size: 0.78em; font-weight: 700; padding: 4px 10px; border-radius: 20px;">CONNECTED</span>
+                    <% } else { %>
+                        <span style="background: rgba(255, 255, 255, 0.06); color: var(--silver); border: 1px solid #333; font-size: 0.78em; font-weight: 600; padding: 4px 10px; border-radius: 20px;">NOT LINKED</span>
+                    <% } %>
+                </div>
+                <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 1.2em;">Discord Bot</h3>
+                <p style="color: var(--silver); font-size: 0.88em; line-height: 1.5; margin: 0 0 16px 0;">
+                    Connect to use our Discord Support & Search bots privately with higher limits in designated server channels.
+                </p>
+                <% if (connections && connections.discord) { %>
+                    <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.88em; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-check" style="color: #5865F2;"></i>
+                        <span style="word-break: break-all;"><%= connections.discord.socialUsername || connections.discord.socialId %></span>
+                    </div>
+                <% } %>
+            </div>
+            <div>
+                <% if (connections && connections.discord) { %>
+                    <button type="button" onclick="disconnectSocial('discord')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-unlink"></i> Disconnect Discord
+                    </button>
+                <% } else { %>
+                    <button type="button" onclick="openConnectModal('discord')" style="width: 100%; padding: 11px; background: #5865F2; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);">
+                        <i class="fas fa-link"></i> Link Discord Account
+                    </button>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- 2. TELEGRAM -->
+        <div class="social-card" style="background: #141414; border: 1px solid #2a2a2a; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; position: relative;">
+            <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(0, 136, 204, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: #0088cc;">
+                        <i class="fab fa-telegram-plane"></i>
+                    </div>
+                    <% if (connections && connections.telegram) { %>
+                        <span style="background: rgba(0, 255, 136, 0.12); color: #00FF88; border: 1px solid rgba(0, 255, 136, 0.3); font-size: 0.78em; font-weight: 700; padding: 4px 10px; border-radius: 20px;">CONNECTED</span>
+                    <% } else { %>
+                        <span style="background: rgba(255, 255, 255, 0.06); color: var(--silver); border: 1px solid #333; font-size: 0.78em; font-weight: 600; padding: 4px 10px; border-radius: 20px;">NOT LINKED</span>
+                    <% } %>
+                </div>
+                <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 1.2em;">Telegram Bot</h3>
+                <p style="color: var(--silver); font-size: 0.88em; line-height: 1.5; margin: 0 0 16px 0;">
+                    Access `/search` and `/support` commands directly in Telegram private chat with instant Gemini answers.
+                </p>
+                <% if (connections && connections.telegram) { %>
+                    <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.88em; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-check" style="color: #0088cc;"></i>
+                        <span style="word-break: break-all;"><%= connections.telegram.socialUsername || connections.telegram.socialId %></span>
+                    </div>
+                <% } %>
+            </div>
+            <div>
+                <% if (connections && connections.telegram) { %>
+                    <button type="button" onclick="disconnectSocial('telegram')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-unlink"></i> Disconnect Telegram
+                    </button>
+                <% } else { %>
+                    <button type="button" onclick="openConnectModal('telegram')" style="width: 100%; padding: 11px; background: #0088cc; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);">
+                        <i class="fas fa-link"></i> Link Telegram Account
+                    </button>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- 3. REDDIT -->
+        <div class="social-card" style="background: #141414; border: 1px solid #2a2a2a; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.3s ease; position: relative;">
+            <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 69, 0, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: #FF4500;">
+                        <i class="fab fa-reddit-alien"></i>
+                    </div>
+                    <% if (connections && connections.reddit) { %>
+                        <span style="background: rgba(0, 255, 136, 0.12); color: #00FF88; border: 1px solid rgba(0, 255, 136, 0.3); font-size: 0.78em; font-weight: 700; padding: 4px 10px; border-radius: 20px;">CONNECTED</span>
+                    <% } else { %>
+                        <span style="background: rgba(255, 255, 255, 0.06); color: var(--silver); border: 1px solid #333; font-size: 0.78em; font-weight: 600; padding: 4px 10px; border-radius: 20px;">NOT LINKED</span>
+                    <% } %>
+                </div>
+                <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 1.2em;">Reddit Bot</h3>
+                <p style="color: var(--silver); font-size: 0.88em; line-height: 1.5; margin: 0 0 16px 0;">
+                    Sync your Reddit account to receive verified flair on r/GPLMods and upload priority status.
+                </p>
+                <% if (connections && connections.reddit) { %>
+                    <div style="background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; font-size: 0.88em; color: #fff; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-check" style="color: #FF4500;"></i>
+                        <span style="word-break: break-all;">u/<%= connections.reddit.socialUsername || connections.reddit.socialId %></span>
+                    </div>
+                <% } %>
+            </div>
+            <div>
+                <% if (connections && connections.reddit) { %>
+                    <button type="button" onclick="disconnectSocial('reddit')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                        <i class="fas fa-unlink"></i> Disconnect Reddit
+                    </button>
+                <% } else { %>
+                    <button type="button" onclick="openConnectModal('reddit')" style="width: 100%; padding: 11px; background: #FF4500; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3);">
+                        <i class="fas fa-link"></i> Link Reddit Account
+                    </button>
+                <% } %>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Security & Privacy Notice -->
+    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid #222; border-radius: 12px; padding: 20px; font-size: 0.88em; color: var(--silver); line-height: 1.6;">
+        <h4 style="color: #fff; margin: 0 0 8px 0; font-size: 1em;"><i class="fas fa-lock" style="color: var(--gold);"></i> Privacy & Security Guarantee</h4>
+        <p style="margin: 0;">
+            All bot interactions (support questions, search queries, and linking codes) are strictly private. Your social account ID is used solely for rate-limit allocation and authentication verification. You can disconnect anytime with immediate effect.
+        </p>
+    </div>
+
+</div>
+
+<!-- Modal: One-Time Connection Code -->
+<div id="connectCodeModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #181818; border: 1px solid var(--gold); border-radius: 16px; max-width: 480px; width: 100%; padding: 30px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8); position: relative;">
+        <button type="button" onclick="closeConnectModal()" style="position: absolute; top: 16px; right: 16px; background: transparent; border: none; color: var(--silver); font-size: 1.2em; cursor: pointer;">
+            <i class="fas fa-times"></i>
+        </button>
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(255, 215, 0, 0.15); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 1.8em; margin: 0 auto 16px auto;">
+            <i class="fas fa-key"></i>
+        </div>
+        <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 1.4em;">Connect Your Account</h2>
+        <p style="color: var(--silver); font-size: 0.9em; margin: 0 0 20px 0;">
+            Send this temporary one-time code to our bot in a private message. Valid for 15 minutes.
+        </p>
+        <div style="background: #0d0d0d; border: 1.5px dashed var(--gold); border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+            <div id="displayAuthCode" style="font-family: monospace; font-size: 1.8em; letter-spacing: 4px; font-weight: 700; color: #fff;">
+                GENERATING...
+            </div>
+            <div id="codeExpiryTimer" style="font-size: 0.8em; color: var(--silver); margin-top: 6px;">Expires in: 15:00</div>
+        </div>
+        <div id="botInstructions" style="text-align: left; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 14px; font-size: 0.85em; color: var(--silver); margin-bottom: 22px; line-height: 1.6;">
+            <!-- Injected dynamically -->
+        </div>
+        <button type="button" onclick="copyAuthCode()" id="btnCopyAuthCode" style="width: 100%; padding: 12px; background: var(--gold); border: none; color: #000; font-weight: 700; border-radius: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fas fa-copy"></i> Copy Code
+        </button>
+    </div>
+</div>
+
+<script>
+    var currentPlatform = null;
+    var currentCode = null;
+
+    async function openConnectModal(platform) {
+        currentPlatform = platform;
+        var modal = document.getElementById('connectCodeModal');
+        var displayEl = document.getElementById('displayAuthCode');
+        var instructionsEl = document.getElementById('botInstructions');
+        
+        displayEl.textContent = 'GENERATING...';
+        modal.style.display = 'flex';
+
+        if (platform === 'discord') {
+            instructionsEl.innerHTML = '<strong>Discord Instructions:</strong><br>1. Open our Discord server.<br>2. In any channel or bot DM, type: <code>/auth connect ' + 'YOUR_CODE</code>.<br>3. The bot will confirm your account link instantly!';
+        } else if (platform === 'telegram') {
+            instructionsEl.innerHTML = '<strong>Telegram Instructions:</strong><br>1. Open our official Telegram bot: <a href="https://t.me/GPLModsBot" target="_blank" style="color: var(--gold);">@GPLModsBot</a>.<br>2. Send private message: <code>/connect ' + 'YOUR_CODE</code>.<br>3. Done! Your Telegram is now linked.';
+        } else if (platform === 'reddit') {
+            instructionsEl.innerHTML = '<strong>Reddit Instructions:</strong><br>1. Send a private message to <strong>u/GPLMods</strong>.<br>2. Subject: <code>AUTH</code><br>3. Body: <code>YOUR_CODE</code>.';
+        }
+
+        try {
+            var res = await fetch('/api/social-connect/generate-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: platform })
+            });
+            var data = await res.json();
+            if (data.success && data.authCode) {
+                currentCode = data.authCode;
+                displayEl.textContent = data.authCode;
+            } else {
+                displayEl.textContent = 'ERROR';
+                alert(data.message || 'Failed to generate code.');
+            }
+        } catch (e) {
+            displayEl.textContent = 'ERROR';
+            alert('Connection error. Please try again.');
+        }
+    }
+
+    function closeConnectModal() {
+        document.getElementById('connectCodeModal').style.display = 'none';
+        currentPlatform = null;
+        currentCode = null;
+    }
+
+    function copyAuthCode() {
+        if (!currentCode) return;
+        navigator.clipboard.writeText(currentCode).then(function() {
+            var btn = document.getElementById('btnCopyAuthCode');
+            var orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            setTimeout(function() { btn.innerHTML = orig; }, 2000);
+        });
+    }
+
+    async function disconnectSocial(platform) {
+        if (!confirm('Are you sure you want to disconnect your ' + platform + ' account? Your elevated bot limits will revert to guest level.')) {
+            return;
+        }
+
+        try {
+            var res = await fetch('/api/social-connect/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform: platform })
+            });
+            var data = await res.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to disconnect.');
+            }
+        } catch (e) {
+            alert('Network error. Please retry.');
+        }
+    }
+</script>
+
+<%- include('../partials/footer') %>

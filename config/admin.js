@@ -714,17 +714,24 @@ async function createAdminRouter() {
                                 const rec = context.record;
                                 const isVar = rec.params.isVariant === true || rec.params.isVariant === 'true';
                                 const updatedRecord = rec.toJSON(context.currentAdmin);
-                                if (isVar && rec.params.masterFile) {
-                                    const targetUrl = `/admin/resources/File/records/${rec.params.masterFile}/show`;
-                                    updatedRecord.params.redirectUrl = targetUrl;
-                                    return {
-                                        record: updatedRecord,
-                                        redirectUrl: targetUrl,
-                                        notice: { message: `Opening Master Mod (${rec.params.masterFile})...`, type: 'info' }
-                                    };
+                                if (isVar) {
+                                    if (rec.params.masterFile) {
+                                        const targetUrl = `/admin/resources/File/records/${rec.params.masterFile}/show`;
+                                        updatedRecord.params.redirectUrl = targetUrl;
+                                        return {
+                                            record: updatedRecord,
+                                            redirectUrl: targetUrl,
+                                            notice: { message: `Opening Master Mod (${rec.params.masterFile})...`, type: 'info' }
+                                        };
+                                    } else {
+                                        return {
+                                            record: updatedRecord,
+                                            notice: { message: 'This mod is marked as a variant, but has no Master Mod assigned.', type: 'error' }
+                                        };
+                                    }
                                 } else {
                                     const variantCount = await File.countDocuments({ masterFile: rec.params._id });
-                                    const targetUrl = `/admin/resources/File/actions/list?filters.masterFile=${rec.params._id}`;
+                                    const targetUrl = `/admin/resources/File?filters.masterFile=${rec.params._id}`;
                                     updatedRecord.params.redirectUrl = targetUrl;
                                     return {
                                         record: updatedRecord,

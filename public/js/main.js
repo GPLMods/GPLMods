@@ -67,9 +67,13 @@ console.log("GPL Mods main.js is loading...");
             #gpl-diagnostic-modal p { margin: 0 0 18px; color: #c0c0c0; line-height: 1.55; }
             #gpl-diagnostic-modal textarea { width: 100%; min-height: 230px; padding: 14px; resize: vertical; color: #e8e8e8; background: #0a0a0a; border: 1px solid #444; border-radius: 8px; font: 12px/1.5 Consolas, monospace; }
             #gpl-diagnostic-modal .gpl-diagnostic-actions { display: flex; gap: 10px; margin-top: 16px; }
-            #gpl-diagnostic-modal button { flex: 1; padding: 11px 14px; border: 0; border-radius: 7px; cursor: pointer; font-weight: 700; }
-            #gpl-diagnostic-modal .gpl-download { color: #0a0a0a; background: #ffd700; }
+            #gpl-diagnostic-modal button { flex: 1; padding: 11px 14px; border: 0; border-radius: 7px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+            #gpl-diagnostic-modal .gpl-copy { color: #fff; background: #2563eb; transition: background 0.2s ease; }
+            #gpl-diagnostic-modal .gpl-copy:hover { background: #1d4ed8; }
+            #gpl-diagnostic-modal .gpl-download { color: #0a0a0a; background: #ffd700; transition: background 0.2s ease; }
+            #gpl-diagnostic-modal .gpl-download:hover { background: #e6c200; }
             #gpl-diagnostic-modal .gpl-close { color: #fff; background: #444; }
+            #gpl-diagnostic-modal .gpl-close:hover { background: #555; }
             @media (max-width: 520px) { #gpl-diagnostic-modal .gpl-diagnostic-actions { flex-direction: column; } }
         `;
         document.head.appendChild(style);
@@ -81,10 +85,11 @@ console.log("GPL Mods main.js is loading...");
         modal.innerHTML = `
             <div class="gpl-diagnostic-card">
                 <h2 id="gpl-diagnostic-title">Application Error Detected</h2>
-                <p id="gpl-diagnostic-message">An unexpected error occurred. Download the diagnostic log and attach it to a support ticket.</p>
+                <p id="gpl-diagnostic-message">An unexpected error occurred. Copy or download the diagnostic log and attach it to a support ticket.</p>
                 <textarea id="gpl-diagnostic-log" readonly aria-label="Diagnostic log"></textarea>
                 <div class="gpl-diagnostic-actions">
-                    <button type="button" class="gpl-download" id="gpl-diagnostic-download">Download .txt</button>
+                    <button type="button" class="gpl-copy" id="gpl-diagnostic-copy"><i class="fas fa-copy"></i> Copy Log</button>
+                    <button type="button" class="gpl-download" id="gpl-diagnostic-download"><i class="fas fa-download"></i> Download .txt</button>
                     <button type="button" class="gpl-close" id="gpl-diagnostic-close">Close</button>
                 </div>
             </div>
@@ -99,6 +104,32 @@ console.log("GPL Mods main.js is loading...");
         modal.querySelector('#gpl-diagnostic-close').addEventListener('click', close);
         modal.addEventListener('click', event => {
             if (event.target === modal) close();
+        });
+        modal.querySelector('#gpl-diagnostic-copy').addEventListener('click', () => {
+            const textarea = modal.querySelector('#gpl-diagnostic-log');
+            const log = textarea.value;
+            const btn = modal.querySelector('#gpl-diagnostic-copy');
+            const setCopied = () => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.background = '#16a34a';
+                setTimeout(() => {
+                    btn.innerHTML = orig;
+                    btn.style.background = '#2563eb';
+                }, 2000);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(log).then(setCopied).catch(() => {
+                    textarea.select();
+                    document.execCommand('copy');
+                    setCopied();
+                });
+            } else {
+                textarea.select();
+                document.execCommand('copy');
+                setCopied();
+            }
         });
         modal.querySelector('#gpl-diagnostic-download').addEventListener('click', () => {
             const log = modal.querySelector('#gpl-diagnostic-log').value;
