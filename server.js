@@ -53,7 +53,7 @@ const { checkDomain } = require('./utils/tempMailDetector');
 const cheerio = require('cheerio');
 const googlePlayScraper = require('google-play-scraper').default;
 const appStoreScraper = require('app-store-scraper');
-const AdmZip = require('adm-zip'); 
+const AdmZip = require('adm-zip');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse } = require('@simplewebauthn/server');
@@ -66,13 +66,13 @@ const { getUserStorageBasePath, getUserAssetKey, getPlatformStoragePath, getModS
 const { ensureModDirectories, saveModMetadata, saveModReviewsArchive } = require('./utils/fileStorage');
 
 // Custom Utilities & Config
-const { 
-    sendVerificationEmail, 
-    sendPasswordResetEmail, 
-    sendDeletionOtpEmail, 
-    send2faEmail, 
-    sendLoginAlertEmail, 
-    sendFailedAttemptEmail, 
+const {
+    sendVerificationEmail,
+    sendPasswordResetEmail,
+    sendDeletionOtpEmail,
+    send2faEmail,
+    sendLoginAlertEmail,
+    sendFailedAttemptEmail,
     processNewsletterCampaign,
     sendTicketConfirmationEmail,
     sendDmcaReportConfirmationEmail,
@@ -92,7 +92,7 @@ const Review = require('./models/review');
 const Report = require('./models/report');
 const Dmca = require('./models/dmca');
 const Announcement = require('./models/announcement');
-const UnbanRequest = require('./models/unbanRequest'); 
+const UnbanRequest = require('./models/unbanRequest');
 const DistributorApplication = require('./models/distributorApplication');
 const Request = require('./models/request');
 const UserNotification = require('./models/userNotification');
@@ -200,7 +200,7 @@ const geminiModelCache = new Map();
 function getGeminiModel(modelName) {
     if (!genAI) return null;
     if (!geminiModelCache.has(modelName)) {
-        geminiModelCache.set(modelName, genAI.getGenerativeModel({ 
+        geminiModelCache.set(modelName, genAI.getGenerativeModel({
             model: modelName,
             systemInstruction: "You are the official support assistant for GPL Mods. Your tone is helpful, friendly, and uses emojis naturally. You help users find safe Android, iOS, Windows, and WordPress mods. If they need human help, tell them to type 'human'."
         }));
@@ -214,7 +214,7 @@ const aiFallbackModel = getGeminiModel(FALLBACK_GEMINI_MODEL);
 // Robust execution wrapper that cycles through available models on 503 / 429 / 404 / high demand
 async function executeGeminiWithFallback(operation) {
     if (!genAI || !aiModel) throw new Error("Gemini AI model is not initialized or API key is missing.");
-    
+
     let lastError = null;
     for (let i = 0; i < GEMINI_MODELS.length; i++) {
         const modelName = GEMINI_MODELS[i];
@@ -295,14 +295,14 @@ When answering users:
             .select('username role isPremium badges isVerified')
             .limit(20)
             .lean();
-        
+
         context += `=== REGISTERED VERIFIED USERS & STAFF ===\n`;
         context += `- Total Verified Members on GPL Mods: ${verifiedCount}+\n`;
         context += `- Official Staff & Key Distributors:\n`;
         staffUsers.forEach(u => {
             context += `  * @${u.username} (${u.role.toUpperCase()}${u.isPremium ? ', Premium' : ''}${u.isVerified ? ', Verified' : ''})\n`;
         });
-        
+
         // If query mentions a specific user, look them up
         if (userQueryText) {
             const words = userQueryText.match(/@?([a-zA-Z0-9_\-\.]{3,30})/g) || [];
@@ -334,7 +334,7 @@ When answering users:
             .sort({ downloads: -1 })
             .limit(15)
             .lean();
-        
+
         context += `- Popular Featured Live Mods:\n`;
         topMods.forEach(m => {
             const platformStr = (m.platforms && m.platforms.length) ? m.platforms.join(', ') : (m.category || 'mods');
@@ -347,11 +347,11 @@ When answering users:
             const terms = searchClean.split(/\s+/).filter(t => t.length > 2 && !['mod', 'apk', 'ipa', 'download', 'free', 'how', 'what', 'the', 'and', 'for', 'can', 'you', 'app'].includes(t.toLowerCase()));
             if (terms.length > 0) {
                 const regexPattern = terms.map(t => `(?=.*${t})`).join('');
-                const matchingMods = await File.find({ 
-                    status: 'approved', 
-                    name: { $regex: regexPattern, $options: 'i' } 
+                const matchingMods = await File.find({
+                    status: 'approved',
+                    name: { $regex: regexPattern, $options: 'i' }
                 }).select('name version category platforms slug downloads averageRating importantNote').limit(5).lean();
-                
+
                 if (matchingMods && matchingMods.length > 0) {
                     context += `- Relevant Mod Search Matches for "${terms.join(' ')}":\n`;
                     matchingMods.forEach(mm => {
@@ -373,7 +373,7 @@ When answering users:
             .sort({ order: 1 })
             .limit(20)
             .lean();
-        
+
         if (docPages && docPages.length > 0) {
             context += `=== OFFICIAL DOCUMENTATION & GUIDES ===\n`;
             docPages.forEach(d => {
@@ -617,7 +617,7 @@ function isNameReserved(requestedName) {
 async function generateUniqueUsername(baseName) {
     // 1. Clean the base name (remove any existing # numbers the user might have typed)
     const cleanBaseName = baseName.split('#')[0].trim();
-    
+
     // 2. Check if the clean base name is completely available
     const exactMatch = await User.findOne({ username: cleanBaseName });
     if (!exactMatch) {
@@ -648,7 +648,7 @@ async function generateUniqueUsername(baseName) {
 // --- NEW HELPER: VALIDATE NAMES (Letters, Numbers, Spaces ONLY) ---
 function isValidName(str) {
     if (!str) return false;
-    
+
     const trimmed = str.trim();
     if (trimmed.length === 0) return false; // Prevents "    " (only spaces)
 
@@ -709,7 +709,7 @@ async function recordDailyStat(fileId, uploader, type) {
     try {
         const dateString = new Date().toISOString().split('T')[0]; // Gets "YYYY-MM-DD"
         const updateField = type === 'view' ? { views: 1 } : { downloads: 1 };
-        
+
         await DailyStat.findOneAndUpdate(
             { file: fileId, dateString: dateString },
             { $setOnInsert: { uploader: uploader }, $inc: updateField },
@@ -729,10 +729,10 @@ function formatBytes(bytes, decimals = 2) {
     if (bytes === 0 || !bytes) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes =['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 // --- NEW HELPER: FORMAT COMPACT NUMBERS (1K, 1.5M) ---
@@ -745,7 +745,7 @@ function formatCompactNumber(number) {
 // --- NEW SMART HELPER FOR IMAGES ---
 async function getSmartImageUrl(key) {
     if (!key) return '/images/default-avatar.png'; // Fallback
-    
+
     // If it's a Backblaze B2 URL (expired or active), extract the B2 key to re-sign it fresh
     if (typeof key === 'string' && key.includes('backblazeb2.com')) {
         const b2Match = key.match(/(?:users|mods|clubs|card-avatars|avatars|card-backgrounds|mod-icons|screenshots|files)\/[^?#\s]+/);
@@ -753,12 +753,12 @@ async function getSmartImageUrl(key) {
             key = b2Match[0];
         }
     }
-    
+
     // If local path or external web URL (not a B2 raw link), just use it directly!
     if (key.startsWith('/') || ((key.startsWith('http://') || key.startsWith('https://')) && !key.includes('backblazeb2.com'))) {
         return key;
     }
-    
+
     // Otherwise, it's a Backblaze key, so generate the secure signed URL
     try {
         return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
@@ -829,10 +829,10 @@ function truncateText(text, maxLength) {
 async function awardPoints(userId, amount, reason, customMessage = '') {
     try {
         if (amount === 0) return; // Ignore 0 point transactions
-        
+
         // 1. Update the user's total points
         await User.findByIdAndUpdate(userId, { $inc: { forumPoints: amount } });
-        
+
         // 2. Log the transaction in the history ledger
         await new PointHistory({
             user: userId,
@@ -840,7 +840,7 @@ async function awardPoints(userId, amount, reason, customMessage = '') {
             reason: reason,
             customMessage: customMessage
         }).save();
-        
+
     } catch (err) {
         console.error("Error awarding points:", err);
     }
@@ -851,9 +851,9 @@ const generateReferralCode = async (username) => {
     // Create a base code from the username (alphanumeric only, uppercase, max 6 chars)
     let baseCode = username.replace(/[^a-zA-Z0-9]/g, '').substring(0, 6).toUpperCase();
     if (baseCode.length < 3) baseCode = 'GPL' + Math.floor(Math.random() * 999);
-    
+
     let code = baseCode + Math.floor(1000 + Math.random() * 9000); // e.g., NOOB1234
-    
+
     // Ensure uniqueness
     while (await User.findOne({ referralCode: code })) {
         code = baseCode + Math.floor(1000 + Math.random() * 9000);
@@ -871,6 +871,155 @@ function slugify(text) {
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
 }
+
+// Clean common fluff words from mod names (e.g. "Roblox Mod Menu" -> "Roblox")
+function extractCoreModName(rawName) {
+    if (!rawName || typeof rawName !== 'string') return { original: '', cleaned: '', segments: [] };
+    let name = rawName.trim().replace(/\.[a-zA-Z0-9]{2,5}$/, ''); // strip extension
+
+    // Split on common dividers like " - ", " : ", " | ", " -- "
+    const dividerMatch = name.split(/\s*[-:|–—]\s*/);
+
+    // Strip common mod tag words
+    const stripped = name.replace(/\b(mod\s*menu|mega\s*mod|mod|apk|premium|pro|unlocked|unlimited\s*(money|gems|coins|robux)?|vip|crack|plus|\+\+|hack|cheat|edition|free)\b/gi, '').replace(/\s+/g, ' ').trim();
+
+    return {
+        original: name,
+        cleaned: stripped || name,
+        segments: dividerMatch.map(s => s.trim()).filter(Boolean)
+    };
+}
+
+function getFileUploadInfo(fileDoc) {
+    if (!fileDoc) return null;
+    const isMultiPart = Boolean(fileDoc.isMultiPart);
+    const isExternal = Boolean(fileDoc.externalDownloadUrl || fileDoc.fileKey === 'external-link');
+    const uploadType = isMultiPart ? 'multipart' : (isExternal ? 'external' : 'cloud');
+    const partsCount = Array.isArray(fileDoc.downloadParts) ? fileDoc.downloadParts.length : 0;
+    return {
+        _id: fileDoc._id,
+        name: fileDoc.name,
+        category: fileDoc.category,
+        version: fileDoc.version || '1.0',
+        uploader: fileDoc.uploader || 'Community',
+        status: fileDoc.status || 'live',
+        uploadType,
+        isMultiPart,
+        isExternalLink: isExternal,
+        externalDownloadUrl: fileDoc.externalDownloadUrl || '',
+        partsCount,
+        fileKey: fileDoc.fileKey || '',
+        variantsCount: Array.isArray(fileDoc.variants) ? fileDoc.variants.length : 0
+    };
+}
+
+async function resolveRootMasterFile(fileDoc) {
+    if (!fileDoc) return null;
+    let master = fileDoc;
+    if (fileDoc.isVariant && fileDoc.masterFile) {
+        const resolvedMaster = await File.findById(fileDoc.masterFile).lean();
+        if (resolvedMaster) master = resolvedMaster;
+    }
+    return master;
+}
+
+async function findExistingMod(rawName, platform, currentId) {
+    if (!rawName || typeof rawName !== 'string' || rawName.trim().length < 2) return null;
+
+    const { original, cleaned, segments } = extractCoreModName(rawName);
+    const escapedOrig = escapeRegex(original);
+    const escapedClean = escapeRegex(cleaned);
+    const origSlug = slugify(original);
+    const cleanSlug = slugify(cleaned);
+
+    const baseFilter = {
+        status: { $nin: ['rejected'] }
+    };
+    if (currentId && Types.ObjectId.isValid(currentId)) {
+        baseFilter._id = { $ne: currentId };
+    }
+
+    async function runQuery(filter) {
+        if (platform) {
+            // 1. Same platform, prioritize non-variant master files
+            let doc = await File.findOne({ ...baseFilter, ...filter, category: platform, isVariant: { $ne: true } }).sort({ createdAt: 1 }).lean();
+            if (doc) return doc;
+            doc = await File.findOne({ ...baseFilter, ...filter, category: platform }).sort({ createdAt: 1 }).lean();
+            if (doc) return doc;
+        }
+        // 2. Global across all platforms
+        let doc = await File.findOne({ ...baseFilter, ...filter, isVariant: { $ne: true } }).sort({ createdAt: 1 }).lean();
+        if (doc) return doc;
+        return await File.findOne({ ...baseFilter, ...filter }).sort({ createdAt: 1 }).lean();
+    }
+
+    // Step 1: Exact Name or Slug
+    let matched = await runQuery({
+        $or: [
+            { name: { $regex: new RegExp(`^${escapedOrig}$`, 'i') } },
+            { slug: origSlug }
+        ]
+    });
+    if (matched) return matched;
+
+    // Step 2: Cleaned Base Name or Cleaned Slug (e.g. "Roblox Mod Menu" -> "Roblox")
+    if (cleaned && cleaned.toLowerCase() !== original.toLowerCase()) {
+        matched = await runQuery({
+            $or: [
+                { name: { $regex: new RegExp(`^${escapedClean}$`, 'i') } },
+                { slug: cleanSlug }
+            ]
+        });
+        if (matched) return matched;
+    }
+
+    // Step 3: Check divider segments (e.g. "Video Editor & Maker - InShot" or "KineMaster - Video Editor")
+    for (const seg of segments) {
+        if (seg.length >= 3 && seg.toLowerCase() !== original.toLowerCase()) {
+            const escapedSeg = escapeRegex(seg);
+            const segSlug = slugify(seg);
+            matched = await runQuery({
+                $or: [
+                    { name: { $regex: new RegExp(`^${escapedSeg}$`, 'i') } },
+                    { slug: segSlug }
+                ]
+            });
+            if (matched) return matched;
+        }
+    }
+
+    // Step 4: Prefix match (DB starts with user input or cleaned input)
+    const prefixTarget = cleaned.length >= 3 ? escapedClean : escapedOrig;
+    matched = await runQuery({
+        name: { $regex: new RegExp(`^${prefixTarget}\\b`, 'i') }
+    });
+    if (matched) return matched;
+
+    // Step 5: Substring / Word-boundary match for distinctive brand words (>= 4 chars)
+    const candidateWords = (cleaned || original)
+        .split(/[\s\-_\.:|]+/)
+        .map(w => w.trim())
+        .filter(w => w.length >= 4 && !/^(game|editor|video|maker|photo|play|free|full|down|load|auto|tool|apps?)$/i.test(w));
+
+    for (const word of candidateWords) {
+        const escapedW = escapeRegex(word);
+        matched = await runQuery({
+            name: { $regex: new RegExp(`\\b${escapedW}\\b`, 'i') }
+        });
+        if (matched) return matched;
+    }
+
+    // Step 6: Fallback broad prefix (starts with first 3+ chars)
+    if (cleaned.length >= 3) {
+        matched = await runQuery({
+            name: { $regex: new RegExp(`^${escapeRegex(cleaned.slice(0, Math.min(cleaned.length, 8)))}`, 'i') }
+        });
+        if (matched) return matched;
+    }
+
+    return null;
+}
+
 // --- ANTI-TEMP MAIL CHECKER (TempMailDetector API + MongoDB Cache) ---
 /**
  * Checks if an email address is from a disposable/temporary domain.
@@ -894,7 +1043,7 @@ async function isDisposableEmail(email) {
 function generateRecoveryCodes() {
     const codes = [];
     for (let i = 0; i < 8; i++) {
-        codes.push(crypto.randomBytes(4).toString('hex')); 
+        codes.push(crypto.randomBytes(4).toString('hex'));
     }
     return codes;
 }
@@ -972,7 +1121,7 @@ async function notifyIndexNow(urlList) {
     if (!urlList || urlList.length === 0) return;
 
     // Ensure we only send an array
-    const urls = Array.isArray(urlList) ? urlList :[urlList];
+    const urls = Array.isArray(urlList) ? urlList : [urlList];
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
     const host = new URL(baseUrl).hostname; // Extracts just the domain (e.g., gplmods.webredirect.org)
 
@@ -986,7 +1135,7 @@ async function notifyIndexNow(urlList) {
         }, {
             headers: { 'Content-Type': 'application/json; charset=utf-8' }
         });
-        
+
         console.log(`IndexNow Ping Successful! Status: ${response.status}`);
     } catch (error) {
         console.error("IndexNow Ping Failed:", error.response ? error.response.data : error.message);
@@ -1004,9 +1153,9 @@ try {
     let privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_INDEXING_PRIVATE_KEY || process.env.GOOGLE_PRIVATE_KEY;
 
     // Support raw JSON, Base64 JSON, or direct environment variables
-    const rawCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON 
-        || process.env.GOOGLE_CREDENTIALS 
-        || process.env.GOOGLE_CREDENTIALS_JSON 
+    const rawCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+        || process.env.GOOGLE_CREDENTIALS
+        || process.env.GOOGLE_CREDENTIALS_JSON
         || process.env.GOOGLE_CREDENTIALS_BASE64;
 
     if (rawCredentials && (!clientEmail || !privateKey)) {
@@ -1080,7 +1229,7 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
             auth: jwtClient,
             requestBody: {
                 url: url,
-                type: type 
+                type: type
             }
         });
         console.log(`[Google] Successfully pinged: ${url}`);
@@ -1095,17 +1244,17 @@ const deleteCloudFile = async (fileKey) => {
     if (!fileKey || fileKey === 'external-link') return;
     try {
         // 1. Delete from Primary Cloud
-        await s3Client.send(new DeleteObjectCommand({ 
-            Bucket: process.env.B2_BUCKET_NAME, 
-            Key: fileKey 
+        await s3Client.send(new DeleteObjectCommand({
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: fileKey
         }));
         console.log(`Deleted ${fileKey} from B2.`);
-        
+
         // 2. Delete from Backup Cloud (images only)
         if (shouldMirrorToFTP(fileKey)) {
             deleteFromFTP(fileKey).catch(e => console.error("Background FTP delete failed", e));
         }
-        
+
     } catch (error) {
         console.error(`Failed to delete ${fileKey} from B2:`, error.message);
     }
@@ -1116,7 +1265,7 @@ async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
     try {
         const vtFormData = new FormData();
         vtFormData.append('file', fileBuffer, originalName);
-        
+
         const THIRTY_TWO_MB = 32 * 1024 * 1024;
         let uploadEndpoint = 'https://www.virustotal.com/api/v3/files';
 
@@ -1131,19 +1280,19 @@ async function submitToVirusTotal(fileBuffer, originalName, fileSize) {
         }
 
         console.log(`Submitting file to VirusTotal endpoint: ${uploadEndpoint.substring(0, 50)}...`);
-        
+
         // Now, perform the actual upload (using either the standard URL or the special one)
         const vtResponse = await axios.post(uploadEndpoint, vtFormData, {
-            headers: { 
-                'x-apikey': process.env.VIRUSTOTAL_API_KEY, 
-                ...vtFormData.getHeaders() 
+            headers: {
+                'x-apikey': process.env.VIRUSTOTAL_API_KEY,
+                ...vtFormData.getHeaders()
             },
             // Prevent axios from timing out on large uploads (e.g., 600MB might take a while)
             maxContentLength: Infinity,
             maxBodyLength: Infinity,
             timeout: 300000 // 5 minutes timeout for VT upload
         });
-        
+
         // Return the Analysis ID
         return vtResponse.data.data.id;
 
@@ -1280,19 +1429,19 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
     }
 
     console.log(`Uploading ${fileName} to B2...`);
-    
+
     const { Upload } = require("@aws-sdk/lib-storage");
 
     const parallelUploads3 = new Upload({
         client: s3Client,
-        params: { 
-            Bucket: process.env.B2_BUCKET_NAME, 
-            Key: fileName, 
+        params: {
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: fileName,
             Body: file.buffer,
-            ContentType: file.mimetype 
+            ContentType: file.mimetype
         },
-        partSize: 5 * 1024 * 1024, 
-        queueSize: 4 
+        partSize: 5 * 1024 * 1024,
+        queueSize: 4
     });
 
     parallelUploads3.on("httpUploadProgress", (progress) => {
@@ -1334,7 +1483,7 @@ app.use(express.json({
 // 3. CORS
 const allowedOrigins = [
     `http://localhost:${PORT}`,
-    'http://localhost:3000',          
+    'http://localhost:3000',
     'https://gplmods.webredirect.org',
     'http://gplmods.webredirect.org',
     ...(process.env.RENDER_EXTERNAL_URL ? [process.env.RENDER_EXTERNAL_URL] : []),
@@ -1362,7 +1511,13 @@ app.use(cors({
                 host.endsWith('.onrender.com') ||
                 host === 'onrender.com' ||
                 host.endsWith('.webredirect.org') ||
-                host === 'webredirect.org'
+                host === 'webredirect.org' ||
+                host.endsWith('.freeddns.org') ||
+                host === 'freeddns.org' ||
+                host.endsWith('.workers.dev') ||
+                host === 'workers.dev' ||
+                host.endsWith('.github.io') ||
+                host === 'github.io'
             ) {
                 return callback(null, true);
             }
@@ -1438,14 +1593,14 @@ async function getLocalAudioTracks() {
         const files = await fs.promises.readdir(AUDIO_DIR);
         const audioExtensions = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac']);
         const audioFiles = files.filter(f => audioExtensions.has(path.extname(f).toLowerCase()));
-        
+
         // Natural sort e.g. bgm-0, bgm-1, bgm-2 ... bgm-9
         audioFiles.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
         const tracks = await Promise.all(audioFiles.map(async (filename) => {
             const filePath = path.join(AUDIO_DIR, filename);
             const stats = await fs.promises.stat(filePath);
-            
+
             let trackTitle = DEFAULT_TRACK_TITLES[filename];
             if (!trackTitle) {
                 let friendlyTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
@@ -1498,8 +1653,8 @@ const uploadAudioTrack = multer({
 app.get('/api/check-vpn', async (req, res) => {
     try {
         // Extract client IP address from headers or socket
-        let clientIp = req.headers['x-forwarded-for'] 
-            ? req.headers['x-forwarded-for'].split(',')[0].trim() 
+        let clientIp = req.headers['x-forwarded-for']
+            ? req.headers['x-forwarded-for'].split(',')[0].trim()
             : (req.socket.remoteAddress || req.ip || '');
 
         // Remove IPv6 mapping prefix if present
@@ -1561,7 +1716,7 @@ app.get('/api/check-vpn', async (req, res) => {
                 note: 'VPN API request limit unavailable'
             });
         }
-        
+
         let response;
         try {
             response = await axios.get(`https://vpnapi.io/api/${clientIp}?key=${apiKey}`, {
@@ -1633,6 +1788,11 @@ app.get('/api/check-vpn', async (req, res) => {
 let cachedSiteState = null;
 let lastStateCheck = 0;
 
+global.invalidateSiteStateCache = () => {
+    lastStateCheck = 0;
+    cachedSiteState = null;
+};
+
 app.use(async (req, res, next) => {
     // 1. Fetch the state from DB, but cache it for 30 seconds for blazing fast performance
     if (Date.now() - lastStateCheck > 30 * 1000) {
@@ -1646,6 +1806,94 @@ app.use(async (req, res, next) => {
         } catch (e) {
             console.error("Site State Engine Error:", e);
             return next(); // Fail open if DB is unreachable
+        }
+    }
+
+    // --- 1.1 OWNER SPECIFIC SERVICE UNAVAILABILITY SHIELD ---
+    // Allows Owner to set ANY service to temporarily unavailable for ALL users, admins, etc.
+    // ONLY the site owner (role === 'owner') can access / test / bypass.
+    if (cachedSiteState && cachedSiteState.unavailableServices) {
+        const isOwner = Boolean(req.user && req.user.role === 'owner');
+        const svc = cachedSiteState.unavailableServices;
+        const reqPath = req.path.toLowerCase();
+
+        // Check essential system assets that must never be blocked
+        const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') || 
+                              reqPath.startsWith('/css') || reqPath.startsWith('/images') || 
+                              reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
+                              reqPath.startsWith('/favicon') || reqPath.startsWith('/admin') ||
+                              reqPath.startsWith('/.adminjs') || reqPath.startsWith('/api/devtool');
+
+        if (!isStaticAsset && !isOwner) {
+            let blockedService = null;
+
+            // 1. Downloads Service
+            if (svc.downloads && svc.downloads.enabled) {
+                if (reqPath.startsWith('/download-file') || reqPath.startsWith('/download') || reqPath.includes('/download')) {
+                    blockedService = svc.downloads;
+                }
+            }
+
+            // 2. Uploads Service
+            if (!blockedService && svc.uploads && svc.uploads.enabled) {
+                if (reqPath.startsWith('/upload') || reqPath.startsWith('/api/upload') || reqPath.includes('/add-version')) {
+                    blockedService = svc.uploads;
+                }
+            }
+
+            // 3. Registration Service
+            if (!blockedService && svc.registration && svc.registration.enabled) {
+                if (reqPath.startsWith('/register') || reqPath.startsWith('/auth/register') || reqPath.startsWith('/signup')) {
+                    blockedService = svc.registration;
+                }
+            }
+
+            // 4. Community Features (Clubs, Reviews, Comments)
+            if (!blockedService && svc.community && svc.community.enabled) {
+                if (reqPath.startsWith('/clubs') || reqPath.startsWith('/reviews') || reqPath.startsWith('/comment') || reqPath.includes('/reviews/')) {
+                    blockedService = svc.community;
+                }
+            }
+
+            // 5. iOS Store & DNS Sync
+            if (!blockedService && svc.iosStore && svc.iosStore.enabled) {
+                if (reqPath.startsWith('/api/ios-store') || reqPath.startsWith('/ios-store') || reqPath.startsWith('/dns')) {
+                    blockedService = svc.iosStore;
+                }
+            }
+
+            // 6. Custom Services List defined by Owner
+            if (!blockedService && Array.isArray(svc.customList) && svc.customList.length > 0) {
+                for (const custom of svc.customList) {
+                    if (custom && custom.enabled && custom.pathPattern) {
+                        const pattern = custom.pathPattern.toLowerCase().trim();
+                        if (pattern && (reqPath === pattern || reqPath.startsWith(pattern.endsWith('/') ? pattern : pattern + '/'))) {
+                            blockedService = custom;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (blockedService) {
+                const title = blockedService.title || 'Service Temporarily Unavailable';
+                const message = blockedService.message || 'This specific service has been placed temporarily offline by the site owner for maintenance. Please check back later.';
+
+                if (req.xhr || req.headers.accept?.includes('application/json') || reqPath.startsWith('/api/')) {
+                    return res.status(503).json({
+                        success: false,
+                        error: 'Service Unavailable',
+                        title,
+                        message
+                    });
+                }
+
+                return res.status(503).render('pages/unavailable', {
+                    title,
+                    message,
+                    user: req.user || null
+                });
+            }
         }
     }
 
@@ -1752,7 +2000,7 @@ app.use(async (req, res, next) => {
 // 5. DATABASE CONNECTION PROMISE (Needed for session & AdminJS)
 const clientPromise = mongoose.connect(process.env.MONGO_URI)
     .then(m => {
-        mongoose.Model.count = mongoose.Model.countDocuments; 
+        mongoose.Model.count = mongoose.Model.countDocuments;
         console.log('Successfully connected to MongoDB Atlas!');
         return ensureApiLimitCatalog()
             .then(() => m.connection.getClient());
@@ -1765,7 +2013,7 @@ const store = new MongoDBStore({
     collection: 'sessions'
 });
 
-store.on('error', function(error) {
+store.on('error', function (error) {
     console.error('Session Store Error:', error);
 });
 
@@ -1773,7 +2021,7 @@ const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'fallback-secret-key',
     resave: false,
     saveUninitialized: false,
-    store: store, 
+    store: store,
     cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } // Default 7 days
 });
 app.use(sessionMiddleware);
@@ -1799,7 +2047,7 @@ app.use(async (req, res, next) => {
         });
         return;
     }
-    
+
     // Also check MongoDB directly in case the flag was just set by another login
     if (req.sessionID) {
         try {
@@ -1820,7 +2068,7 @@ app.use(async (req, res, next) => {
             console.error(`[Session] Error checking kickedOut flag: ${err.message}`);
         }
     }
-    
+
     next();
 });
 
@@ -1894,7 +2142,7 @@ app.use(async (req, res, next) => {
                         if (avatarUrl && avatarUrl !== '/images/default-avatar.png') {
                             req.user.signedAvatarUrl = avatarUrl;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
         }
@@ -1962,18 +2210,18 @@ app.use(async (req, res, next) => {
         res.locals.formatCompactNumber = formatCompactNumber;
         res.locals.formatBytes = formatBytes;
         res.locals.slugify = slugify;
-    const cookies = req.headers.cookie || '';    
-    const isCdnDown = cookies.includes('cdn_down=true');
-    if (isCdnDown || !process.env.CDN_URL) {
-        res.locals.cdnUrl = ''; // Fallback: Use local Render server
-    } else {
-        res.locals.cdnUrl = process.env.CDN_URL; // Normal: Use Cloudflare CDN
-    }    
-    // We pass the Raw Url to the frontend so our JS knows what to search & replace
-    res.locals.rawCdnUrl = process.env.CDN_URL || ''; 
+        const cookies = req.headers.cookie || '';
+        const isCdnDown = cookies.includes('cdn_down=true');
+        if (isCdnDown || !process.env.CDN_URL) {
+            res.locals.cdnUrl = ''; // Fallback: Use local Render server
+        } else {
+            res.locals.cdnUrl = process.env.CDN_URL; // Normal: Use Cloudflare CDN
+        }
+        // We pass the Raw Url to the frontend so our JS knows what to search & replace
+        res.locals.rawCdnUrl = process.env.CDN_URL || '';
         // Make sure truncateText is defined as a helper function elsewhere in your server.js!
         res.locals.truncateText = typeof truncateText === 'function' ? truncateText : (str, len) => str.length > len ? str.substring(0, len) + '...' : str;
-        res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org'; 
+        res.locals.baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         res.locals.socialLinks = cachedSiteState?.socialLinks || {};
         const requestHost = (req.hostname || '').toLowerCase().split(':')[0];
         const isLocalHost = requestHost === 'localhost' || requestHost === '127.0.0.1' || requestHost === '::1' || requestHost === '0.0.0.0' || requestHost.startsWith('192.168.') || requestHost.startsWith('10.');
@@ -1999,8 +2247,8 @@ app.use(async (req, res, next) => {
         res.locals.isCrawler = isCrawler;
 
         // 3. ======== AD DELIVERY & MODAL LOGIC ========
-        let shouldShowAds = true; 
-        let shouldShowModals = true; 
+        let shouldShowAds = true;
+        let shouldShowModals = true;
 
         // If site is running locally or in test deployment, no ads are displayed!
         if (isLocalHost || res.locals.isTestDeployment) {
@@ -2014,14 +2262,14 @@ app.use(async (req, res, next) => {
             const role = String(req.user.role || '').toLowerCase();
             const membership = String(req.user.membership || '').toLowerCase();
             if (role === 'admin' || role === 'owner' || role === 'distributor' || role === 'support' || membership === 'premium' || membership === 'plus') {
-                shouldShowAds = false; 
+                shouldShowAds = false;
             }
         }
         res.locals.showAds = shouldShowAds;
         res.locals.showModals = shouldShowModals;
 
         // 4. ======== LINKVERTISE & AD MONETIZATION ========
-        let linkvId = process.env.LINKVERTISE_ID || '5373913'; 
+        let linkvId = process.env.LINKVERTISE_ID || '5373913';
         let adBaseUrl = null;
         res.locals.linkvertiseEnabled = false;
 
@@ -2035,12 +2283,12 @@ app.use(async (req, res, next) => {
 
         res.locals.generateAdLink = (targetUrl) => {
             if (!targetUrl) return '';
-            
+
             const encodedUri = encodeURI(targetUrl);
             const base64Str = Buffer.from(encodedUri, "binary").toString("base64");
-            
+
             if (adBaseUrl && !adBaseUrl.includes('link-to.net')) {
-                 return adBaseUrl.replace('{{ID}}', linkvId).replace('{{URL}}', base64Str);
+                return adBaseUrl.replace('{{ID}}', linkvId).replace('{{URL}}', base64Str);
             }
 
             // Fix: Math.random() converted to an integer using Math.floor
@@ -2051,12 +2299,12 @@ app.use(async (req, res, next) => {
         // 5. ======== NOTIFICATIONS LOGIC (CACHED) ========
         if (Date.now() - lastUpdateCheck > 5 * 60 * 1000) {
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            
+
             cachedTotalUpdates = await Announcement.countDocuments();
             cachedRecentAnnouncements = await Announcement.countDocuments({ createdAt: { $gte: oneDayAgo } });
             cachedNewUploads = await File.countDocuments({ status: 'live', isLatestVersion: true, createdAt: { $gte: oneDayAgo } });
             cachedNewUpdates = await File.countDocuments({ status: 'live', isLatestVersion: true, updatedAt: { $gte: oneDayAgo } });
-            
+
             lastUpdateCheck = Date.now();
         }
         res.locals.totalUpdatesCount = cachedTotalUpdates;
@@ -2106,7 +2354,7 @@ app.use(async (req, res, next) => {
                     const regexString = '^' + pattern.replace(/:[a-zA-Z0-9_]+/g, '[^\\/]+') + '(\\/?|\\/.*)?$';
                     try {
                         if (new RegExp(regexString).test(currentReqPath)) return true;
-                    } catch (e) {}
+                    } catch (e) { }
                 }
 
                 // Wildcard / prefix pattern e.g. /admin/* or /mods/*
@@ -2131,12 +2379,12 @@ app.use(async (req, res, next) => {
         // By default Gemini shows on all pages, unless disabled globally, hidden for current page, or on clubs/community pages
         const isDefaultHiddenCommunity = currentReqPath === '/clubs' || currentReqPath.startsWith('/clubs/') || currentReqPath === '/community' || currentReqPath.startsWith('/community/');
         res.locals.showChatbot = chatbotMasterEnabled && !isChatbotHiddenOnPage && !isDefaultHiddenCommunity;
-        
-        next(); 
-        
+
+        next();
+
     } catch (e) {
         console.error("Global Middleware Error:", e);
-        
+
         // Fallbacks: If the DB crashes, the EJS templates still get data so the site doesn't crash completely!
         res.locals.totalUpdatesCount = cachedTotalUpdates || 0;
         res.locals.recentAnnouncementsCount = cachedRecentAnnouncements || 0;
@@ -2149,8 +2397,8 @@ app.use(async (req, res, next) => {
         const fallbackPath = req.path ? req.path.toLowerCase() : '';
         res.locals.showChatbot = !fallbackPath.startsWith('/clubs') && !fallbackPath.startsWith('/community');
         res.locals.generateAdLink = (url) => url; // Return normal url if Ad Generator fails
-        
-        next(); 
+
+        next();
     }
 });
 
@@ -2164,7 +2412,7 @@ if (seoEngine && typeof seoEngine.seoMiddleware === 'function') {
 // 7. Banned User Trap
 app.use((req, res, next) => {
     if (req.isAuthenticated() && req.user && req.user.isBanned) {
-        const allowedPaths =['/banned', '/logout', '/unban-request'];
+        const allowedPaths = ['/banned', '/logout', '/unban-request'];
         if (!allowedPaths.includes(req.path)) {
             return res.redirect('/banned');
         }
@@ -2274,7 +2522,7 @@ function redirectIfAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
         const returnTo = req.session && req.session.returnTo && !req.session.returnTo.includes('/login') && !req.session.returnTo.includes('/register') && !req.session.returnTo.includes('/logout') ? req.session.returnTo : '/';
         if (req.session) delete req.session.returnTo;
-        return res.redirect(returnTo); 
+        return res.redirect(returnTo);
     }
     next();
 }
@@ -2293,9 +2541,9 @@ async function verifyRecaptcha(req, res, next) {
         const response = await axios.post(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${token}`);
         if (response.data.success) return next();
         return res.redirect(`${returnUrl}?error=CAPTCHA verification failed. Please try again.`);
-    } catch (e) { 
-        await releaseApiQuota(quota.reservation).catch(() => {});
-        await disableApiQuotaOnError('google-recaptcha', 'monthly', e, 'requests').catch(() => {});
+    } catch (e) {
+        await releaseApiQuota(quota.reservation).catch(() => { });
+        await disableApiQuotaOnError('google-recaptcha', 'monthly', e, 'requests').catch(() => { });
         console.error("reCAPTCHA API Error:", e);
         return res.redirect(`${returnUrl}?error=A server error occurred during CAPTCHA verification.`);
     }
@@ -2311,15 +2559,15 @@ async function verifyRecaptcha(req, res, next) {
 const memoryStorage = multer.memoryStorage();
 
 // Main Upload Config (For Mods - 105GB hard limit to support Admin 100GB uploads, actual limits enforced per tier in route)
-const upload = multer({ 
-    storage: memoryStorage, 
-    limits: { fileSize: 105 * 1024 * 1024 * 1024 } 
+const upload = multer({
+    storage: memoryStorage,
+    limits: { fileSize: 105 * 1024 * 1024 * 1024 }
 });
 
 // Avatar Upload Config (Strict 5MB limit to protect RAM)
-const uploadAvatar = multer({ 
-    storage: memoryStorage, 
-    limits: { fileSize: 5 * 1024 * 1024 } 
+const uploadAvatar = multer({
+    storage: memoryStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
 // Local Strategy
 passport.use(new LocalStrategy({ usernameField: 'email', passReqToCallback: true }, async (req, email, password, done) => {
@@ -2359,11 +2607,11 @@ passport.use(new GoogleStrategy({
     const googleUserData = { googleId: profile.id, username: profile.displayName, email: profile.emails[0].value, isVerified: true };
     try {
         let user = await User.findOne({ email: googleUserData.email });
-        if (user) { user.googleId = googleUserData.googleId; await user.save(); done(null, user); } 
+        if (user) { user.googleId = googleUserData.googleId; await user.save(); done(null, user); }
         else {
             // --- NEW: Security Check & Discriminator ---
             let requestedName = googleUserData.username; // Or githubUserData / microsoftUserData
-            
+
             // ======== SANITIZE SOCIAL NAME ========
             // Strip out anything that isn't a letter, number, or space
             requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
@@ -2375,7 +2623,7 @@ passport.use(new GoogleStrategy({
 
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
-                requestedName = 'Member'; 
+                requestedName = 'Member';
             }
 
             // Generate the unique # number
@@ -2401,11 +2649,11 @@ passport.use(new GitHubStrategy({
     const githubUserData = { githubId: profile.id, username: profile.username || profile.displayName, email: email, profileImageKey: profile.photos && profile.photos.length > 0 ? profile.photos[0].value : '', isVerified: true };
     try {
         let user = await User.findOne({ email: githubUserData.email });
-        if (user) { user.githubId = githubUserData.githubId; await user.save(); done(null, user); } 
+        if (user) { user.githubId = githubUserData.githubId; await user.save(); done(null, user); }
         else {
             // --- NEW: Security Check & Discriminator ---
             let requestedName = githubUserData.username; // Or githubUserData / microsoftUserData
-            
+
             // ======== SANITIZE SOCIAL NAME ========
             // Strip out anything that isn't a letter, number, or space
             requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
@@ -2417,7 +2665,7 @@ passport.use(new GitHubStrategy({
 
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
-                requestedName = 'Member'; 
+                requestedName = 'Member';
             }
 
             // Generate the unique # number
@@ -2446,11 +2694,11 @@ passport.use(new MicrosoftStrategy({
     const microsoftUserData = { microsoftId: profile.id, username: displayName.replace(/\s+/g, ''), email: email, isVerified: true };
     try {
         let user = await User.findOne({ email: microsoftUserData.email });
-        if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); } 
+        if (user) { user.microsoftId = microsoftUserData.microsoftId; await user.save(); done(null, user); }
         else {
             // --- NEW: Security Check & Discriminator ---
             let requestedName = microsoftUserData.username; // Or githubUserData / microsoftUserData
-            
+
             // ======== SANITIZE SOCIAL NAME ========
             // Strip out anything that isn't a letter, number, or space
             requestedName = requestedName.replace(/[^a-zA-Z0-9 ]/g, '').trim();
@@ -2462,7 +2710,7 @@ passport.use(new MicrosoftStrategy({
 
             // If their social name is reserved, give them a generic safe name
             if (isNameReserved(requestedName)) {
-                requestedName = 'Member'; 
+                requestedName = 'Member';
             }
             // Generate the unique # number
             const uniqueUsername = await generateUniqueUsername(requestedName);
@@ -2542,7 +2790,7 @@ app.get('/status', async (req, res) => {
 
 // --- ADVANCED DIAGNOSTIC CONSOLE (Admin Only) ---
 app.get('/admin/status', ensureAdmin, async (req, res) => {
-    
+
     // 1. Gather Basic Server Info
     const memUsage = process.memoryUsage();
     const totalMem = os.totalmem();
@@ -2553,7 +2801,7 @@ app.get('/admin/status', ensureAdmin, async (req, res) => {
     const isRender = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
     const isOnline = isRender || (!isLocalHost && reqHost !== '');
     const dynamicEnvironment = isOnline ? 'production' : 'development';
-    
+
     const healthData = {
         status: 'UP',
         timestamp: new Date().toISOString(),
@@ -2601,7 +2849,7 @@ app.get('/admin/status', ensureAdmin, async (req, res) => {
             Bucket: process.env.B2_BUCKET_NAME,
             MaxKeys: 1 // Only ask for 1 item to make it fast
         });
-        
+
         await s3Client.send(command);
         healthData.services.storage.status = 'CONNECTED';
         healthData.services.storage.details = `Bucket: ${process.env.B2_BUCKET_NAME} | Region: ${process.env.B2_REGION}`;
@@ -2632,7 +2880,7 @@ app.get('/admin/status', ensureAdmin, async (req, res) => {
     const debuggerData = await getOrRotateDebuggerKey(false);
     const recentDevtoolLogs = await DevtoolLog.find().sort({ createdAt: -1 }).limit(10).lean();
 
-    res.render('pages/admin/status', { 
+    res.render('pages/admin/status', {
         health: healthData,
         debuggerKey: debuggerData.key,
         debuggerExpiresAt: debuggerData.expiresAt,
@@ -2643,8 +2891,8 @@ app.get('/admin/status', ensureAdmin, async (req, res) => {
 
 // --- HELPER: Format Uptime ---
 function formatUptime(seconds) {
-    const d = Math.floor(seconds / (3600*24));
-    const h = Math.floor(seconds % (3600*24) / 3600);
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor(seconds % (3600 * 24) / 3600);
     const m = Math.floor(seconds % 3600 / 60);
     const s = Math.floor(seconds % 60);
     return `${d}d ${h}h ${m}m ${s}s`;
@@ -2654,14 +2902,14 @@ function formatUptime(seconds) {
 const renderHomepage = async (req, res) => {
     try {
         const findQuery = { status: 'live', isLatestVersion: true };
-        
+
         // --- Separated Editor's Choice Councils (Android, iOS, WordPress, Windows) ---
         const mapWithIcons = async (rawFiles) => {
             return Promise.all(rawFiles.map(async (file) => {
                 const iconKey = file.iconUrl || file.iconKey;
                 let signedIconUrl = '/images/default-app-icon.png';
                 if (iconKey) {
-                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) { }
                 }
                 return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
             }));
@@ -2698,7 +2946,7 @@ const renderHomepage = async (req, res) => {
             const workingMods = await File.find({ category: cat, ...findQuery }).sort({ averageRating: -1, downloads: -1 }).limit(4).lean();
             const popularMods = await File.find({ category: cat, ...findQuery }).sort({ downloads: -1 }).limit(4).lean();
             const newUpdates = await File.find({ category: cat, ...findQuery }).sort({ createdAt: -1 }).limit(4).lean();
-            
+
             filesByCategory[cat] = {
                 '100-Percent-Working': workingMods,
                 'Most-Popular': popularMods,
@@ -3010,7 +3258,7 @@ app.get('/source/:slug/raw', async (req, res) => {
                                 res.setHeader('X-Content-Type-Options', 'nosniff');
                             }
                             return res.send(Buffer.from(masterRes.data));
-                        } catch (mErr) {}
+                        } catch (mErr) { }
                     }
                 }
             }
@@ -3171,7 +3419,7 @@ app.get('/source/:slug', async (req, res) => {
                                 rawCode = rawFetch.data;
                                 break;
                             }
-                        } catch (rawErr) {}
+                        } catch (rawErr) { }
                     }
                 }
 
@@ -3284,7 +3532,7 @@ app.get('/source/:slug', async (req, res) => {
                 try {
                     const rmFetch = await axios.get(rmData.download_url, { responseType: 'text', transformResponse: [d => d], timeout: 5000 });
                     rmContent = rmFetch.data;
-                } catch (rmErr) {}
+                } catch (rmErr) { }
             }
             readme = {
                 name: rmData.name || 'README.md',
@@ -3317,7 +3565,7 @@ app.get('/source/:slug', async (req, res) => {
                             download_url: rmFallbackUrl2
                         };
                     }
-                } catch (e2) {}
+                } catch (e2) { }
             }
         }
 
@@ -3447,7 +3695,7 @@ app.get('/api/music/playlist', async (req, res) => {
     try {
         const state = await SiteState.findOne({ singletonId: 'master-state' });
         let playlist = state?.weeklyPlaylist || [];
-        
+
         // Combined Feature: If weeklyPlaylist is empty or not configured, serve all local tracks
         if (!playlist || playlist.length === 0) {
             const localTracks = await getLocalAudioTracks();
@@ -3609,7 +3857,7 @@ app.get('/admin/editors-choice', ensureAdmin, async (req, res) => {
                 const iconKey = file.iconUrl || file.iconKey;
                 let signedIconUrl = '/images/default-app-icon.png';
                 if (iconKey) {
-                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                    try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) { }
                 }
                 return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
             }));
@@ -3634,9 +3882,9 @@ app.get('/admin/editors-choice', ensureAdmin, async (req, res) => {
             pageTitle: "Editor's Choice Councils"
         });
     } catch (error) {
-        res.status(500).render('pages/error', { 
-            errorCode: '500', 
-            errorTitle: 'Server Error', 
+        res.status(500).render('pages/error', {
+            errorCode: '500',
+            errorTitle: 'Server Error',
             errorMessage: 'Could not load Editor Choice Councils.',
             errorDetails: {
                 message: error ? error.message : 'Could not load Editor Choice Councils.',
@@ -3677,7 +3925,7 @@ app.get('/api/admin/editors-choice/search', ensureAdmin, async (req, res) => {
             const iconKey = mod.iconUrl || mod.iconKey;
             let signedIconUrl = '/images/default-app-icon.png';
             if (iconKey) {
-                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) { }
             }
             return {
                 _id: mod._id,
@@ -3771,7 +4019,7 @@ app.get('/notifications', async (req, res) => {
             if (userWithFollowing && userWithFollowing.following && userWithFollowing.following.length > 0) {
                 const followedUsernames = userWithFollowing.following.map(u => u.username);
                 const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-                
+
                 followingCount = await File.countDocuments({
                     uploader: { $in: followedUsernames },
                     status: 'live',
@@ -3816,9 +4064,9 @@ app.get('/notifications/site-updates', async (req, res) => {
         // Fetch all global announcements
         const announcements = await Announcement.find().sort({ createdAt: -1 });
         res.render('pages/updates', { announcements: announcements });
-    } catch (error) { 
+    } catch (error) {
         console.error("Site Updates page error:", error);
-        return next(error); 
+        return next(error);
     }
 });
 
@@ -3838,10 +4086,10 @@ app.get('/notifications/clubs', ensureAuthenticated, async (req, res) => {
             club: { $in: managedClubIds },
             status: 'pending'
         })
-        .populate('club')
-        .populate('user', 'username profileImageKey role signedAvatarUrl')
-        .sort({ createdAt: -1 })
-        .lean();
+            .populate('club')
+            .populate('user', 'username profileImageKey role signedAvatarUrl')
+            .sort({ createdAt: -1 })
+            .lean();
 
         const clubAlerts = await UserNotification.find({
             user: req.user._id,
@@ -3850,9 +4098,9 @@ app.get('/notifications/clubs', ensureAuthenticated, async (req, res) => {
                 { message: { $regex: /club/i } }
             ]
         })
-        .sort({ createdAt: -1 })
-        .limit(25)
-        .lean();
+            .sort({ createdAt: -1 })
+            .limit(25)
+            .lean();
 
         res.render('pages/notifications/club-messages', {
             joinRequests,
@@ -3970,9 +4218,9 @@ app.get('/notifications/new-uploads', async (req, res) => {
             status: 'live',
             isLatestVersion: true
         })
-        .sort({ createdAt: -1 })
-        .lean(); 
-           
+            .sort({ createdAt: -1 })
+            .lean();
+
 
         // 3. Get signed URLs for the icons (using our smart helper)
         const uploadsWithUrls = await Promise.all(recentUploads.map(async (file) => {
@@ -4000,9 +4248,9 @@ app.get('/notifications/new-updates', async (req, res) => {
             updatedAt: { $gte: oneDayAgo },
             status: 'live',
             isLatestVersion: true
-        })        
-        .sort({ updatedAt: -1 })
-        .lean();  
+        })
+            .sort({ updatedAt: -1 })
+            .lean();
 
         // 2. Get signed URLs for the icons
         const updatesWithUrls = await Promise.all(recentUpdates.map(async (file) => {
@@ -4039,9 +4287,9 @@ app.get('/notifications/following', ensureAuthenticated, async (req, res) => {
             status: 'live',
             isLatestVersion: true
         })
-        .sort({ updatedAt: -1 }) // Sort by most recently updated/uploaded
-        .limit(50) // Reasonable limit for a feed
-        .lean();
+            .sort({ updatedAt: -1 }) // Sort by most recently updated/uploaded
+            .limit(50) // Reasonable limit for a feed
+            .lean();
 
         // 4. Get signed URLs for the icons (using our smart helper)
         const modsWithUrls = await Promise.all(followingMods.map(async (file) => {
@@ -4066,7 +4314,7 @@ app.get('/category', async (req, res, next) => {
         const { subCategory, sort, page = 1 } = req.query;
         const limit = 12;
         const currentPage = parseInt(page);
-        
+
         // Base query: Only show live, latest version mods
         const queryFilter = { isLatestVersion: true, status: 'live' };
 
@@ -4100,22 +4348,22 @@ app.get('/category', async (req, res, next) => {
         } else {
             sortOptions.createdAt = -1; // Default: Newest first
         }
-        
+
         // --- Platform-Specific Editor's Choice Council ---
         let editorQuery = { isLatestVersion: true, status: 'live', isEditorsChoice: true };
         const userGlobalCouncil = req.user && req.user.globalCouncil;
         if (queryFilter.category && !userGlobalCouncil) {
             editorQuery.category = queryFilter.category;
         }
-        
+
         const editorsChoiceModsRaw = await File.find(editorQuery).sort({ updatedAt: -1 }).limit(10);
-        
+
         // Process URLs
         const editorsChoiceMods = await Promise.all(editorsChoiceModsRaw.map(async (file) => {
             const iconKey = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-app-icon.png';
             if (iconKey) {
-                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                try { signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) { }
             }
             return { ...(file.toObject ? file.toObject() : file), iconUrl: signedIconUrl };
         }));
@@ -4131,7 +4379,7 @@ app.get('/category', async (req, res, next) => {
             .lean();
 
         // 5. Get Signed URLs for images
-                const filesWithUrls = await Promise.all(files.map(async (file) => {
+        const filesWithUrls = await Promise.all(files.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = key ? await getSmartImageUrl(key) : '/images/default-app-icon.png';
             return { ...file, iconUrl }; // No need for toObject() when using .lean()
@@ -4142,14 +4390,14 @@ app.get('/category', async (req, res, next) => {
             totalPages: totalPages,
             editorsChoiceMods: editorsChoiceMods,
             currentPage: currentPage,
-            
+
             // Pass the current filters back to the frontend so the dropdowns stay selected
-            currentPlatform: platform || 'all', 
+            currentPlatform: platform || 'all',
             currentSubCategory: subCategory || 'all', // NEW
             currentSort: sort || 'latest'
         });
 
-    } catch (error) { 
+    } catch (error) {
         console.error("Category Route Error:", error);
         if (typeof next === 'function') {
             return next(error);
@@ -4172,8 +4420,8 @@ app.get('/leave', (req, res) => {
         const urlObj = new URL(targetUrl);
         const destinationHost = urlObj.hostname.replace('www.', '');
 
-        res.render('pages/leave', { 
-            targetUrl: targetUrl, 
+        res.render('pages/leave', {
+            targetUrl: targetUrl,
             filename: filename,
             destination: destinationHost
         });
@@ -4192,10 +4440,10 @@ app.get('/search', async (req, res, next) => {
     try {
         const rawQuery = (req.query.q || '').trim();
         if (!rawQuery) return res.redirect('/');
-        
+
         const activeTab = req.query.tab || 'mods'; // 'mods' | 'users' | 'community'
         const platform = req.query.platform || 'all';
-        const subCategory = req.query.subCategory || 'all'; 
+        const subCategory = req.query.subCategory || 'all';
         const sort = req.query.sort || 'newest';
         const page = parseInt(req.query.page) || 1;
         const resultsPerPage = 12;
@@ -4203,7 +4451,7 @@ app.get('/search', async (req, res, next) => {
         const tokens = rawQuery.split(/\s+/).filter(Boolean);
         const queryEscaped = escapeRegex(rawQuery);
         const queryRegex = new RegExp(queryEscaped, 'i');
-        
+
         // Multi-token match: each token must match in at least one searchable field
         const tokenConditions = tokens.map(t => {
             const tr = new RegExp(escapeRegex(t), 'i');
@@ -4248,7 +4496,7 @@ app.get('/search', async (req, res, next) => {
             case 'rating': sortQuery = { averageRating: -1 }; break;
             default: sortQuery = { createdAt: -1 }; break;
         }
-        
+
         const totalResults = await File.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalResults / resultsPerPage);
 
@@ -4260,11 +4508,11 @@ app.get('/search', async (req, res, next) => {
 
         const resultsWithUrls = await Promise.all(searchResults.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
-            let signedIconUrl = '/images/default-app-icon.png'; 
+            let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
                 try {
                     signedIconUrl = await getSmartImageUrl(key);
-                } catch (urlError) {}
+                } catch (urlError) { }
             }
             return { ...file, iconUrl: signedIconUrl };
         }));
@@ -4293,9 +4541,9 @@ app.get('/search', async (req, res, next) => {
                     ...(tokens.length > 1 ? [{ $and: userTokenConditions }] : [])
                 ]
             })
-            .select('username role profileImageKey followers following lastSeen bio cardId isVerified')
-            .limit(24)
-            .lean(),
+                .select('username role profileImageKey followers following lastSeen bio cardId isVerified')
+                .limit(24)
+                .lean(),
             File.find({
                 developer: { $regex: queryRegex, $ne: 'N/A' },
                 status: 'live'
@@ -4305,7 +4553,7 @@ app.get('/search', async (req, res, next) => {
         const usersWithAvatars = await Promise.all(userResultsRaw.map(async (u) => {
             let avatarUrl = '/images/default-avatar.png';
             if (u.profileImageKey) {
-                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) {}
+                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) { }
             }
             return { ...u, signedAvatarUrl: avatarUrl };
         }));
@@ -4327,19 +4575,19 @@ app.get('/search', async (req, res, next) => {
                     { category: { $regex: queryRegex } }
                 ]
             })
-            .populate('author', 'username profileImageKey role')
-            .sort({ views: -1, createdAt: -1 })
-            .limit(16)
-            .lean(),
+                .populate('author', 'username profileImageKey role')
+                .sort({ views: -1, createdAt: -1 })
+                .limit(16)
+                .lean(),
             DocPage.find({
                 $or: [
                     { title: { $regex: queryRegex } },
                     { content: { $regex: queryRegex } }
                 ]
             })
-            .populate('category', 'name slug')
-            .limit(16)
-            .lean()
+                .populate('category', 'name slug')
+                .limit(16)
+                .lean()
         ]);
 
         // 4. CLUBS & COMMUNITIES QUERY
@@ -4366,7 +4614,7 @@ app.get('/search', async (req, res, next) => {
 
         // --- RENDER THE PAGE ---
         res.render('pages/search', {
-            results: resultsWithUrls, 
+            results: resultsWithUrls,
             userResults: processedUsers,
             developerResults: developerMods || [],
             communityResults: {
@@ -4381,7 +4629,7 @@ app.get('/search', async (req, res, next) => {
             totalPages: totalPages,
             currentPage: page,
             currentPlatform: platform,
-            currentSubCategory: subCategory, 
+            currentSubCategory: subCategory,
             currentSort: sort
         });
 
@@ -4401,7 +4649,7 @@ app.get('/community', async (req, res) => {
     try {
         const { category, status, sort, q, page = 1 } = req.query;
         const limit = 15;
-        
+
         let queryFilter = {};
         if (category && category !== 'all') queryFilter.category = category;
         if (status && status !== 'all') queryFilter.status = status;
@@ -4473,7 +4721,7 @@ app.post('/community/ask', ensureAuthenticated, async (req, res) => {
         });
 
         await newIssue.save();
-        
+
         // Award 5 points for asking a question
         await User.adjustForumPoints(req.user._id, 5, "Asked a community question");
 
@@ -4649,7 +4897,7 @@ app.get('/mods/:id', async (req, res, next) => {
     try {
         const file = await File.findById(req.params.id);
         if (!file) return next(); // If it really doesn't exist, proceed to 404
-        
+
         // Redirect to the new format: /android/roblox
         return res.redirect(301, `/${file.category}/${file.slug || file._id}`);
     } catch (error) {
@@ -4687,7 +4935,7 @@ async function resolvePlatformGuideDoc(file) {
     try {
         const rawPlatform = (file.platforms && file.platforms[0]) || file.category || '';
         const normPlatform = String(rawPlatform).toLowerCase().trim();
-        
+
         // 1. Try SiteState downloadPagePlatformDocs configuration
         const siteState = await SiteState.findOne({ singletonId: 'master-state' })
             .populate([
@@ -4756,11 +5004,11 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         let masterFile = null;
 
         // 1. PRIMARY SEARCH: Try to find by exact slug
-        masterFile = await File.findOne({ 
-            category: category, 
+        masterFile = await File.findOne({
+            category: category,
             slug: slug,
             isLatestVersion: true,
-            isVariant: { $ne: true } 
+            isVariant: { $ne: true }
         }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
 
         // 2. SECONDARY SEARCH: If exact slug fails and slug is a valid ObjectId, search by _id
@@ -4796,7 +5044,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                 category: category,
                 name: nameSearchPattern,
                 isLatestVersion: true,
-                isVariant: { $ne: true } 
+                isVariant: { $ne: true }
             }).populate({ path: 'variants', populate: { path: 'license' } }).populate('license');
         }
 
@@ -4817,7 +5065,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
 
         // 5. If STILL not found, throw 404
         if (!masterFile) {
-            return next(); 
+            return next();
         }
 
         // --- Category Normalization Redirect ---
@@ -4832,7 +5080,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         if (masterFile.status !== 'live') {
             const isUploader = req.user && req.user.username === masterFile.uploader;
             const isAdmin = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
-            if (!isUploader && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' }); 
+            if (!isUploader && !isAdmin) return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
         }
 
         // Keep the preference effective when a mod URL is opened directly.
@@ -4856,7 +5104,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const liveVariants = (masterFile.variants || []).filter(v => v.status === 'live' && v.isDmcaHidden !== true);
         masterFile.variants = liveVariants;
 
-        let displayFile = masterFile; 
+        let displayFile = masterFile;
         let isViewingVariant = false;
 
         // 3. If the main master file is DMCA hidden:
@@ -4943,7 +5191,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         // VIEW TRACKING (Direct link & share resilient)
         // ==========================================
         let shouldIncrementView = false;
-        const trackingId = masterFile._id.toString(); 
+        const trackingId = masterFile._id.toString();
 
         if (!req.session) req.session = {};
         if (!req.session.viewedMods) req.session.viewedMods = {};
@@ -4954,17 +5202,17 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const hasCookie = req.cookies && req.cookies[cookieName];
 
         // Direct shared link visits (or external referrers) and visits outside a 5-minute window increment views accurately
-        const isPreviewMode = req.query.preview === 'true' || 
-                              Boolean(req.headers.referer && req.headers.referer.includes('/preview')) ||
-                              (masterFile.status !== 'live') ||
-                              Boolean(req.user && (masterFile.uploader === req.user.username || req.user.role === 'admin' || req.user.role === 'owner'));
+        const isPreviewMode = req.query.preview === 'true' ||
+            Boolean(req.headers.referer && req.headers.referer.includes('/preview')) ||
+            (masterFile.status !== 'live') ||
+            Boolean(req.user && (masterFile.uploader === req.user.username || req.user.role === 'admin' || req.user.role === 'owner'));
         const isDirectShare = Boolean(req.query.ref || req.query.share || req.query.source || req.query.v || (req.headers.referer && !req.headers.referer.includes(req.headers.host || '')));
         if (!isPreviewMode && (isDirectShare || !hasCookie || (now - lastViewedAt > 5 * 60 * 1000))) {
             shouldIncrementView = true;
             req.session.viewedMods[trackingId] = now;
             try {
                 res.cookie(cookieName, 'true', { maxAge: 5 * 60 * 1000, httpOnly: true, sameSite: 'lax' });
-            } catch (ce) {}
+            } catch (ce) { }
         }
 
         if (shouldIncrementView) {
@@ -4976,7 +5224,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                 }
                 await File.findByIdAndUpdate(masterFile._id, updateOp);
                 if (isViewingVariant && displayFile && displayFile._id && displayFile._id.toString() !== masterFile._id.toString()) {
-                    await File.findByIdAndUpdate(displayFile._id, { $inc: { views: 1 } }).catch(() => {});
+                    await File.findByIdAndUpdate(displayFile._id, { $inc: { views: 1 } }).catch(() => { });
                 }
             } catch (ve) {
                 console.error('[View Counter Error]:', ve);
@@ -4989,18 +5237,18 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         // --- IMAGE HANDLING ---
         const iconKey = masterFile.iconUrl || masterFile.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
-        
+
         const screenKeys = (masterFile.screenshotUrls && masterFile.screenshotUrls.length > 0)
             ? masterFile.screenshotUrls : (masterFile.screenshotKeys || []);
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
         // --- REVIEWS HANDLING ---
-        const reviews = await Review.find({ file: displayFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey'); 
-        
+        const reviews = await Review.find({ file: displayFile._id }).sort({ createdAt: -1 }).populate('user', 'profileImageKey');
+
         let reviewsWithAvatars = await Promise.all(reviews.map(async (review) => {
             let avatarUrl = '/images/default-avatar.png';
             if (review.user && review.user.profileImageKey) {
-                try { avatarUrl = await getSmartImageUrl(review.user.profileImageKey); } catch (e) {}
+                try { avatarUrl = await getSmartImageUrl(review.user.profileImageKey); } catch (e) { }
             }
             return { ...review.toObject(), user: { ...review.user.toObject(), signedAvatarUrl: avatarUrl } };
         }));
@@ -5011,7 +5259,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                 const isB = b.user._id.toString() === req.user._id.toString();
                 if (isA && !isB) return -1;
                 if (!isA && isB) return 1;
-                return 0; 
+                return 0;
             });
         }
 
@@ -5023,7 +5271,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
 
         // --- USER INTERACTIONS ---
         const userHasWhitelisted = req.user ? req.user.whitelist.includes(displayFile._id) : false;
-        
+
         let userVotedWorking = false;
         let userVotedNotWorking = false;
         if (req.user) {
@@ -5036,7 +5284,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         let isUploaderDistributor = false;
         const uploaderUser = await User.findOne({ username: displayFile.uploader }).lean();
         const canVoteOnFile = Boolean(req.user && (!uploaderUser || uploaderUser._id.toString() !== req.user._id.toString()));
-        
+
         if (uploaderUser && uploaderUser.role === 'distributor') {
             isUploaderDistributor = true;
         }
@@ -5049,13 +5297,13 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const currentModSlug = masterFile.slug || slugify(masterFile.name) || masterFile._id.toString();
         const canonicalModUrl = `https://gplmods.webredirect.org/mods/${category}/${currentModSlug}${isViewingVariant ? `/${displayFile._id}` : ''}`;
 
-                // Auto-check VirusTotal scan if pending or manual VT URL provided
+        // Auto-check VirusTotal scan if pending or manual VT URL provided
         if (displayFile && (displayFile.virusTotalAnalysisId || displayFile.manualFileScanUrl) && !displayFile.virusTotalScanDate) {
             try {
                 await checkAndUpdateFileVirusTotal(displayFile._id);
                 const updatedDisplay = await File.findById(displayFile._id);
                 if (updatedDisplay) displayFile = updatedDisplay;
-            } catch (vtErr) {}
+            } catch (vtErr) { }
         }
 
         // --- RECOMMENDATION & PROMOTION SECTIONS (Item 1) ---
@@ -5171,7 +5419,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         // Resolve uploader avatar
         let uploaderAvatar = '/images/default-avatar.png';
         if (uploaderUser && uploaderUser.profileImageKey) {
-            try { uploaderAvatar = await getSmartImageUrl(uploaderUser.profileImageKey); } catch (e) {}
+            try { uploaderAvatar = await getSmartImageUrl(uploaderUser.profileImageKey); } catch (e) { }
         }
 
         const [suggestedMods, similarApps, similarMods, moreByUploader, moreByDeveloper, otherPlatformMods] = await Promise.all([
@@ -5223,7 +5471,7 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
 
     } catch (e) {
         console.error("Error rendering mod page:", e);
-        return next(e); 
+        return next(e);
     }
 }
 
@@ -5519,12 +5767,12 @@ app.get('/:category/:slug', async (req, res, next) => {
 
         // Prevent capturing system reserved URLs
         const reservedPaths = [
-            'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations', 
-            'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads', 
-            'developer', 'support', 'donate', 'partnership', 'home', 'healthz', 
+            'api', 'admin', 'auth', 'css', 'js', 'images', 'audio', 'animations',
+            'mods', 'users', 'category', 'search', 'updates', 'profile', 'my-uploads',
+            'developer', 'support', 'donate', 'partnership', 'home', 'healthz',
             'download-file', 'upload-details', 'reset-password', 'docs', 'licenses'
         ];
-        
+
         if (reservedPaths.includes(category)) return next();
 
         const knownPlatforms = ['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'];
@@ -5559,9 +5807,9 @@ app.get('/api/mods/by-tag', async (req, res) => {
             status: 'live',
             tags: { $in: [tagRegex] }
         })
-        .sort({ views: -1, downloads: -1 })
-        .limit(12)
-        .lean();
+            .sort({ views: -1, downloads: -1 })
+            .limit(12)
+            .lean();
 
         const modsWithIcons = await Promise.all(mods.map(async (m) => {
             const key = m.iconUrl || m.iconKey;
@@ -5605,16 +5853,16 @@ app.get('/promote', async (req, res, next) => {
 
         if (req.isAuthenticated && req.isAuthenticated()) {
             const isStaff = req.user && ['admin', 'owner', 'distributor'].includes(req.user.role);
-            
+
             // Fetch creator's live mods only (never show drafts)
             userMods = await File.find({
                 uploader: req.user.username,
                 status: { $in: ['live', 'approved'] },
                 isDraft: { $ne: true }
             })
-            .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status iconKey')
-            .sort({ totalDownloads: -1 })
-            .lean();
+                .select('_id name title slug fileType category totalDownloads isPromoted promotedUntil promotionTier iconUrl fileIconUrl screenshots previewImage status iconKey')
+                .sort({ totalDownloads: -1 })
+                .lean();
 
             // If staff has no uploaded mods of their own, provide recent/popular live mods for testing/management
             if (userMods.length === 0 && isStaff) {
@@ -5798,9 +6046,9 @@ app.post('/api/mods/:id/create-promotion-order', async (req, res) => {
         });
     } catch (err) {
         console.error('[Cashfree Promote Order Error]:', err.response?.data || err.message);
-        return res.status(500).json({ 
-            success: false, 
-            error: err.response?.data?.message || 'Failed to initiate promotion checkout.' 
+        return res.status(500).json({
+            success: false,
+            error: err.response?.data?.message || 'Failed to initiate promotion checkout.'
         });
     }
 });
@@ -6006,9 +6254,9 @@ function getRepoBaseUrl(req) {
 app.get('/jailbreak-repos', async (req, res) => {
     try {
         // Fetch all live Jailbreak tweaks
-        const jbMods = await File.find({ 
-            category: 'ios-jailbroken', 
-            status: 'live', 
+        const jbMods = await File.find({
+            category: 'ios-jailbroken',
+            status: 'live',
             isLatestVersion: true,
             showInRepo: { $ne: false } // Only show mods allowed in repo
         }).sort({ createdAt: -1 });
@@ -6016,15 +6264,15 @@ app.get('/jailbreak-repos', async (req, res) => {
         // Filter them into their specific architecture buckets
         const rootless = [];
         const rootful = [];
-        const roothide =[];
-        const other =[];
+        const roothide = [];
+        const other = [];
 
         for (let file of jbMods) {
             // We use the new architectures array if it exists, otherwise fallback to subcategory
             const archs = file.architectures || [];
             const subcat = file.platforms[0] || '';
             const isRootless = archs.includes('arm64') || subcat.includes('Rootless');
-            
+
             const iconKey = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(iconKey);
             const fileObj = { ...file.toObject(), iconUrl };
@@ -6037,7 +6285,7 @@ app.get('/jailbreak-repos', async (req, res) => {
         }
 
         const baseUrl = getBaseUrl(req);
-        res.render('pages/jailbreak-repos', { 
+        res.render('pages/jailbreak-repos', {
             rootless, rootful, roothide, other,
             baseUrl: baseUrl // <-- Pass baseUrl to EJS
         });
@@ -6053,13 +6301,13 @@ app.get('/jailbreak-repos', async (req, res) => {
 app.get('/repos', async (req, res) => {
     try {
         // --- Fetch Android F-Droid Candidates ---
-        const androidRepoMods = await File.find({ 
+        const androidRepoMods = await File.find({
             category: 'android',
             status: 'live',
             isLatestVersion: true,
             showInRepo: { $ne: false },
             // ✅ FIX: Looking for the new 'directDownloadUrl' field OR 'externalDownloadUrl'
-            $or:[
+            $or: [
                 { directDownloadUrl: { $exists: true, $ne: '' } },
                 { externalDownloadUrl: { $exists: true, $ne: '' } }
             ]
@@ -6072,13 +6320,13 @@ app.get('/repos', async (req, res) => {
         }));
 
         // --- Fetch iOS Jailed (Sideloading) Candidates ---
-        const iosJailedRepoMods = await File.find({ 
+        const iosJailedRepoMods = await File.find({
             category: 'ios-jailed',
             status: 'live',
             isLatestVersion: true,
             showInRepo: { $ne: false },
             // ✅ FIX: Looking for the new 'directDownloadUrl' field OR 'externalDownloadUrl'
-            $or:[
+            $or: [
                 { directDownloadUrl: { $exists: true, $ne: '' } },
                 { externalDownloadUrl: { $exists: true, $ne: '' } }
             ]
@@ -6092,7 +6340,7 @@ app.get('/repos', async (req, res) => {
 
         const baseUrl = getBaseUrl(req);
 
-        res.render('pages/repos', { 
+        res.render('pages/repos', {
             androidFiles: androidFiles,
             iosFiles: iosFiles,
             baseUrl: baseUrl, // <-- Pass baseUrl to EJS
@@ -6110,27 +6358,27 @@ app.get('/developer', async (req, res) => {
     try {
         const developerSlug = req.query.name;
         if (!developerSlug || developerSlug.trim() === '') return res.redirect('/');
-        
+
         // Create a RegEx to handle the slug
         const searchPattern = new RegExp(developerSlug.replace(/-/g, '[-\\s]+'), 'i');
 
         // ✅ RAM OPTIMIZATION: Added .lean()
         const filesByDeveloper = await File.find({
-            developer: searchPattern, 
+            developer: searchPattern,
             isLatestVersion: true,
             status: 'live'
         })
-        .sort({ createdAt: -1 })
-        .lean();
+            .sort({ createdAt: -1 })
+            .lean();
         // --- FIX: GENERATE SIGNED URLS FOR IMAGES ---
         const filesWithUrls = await Promise.all(filesByDeveloper.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
-                try { signedIconUrl = await getSmartImageUrl(key); } catch (e) {}
+                try { signedIconUrl = await getSmartImageUrl(key); } catch (e) { }
             }
             // ✅ REMOVED: .toObject() is no longer needed
-            return { ...file, iconUrl: signedIconUrl }; 
+            return { ...file, iconUrl: signedIconUrl };
         }));
 
         // Pass the actual original developer name to the template if files exist,
@@ -6138,7 +6386,7 @@ app.get('/developer', async (req, res) => {
         const displayName = filesByDeveloper.length > 0 ? filesByDeveloper[0].developer : developerSlug.replace(/-/g, ' ');
 
         res.render('pages/developer', {
-            files: filesWithUrls, 
+            files: filesWithUrls,
             developerName: displayName // Pass the clean name
         });
 
@@ -6554,15 +6802,15 @@ app.get('/download-file/:id', async (req, res) => {
         }
 
         // --- 3. FALLBACK TO BACKBLAZE B2 ---
-        const fileKey = file.fileKey || file.fileUrl; 
+        const fileKey = file.fileKey || file.fileUrl;
         if (!fileKey) return res.status(500).send("File record incomplete.");
 
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
-            Key: fileKey, 
+            Key: fileKey,
             ResponseContentDisposition: `attachment; filename="${file.originalFilename || file.name}"`
         });
-        
+
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
         res.redirect(signedUrl);
 
@@ -6586,7 +6834,7 @@ app.get('/mods/:id/parts', async (req, res) => {
             });
         }
         if (file && file.ageRating === '18+' && shouldHideAdultContent(req.user)) return res.status(404).render('pages/404');
-        
+
         if (!file || !file.isMultiPart) {
             // If it's not a multi-part file, just send them back to the main mod page
             return res.redirect(`/mods/${fileId}`);
@@ -6599,33 +6847,33 @@ app.get('/mods/:id/parts', async (req, res) => {
         // ======== NEW: FIND UPLOADER ROLE ========
         let isUploaderDistributor = false;
         const uploaderUser = await User.findOne({ username: file.uploader }).lean();
-        
+
         if (uploaderUser && uploaderUser.role === 'distributor') {
             isUploaderDistributor = true;
         }
         // =========================================
 
 
-                if (file && (file.virusTotalAnalysisId || file.manualFileScanUrl) && !file.virusTotalScanDate) {
+        if (file && (file.virusTotalAnalysisId || file.manualFileScanUrl) && !file.virusTotalScanDate) {
             try {
                 await checkAndUpdateFileVirusTotal(file._id);
                 const updatedFile = await File.findById(file._id);
                 if (updatedFile) file = updatedFile;
-            } catch (vtErr) {}
+            } catch (vtErr) { }
         }
         if (file && file.downloadParts && file.downloadParts.length > 0) {
             for (const part of file.downloadParts) {
                 if ((part.partVirusTotalId || part.manualFileScanUrl) && !part.partVirusTotalScanDate) {
                     try {
                         await checkAndUpdatePartVirusTotal(file._id, part._id);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
             }
             const refreshedFile = await File.findById(file._id);
             if (refreshedFile) file = refreshedFile;
         }
 
-        res.render('pages/download-parts', { 
+        res.render('pages/download-parts', {
             file: { ...file.toObject(), iconUrl },
             isUploaderDistributor
         });
@@ -6649,14 +6897,14 @@ async function finalizeLogin(req, res, user, redirectUrl) {
     if (req.session.currentChallenge) {
         req.session.currentChallenge = null;
     }
-    
+
     // Generate a brand new, secure Session ID for this device
     req.session.regenerate(async (err) => {
         if (err) console.error("Session Regen Error:", err);
-        
+
         req.session.passport = tempSession; // Restore login state
         req.session.sessionVersion = user.sessionVersion || 0;
-        
+
         // Check if the user already has an active session on another device
         if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
             try {
@@ -6672,7 +6920,7 @@ async function finalizeLogin(req, res, user, redirectUrl) {
                 console.error(`[Session] Failed to invalidate old session: ${err.message}`);
             }
         }
-        
+
         // Save the new Session ID
         user.currentSessionId = req.sessionID;
         await user.save();
@@ -6700,10 +6948,10 @@ async function finalizeLogin(req, res, user, redirectUrl) {
         req.session.save((saveErr) => {
             if (saveErr) console.error("Session save error:", saveErr);
             // Set the CDN bypass cookie
-            res.cookie('is_logged_in', 'true', { 
+            res.cookie('is_logged_in', 'true', {
                 maxAge: 1000 * 60 * 60 * 24 * 3, // 3 Days
-                path: '/', 
-                secure: process.env.NODE_ENV === 'production', 
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax'
             });
             res.redirect(redirectUrl);
@@ -6728,23 +6976,23 @@ const processSuccessfulLogin = async (req, res, next, user) => {
             ? req.session.active2faMethod
             : availableMethods[0] || 'email';
         req.session.active2faMethod = priorityMethod;
-        
+
         if (priorityMethod === 'email') {
             try {
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
                 user.verificationOtp = otp;
                 user.otpExpires = Date.now() + 600000;
                 await user.save();
-                await send2faEmail(user, otp); 
+                await send2faEmail(user, otp);
             } catch (e) { console.error("2FA Email Error:", e); }
         }
-        
+
         // Explicitly SAVE the session to MongoDB before redirecting!
         req.session.save((err) => {
             if (err) console.error("Session save error:", err);
             return res.redirect('/login/2fa');
         });
-        
+
     } else {
         // Standard Login (No 2FA required)
         req.logIn(user, (loginErr) => {
@@ -6768,7 +7016,7 @@ app.get('/login', (req, res) => {
     res.render('pages/login', {
         recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
         message: req.query.message || null,
-        error: req.query.error || null 
+        error: req.query.error || null
     });
 });
 
@@ -6782,8 +7030,8 @@ app.post('/login', verifyRecaptcha, (req, res, next) => {
             const errMsg = info && info.message ? info.message : 'Incorrect Email Or Password';
             return res.redirect('/login?error=' + encodeURIComponent(errMsg));
         }
-        
-        processSuccessfulLogin(req, res, next, user); 
+
+        processSuccessfulLogin(req, res, next, user);
     })(req, res, next);
 });
 
@@ -6803,14 +7051,14 @@ const handleSocialCallback = (provider) => {
             // Is the user currently trying to pass a Social 2FA Challenge?
             if (req.session.pending2faUserId) {
                 const pendingUser = await User.findById(req.session.pending2faUserId);
-                
+
                 // Check if the social account matches the pending account
                 if (pendingUser && pendingUser._id.toString() === user._id.toString()) {
                     // Match! 2FA is successful!
                     req.logIn(pendingUser, (loginErr) => {
                         if (loginErr) return next(loginErr);
                         req.session.pending2faUserId = null;
-                        
+
                         finalizeLogin(req, res, pendingUser, '/home?message=2FA Verified via Social Login!');
                     });
                     return;
@@ -6830,7 +7078,7 @@ const handleSocialCallback = (provider) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/auth/google/callback', handleSocialCallback('google'));
 
-app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
+app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 app.get('/auth/github/callback', handleSocialCallback('github'));
 
 app.get('/auth/microsoft', passport.authenticate('microsoft', { prompt: 'select_account' }));
@@ -6839,8 +7087,8 @@ app.get('/auth/microsoft/callback', handleSocialCallback('microsoft'));
 
 // --- 5. REGISTRATION ROUTES ---
 app.get('/register', redirectIfAuthenticated, (req, res) => {
-    res.render('pages/register', { 
-        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '', 
+    res.render('pages/register', {
+        recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
         message: req.query.message || null,
         error: req.query.error || null
     });
@@ -6848,7 +7096,7 @@ app.get('/register', redirectIfAuthenticated, (req, res) => {
 
 app.post('/register', verifyRecaptcha, async (req, res, next) => {
     try {
-        const { username, email, password, dateOfBirth, referralCode} = req.body;
+        const { username, email, password, dateOfBirth, referralCode } = req.body;
         if (!username || !email || !password || !dateOfBirth) {
             return res.status(400).render('pages/register', {
                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
@@ -6881,7 +7129,7 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
                 formData: req.body
             });
         }
-        
+
         // Validation Check
         if (!isValidName(username)) {
             return res.status(400).render('pages/register', {
@@ -6904,19 +7152,19 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
 
         // Profanity Check
         if (global.profanityFilter.isProfane(username)) {
-             return res.status(400).render('pages/register', {
-                 recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
-                 message: null,
-                 error: "That username contains inappropriate language.",
-                 formData: req.body
-             });
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY || '',
+                message: null,
+                error: "That username contains inappropriate language.",
+                formData: req.body
+            });
         }
 
         // Anti-Temp Mail Check
         const isTempMail = await isDisposableEmail(email.toLowerCase());
         if (isTempMail) {
-            return res.status(400).render('pages/register', { 
-                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY, 
+            return res.status(400).render('pages/register', {
+                recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
                 message: null,
                 error: "Registration failed. Disposable or temporary email addresses are not allowed. Please use a valid, permanent email.",
                 formData: req.body
@@ -6949,32 +7197,32 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpires = Date.now() + 600000; 
+        const otpExpires = Date.now() + 600000;
 
         if (user && !user.isVerified) {
             // Update unverified user
             user.verificationOtp = otp;
             user.otpExpires = otpExpires;
             user.username = uniqueUsername;
-            user.dateOfBirth = birthDate; 
+            user.dateOfBirth = birthDate;
         } else {
             // Create new user
             user = new User({
                 username: uniqueUsername,
                 email: email.toLowerCase(),
                 password,
-                referralCode: newReferralCode, 
-                referredBy: referrerId,        
-                dateOfBirth: birthDate, 
+                referralCode: newReferralCode,
+                referredBy: referrerId,
+                dateOfBirth: birthDate,
                 verificationOtp: otp,
                 otpExpires: otpExpires
             });
         }
-        
+
         await user.save();
         await createWelcomeNotification(user);
         await sendVerificationEmail(user);
-        
+
         res.render('pages/please-verify', { email: user.email, error: null });
 
     } catch (e) {
@@ -6987,7 +7235,7 @@ app.post('/register', verifyRecaptcha, async (req, res, next) => {
 // --- 6. OTP VERIFICATION (Used for Registration) ---
 app.post('/verify-otp', async (req, res, next) => {
     try {
-        const { otp, email } = req.body; 
+        const { otp, email } = req.body;
 
         const user = await User.findOne({
             email: email.toLowerCase(),
@@ -6996,14 +7244,14 @@ app.post('/verify-otp', async (req, res, next) => {
         });
 
         if (!user) {
-            return res.render('pages/please-verify', { 
-                email: email, 
-                error: 'Invalid or expired verification code. Please try again.' 
+            return res.render('pages/please-verify', {
+                email: email,
+                error: 'Invalid or expired verification code. Please try again.'
             });
         }
 
         user.isVerified = true;
-        user.verificationOtp = undefined; 
+        user.verificationOtp = undefined;
         user.otpExpires = undefined;
 
         try {
@@ -7025,7 +7273,7 @@ app.post('/verify-otp', async (req, res, next) => {
         if (user.referredBy) {
             await awardPoints(user.referredBy, 5, "Successful Referral", `You referred ${user.username}!`);
             await User.findByIdAndUpdate(user.referredBy, { $inc: { referralCount: 1 } });
-            
+
             try {
                 const UserNotification = require('./models/userNotification');
                 await new UserNotification({
@@ -7039,7 +7287,7 @@ app.post('/verify-otp', async (req, res, next) => {
 
         // AUTOMATED WELCOME MESSAGE
         await createWelcomeNotification(user);
-        
+
         // Log them in and finalize session
         req.login(user, (err) => {
             if (err) return res.redirect('/login?error=Verification successful, but login failed. Please log in manually.');
@@ -7054,7 +7302,7 @@ app.post('/verify-otp', async (req, res, next) => {
 
 // --- 7. PASSWORD RESET ROUTES ---
 app.get('/forgot-password', (req, res) => {
-    res.render('pages/forgot-password'); 
+    res.render('pages/forgot-password');
 });
 
 app.post('/resend-otp', async (req, res) => {
@@ -7066,7 +7314,7 @@ app.post('/resend-otp', async (req, res) => {
             return res.redirect('/forgot-password?error=Invalid email domain.');
         }
         const user = await User.findOne({ email: email.toLowerCase() });
-        
+
         if (user && !user.isVerified) {
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             user.verificationOtp = otp;
@@ -7085,7 +7333,7 @@ app.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email: email });
-        
+
         if (!user) {
             return res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
         }
@@ -7094,14 +7342,14 @@ app.post('/forgot-password', async (req, res) => {
         user.passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
         user.passwordResetExpires = Date.now() + 3600000; // 1 hour
         await user.save();
-        
+
         const resetURL = `https://${req.get('host')}/reset-password/${resetToken}`;
         await sendPasswordResetEmail(user, resetURL);
 
         res.redirect('/forgot-password?success=If an account exists, a link has been sent.');
-    } catch (e) { 
+    } catch (e) {
         console.error("Forgot Password Error:", e);
-        res.redirect('/forgot-password?error=An error occurred while processing your request.'); 
+        res.redirect('/forgot-password?error=An error occurred while processing your request.');
     }
 });
 
@@ -7125,7 +7373,7 @@ app.post('/reset-password/:token', async (req, res, next) => {
             passwordResetToken: hashedToken,
             passwordResetExpires: { $gt: Date.now() }
         });
-        
+
         if (!user) return res.redirect('/forgot-password?error=Password reset link is invalid or has expired.');
         if (req.body.password !== req.body.confirmPassword) return res.redirect(`/reset-password/${req.params.token}?error=Passwords do not match.`);
         if (req.body.password.length < 6) return res.redirect(`/reset-password/${req.params.token}?error=Password must be at least 6 characters.`);
@@ -7167,19 +7415,19 @@ app.get('/logout', async (req, res, next) => {
             console.error('Error pruning live user on logout:', e);
         }
     }
-    req.logout(err => { 
-        if (err) return next(err); 
-        
+    req.logout(err => {
+        if (err) return next(err);
+
         req.session.destroy(() => {
             res.clearCookie('connect.sid', { path: '/' });
             res.clearCookie('is_logged_in', { path: '/' });
             try {
                 res.clearCookie('is_logged_in', { path: '/', domain: req.hostname });
-            } catch (e) {}
+            } catch (e) { }
             res.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
             res.set('Pragma', 'no-cache');
             res.set('Clear-Site-Data', '"cache"');
-            res.redirect('/?message=You+have+been+successfully+logged+out.&logout=true'); 
+            res.redirect('/?message=You+have+been+successfully+logged+out.&logout=true');
         });
     });
 });
@@ -7187,12 +7435,12 @@ app.get('/logout', async (req, res, next) => {
 // --- GOOGLE ROUTES ---
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback', 
+app.get('/auth/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
-        res.cookie('is_logged_in', 'true', { 
+        res.cookie('is_logged_in', 'true', {
             maxAge: 1000 * 60 * 60 * 24 * 3, // 3 Days
             path: '/', // Ensure it's available across the whole site
             secure: process.env.NODE_ENV === 'production', // Use secure cookies on HTTPS
@@ -7203,15 +7451,15 @@ app.get('/auth/google/callback',
 );
 
 // --- GITHUB ROUTES ---
-app.get('/auth/github', passport.authenticate('github', { scope: [ 'user:email' ] }));
+app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 
-app.get('/auth/github/callback', 
-    passport.authenticate('github', { failureRedirect: '/login' }), 
+app.get('/auth/github/callback',
+    passport.authenticate('github', { failureRedirect: '/login' }),
     processSuccessfulLogin,
     (req, res) => {
         // ✅ FIX: Set the CDN bypass cookie on successful social login
-        res.cookie('is_logged_in', 'true', { 
-            maxAge: 1000 * 60 * 60 * 24 * 3, 
+        res.cookie('is_logged_in', 'true', {
+            maxAge: 1000 * 60 * 60 * 24 * 3,
             path: '/',
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax'
@@ -7241,11 +7489,11 @@ app.get('/dashboard', ensureAuthenticated, async (req, res) => {
                         avatarUrl = await getSmartImageUrl(u.profileImageKey);
                     } catch (e) { console.error("Avatar sign error", e); }
                 }
-                return { 
-                    _id: u._id, 
-                    username: u.username, 
-                    role: u.role, 
-                    signedAvatarUrl: avatarUrl 
+                return {
+                    _id: u._id,
+                    username: u.username,
+                    role: u.role,
+                    signedAvatarUrl: avatarUrl
                 };
             }));
         };
@@ -7255,7 +7503,7 @@ app.get('/dashboard', ensureAuthenticated, async (req, res) => {
         const followingList = await mapCommunityUsers(userWithCommunity.following);
 
         // 4. Render the page with the new data
-        res.render('pages/dashboard', { 
+        res.render('pages/dashboard', {
             user: req.user,
             followers: followersList,
             following: followingList
@@ -7271,15 +7519,15 @@ app.get('/dashboard', ensureAuthenticated, async (req, res) => {
 app.get('/profile', ensureAuthenticated, async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
-        
+
         // Ensure virtuals (like forumRank) are passed to the frontend
         const userObj = user.toObject({ virtuals: true });
-        userObj.signedAvatarUrl = req.user.signedAvatarUrl; 
+        userObj.signedAvatarUrl = req.user.signedAvatarUrl;
 
         res.render('pages/profile', { user: userObj });
-    } catch (e) { 
+    } catch (e) {
         console.error('Profile fetch error:', e);
-        res.status(500).render('pages/500'); 
+        res.status(500).render('pages/500');
     }
 });
 
@@ -7292,7 +7540,7 @@ app.get('/wishlist', ensureAuthenticated, async (req, res) => {
                 path: 'whitelist',
                 match: { isLatestVersion: true, status: 'live' } // Only show live, latest mods
             });
-            
+
         // We need to get signed URLs for the icons in the whitelist
         const populatedWhitelist = await Promise.all((userWithWhitelist.whitelist || []).map(async (file) => {
             const key = file.iconUrl || file.iconKey;
@@ -7320,7 +7568,7 @@ app.get('/settings', ensureAuthenticated, async (req, res) => {
             user.safetyEmailsEnabled = false;
             await user.save();
         }
-        
+
         // Convert to object so we can append custom properties
         const userObj = user.toObject();
         userObj.hideAdultContent = shouldHideAdultContent(user);
@@ -7415,7 +7663,7 @@ app.post('/settings/notifications', async (req, res) => {
             try {
                 const pushNotification = require('./utils/pushNotification');
                 await pushNotification.updatePreferences(req.user._id, notificationSettings);
-            } catch (pe) {}
+            } catch (pe) { }
         }
 
         // Guest newsletter integration if email provided in payload
@@ -7425,7 +7673,7 @@ app.post('/settings/notifications', async (req, res) => {
             try {
                 await Subscriber.findOneAndUpdate(
                     { email: guestEmail },
-                    { 
+                    {
                         isSubscribed: shouldSubscribe,
                         source: 'guest-notification-settings'
                     },
@@ -7437,9 +7685,9 @@ app.post('/settings/notifications', async (req, res) => {
         }
 
         if (isJson) {
-            return res.json({ 
-                success: true, 
-                message: req.user ? 'Notification preferences updated.' : 'Guest notification preferences saved.', 
+            return res.json({
+                success: true,
+                message: req.user ? 'Notification preferences updated.' : 'Guest notification preferences saved.',
                 notificationSettings,
                 isGuest: !req.user
             });
@@ -7622,9 +7870,9 @@ app.get('/security/login/:action/:token', async (req, res) => {
         const tokenData = user && user.loginAlertTokens.find(item => item.token === token);
 
         if (!user || !tokenData) {
-            return res.status(404).render('pages/security-alert', { 
-                status: 'invalid', 
-                message: 'This security link is invalid or does not exist.' 
+            return res.status(404).render('pages/security-alert', {
+                status: 'invalid',
+                message: 'This security link is invalid or does not exist.'
             });
         }
 
@@ -7633,9 +7881,9 @@ app.get('/security/login/:action/:token', async (req, res) => {
 
         // Check if the 1-hour validity window has expired
         if (tokenAgeMs > ONE_HOUR_MS) {
-            return res.status(410).render('pages/security-alert', { 
-                status: 'invalid', 
-                message: 'This security link has expired. Security links are only valid for 1 hour from when the login alert was generated.' 
+            return res.status(410).render('pages/security-alert', {
+                status: 'invalid',
+                message: 'This security link has expired. Security links are only valid for 1 hour from when the login alert was generated.'
             });
         }
 
@@ -7643,10 +7891,10 @@ app.get('/security/login/:action/:token', async (req, res) => {
 
         // If the user already confirmed or denied this alert before, return HTTP 208 (Already Reported)
         if (tokenData.status === 'verified' || tokenData.status === 'revoked') {
-            return res.status(208).render('pages/security-alert', { 
-                status: 'already_reported', 
+            return res.status(208).render('pages/security-alert', {
+                status: 'already_reported',
                 previousDecision: tokenData.status,
-                token, 
+                token,
                 email: user.email,
                 minutesLeft,
                 error: req.query.error || null
@@ -7657,11 +7905,11 @@ app.get('/security/login/:action/:token', async (req, res) => {
             tokenData.status = 'verified';
             tokenData.respondedAt = new Date();
             await user.save();
-            return res.render('pages/security-alert', { 
-                status: 'success', 
-                token, 
+            return res.render('pages/security-alert', {
+                status: 'success',
+                token,
                 email: user.email,
-                minutesLeft 
+                minutesLeft
             });
         }
 
@@ -7675,12 +7923,12 @@ app.get('/security/login/:action/:token', async (req, res) => {
                 );
             }
             await user.save();
-            return res.render('pages/security-alert', { 
-                status: 'unauthorized', 
-                token, 
-                email: user.email, 
+            return res.render('pages/security-alert', {
+                status: 'unauthorized',
+                token,
+                email: user.email,
                 minutesLeft,
-                error: req.query.error || null 
+                error: req.query.error || null
             });
         }
 
@@ -7700,9 +7948,9 @@ app.all(['/security/login/change-decision/:token', '/security/login/change/:deci
         const tokenData = user && user.loginAlertTokens.find(item => item.token === token);
 
         if (!user || !tokenData) {
-            return res.status(404).render('pages/security-alert', { 
-                status: 'invalid', 
-                message: 'This security link is invalid or does not exist.' 
+            return res.status(404).render('pages/security-alert', {
+                status: 'invalid',
+                message: 'This security link is invalid or does not exist.'
             });
         }
 
@@ -7710,9 +7958,9 @@ app.all(['/security/login/change-decision/:token', '/security/login/change/:deci
         const ONE_HOUR_MS = 60 * 60 * 1000;
 
         if (tokenAgeMs > ONE_HOUR_MS) {
-            return res.status(410).render('pages/security-alert', { 
-                status: 'invalid', 
-                message: 'The 1-hour window to modify your response for this login alert has expired.' 
+            return res.status(410).render('pages/security-alert', {
+                status: 'invalid',
+                message: 'The 1-hour window to modify your response for this login alert has expired.'
             });
         }
 
@@ -7728,23 +7976,23 @@ app.all(['/security/login/change-decision/:token', '/security/login/change/:deci
                 );
             }
             await user.save();
-            return res.render('pages/security-alert', { 
-                status: 'unauthorized', 
-                token, 
-                email: user.email, 
+            return res.render('pages/security-alert', {
+                status: 'unauthorized',
+                token,
+                email: user.email,
                 minutesLeft,
-                infoMessage: 'Your response was updated. The session has been revoked.' 
+                infoMessage: 'Your response was updated. The session has been revoked.'
             });
         } else if (decision === 'accept') {
             tokenData.status = 'verified';
             tokenData.respondedAt = new Date();
             await user.save();
-            return res.render('pages/security-alert', { 
-                status: 'success', 
-                token, 
-                email: user.email, 
+            return res.render('pages/security-alert', {
+                status: 'success',
+                token,
+                email: user.email,
                 minutesLeft,
-                infoMessage: 'Your response was updated. The login is now confirmed.' 
+                infoMessage: 'Your response was updated. The login is now confirmed.'
             });
         }
 
@@ -7797,7 +8045,7 @@ app.post('/account/newsletter', ensureAuthenticated, async (req, res) => {
     try {
         const { subscribe } = req.body;
         const user = await User.findById(req.user._id);
-        
+
         const isSub = (subscribe === 'true');
         user.isSubscribedToNewsletter = isSub;
         await user.save();
@@ -7805,17 +8053,17 @@ app.post('/account/newsletter', ensureAuthenticated, async (req, res) => {
         if (user.email) {
             await Subscriber.updateOne(
                 { email: user.email.toLowerCase().trim() },
-                { 
-                    $set: { 
-                        isSubscribed: isSub, 
+                {
+                    $set: {
+                        isSubscribed: isSub,
                         user: user._id,
                         ...(isSub ? { subscribedAt: Date.now() } : {})
-                    } 
+                    }
                 },
                 { upsert: isSub }
             );
         }
-        
+
         res.redirect('/settings?success=Newsletter preferences updated.');
     } catch (e) {
         console.error("Newsletter update error:", e);
@@ -7827,10 +8075,10 @@ app.post('/account/newsletter', ensureAuthenticated, async (req, res) => {
 app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
     // Grab the codes from the session
     const codes = req.session.tempRecoveryCodes;
-    
+
     if (!codes || codes.length === 0) {
         // If they try to go to this page later, kick them back to Settings
-        return res.redirect('/settings'); 
+        return res.redirect('/settings');
     }
 
     // IMMEDIATELY delete the codes from the session so they can never be viewed again
@@ -7845,19 +8093,19 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
         // 1. Fetch ONLY the user's active, non-DMCA-hidden uploads (including variants)
-        const userUploads = await File.find({ 
+        const userUploads = await File.find({
             uploader: req.user.username,
             isDmcaHidden: { $ne: true },
             $or: [
                 { isLatestVersion: true },
                 { isVariant: true, parentFile: null },
-                { status: { $in:['processing', 'draft', 'pending'] } }
+                { status: { $in: ['processing', 'draft', 'pending'] } }
             ]
         })
-        .sort({ createdAt: -1 })
-        .populate('olderVersions', 'version fileSize createdAt architectures minOsVersion')
-        .lean();
-        
+            .sort({ createdAt: -1 })
+            .populate('olderVersions', 'version fileSize createdAt architectures minOsVersion')
+            .lean();
+
         // 2. Map through the uploads to generate signed image URLs
         const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
@@ -7865,12 +8113,12 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             if (key) {
                 try {
                     signedIconUrl = await getSmartImageUrl(key);
-                } catch (urlError) {}
+                } catch (urlError) { }
             }
-            
+
             file.iconUrl = signedIconUrl;
-            file.olderVersions = file.olderVersions || []; 
-            return file; 
+            file.olderVersions = file.olderVersions || [];
+            return file;
         }));
 
         // 3. Fetch user's DMCA-restricted uploads for dedicated review section
@@ -7878,9 +8126,9 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             uploader: req.user.username,
             isDmcaHidden: true
         })
-        .sort({ dmcaHiddenAt: -1, createdAt: -1 })
-        .populate('dmcaReportId')
-        .lean();
+            .sort({ dmcaHiddenAt: -1, createdAt: -1 })
+            .populate('dmcaReportId')
+            .lean();
 
         const dmcaUploads = await Promise.all(dmcaUploadsRaw.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
@@ -7888,7 +8136,7 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             if (key) {
                 try {
                     signedIconUrl = await getSmartImageUrl(key);
-                } catch (urlError) {}
+                } catch (urlError) { }
             }
             file.iconUrl = signedIconUrl;
             return file;
@@ -7896,14 +8144,14 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
 
         const quota = await getUserUploadQuota(req.user);
 
-        res.render('pages/my-uploads', { 
+        res.render('pages/my-uploads', {
             uploads: uploadsWithUrls,
             dmcaUploads: dmcaUploads || [],
             quota
-        }); 
-    } catch (error) { 
+        });
+    } catch (error) {
         console.error("My Uploads Error:", error);
-        return next(error); 
+        return next(error);
     }
 });
 // --- NEW: Analytics Dashboard Route ---
@@ -7911,7 +8159,7 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
     try {
         // 1. Get all files by this user
         const myFiles = await File.find({ uploader: req.user.username, isLatestVersion: true }).sort({ createdAt: -1 }).lean();
-        
+
         // 2. Get the daily time-series data for this user
         const myDailyStats = await DailyStat.find({ uploader: req.user.username }).sort({ dateString: 1 });
 
@@ -7941,7 +8189,7 @@ app.get('/my-stats', ensureAuthenticated, async (req, res) => {
             let iconUrl = '/images/default-app-icon.png';
             const key = file.iconUrl || file.iconKey;
             if (key) {
-                try { iconUrl = await getSmartImageUrl(key); } catch (e) {}
+                try { iconUrl = await getSmartImageUrl(key); } catch (e) { }
             }
             return {
                 ...file,
@@ -8033,30 +8281,30 @@ app.get('/user/:username', async (req, res, next) => {
         }
 
         // --- 5. GET LATEST UPLOADS ---
-        const uploads = await File.find({ 
-            uploader: targetUserObj.username, 
+        const uploads = await File.find({
+            uploader: targetUserObj.username,
             isLatestVersion: true,
-            status: 'live' 
+            status: 'live'
         })
-        .sort({ createdAt: -1 })
-        .lean(); 
+            .sort({ createdAt: -1 })
+            .lean();
 
         const uploadsWithUrls = await Promise.all(uploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             const iconUrl = await getSmartImageUrl(key);
-            return { ...file, iconUrl }; 
+            return { ...file, iconUrl };
         }));
 
         // --- 6. OPTIMIZED FOLLOWERS & FOLLOWING ---
         const followersWithAvatars = await Promise.all(targetUserObj.followers.map(async (follower) => {
             const avatarUrl = await getSmartImageUrl(follower.profileImageKey);
-            return { ...follower, signedAvatarUrl: avatarUrl }; 
+            return { ...follower, signedAvatarUrl: avatarUrl };
         }));
 
         const followingWithAvatars = await Promise.all(targetUserObj.following.map(async (followingUser) => {
             const avatarUrl = await getSmartImageUrl(followingUser.profileImageKey);
             return { ...followingUser, signedAvatarUrl: avatarUrl };
-        }));        
+        }));
 
         // --- 7. CHECK FOLLOW STATUS ---
         let isFollowing = false;
@@ -8087,8 +8335,8 @@ app.get('/user/:username', async (req, res, next) => {
             if (foundTrack) currentTracking = foundTrack.trackType || 'both';
         }
 
-        res.render('pages/public-profile', { 
-            profileUser: targetUserObj, 
+        res.render('pages/public-profile', {
+            profileUser: targetUserObj,
             uploads: uploadsWithUrls,
             followersList: followersWithAvatars,
             followingList: followingWithAvatars,
@@ -8103,9 +8351,9 @@ app.get('/user/:username', async (req, res, next) => {
             joinedClubs: joinedClubs
         });
 
-    } catch (error) { 
+    } catch (error) {
         console.error("Public Profile Error:", error);
-        next(error); 
+        next(error);
     }
 });
 
@@ -8117,8 +8365,8 @@ app.get('/user/:username', async (req, res, next) => {
 
 app.post('/account/claim-custom-email', ensureAuthenticated, async (req, res) => {
     const isAjax = req.xhr || req.headers.accept?.includes('application/json');
-    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/')) 
-        ? req.body.redirectUrl 
+    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/'))
+        ? req.body.redirectUrl
         : (req.headers.referer && req.headers.referer.includes('/admin/support') ? '/admin/support' : '/profile');
 
     try {
@@ -8146,7 +8394,7 @@ app.post('/account/claim-custom-email', ensureAuthenticated, async (req, res) =>
         } else {
             alias = slugify(user.username).replace(/-/g, '').toLowerCase();
         }
-        
+
         // 1. Call ImprovMX API
         const domain = process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org';
         const result = await improvmx.createAlias(alias, user.email, domain);
@@ -8172,8 +8420,8 @@ app.post('/account/claim-custom-email', ensureAuthenticated, async (req, res) =>
 
 app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
     const isAjax = req.xhr || req.headers.accept?.includes('application/json');
-    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/')) 
-        ? req.body.redirectUrl 
+    const redirectTarget = (req.body.redirectUrl && req.body.redirectUrl.startsWith('/'))
+        ? req.body.redirectUrl
         : (req.headers.referer && req.headers.referer.includes('/admin/support') ? '/admin/support' : '/profile');
 
     try {
@@ -8194,7 +8442,7 @@ app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
         }
 
         // Generate a secure, random password for their SMTP access (12-char hex)
-        const smtpPassword = crypto.randomBytes(6).toString('hex'); 
+        const smtpPassword = crypto.randomBytes(6).toString('hex');
 
         // 1. Call ImprovMX API
         const domain = process.env.IMPROVMX_DOMAIN || 'gplmods.webredirect.org';
@@ -8203,12 +8451,12 @@ app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
         if (result.success) {
             user.hasSmtpAccess = true;
             await user.save();
-            
+
             const successMsg = `SMTP Activated! Your Password is: ${smtpPassword} (SAVE THIS NOW, it will not be shown again!)`;
-            if (isAjax) return res.json({ 
-                success: true, 
-                message: successMsg, 
-                smtpPassword, 
+            if (isAjax) return res.json({
+                success: true,
+                message: successMsg,
+                smtpPassword,
                 username: user.customEmailAlias,
                 host: 'smtp.improvmx.com',
                 port: 587
@@ -8228,7 +8476,7 @@ app.post('/account/generate-smtp', ensureAuthenticated, async (req, res) => {
 
 app.post('/account/update-details', ensureAuthenticated, async (req, res, next) => {
     try {
-        const { username, email, bio, dateOfBirth, country } = req.body; 
+        const { username, email, bio, dateOfBirth, country } = req.body;
         const user = await User.findById(req.user.id);
         if (bio !== undefined) user.bio = bio;
         if (country !== undefined) user.country = country;
@@ -8253,13 +8501,13 @@ app.post('/account/update-details', ensureAuthenticated, async (req, res, next) 
         if (username && username !== user.username) {
             // ======== VALIDATION CHECK ========
             if (!isValidName(username)) {
-                 return res.redirect('/profile?error=Username can only contain letters, numbers, and spaces.');
+                return res.redirect('/profile?error=Username can only contain letters, numbers, and spaces.');
             }
             // ===========================================
-            
+
             // 1. Security Check
             if (isNameReserved(username)) {
-                 return res.redirect('/profile?error=That username is reserved and cannot be used.');
+                return res.redirect('/profile?error=That username is reserved and cannot be used.');
             }
 
             // 2. Generate the new, unique name (adds # if needed)
@@ -8317,7 +8565,7 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
     try {
         if (!req.file) return res.redirect('/profile?error=No image file was selected.');
         if (!req.file.mimetype.startsWith('image/')) return res.redirect('/profile?error=Please upload a valid image file (JPG, PNG).');
-        
+
         // ======== NEW: DELETE OLD AVATAR ========
         // Before we upload the new one, delete the old one from B2 & FTP to save space!
         const userDoc = await User.findById(req.user.id || req.user._id);
@@ -8329,16 +8577,16 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
         // Upload new avatar according to the users/staff or users/members folder structure
         const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', req.file.originalname);
         const imageKey = await uploadToB2(req.file, 'users', null, null, null, { exactKey: targetKey });
-        
+
         const updatedUser = await User.findByIdAndUpdate(req.user.id, { profileImageKey: imageKey }, { new: true });
-        
+
         req.login(updatedUser, (err) => {
             if (err) return next(err);
             res.redirect('/profile?success=Profile image updated successfully.');
         });
-    } catch (error) { 
+    } catch (error) {
         console.error("Error updating profile image:", error);
-        res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try again.')); 
+        res.redirect('/profile?error=' + encodeURIComponent('Could not upload image. Please try again.'));
     }
 });
 
@@ -8348,13 +8596,13 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
         if (!req.user.email) {
             return res.status(400).json({ error: 'No email associated with this account.' });
         }
-        
+
         const email = req.user.email.toLowerCase().trim();
         const hash = crypto.createHash('md5').update(email).digest('hex');
-        
+
         // Fetch gravatar with d=404 so it errors if not found, rather than returning a default image
         const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=256`;
-        
+
         let response;
         try {
             response = await axios.get(gravatarUrl, { responseType: 'arraybuffer' });
@@ -8364,10 +8612,10 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
             }
             throw err;
         }
-        
+
         const buffer = Buffer.from(response.data, 'binary');
         const mimetype = response.headers['content-type'] || 'image/jpeg';
-        
+
         // Create a mock multer file object
         const mockFile = {
             buffer: buffer,
@@ -8375,13 +8623,13 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
             mimetype: mimetype,
             size: buffer.length
         };
-        
+
         // Before we upload the new one, delete the old one from B2 & FTP to save space
         const userDoc = await User.findById(req.user.id || req.user._id);
         if (userDoc && userDoc.profileImageKey) {
             await deleteFromB2(userDoc.profileImageKey);
         }
-        
+
         // Upload new avatar according to the users/staff or users/members folder structure
         const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', 'user-profile-avatar.jpg');
         const imageKey = await uploadToB2(mockFile, 'users', null, null, null, { exactKey: targetKey });
@@ -8391,7 +8639,7 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
             updateFields.cardAvatarUrl = imageKey;
         }
         const updatedUser = await User.findByIdAndUpdate(req.user.id, updateFields, { new: true });
-        
+
         req.login(updatedUser, (err) => {
             if (err) return next(err);
             res.json({ success: true });
@@ -8406,7 +8654,7 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
 app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword, confirmPassword } = req.body;
-        
+
         if (newPassword !== confirmPassword) return res.redirect('/profile?error=Passwords do not match.');
 
         const user = await User.findById(req.user.id);
@@ -8421,10 +8669,10 @@ app.post('/account/change-password', ensureAuthenticated, async (req, res) => {
         user.password = newPassword;
         await user.save();
         res.redirect('/profile?success=Password updated successfully.');
-        
-    } catch (error) { 
+
+    } catch (error) {
         console.error("Error changing password:", error);
-        res.redirect('/profile?error=' + encodeURIComponent(error.message)); 
+        res.redirect('/profile?error=' + encodeURIComponent(error.message));
     }
 });
 // ===================================
@@ -8476,9 +8724,9 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
         if (shouldPreserve) {
             // Keep the files, but anonymize the uploader
             await File.updateMany({ uploader: username }, { uploader: 'GPL Community' });
-            
+
             // Unset uploader replies on comments for these files
-            const userFiles = await File.find({ uploader: 'GPL Community' }); 
+            const userFiles = await File.find({ uploader: 'GPL Community' });
             const fileIds = userFiles.map(f => f._id);
             if (fileIds.length > 0) {
                 await Review.updateMany({ file: { $in: fileIds } }, { $unset: { uploaderReply: 1 } });
@@ -8486,24 +8734,24 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
         } else {
             // Delete EVERYTHING related to their mods from Cloud and DB
             const userFiles = await File.find({ uploader: username }).populate('olderVersions');
-            
+
             for (const f of userFiles) {
                 await deleteCloudFile(f.fileKey);
                 await deleteCloudFile(f.iconKey);
-                
+
                 if (f.screenshotKeys) {
                     for (const sk of f.screenshotKeys) {
                         await deleteCloudFile(sk);
                     }
                 }
-                
+
                 if (f.olderVersions) {
                     for (const ov of f.olderVersions) {
                         await deleteCloudFile(ov.fileKey);
                         await File.findByIdAndDelete(ov._id);
                     }
                 }
-                
+
                 await File.findByIdAndDelete(f._id);
                 await Review.deleteMany({ file: f._id });
                 await Report.updateMany({ file: f._id }, { status: 'resolved' });
@@ -8544,7 +8792,7 @@ app.post('/account/delete-confirm', ensureAuthenticated, async (req, res, next) 
         await User.findByIdAndDelete(userId);
 
         // 8. LOG OUT AND CLEAR COOKIE
-        req.logout(function(err) {
+        req.logout(function (err) {
             if (err) return next(err);
             res.clearCookie('connect.sid', { path: '/' });
             res.json({ success: true, redirect: '/?message=Your account and all associated data have been permanently deleted.' });
@@ -8567,13 +8815,13 @@ app.get('/account/2fa/setup', ensureAuthenticated, (req, res) => {
 // 1. Generate TOTP (QR Code & Secret)
 app.post('/account/2fa/generate-totp', ensureAuthenticated, async (req, res) => {
     try {
-        const secret = speakeasy.generateSecret({ 
-            name: `GPLMods (${req.user.username})` 
+        const secret = speakeasy.generateSecret({
+            name: `GPLMods (${req.user.username})`
         });
-        
+
         req.session.tempTwoFactorSecret = secret.base32;
         const dataURL = await QRCode.toDataURL(secret.otpauth_url);
-        
+
         // Force session to save BEFORE responding
         req.session.save((err) => {
             if (err) throw err;
@@ -8604,7 +8852,7 @@ const getWebAuthnExpectedOrigins = (req) => {
 const getWebAuthnEffectiveRpID = (req) => {
     let originHost = null;
     if (req.headers.origin) {
-        try { originHost = new URL(req.headers.origin).hostname; } catch(e) {}
+        try { originHost = new URL(req.headers.origin).hostname; } catch (e) { }
     }
     const forwardedHost = req.headers['x-forwarded-host'] ? req.headers['x-forwarded-host'].split(',')[0].trim().split(':')[0] : null;
     const hostHeader = req.headers.host ? req.headers.host.split(':')[0] : null;
@@ -8614,7 +8862,7 @@ const getWebAuthnEffectiveRpID = (req) => {
 
 const getWebAuthnExpectedRPIDs = (req, effectiveRpID) => {
     const hostHeader = (req.headers['x-forwarded-host'] || req.headers.host || req.hostname || 'localhost').split(':')[0];
-    const baseUrlHost = process.env.BASE_URL ? (() => { try { return new URL(process.env.BASE_URL).hostname; } catch(e) { return null; } })() : null;
+    const baseUrlHost = process.env.BASE_URL ? (() => { try { return new URL(process.env.BASE_URL).hostname; } catch (e) { return null; } })() : null;
     return Array.from(new Set([
         effectiveRpID,
         req.session?.currentChallengeRpID,
@@ -8640,15 +8888,15 @@ app.get('/account/2fa/passkey/generate-options', ensureAuthenticated, async (req
             userID: uint8UserId,
             userName: req.user.username,
             attestationType: 'none',
-            authenticatorSelection: { 
+            authenticatorSelection: {
                 userVerification: 'preferred',
                 residentKey: 'preferred'
             },
         });
-        
+
         req.session.currentChallenge = options.challenge;
         req.session.currentChallengeRpID = effectiveRpID;
-        
+
         req.session.save((err) => {
             if (err) throw err;
             res.json(options);
@@ -8721,7 +8969,7 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
             user.passkey = passkeyData;
             if (!user.passkeys) user.passkeys = [];
             user.passkeys.push(passkeyData);
-            
+
             user.twoFactorMethod = 'passkey';
             user.cardStatus = 'active'; // Reactivate card if it was suspended!
             if (!Array.isArray(user.twoFactorMethods)) user.twoFactorMethods = [];
@@ -8732,8 +8980,8 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
             user.twoFactorMethods = getAvailable2FAMethods(user);
 
             // Check if user already had 2FA active with recovery codes
-            const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
-                Array.isArray(user.twoFactorRecoveryCodes) && 
+            const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) &&
+                Array.isArray(user.twoFactorRecoveryCodes) &&
                 user.twoFactorRecoveryCodes.length > 0;
 
             user.twoFactorEnabled = true;
@@ -8750,9 +8998,9 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
 
                 req.session.tempRecoveryCodes = rawCodes;
                 const redirectTarget = '/account/2fa/recovery-codes';
-                
+
                 req.session.save(() => {
-                    res.json({ success: true, redirect: redirectTarget }); 
+                    res.json({ success: true, redirect: redirectTarget });
                 });
             } else {
                 // Secondary/tertiary method added: preserve existing recovery codes, don't regenerate!
@@ -8760,9 +9008,9 @@ app.post('/account/2fa/passkey/verify', ensureAuthenticated, async (req, res) =>
                 const backUrl = req.session.returnTo2FA || (['distributor', 'support', 'admin', 'owner'].includes(user.role) ? '/id-card' : '/settings');
                 req.session.returnTo2FA = null;
                 const redirectTarget = `${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent('Passkey added successfully!')}`;
-                
+
                 req.session.save(() => {
-                    res.json({ success: true, redirect: redirectTarget }); 
+                    res.json({ success: true, redirect: redirectTarget });
                 });
             }
         } else {
@@ -8802,7 +9050,7 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
                 const backUrl = req.session.returnTo2FA === '/id-card' ? '/id-card' : '/account/2fa/setup';
                 return res.redirect(`${backUrl}?error=${encodeURIComponent('Invalid TOTP code. Please check your authenticator app.')}`);
             }
-            
+
             user.twoFactorMethod = 'totp';
             user.twoFactorSecret = req.session.tempTwoFactorSecret;
             req.session.tempTwoFactorSecret = null;
@@ -8815,8 +9063,8 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
         user.twoFactorMethods = getAvailable2FAMethods(user);
 
         // Check if user already had 2FA active with recovery codes
-        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
-            Array.isArray(user.twoFactorRecoveryCodes) && 
+        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) &&
+            Array.isArray(user.twoFactorRecoveryCodes) &&
             user.twoFactorRecoveryCodes.length > 0;
 
         user.twoFactorEnabled = true;
@@ -8829,8 +9077,8 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
             user.twoFactorRecoveryCodes = await Promise.all(rawCodes.map(code => bcrypt.hash(code, 10)));
             await user.save();
 
-            req.session.tempRecoveryCodes = rawCodes; 
-            
+            req.session.tempRecoveryCodes = rawCodes;
+
             req.session.save((err) => {
                 if (err) console.error("Session save error:", err);
                 res.redirect('/account/2fa/recovery-codes');
@@ -8841,7 +9089,7 @@ app.post('/account/2fa/enable', ensureAuthenticated, async (req, res) => {
             const backUrl = req.session.returnTo2FA || '/settings';
             req.session.returnTo2FA = null;
             const successMsg = method === 'email' ? 'Email OTP added successfully!' : 'Authenticator App added successfully!';
-            
+
             req.session.save((err) => {
                 if (err) console.error("Session save error:", err);
                 res.redirect(`${backUrl}${backUrl.includes('?') ? '&' : '?'}message=${encodeURIComponent(successMsg)}`);
@@ -8876,7 +9124,7 @@ app.post('/login/2fa/verify', async (req, res, next) => {
                     break;
                 }
             }
-        } 
+        }
         // 2. Check TOTP
         else if (currentMethod === 'totp' || (user.twoFactorSecret && user.twoFactorSecret.length > 0)) {
             if (user.twoFactorSecret) {
@@ -9019,7 +9267,7 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
 
         // Ensure they actually have that provider linked
         if (!user[`${provider}Id`]) {
-             return res.redirect(`${backUrl}?error=You must link a ${provider} account first.`);
+            return res.redirect(`${backUrl}?error=You must link a ${provider} account first.`);
         }
 
         user.twoFactorMethod = 'social';
@@ -9033,8 +9281,8 @@ app.post('/account/2fa/enable-social', ensureAuthenticated, async (req, res) => 
         }
         user.twoFactorMethods = getAvailable2FAMethods(user);
 
-        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) && 
-            Array.isArray(user.twoFactorRecoveryCodes) && 
+        const hasExistingCodes = (user.twoFactorEnabled || user.is2FAEnabled) &&
+            Array.isArray(user.twoFactorRecoveryCodes) &&
             user.twoFactorRecoveryCodes.length > 0;
 
         user.twoFactorEnabled = true;
@@ -9074,7 +9322,7 @@ app.get('/login/2fa/passkey/options', async (req, res) => {
     if (!req.session.pending2faUserId) return res.status(400).json({ error: 'No pending login session' });
     const user = await User.findById(req.session.pending2faUserId);
     if (!user) return res.status(400).json({ error: 'User not found' });
-    
+
     const passkeyList = (Array.isArray(user.passkeys) && user.passkeys.length > 0)
         ? user.passkeys
         : (user.passkey && user.passkey.credentialID ? [user.passkey] : []);
@@ -9095,7 +9343,7 @@ app.get('/login/2fa/passkey/options', async (req, res) => {
             allowCredentials,
             userVerification: 'preferred',
         });
-        
+
         req.session.currentChallenge = options.challenge;
         req.session.currentChallengeRpID = effectiveRpID;
         res.json(options);
@@ -9116,7 +9364,7 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
         : (user.passkey && user.passkey.credentialID ? [user.passkey] : []);
 
     if (passkeyList.length === 0) return res.status(400).json({ error: 'No passkey found for user' });
-    
+
     const credentialId = req.body?.id;
     const activePasskey = passkeyList.find(pk => pk.credentialID === credentialId) || user.passkey || passkeyList[0];
     if (!activePasskey) return res.status(400).json({ error: 'No matching passkey found for user' });
@@ -9187,19 +9435,19 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
                 user.passkey.counter = verifiedCounter;
             }
             await user.save();
-            
+
             // Clean up session vars
             req.session.pending2faUserId = null;
             req.session.currentChallenge = null;
             req.session.currentChallengeRpID = null;
             req.session.active2faMethod = null;
-            
+
             // Login successful! Use centralized session finalization with JSON callback
             req.logIn(user, (err) => {
                 if (err) return res.status(500).json({ success: false, error: err.message });
-                
+
                 let tempSession = req.session.passport;
-                
+
                 // Invalidate old session if exists
                 if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
                     try {
@@ -9213,21 +9461,21 @@ app.post('/login/2fa/passkey/verify', async (req, res, next) => {
                         console.error(`[Session] Error invalidating old session: ${err.message}`);
                     }
                 }
-                
+
                 // Regenerate session for new device
                 req.session.regenerate((rErr) => {
                     if (rErr) return res.status(500).json({ success: false, error: 'Session error' });
-                    
+
                     req.session.passport = tempSession;
                     user.currentSessionId = req.sessionID;
                     user.save().catch(err => console.error('User save error:', err));
-                    
+
                     req.session.save((sErr) => {
                         if (sErr) console.error('Session save error:', sErr);
-                        res.cookie('is_logged_in', 'true', { 
+                        res.cookie('is_logged_in', 'true', {
                             maxAge: 1000 * 60 * 60 * 24 * 3,
-                            path: '/', 
-                            secure: process.env.NODE_ENV === 'production', 
+                            path: '/',
+                            secure: process.env.NODE_ENV === 'production',
                             sameSite: 'lax'
                         });
                         res.json({ success: true, redirect: '/home?message=Login successful!' });
@@ -9288,7 +9536,7 @@ app.get('/login/2fa', async (req, res) => {
     }
 
     req.session.active2faMethod = currentMethod;
-    
+
     // Resolve user avatar for the 2FA header
     try {
         user.signedAvatarUrl = user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
@@ -9297,8 +9545,8 @@ app.get('/login/2fa', async (req, res) => {
     }
 
     req.session.save(() => {
-        res.render('pages/2fa-challenge', { 
-            method: currentMethod, 
+        res.render('pages/2fa-challenge', {
+            method: currentMethod,
             availableMethods: availableMethods,
             error: req.query.error,
             success: isExplicitResend ? 'A new verification code has been sent to your email.' : (req.query.success || null),
@@ -9323,15 +9571,15 @@ app.get('/rewards', ensureAuthenticated, async (req, res) => {
         if (!req.user.referralCode) {
             console.log(`Backfilling referral code for old user: ${req.user.username}`);
             const newCode = await generateReferralCode(req.user.username);
-            
+
             // Save it to the database
             await User.findByIdAndUpdate(req.user._id, { referralCode: newCode });
-            
+
             // Crucial: Update the session object so the page renders correctly immediately
             req.user.referralCode = newCode;
-            
+
             // Re-save the session to ensure it persists
-            req.session.passport.user = req.user; 
+            req.session.passport.user = req.user;
             req.session.save();
         }
         // ------------------------------------------
@@ -9372,13 +9620,13 @@ app.get('/rewards', ensureAuthenticated, async (req, res) => {
             pointsNeeded = nextRank.threshold - currentPoints;
         }
 
-        res.render('pages/rewards', { 
-            history, 
-            currentRank, 
-            nextRank, 
-            progressPercent, 
-            pointsNeeded, 
-            currentPoints 
+        res.render('pages/rewards', {
+            history,
+            currentRank,
+            nextRank,
+            progressPercent,
+            pointsNeeded,
+            currentPoints
         });
 
     } catch (error) {
@@ -9428,7 +9676,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 user: req.user._id,
                 title: 'Daily Upload Limit Reached',
                 message: `You have reached your limit of ${dailyLimit} uploads in a 24-hour period. \n\nTo ensure quality and prevent spam, we limit how many mods can be submitted daily. Please wait 24 hours before uploading more content.`,
-                type: 'warning' 
+                type: 'warning'
             }).save();
 
             if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
@@ -9442,8 +9690,8 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
 
     // --- SCENARIO 1: DISTRIBUTOR UPLOAD (External Link) ---
-    const isDistributorForm = (req.user.role === 'distributor' || req.user.role === 'admin' || req.user.role === 'owner') && 
-                              (req.body.externalUrl || req.body.isMultiPart === 'true');
+    const isDistributorForm = (req.user.role === 'distributor' || req.user.role === 'admin' || req.user.role === 'owner') &&
+        (req.body.externalUrl || req.body.isMultiPart === 'true');
 
     if (isDistributorForm) {
         try {
@@ -9458,7 +9706,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 const m1Url = Array.isArray(req.body.mirror1Urls) ? req.body.mirror1Urls : (req.body.mirror1Urls ? [req.body.mirror1Urls] : []);
                 const m2Prov = Array.isArray(req.body.mirror2Providers) ? req.body.mirror2Providers : (req.body.mirror2Providers ? [req.body.mirror2Providers] : []);
                 const m2Url = Array.isArray(req.body.mirror2Urls) ? req.body.mirror2Urls : (req.body.mirror2Urls ? [req.body.mirror2Urls] : []);
-                
+
                 const len = Math.max(pUrls.length, pNames.length);
                 for (let i = 0; i < len; i++) {
                     if (!pUrls[i]) continue;
@@ -9481,16 +9729,16 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 externalDownloadUrl: externalUrl,
                 downloadParts: downloadParts,
                 originalFilename: originalFilename,
-                fileKey: 'external-link', 
-                fileSize: 0, 
-                name: originalFilename, 
+                fileKey: 'external-link',
+                fileSize: 0,
+                name: originalFilename,
                 version: 'Draft',
-                category: 'n/a',         
+                category: 'n/a',
                 platforms: [],
-                status: 'processing' 
+                status: 'processing'
             });
             await newFile.save();
-            
+
             // --- NEW: VIRUSTOTAL v3 URL SCAN ---
             if (externalUrl) {
                 console.log(`Starting VT URL scan for Distributor link: ${externalUrl}`);
@@ -9499,16 +9747,16 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                         const urlParams = new URLSearchParams();
                         urlParams.append('url', externalUrl);
 
-                    const vtUrlResponse = await axios.post('https://www.virustotal.com/api/v3/urls', urlParams, {
-                        headers: { 
-                            'x-apikey': process.env.VIRUSTOTAL_API_KEY,
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    });
-                    
+                        const vtUrlResponse = await axios.post('https://www.virustotal.com/api/v3/urls', urlParams, {
+                            headers: {
+                                'x-apikey': process.env.VIRUSTOTAL_API_KEY,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        });
+
                         const analysisId = vtUrlResponse.data.data.id;
                         console.log(`VT URL Scan submitted. Analysis ID: ${analysisId}`);
-                        
+
                         await File.findByIdAndUpdate(newFile._id, { virusTotalAnalysisId: analysisId });
                         pollVirusTotalInBackground(newFile._id);
                     } catch (vtError) {
@@ -9516,7 +9764,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                     }
                 })();
             }
-            
+
             return res.redirect(`/upload-details/${newFile._id}`);
 
         } catch (error) {
@@ -9530,7 +9778,7 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
     if (!req.file) {
         return res.status(400).redirect('/upload?error=No file selected.');
     }
-    
+
     const fileSize = req.file.size;
     const sizeCheck = validateUploadFileSize(req.user, fileSize);
     if (!sizeCheck.valid) {
@@ -9540,14 +9788,14 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
 
     try {
         console.log("Uploading main file to B2 from memory buffer...");
-        
+
         const io = req.app.get('io');
-        const uploadId = req.body.uploadId; 
-        
+        const uploadId = req.body.uploadId;
+
         // ✅ CRITICAL FIX: Pass the 'io' object and 'uploadId' into the helper!
         // This is what makes the Socket.IO progress bar work!
         const fileKey = await uploadToB2(req.file, 'mods', io, uploadId);
-        
+
         console.log("Upload to B2 complete.");
 
         const newFile = new File({
@@ -9555,17 +9803,17 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
             fileKey: fileKey,
             originalFilename: req.file.originalname,
             fileSize: req.file.size,
-            name: req.file.originalname, 
+            name: req.file.originalname,
             version: 'Draft',
-            
+
             // ✅ FIX: Set category to empty string instead of 'android'
-            category: 'n/a',         
+            category: 'n/a',
             platforms: [],
-            
-            status: 'processing' 
+
+            status: 'processing'
         });
         await newFile.save();
-        
+
         // --- VIRUSTOTAL SCAN ---
         (async () => {
             try {
@@ -9576,8 +9824,8 @@ app.post('/upload-initial', ensureAuthenticated, upload.single('modFile'), async
                 console.log(`VT Scan submitted successfully. Analysis ID: ${analysisId}`);
             } catch (error) {
                 console.error(`Background VT scan failed for ${newFile._id}.`);
-            } 
-        })(); 
+            }
+        })();
 
         res.redirect(`/upload-details/${newFile._id}`);
 
@@ -9734,13 +9982,13 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             defaultPlatform = 'ios-jailed';
         }
 
-        let cleanName = filename.replace(/\.[^/.]+$/, ""); 
+        let cleanName = filename.replace(/\.[^/.]+$/, "");
         let defaultVersion = "";
         const versionMatch = cleanName.match(/v?(\d+\.\d+(\.\d+)?)/i);
-        
+
         if (versionMatch) {
-            defaultVersion = versionMatch[1]; 
-            cleanName = cleanName.replace(versionMatch[0], "").replace(/[-_]+/g, " ").trim(); 
+            defaultVersion = versionMatch[1];
+            cleanName = cleanName.replace(versionMatch[0], "").replace(/[-_]+/g, " ").trim();
         } else {
             cleanName = cleanName.replace(/[-_]+/g, " ").trim();
         }
@@ -9764,11 +10012,11 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
             }
         }
 
-        const savedName = (pendingFile.name && pendingFile.name !== 'Pending Upload' && pendingFile.name !== pendingFile.originalFilename) 
-            ? pendingFile.name 
+        const savedName = (pendingFile.name && pendingFile.name !== 'Pending Upload' && pendingFile.name !== pendingFile.originalFilename)
+            ? pendingFile.name
             : cleanName;
-        const savedVersion = (pendingFile.version && pendingFile.version !== 'Draft') 
-            ? pendingFile.version 
+        const savedVersion = (pendingFile.version && pendingFile.version !== 'Draft')
+            ? pendingFile.version
             : defaultVersion;
         const savedPlatform = (pendingFile.category && pendingFile.category !== 'n/a')
             ? pendingFile.category
@@ -9785,9 +10033,9 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         // missing until the mod was live.
         const iconUrl = await getSmartImageUrl(pendingFile.iconKey);
         const screenshotUrls = await Promise.all((pendingFile.screenshotKeys || []).map(key => getSmartImageUrl(key)));
-        const renderedFile = { 
-            ...pendingFile.toObject(), 
-            iconUrl, 
+        const renderedFile = {
+            ...pendingFile.toObject(),
+            iconUrl,
             screenshotUrls,
             minOsVersion: savedMinOs,
             architectures: savedArchitectures,
@@ -9804,7 +10052,7 @@ app.get('/upload-details/:fileId', ensureAuthenticated, async (req, res) => {
         const customTemplates = await ModTemplate.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: 1 }).lean();
         const officialDocs = await DocPage.find({}).select('title slug category').sort({ order: 1, title: 1 }).lean();
 
-        res.render('pages/upload-details', { 
+        res.render('pages/upload-details', {
             fileId: pendingFile._id,
             fileKey: pendingFile.fileKey,
             filename: pendingFile.originalFilename,
@@ -9829,12 +10077,17 @@ function canManageDraft(file, user) {
 }
 
 function draftSnapshotData(file, body = {}) {
-    const fields = ['name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription', 'whatsNew', 'importantNote', 'category', 'minOsVersion', 'ageRating', 'videoUrl', 'directDownloadUrl', 'externalDownloadUrl', 'isMultiPart'];
+    const fields = ['name', 'version', 'developer', 'modDescription', 'modFeatures', 'officialDescription', 'whatsNew', 'importantNote', 'category', 'minOsVersion', 'ageRating', 'videoUrl', 'directDownloadUrl', 'externalDownloadUrl', 'isMultiPart', 'isVariant'];
     const data = {};
     fields.forEach(field => {
         const value = body[field] !== undefined ? body[field] : file[field];
         if (value !== undefined) data[field] = value;
     });
+    if (body.masterFileId !== undefined) {
+        data.masterFile = body.masterFileId;
+    } else if (file.masterFile !== undefined) {
+        data.masterFile = file.masterFile;
+    }
     data.platforms = body.modCategory ? [body.modCategory] : (file.platforms || []);
     data.tags = body.tags !== undefined ? String(body.tags).split(',').map(tag => tag.trim()).filter(Boolean) : (file.tags || []);
     data.architectures = body.architectures !== undefined
@@ -9980,7 +10233,7 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
         if (file.olderVersions && file.olderVersions.length > 0) {
             for (const oldVersion of file.olderVersions) {
                 await deleteFromB2(oldVersion.fileKey);
-                await File.findByIdAndDelete(oldVersion._id); 
+                await File.findByIdAndDelete(oldVersion._id);
             }
         }
 
@@ -10048,9 +10301,9 @@ app.post('/mods/:id/delete-all-versions', ensureAuthenticated, async (req, res) 
                 // 1. Delete from B2
                 await deleteFromB2(oldVersion.fileKey);
                 // 2. Delete the version document
-                await File.findByIdAndDelete(oldVersion._id); 
+                await File.findByIdAndDelete(oldVersion._id);
             }
-            
+
             // 3. Clear the array on the Master File
             masterFile.olderVersions = [];
             await masterFile.save();
@@ -10068,7 +10321,7 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
     try {
         const file = await File.findById(req.params.id);
         const isAdminOrOwner = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
-        
+
         // Security check
         if (!file || (file.uploader !== req.user.username && !isAdminOrOwner)) {
             return res.status(404).render('pages/error', { errorCode: '404', errorTitle: 'Page Not Found', errorMessage: 'The page you are looking for does not exist or you do not have permission to access it.' });
@@ -10076,13 +10329,13 @@ app.get('/mods/:id/edit', ensureAuthenticated, async (req, res) => {
 
         // Generate signed URLs so the user can see their current images
         const iconUrl = await getSmartImageUrl(file.iconKey);
-        const screenshotUrls = await Promise.all((file.screenshotKeys ||[]).map(key => getSmartImageUrl(key)));
+        const screenshotUrls = await Promise.all((file.screenshotKeys || []).map(key => getSmartImageUrl(key)));
         const licenses = await License.find().sort({ name: 1 }).lean();
 
         const customTemplates = await ModTemplate.find({ isActive: { $ne: false } }).sort({ sortOrder: 1, createdAt: 1 }).lean();
         const officialDocs = await DocPage.find({}).select('title slug category').sort({ order: 1, title: 1 }).lean();
 
-        res.render('pages/edit-mod', { 
+        res.render('pages/edit-mod', {
             file: { ...file.toObject(), iconUrl, screenshotUrls },
             licenses,
             customTemplates,
@@ -10101,14 +10354,14 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
     try {
         const file = await File.findById(req.params.id);
         const isAdminOrOwner = req.user && (req.user.role === 'admin' || req.user.role === 'owner');
-        
+
         if (!file || (file.uploader !== req.user.username && !isAdminOrOwner)) {
             return res.status(404).send('Not found');
         }
 
         const formData = req.body;
         const { softwareIcon, screenshots } = req.files || {};
-        
+
         // Normalize duplicate inputs and preserve known values.
         const directDownloadUrlValue = normalizeSingleValue(formData.directDownloadUrl);
         const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
@@ -10125,7 +10378,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const targetCategory = formData.modPlatform || file.category;
         const targetModName = formData.modName || file.name;
         const uploaderUser = req.user || { username: file.uploader };
-        
+
         // --- HANDLE ICON OVERWRITE ---
         if (softwareIcon && softwareIcon.length > 0) {
             // Delete the old icon from B2 first
@@ -10233,8 +10486,8 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.modDescription = formData.modDescription || file.modDescription;
         file.modFeatures = formData.modFeatures || file.modFeatures;
         file.whatsNew = formData.whatsNew || file.whatsNew;
-        file.officialDescription = formData.officialDescription || file.officialDescription;        
-        file.importantNote = formData.importantNote || file.importantNote;        
+        file.officialDescription = formData.officialDescription || file.officialDescription;
+        file.importantNote = formData.importantNote || file.importantNote;
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
         file.license = formData.modLicense || null;
@@ -10288,7 +10541,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             file.manualFileScanUrl = manualFileScanUrlValue;
         }
         if (formData.manualSiteScanUrl !== undefined) file.manualSiteScanUrl = manualSiteScanUrlValue;
-        file.ageRating = req.body.ageRating || file.ageRating; 
+        file.ageRating = req.body.ageRating || file.ageRating;
         if (formData.modCategory) {
             file.platforms = [formData.modCategory];
         }
@@ -10380,7 +10633,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // 4. IMPORTANT: Status Logic
         if (actionType === 'draft') {
-            file.status = 'draft'; 
+            file.status = 'draft';
         } else {
             // If they clicked Submit...
             // Transition from draft, rejected, or processing to pending!
@@ -10413,7 +10666,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (file.isMultiPart && file.downloadParts && file.downloadParts.length > 0) {
             for (const part of file.downloadParts) {
                 if ((part.partVirusTotalId || part.manualFileScanUrl) && !part.partVirusTotalScanDate) {
-                    checkAndUpdatePartVirusTotal(file._id, part._id).catch(() => {});
+                    checkAndUpdatePartVirusTotal(file._id, part._id).catch(() => { });
                 }
             }
         }
@@ -10423,7 +10676,7 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         const modUrl = `${baseUrl}/mods/${encodeURIComponent(file.category)}/${encodeURIComponent(file.slug || file._id.toString())}`;
         notifyIndexNow([modUrl]);
         notifyGoogle(modUrl, 'URL_UPDATED');
-        
+
         if (actionType === 'draft') {
             res.redirect(`/mods/${file._id}/edit?success=Draft saved successfully. This mod is hidden from public review until you submit it.`);
         } else {
@@ -10449,9 +10702,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         }
 
         const { softwareIcon, screenshots } = req.files || {}; // Default to empty object if no files
-        const formData = req.body; 
+        const formData = req.body;
         const actionType = formData.actionType || 'submit'; // 'draft' or 'submit'
-        
+
         // Normalize direct download/scans for duplicate or array values.
         const directDownloadUrlValue = normalizeSingleValue(formData.directDownloadUrl);
         const manualFileScanUrlValue = formData.manualFileScanUrl !== undefined
@@ -10465,18 +10718,6 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         // --- 1. THE VARIANT CHECK ---
         const escapedModName = escapeRegex(formData.modName ? formData.modName.trim() : '');
         let matchedFile = null;
-        if (escapedModName) {
-            matchedFile = await File.findOne({
-                name: { $regex: new RegExp(`^${escapedModName}$`, 'i') }, 
-                category: formData.modPlatform,
-                _id: { $ne: fileId },
-                $or: [
-                    { status: 'live' },
-                    { uploader: req.user.username }
-                ]
-            }).sort({ createdAt: 1 });
-        }
-
         let isVariant = false;
         let masterFileId = null;
         let existingMasterFile = null;
@@ -10485,27 +10726,31 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const isVariantSubmitted = formData.variantDetectionSubmitted === '1' || formData.variantDetectionSubmitted === 'true';
         const isVariantChecked = (formData.isVariant === 'true' || formData.isVariant === true || formData.isVariant === 'on');
 
-        if (matchedFile) {
-            // Mod name and platform match an existing file -> considered as variant unless user explicitly untoggled it
-            if (!isVariantSubmitted || isVariantChecked) {
-                isVariant = true;
-                if (matchedFile.isVariant && matchedFile.masterFile) {
-                    masterFileId = matchedFile.masterFile;
-                    existingMasterFile = await File.findById(masterFileId);
-                } else {
-                    masterFileId = matchedFile._id;
-                    existingMasterFile = matchedFile;
-                }
-                console.log(`Matching mod detected for "${formData.modName}" (${formData.modPlatform}). Considered as variant of master: ${masterFileId}`);
-            } else {
-                console.log(`Matching mod exists for "${formData.modName}", but user manually unchecked variant checkbox. Keeping as independent mod.`);
-            }
-        } else if (isVariantChecked && formData.masterFileId && Types.ObjectId.isValid(formData.masterFileId)) {
+        // Check if masterFileId was explicitly provided
+        if (formData.masterFileId && Types.ObjectId.isValid(formData.masterFileId)) {
             existingMasterFile = await File.findById(formData.masterFileId);
             if (existingMasterFile) {
-                isVariant = true;
                 masterFileId = existingMasterFile._id;
-                console.log(`Manual variant checkbox selected for "${formData.modName}". Linking to master: ${masterFileId}`);
+                if (!isVariantSubmitted || isVariantChecked) {
+                    isVariant = true;
+                    console.log(`Explicit masterFileId ${masterFileId} linked as variant for "${formData.modName}"`);
+                }
+            }
+        }
+
+        // If not resolved by masterFileId, search with smart multi-strategy matching
+        if (!existingMasterFile && formData.modName) {
+            matchedFile = await findExistingMod(formData.modName, formData.modPlatform, fileId);
+
+            if (matchedFile) {
+                if (!isVariantSubmitted || isVariantChecked) {
+                    isVariant = true;
+                    existingMasterFile = await resolveRootMasterFile(matchedFile);
+                    masterFileId = existingMasterFile._id;
+                    console.log(`Matching mod detected for "${formData.modName}" (${formData.modPlatform || 'all'}). Considered as variant of master: ${masterFileId}`);
+                } else {
+                    console.log(`Matching mod exists for "${formData.modName}", but user manually unchecked variant checkbox. Keeping as independent mod.`);
+                }
             }
         }
 
@@ -10708,7 +10953,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanWhatsNew = safeClean(formData.whatsNew);
         const cleanOfficialDescription = safeClean(formData.officialDescription);
         const cleanImportantNote = safeClean(formData.importantNote);
-        const finalStatus = actionType === 'draft' ? 'draft' : 'pending';
+        const finalStatus = actionType === 'draft' ? 'draft' : ((req.user.role === 'admin' || req.user.role === 'owner') ? 'live' : 'pending');
 
         let requiresRoot = false;
         let requiresDevMode = false;
@@ -10739,7 +10984,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             importantNote: cleanImportantNote,
             developer: formData.developerName || 'N/A',
             screenshotKeys: screenshotKeys.length > 0 ? screenshotKeys : fileToUpdate.screenshotKeys,
-            videoUrl: normalizeSingleValue(formData.videoUrl), 
+            videoUrl: normalizeSingleValue(formData.videoUrl),
             tags: processedTags,
             ageRating: req.body.ageRating,
             manualFileScanUrl: manualFileScanUrlValue,
@@ -10761,6 +11006,56 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             status: finalStatus
         };
 
+        // If this is a variant, all data are optional and automatically inherit from master file
+        if (isVariant && existingMasterFile) {
+            if (!updateData.category || updateData.category === 'n/a') {
+                updateData.category = existingMasterFile.category || formData.modPlatform || 'android';
+            }
+            if (!updateData.platforms || updateData.platforms.length === 0) {
+                updateData.platforms = (existingMasterFile.platforms && existingMasterFile.platforms.length > 0)
+                    ? existingMasterFile.platforms
+                    : (formData.modCategory ? [formData.modCategory] : ['Other']);
+            }
+            if (!updateData.modDescription) {
+                updateData.modDescription = existingMasterFile.modDescription || `Variant release for ${existingMasterFile.name}.`;
+            }
+            if (!updateData.modFeatures) {
+                updateData.modFeatures = existingMasterFile.modFeatures || `Features inherited from ${existingMasterFile.name}.`;
+            }
+            if (!updateData.officialDescription) {
+                updateData.officialDescription = existingMasterFile.officialDescription || '';
+            }
+            if (!formData.developerName || !formData.developerName.trim()) {
+                updateData.developer = existingMasterFile.developer || 'N/A';
+            }
+            if (!req.body.ageRating) {
+                updateData.ageRating = existingMasterFile.ageRating || 'NA';
+            }
+            if (!formData.modLicense && existingMasterFile.license) {
+                updateData.license = existingMasterFile.license;
+            }
+            if (!formData.modVersion || !formData.modVersion.trim()) {
+                updateData.version = existingMasterFile.version || '1.0';
+            }
+            if (!iconKey) {
+                iconKey = existingMasterFile.iconKey;
+                updateData.iconKey = iconKey;
+            }
+            if (!screenshotKeys || screenshotKeys.length === 0) {
+                screenshotKeys = existingMasterFile.screenshotKeys || [];
+                updateData.screenshotKeys = screenshotKeys;
+            }
+            if (!formData.tags || !formData.tags.trim()) {
+                updateData.tags = existingMasterFile.tags || [];
+            }
+            if (!updateData.minOsVersion && existingMasterFile.minOsVersion) {
+                updateData.minOsVersion = existingMasterFile.minOsVersion;
+            }
+            if (!updateData.architectures || updateData.architectures.length === 0) {
+                updateData.architectures = existingMasterFile.architectures || [];
+            }
+        }
+
         if (actionType === 'submit' && validationErrors.length > 0) {
             // CRITICAL FIX: Persist all entered fields as a draft before redirecting on error!
             // Never wipe or reset the user's hard work!
@@ -10774,24 +11069,26 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
         updateData.isMultiPart = isMultiPart;
         if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
+        if (isMultiPart || updateData.externalDownloadUrl) {
+            updateData.fileKey = 'external-link';
+        }
 
         if (isVariant) {
             updateData.isVariant = true;
             updateData.masterFile = masterFileId;
             updateData.isLatestVersion = true;
             updateData.iconKey = iconKey;
-            
+            updateData.status = finalStatus;
+
             await File.findByIdAndUpdate(fileId, updateData);
-            
-            if (actionType === 'submit') {
-                await File.findByIdAndUpdate(masterFileId, { $addToSet: { variants: fileId } });
-            }
+            await File.findByIdAndUpdate(masterFileId, { $addToSet: { variants: fileId } });
+            console.log(`Variant file ${fileId} updated with status "${finalStatus}" and linked to master ${masterFileId}`);
         } else {
             updateData.slug = finalSlug;
             updateData.tags = processedTags;
             updateData.iconKey = iconKey;
             updateData.isVariant = false;
-            
+
             await File.findByIdAndUpdate(fileId, updateData);
         }
 
@@ -10825,16 +11122,27 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 // 8. API ROUTES
 // ===================================
 
-// --- NEW: iOS Store API Endpoint ---
+// --- NEW: iOS Store API Endpoint with full CORS support ---
+app.options('/api/ios-store', (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.set('Access-Control-Max-Age', '86400');
+    res.status(204).end();
+});
+
 app.get('/api/ios-store', async (req, res) => {
     try {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.set('Pragma', 'no-cache');
         res.set('Expires', '0');
 
         const dnsProfiles = await IosDns.find().sort({ isRecommended: -1, createdAt: -1 });
         const certificates = await IosCert.find().sort({ createdAt: -1 });
-        
+
         res.json({
             dns: dnsProfiles,
             certificates: certificates
@@ -10886,7 +11194,7 @@ app.post('/api/translate', async (req, res) => {
 
         // If English, return original texts
         if (targetLanguage === 'en') {
-            return res.json({ translations: texts }); 
+            return res.json({ translations: texts });
         }
 
         // Map frontend language code to DeepL's expected code
@@ -10899,7 +11207,7 @@ app.post('/api/translate', async (req, res) => {
         // 1. Check the Database Cache First (Costs $0)
         for (let i = 0; i < texts.length; i++) {
             const text = texts[i];
-            
+
             // Skip empty strings or numbers to save quota
             if (!text.trim() || !isNaN(text.trim())) {
                 finalTranslations[i] = text;
@@ -10918,9 +11226,9 @@ app.post('/api/translate', async (req, res) => {
 
         // 2. Call DeepL API for cache-missed texts
         if (textsToTranslate.length > 0) {
-            
+
             const newCharsLength = textsToTranslate.join('').length;
-            
+
             const reservationResult = await reserveApiQuota({
                 service: 'deepl',
                 period: 'monthly',
@@ -10929,7 +11237,7 @@ app.post('/api/translate', async (req, res) => {
 
             if (reservationResult.allowed) {
                 const reservation = reservationResult.reservation;
-                
+
                 // Call DeepL API via official deepl-node SDK
                 let results;
                 try {
@@ -10951,7 +11259,7 @@ app.post('/api/translate', async (req, res) => {
                 for (let j = 0; j < apiResults.length; j++) {
                     const original = textsToTranslate[j];
                     const translated = apiResults[j].text;
-                    
+
                     finalTranslations[indicesToTranslate[j]] = translated;
 
                     newCacheEntries.push({
@@ -10970,7 +11278,7 @@ app.post('/api/translate', async (req, res) => {
 
             } else {
                 console.warn(`[TRANSLATION LIMIT] DeepL requests blocked: ${reservationResult.reason}.`);
-                
+
                 // Return original English text for missing chunks so site doesn't crash
                 for (let j = 0; j < textsToTranslate.length; j++) {
                     finalTranslations[indicesToTranslate[j]] = textsToTranslate[j];
@@ -10995,7 +11303,7 @@ function cleanPlatformUrl(rawUrl) {
     try {
         const parsed = new URL(trimmed);
         let hostname = parsed.hostname.toLowerCase();
-        
+
         // Strip language/country prefix subdomains: e.g. en.wordpress.org, ve.wordpress.org, en.play.google.com, etc.
         const langSubdomainMatch = hostname.match(/^([a-z]{2}(?:-[a-z]{2,4})?)\.(.+)$/i);
         if (langSubdomainMatch) {
@@ -11011,7 +11319,7 @@ function cleanPlatformUrl(rawUrl) {
                 hostname = remainder;
             }
         }
-        
+
         // Canonicalize known platform hostnames
         if (hostname.endsWith('.wordpress.org') || hostname === 'wordpress.org') hostname = 'wordpress.org';
         else if (hostname.endsWith('.wordpress.com') || hostname === 'wordpress.com') hostname = 'wordpress.com';
@@ -11036,7 +11344,7 @@ function detectPlatform(url) {
         if (host.includes('steampowered.com') || host.includes('steamcommunity.com')) return 'steam';
         if (host.includes('epicgames.com')) return 'epic';
         if (host.includes('wordpress.org') || host.includes('wordpress.com')) return 'wordpress';
-    } catch (e) {}
+    } catch (e) { }
     return 'generic';
 }
 
@@ -11063,7 +11371,7 @@ function normalizeAgeRating(ratingStr) {
 // --- NEW: AUTO-FETCH METADATA SCRAPER API ---
 app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
     let { url, platform } = req.body;
-    
+
     if (!url) {
         return res.status(400).json({ error: "URL is required." });
     }
@@ -11321,7 +11629,7 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
                 if (ldJson.description) data.description = data.description || normalizeText(ldJson.description);
                 if (ldJson.author && ldJson.author.name) data.developer = data.developer || normalizeText(ldJson.author.name);
                 if (ldJson.softwareVersion || ldJson.version) data.version = data.version || normalizeText(ldJson.softwareVersion || ldJson.version);
-            } catch (ldErr) {}
+            } catch (ldErr) { }
             data.title = data.title || getAttr('meta[property="og:title"]', 'content') || getText('title');
             data.description = data.description || getAttr('meta[property="og:description"]', 'content') || getAttr('meta[name="description"]', 'content') || '';
             data.developer = data.developer || getAttr('meta[property="og:site_name"]', 'content') || '';
@@ -11386,18 +11694,18 @@ app.get('/api/mod-templates', async (req, res) => {
 app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
     try {
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        let urlsToPing =[];
+        let urlsToPing = [];
 
         // 1. Static Pages
-        const staticPages = ['', 'upload-policy', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
+        const staticPages = ['', '/upload-policy', '/login', '/register', '/about', '/faq', '/dmca', '/tos', '/privacy-policy', '/donate', '/refund-policy', '/partnership-policy', '/distributor-features', '/why-choose-us', '/understanding-scans', '/membership', '/docs', '/docs/:slug', '/community', '/repos', '/jailbreak-repos'];
         staticPages.forEach(page => {
             urlsToPing.push(`${baseUrl}${page}`);
         });
 
         // 2. Category Pages
-        const categories =['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
+        const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
         categories.forEach(cat => {
-             urlsToPing.push(`${baseUrl}/category?platform=${encodeURIComponent(cat)}`);
+            urlsToPing.push(`${baseUrl}/category?platform=${encodeURIComponent(cat)}`);
         });
 
         // 3. Live Mods
@@ -11419,12 +11727,12 @@ app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
         // 5. Public User Profiles
         const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
         uniqueUploaders.forEach(uploader => {
-             urlsToPing.push(`${baseUrl}/users/${encodeURIComponent(uploader)}`);
+            urlsToPing.push(`${baseUrl}/users/${encodeURIComponent(uploader)}`);
         });
 
         // --- Execute IndexNow Ping (Bulk) ---
         // IndexNow can handle thousands of URLs at once
-        const CHUNK_SIZE = 9500; 
+        const CHUNK_SIZE = 9500;
         for (let i = 0; i < urlsToPing.length; i += CHUNK_SIZE) {
             const chunk = urlsToPing.slice(i, i + CHUNK_SIZE);
             await notifyIndexNow(chunk);
@@ -11444,36 +11752,36 @@ app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
                     if (!jwtClient) {
                         throw new Error("No key or keyFile set.");
                     }
-                    
+
                     await jwtClient.authorize();
                     await google.indexing('v3').urlNotifications.publish({
                         auth: jwtClient,
                         requestBody: { url: urlsToPing[i], type: 'URL_UPDATED' }
                     });
-                    
+
                     console.log(`[Google] Successfully pinged: ${urlsToPing[i]}`);
                     googleSuccessCount++;
                     await new Promise(resolve => setTimeout(resolve, 250));
-                    
+
                 } catch (err) {
                     // Track the failure!
                     googleFailCount++;
                     console.error(`[Google Error] Failed for ${urlsToPing[i]}:`, err.message);
-                    
+
                     if (err.response && err.response.status === 429) {
                         console.error("[Google Sync] HALTED: Daily Quota Exceeded (200 requests/day).");
-                        break; 
+                        break;
                     }
                 }
             }
             console.log(`[Google Sync] Finished. Success: ${googleSuccessCount}, Failed: ${googleFailCount}`);
         })();
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: `Successfully pushed ${urlsToPing.length} URLs to IndexNow. Google sync has started in the background (Warning: Google limits to 200 requests/day).`,
             totalUrls: urlsToPing.length,
-            urls: urlsToPing 
+            urls: urlsToPing
         });
 
     } catch (error) {
@@ -11485,7 +11793,7 @@ app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
 app.get('/api/search/suggestions', async (req, res) => {
     try {
         const rawQuery = (req.query.q || '').trim();
-        
+
         if (!rawQuery || rawQuery.length < 2) {
             return res.json({ success: true, query: rawQuery, mods: [], users: [], categories: [], names: [] });
         }
@@ -11520,16 +11828,16 @@ app.get('/api/search/suggestions', async (req, res) => {
                 ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         })
-        .select('name slug category iconKey iconUrl downloads averageRating developer isVariant')
-        .sort({ downloads: -1 })
-        .limit(5)
-        .lean();
+            .select('name slug category iconKey iconUrl downloads averageRating developer isVariant')
+            .sort({ downloads: -1 })
+            .limit(5)
+            .lean();
 
         const modsWithIcons = await Promise.all(modResults.map(async (file) => {
             let iconUrl = '/images/default-app-icon.png';
             const key = file.iconUrl || file.iconKey;
             if (key) {
-                try { iconUrl = await getSmartImageUrl(key); } catch (e) {}
+                try { iconUrl = await getSmartImageUrl(key); } catch (e) { }
             }
             const modSlug = file.slug || slugify(file.name);
             const modUrl = file.isVariant ? `/mods/${file.category}/${modSlug}/${file._id}` : `/mods/${file.category}/${modSlug}`;
@@ -11554,14 +11862,14 @@ app.get('/api/search/suggestions', async (req, res) => {
                 { cardId: { $regex: queryRegex } }
             ]
         })
-        .select('username role profileImageKey isVerified cardId')
-        .limit(3)
-        .lean();
+            .select('username role profileImageKey isVerified cardId')
+            .limit(3)
+            .lean();
 
         const usersWithAvatars = await Promise.all(userResults.map(async (u) => {
             let avatarUrl = '/images/default-avatar.png';
             if (u.profileImageKey) {
-                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) {}
+                try { avatarUrl = await getSmartImageUrl(u.profileImageKey); } catch (e) { }
             }
             return {
                 _id: u._id,
@@ -11586,8 +11894,8 @@ app.get('/api/search/suggestions', async (req, res) => {
             { name: 'Software Licenses & GPL Rights', category: 'licenses', icon: 'fas fa-key', url: '/licenses' }
         ];
 
-        const matchedCategories = categoryCatalog.filter(c => 
-            c.name.toLowerCase().includes(rawQuery.toLowerCase()) || 
+        const matchedCategories = categoryCatalog.filter(c =>
+            c.name.toLowerCase().includes(rawQuery.toLowerCase()) ||
             c.category.toLowerCase().includes(rawQuery.toLowerCase())
         );
 
@@ -11644,10 +11952,10 @@ app.get('/api/trending-searches', async (req, res) => {
     try {
         const trendingFiles = await File.find(
             { status: 'live', isLatestVersion: true },
-            { name: 1, _id: 0 } 
+            { name: 1, _id: 0 }
         )
-        .sort({ downloads: -1 }) 
-        .limit(6); 
+            .sort({ downloads: -1 })
+            .limit(6);
 
         const dbTrending = trendingFiles.map(file => file.name).filter(Boolean);
         if (dbTrending.length > 0) {
@@ -11670,43 +11978,36 @@ app.get('/api/check-mod-exists', ensureAuthenticated, async (req, res) => {
         const platform = (req.query.platform || '').trim();
         const currentId = req.query.currentId;
 
-        if (!name || !platform) {
+        if (!name || name.length < 2) {
             return res.json({ exists: false });
         }
 
-        const escapedModName = escapeRegex(name);
-        const query = {
-            name: { $regex: new RegExp(`^${escapedModName}$`, 'i') },
-            category: platform,
-            $or: [
-                { status: 'live' },
-                { uploader: req.user.username }
-            ]
-        };
+        let currentUploadInfo = null;
         if (currentId && Types.ObjectId.isValid(currentId)) {
-            query._id = { $ne: currentId };
+            const cur = await File.findById(currentId).lean();
+            if (cur) {
+                currentUploadInfo = getFileUploadInfo(cur);
+            }
         }
 
-        const matchedFile = await File.findOne(query).sort({ createdAt: 1 }).lean();
-        if (!matchedFile) {
-            return res.json({ exists: false });
+        const matchedDoc = await findExistingMod(name, platform, currentId);
+
+        if (!matchedDoc) {
+            return res.json({
+                exists: false,
+                currentUpload: currentUploadInfo
+            });
         }
 
-        let master = matchedFile;
-        if (matchedFile.isVariant && matchedFile.masterFile) {
-            const resolvedMaster = await File.findById(matchedFile.masterFile).lean();
-            if (resolvedMaster) master = resolvedMaster;
-        }
+        // Resolve root master file if matched file is itself a variant
+        const master = await resolveRootMasterFile(matchedDoc);
+        const masterInfo = getFileUploadInfo(master);
+        masterInfo.isExactPlatformMatch = Boolean(platform && master.category === platform);
 
         return res.json({
             exists: true,
-            masterFile: {
-                _id: master._id,
-                name: master.name,
-                category: master.category,
-                version: master.version,
-                uploader: master.uploader
-            }
+            masterFile: masterInfo,
+            currentUpload: currentUploadInfo
         });
     } catch (err) {
         console.error("Error in /api/check-mod-exists:", err);
@@ -11724,25 +12025,25 @@ app.get('/api/check-username', async (req, res) => {
         }
         // ======== VALIDATION CHECK ========
         if (!isValidName(requestedName)) {
-            return res.json({ 
-                available: false, 
-                message: 'Letters, numbers, and spaces only. No emojis.' 
+            return res.json({
+                available: false,
+                message: 'Letters, numbers, and spaces only. No emojis.'
             });
         }
         // ===========================================
 
         // 1. Check against reserved names
         if (isNameReserved(requestedName)) {
-            return res.json({ 
-                available: false, 
+            return res.json({
+                available: false,
                 message: 'This name is reserved.',
-                suggestions: [] 
+                suggestions: []
             });
         }
 
         // 2. Check if the exact name is taken
-        const exactMatch = await User.findOne({ 
-            username: { $regex: new RegExp(`^${requestedName}$`, 'i') } 
+        const exactMatch = await User.findOne({
+            username: { $regex: new RegExp(`^${requestedName}$`, 'i') }
         });
 
         if (!exactMatch || (req.session && req.session.userId && exactMatch._id.toString() === req.session.userId.toString())) {
@@ -11752,7 +12053,7 @@ app.get('/api/check-username', async (req, res) => {
         // 3. If taken, generate suggestions using our existing helper logic
         // We'll generate 3 options by appending random numbers or using the next available #
         const suggestions = [];
-        
+
         // Suggestion 1: The next logical # number (using our helper)
         const nextNumberedName = await generateUniqueUsername(requestedName);
         suggestions.push(nextNumberedName);
@@ -11946,9 +12247,9 @@ async function checkAndUpdateFileVirusTotal(fileId) {
                 } else {
                     file.virusTotalId = vtMatch[1];
                 }
-                await File.findByIdAndUpdate(fileId, { 
-                    virusTotalAnalysisId: file.virusTotalAnalysisId, 
-                    virusTotalId: file.virusTotalId 
+                await File.findByIdAndUpdate(fileId, {
+                    virusTotalAnalysisId: file.virusTotalAnalysisId,
+                    virusTotalId: file.virusTotalId
                 });
             }
         }
@@ -12233,7 +12534,7 @@ app.post('/reviews/add/:fileId', ensureAuthenticated, async (req, res) => {
         // ======== NEW: AWARD POINTS FOR WRITING A REVIEW ========
         await User.adjustForumPoints(req.user._id, 20, "Wrote a detailed review");
         // ========================================================
-        
+
         const stats = await Review.aggregate([{ $match: { file: new Types.ObjectId(req.params.fileId) } }, { $group: { _id: '$file', avg: { $avg: '$rating' }, count: { $sum: 1 } } }]);
         if (stats.length > 0) {
             await File.findByIdAndUpdate(req.params.fileId, { averageRating: stats[0].avg.toFixed(1), ratingCount: stats[0].count });
@@ -12257,7 +12558,7 @@ app.post('/reviews/:id/delete', ensureAuthenticated, async (req, res) => {
     try {
         const review = await Review.findById(req.params.id);
         if (!review || review.user.toString() !== req.user._id.toString()) return res.status(404).send('Not found');
-        
+
         const fileId = review.file;
         await Review.findByIdAndDelete(review._id);
         await recalculateRating(fileId);
@@ -12273,7 +12574,7 @@ app.post('/reviews/:id/edit', ensureAuthenticated, async (req, res) => {
         const { rating, comment } = req.body;
         const review = await Review.findById(req.params.id);
         if (!review || review.user.toString() !== req.user._id.toString()) return res.status(404).send('Not found');
-        
+
         review.rating = parseInt(rating);
         review.comment = comment;
         await review.save();
@@ -12349,7 +12650,7 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         if (!['working', 'not-working'].includes(voteType)) {
             return res.status(400).send("Invalid vote type.");
         }
-        
+
         const file = await File.findById(fileId);
         if (!file) return res.status(404).send("File not found.");
 
@@ -12357,7 +12658,7 @@ app.post('/files/:fileId/vote-status', ensureAuthenticated, async (req, res) => 
         if (uploader && uploader._id.toString() === userId.toString()) {
             return res.status(404).send('Not found');
         }
-        
+
         // Check current voting status
         const votedWorkingBy = Array.isArray(file.votedWorkingBy) ? file.votedWorkingBy : [];
         const votedNotWorkingBy = Array.isArray(file.votedNotWorkingBy) ? file.votedNotWorkingBy : [];
@@ -12469,12 +12770,12 @@ app.post('/api/admin/ai-ping', ensureSupportOrAdmin, async (req, res) => {
             return result.response.text();
         });
         const latency = Date.now() - start;
-        
+
         aiDebuggerStatus.status = 'online';
         aiDebuggerStatus.lastPing = new Date();
         aiDebuggerStatus.latencyMs = latency;
         aiDebuggerStatus.lastError = null;
-        
+
         const io = req.app.get('io');
         if (io) {
             io.to('support_agents').emit('ai_debug_result', { success: true, latencyMs: latency, response: responseText, status: aiDebuggerStatus });
@@ -12565,7 +12866,7 @@ app.get('/api/admin/signed-url', ensureAdmin, async (req, res) => {
 
         // Use our existing smart helper! It already knows how to handle external URLs vs B2 keys.
         const signedUrl = await getSmartImageUrl(key);
-        
+
         res.json({ url: signedUrl });
     } catch (error) {
         console.error("Error generating signed URL for AdminJS:", error);
@@ -12677,7 +12978,7 @@ app.get('/admin/dmca', ensureAdmin, async (req, res) => {
                     const iconKey = item.file.iconUrl || item.file.iconKey;
                     item.file.signedIconUrl = '/images/default-app-icon.png';
                     if (iconKey) {
-                        try { item.file.signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) {}
+                        try { item.file.signedIconUrl = await getSmartImageUrl(iconKey); } catch (e) { }
                     }
                 }
             }
@@ -12733,7 +13034,7 @@ app.post('/admin/dmca/:id/delete-file/:fileId', ensureAdmin, async (req, res) =>
     try {
         const { id: dmcaId, fileId } = req.params;
         await permanentlyDeleteInfringingFile(fileId);
-        
+
         // Update the DMCA record
         const dmca = await Dmca.findById(dmcaId);
         if (dmca) {
@@ -12808,7 +13109,7 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
             await User.findByIdAndUpdate(currentUserId, { $push: { following: targetUserId } });
             await User.findByIdAndUpdate(targetUserId, { $push: { followers: currentUserId } });
             await User.adjustForumPoints(targetUserId, 10, "Follow a new user");
-            
+
             // Optional: Send a notification to the user that they got a new follower
             // await new UserNotification({ user: targetUserId, title: "New Follower", message: `${req.user.username} started following you!`, type: 'info' }).save();
         }
@@ -12826,8 +13127,8 @@ app.post('/users/:id/follow', ensureAuthenticated, async (req, res) => {
 // ===================================
 app.get('/leaderboard', async (req, res) => {
     try {
-        const category = req.query.category || 'uploaders'; 
-        const timeframe = req.query.timeframe || 'all-time'; 
+        const category = req.query.category || 'uploaders';
+        const timeframe = req.query.timeframe || 'all-time';
 
         let dateFilter = {};
         const now = new Date();
@@ -12839,24 +13140,24 @@ app.get('/leaderboard', async (req, res) => {
             dateFilter = { createdAt: { $gte: new Date(now.setMonth(now.getMonth() - 1)) } };
         }
 
-        let results =[];
+        let results = [];
         let totalCount = 0; // NEW: To store the total number of participants
         let totalLabel = ""; // NEW: To label the count (e.g., "Total Uploaders")
 
         if (category === 'uploaders') {
-            const pipeline =[
+            const pipeline = [
                 { $match: { status: 'live', ...dateFilter } },
                 { $group: { _id: '$uploader', count: { $sum: 1 } } },
                 { $sort: { count: -1 } }
             ];
             const rawUploaders = await File.aggregate(pipeline);
-            
+
             totalCount = rawUploaders.length; // Count unique uploaders in this timeframe
             totalLabel = "Total Uploaders";
 
             // Only take top 100 for the actual list
             const top100 = rawUploaders.slice(0, 100);
-            
+
             results = await Promise.all(top100.map(async (u) => {
                 const user = await User.findOne({ username: u._id });
                 const avatarUrl = user && user.profileImageKey ? await getSmartImageUrl(user.profileImageKey) : '/images/default-avatar.png';
@@ -12870,7 +13171,7 @@ app.get('/leaderboard', async (req, res) => {
             const files = await File.find({ status: 'live', isLatestVersion: true, ...dateFilter })
                 .sort({ downloads: -1 })
                 .limit(100);
-                
+
             results = await Promise.all(files.map(async (f) => {
                 const iconUrl = await getSmartImageUrl(f.iconKey || f.iconUrl);
                 return { name: f.name, score: f.downloads, subtext: `By ${f.uploader}`, avatar: iconUrl, link: `/${f.category}/${f.slug || f._id}` };
@@ -12883,15 +13184,15 @@ app.get('/leaderboard', async (req, res) => {
             const files = await File.find({ status: 'live', isLatestVersion: true, ...dateFilter })
                 .sort({ views: -1 })
                 .limit(100);
-                
+
             results = await Promise.all(files.map(async (f) => {
                 const iconUrl = await getSmartImageUrl(f.iconKey || f.iconUrl);
-                return { 
-                    name: f.name, 
-                    score: (f.views || 0).toLocaleString() + ' views', 
-                    subtext: `By ${f.uploader}`, 
-                    avatar: iconUrl, 
-                    link: `/${f.category}/${f.slug || f._id}` 
+                return {
+                    name: f.name,
+                    score: (f.views || 0).toLocaleString() + ' views',
+                    subtext: `By ${f.uploader}`,
+                    avatar: iconUrl,
+                    link: `/${f.category}/${f.slug || f._id}`
                 };
             }));
 
@@ -12900,11 +13201,11 @@ app.get('/leaderboard', async (req, res) => {
             totalLabel = "Total Registered Users";
 
             const rawUsers = await User.aggregate([
-                { $project: { username: 1, profileImageKey: 1, role: 1, followerCount: { $size: { $ifNull:["$followers", []] } } } },
+                { $project: { username: 1, profileImageKey: 1, role: 1, followerCount: { $size: { $ifNull: ["$followers", []] } } } },
                 { $sort: { followerCount: -1 } },
                 { $limit: 100 }
             ]);
-            
+
             results = await Promise.all(rawUsers.map(async (u) => {
                 const avatarUrl = u.profileImageKey ? await getSmartImageUrl(u.profileImageKey) : '/images/default-avatar.png';
                 return { name: u.username, score: u.followerCount, avatar: avatarUrl, role: u.role };
@@ -13533,8 +13834,8 @@ app.post('/create-cashfree-order', async (req, res) => {
         // 1. Check daily donation cap
         const capStatus = await getDailyDonationTotalInr(req, res);
         if (capStatus.remainingInr <= 0) {
-            return res.status(400).json({ 
-                error: `You have reached your daily donation cap of ₹${capStatus.totalCapInr.toLocaleString('en-IN')}. Thank you for your support! Please try again tomorrow.` 
+            return res.status(400).json({
+                error: `You have reached your daily donation cap of ₹${capStatus.totalCapInr.toLocaleString('en-IN')}. Thank you for your support! Please try again tomorrow.`
             });
         }
 
@@ -13542,16 +13843,16 @@ app.post('/create-cashfree-order', async (req, res) => {
         if (numAmountInInr > capStatus.remainingInr + 0.5) {
             const allowedInCur = (capStatus.remainingInr / rate).toFixed(cur === 'INR' ? 0 : 2);
             const symbol = cur === 'INR' ? '₹' : (cur === 'USD' ? '$' : (cur === 'EUR' ? '€' : '£'));
-            return res.status(400).json({ 
-                error: `Donation amount exceeds your remaining daily limit of ${symbol}${allowedInCur} (${cur}).` 
+            return res.status(400).json({
+                error: `Donation amount exceeds your remaining daily limit of ${symbol}${allowedInCur} (${cur}).`
             });
         }
 
         // 3. Minimum donation validation
         const limits = DONATION_LIMITS[cur] || { min: 100, max: 2000 };
         if (isNaN(numAmount) || numAmount < limits.min) {
-            return res.status(400).json({ 
-                error: `Minimum donation amount is ${cur === 'INR' ? '₹' : ''}${limits.min} ${cur}.` 
+            return res.status(400).json({
+                error: `Minimum donation amount is ${cur === 'INR' ? '₹' : ''}${limits.min} ${cur}.`
             });
         }
 
@@ -13602,8 +13903,8 @@ app.post('/create-cashfree-order', async (req, res) => {
         });
     } catch (error) {
         console.error('[Cashfree Donation Order Error]:', error.response?.data || error.message);
-        return res.status(500).json({ 
-            error: error.response?.data?.message || 'Failed to create donation order.' 
+        return res.status(500).json({
+            error: error.response?.data?.message || 'Failed to create donation order.'
         });
     }
 });
@@ -13746,8 +14047,8 @@ app.post('/create-membership-order', async (req, res) => {
         });
     } catch (error) {
         console.error('[Cashfree Membership Order Error]:', error.response?.data || error.message);
-        return res.status(500).json({ 
-            error: error.response?.data?.message || 'Failed to create membership order.' 
+        return res.status(500).json({
+            error: error.response?.data?.message || 'Failed to create membership order.'
         });
     }
 });
@@ -14109,9 +14410,9 @@ app.get('/payment/status', async (req, res) => {
         // 2. If already marked failed or cancelled in DB, redirect to failure page
         if (status === 'failed' || status === 'cancelled') {
             const failReason = (memOrder && (memOrder.failureReason || memOrder.cancellationReason)) ||
-                               (donation && (donation.failureReason || donation.cancellationReason)) ||
-                               (volunteerApp && (volunteerApp.failureReason || volunteerApp.cancellationReason)) ||
-                               'Transaction not completed';
+                (donation && (donation.failureReason || donation.cancellationReason)) ||
+                (volunteerApp && (volunteerApp.failureReason || volunteerApp.cancellationReason)) ||
+                'Transaction not completed';
             return res.redirect(`/payment/failure?order_id=${encodeURIComponent(orderId)}&type=${encodeURIComponent(type)}&status=${encodeURIComponent(status)}&reason=${encodeURIComponent(failReason)}`);
         }
 
@@ -14213,25 +14514,25 @@ app.get('/api/payment-status', async (req, res) => {
 
         // Check if marked failed or cancelled
         if (memOrder && (memOrder.status === 'failed' || memOrder.status === 'cancelled')) {
-            return res.json({ 
-                status: memOrder.status, 
-                isPaid: false, 
+            return res.json({
+                status: memOrder.status,
+                isPaid: false,
                 type: 'membership',
                 reason: memOrder.failureReason || memOrder.cancellationReason || 'Payment not completed'
             });
         }
         if (donation && (donation.status === 'failed' || donation.status === 'cancelled')) {
-            return res.json({ 
-                status: donation.status, 
-                isPaid: false, 
+            return res.json({
+                status: donation.status,
+                isPaid: false,
                 type: 'donation',
                 reason: donation.failureReason || donation.cancellationReason || 'Payment not completed'
             });
         }
         if (volunteerApp && (volunteerApp.paymentStatus === 'failed' || volunteerApp.paymentStatus === 'cancelled')) {
-            return res.json({ 
-                status: volunteerApp.paymentStatus, 
-                isPaid: false, 
+            return res.json({
+                status: volunteerApp.paymentStatus,
+                isPaid: false,
                 type: 'volunteer',
                 reason: volunteerApp.failureReason || volunteerApp.cancellationReason || 'Payment not completed'
             });
@@ -14444,9 +14745,9 @@ app.post('/api/payment/cancel-feedback', async (req, res) => {
             }
         }
 
-        return res.json({ 
-            success: true, 
-            message: 'Feedback received successfully. Thank you for helping us improve!' 
+        return res.json({
+            success: true,
+            message: 'Feedback received successfully. Thank you for helping us improve!'
         });
     } catch (err) {
         console.error('[Payment Cancel Feedback Error]:', err);
@@ -14494,7 +14795,7 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
         } else if (isDistributor) {
             planConfig = { name: 'Distributor Partner', tier: 'distributor', privileges: 'Distributor Partner Privileges' };
         } else {
-            planConfig = MEMBERSHIP_PLANS[planKey] || { 
+            planConfig = MEMBERSHIP_PLANS[planKey] || {
                 name: user.membership === 'plus' ? 'GPL Plus' : (user.membership === 'lite' ? 'GPL Lite' : 'Free Member'),
                 tier: user.membership || 'free'
             };
@@ -14586,7 +14887,7 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
                 if (resolved && resolved !== '/images/default-avatar.png') {
                     userAvatar = resolved;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         if (!userAvatar && user.cardAvatarDataUrl) {
@@ -14602,7 +14903,7 @@ app.get(['/my-membership', '/membership/manage'], async (req, res) => {
                     if (resolvedCard && resolvedCard !== '/images/default-avatar.png') {
                         userAvatar = resolvedCard;
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
         }
 
@@ -14686,7 +14987,7 @@ app.post('/membership/cancel-subscription', async (req, res) => {
             }
         }
 
-        const expiryFormatted = updatedUser.membershipExpiresAt 
+        const expiryFormatted = updatedUser.membershipExpiresAt
             ? new Date(updatedUser.membershipExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'the end of your billing cycle';
 
@@ -14775,7 +15076,7 @@ app.post('/membership/request-refund', async (req, res) => {
 
     try {
         const user = await User.findById(req.user._id);
-        
+
         // Cooldown check (3 days / 72 hours)
         if (user.lastRefundAt && (Date.now() - new Date(user.lastRefundAt).getTime() < 3 * 24 * 60 * 60 * 1000)) {
             return res.status(400).json({
@@ -15147,7 +15448,7 @@ app.post('/volunteer/apply', kycUpload.single('kycDocument'), async (req, res) =
                 category: 'account',
                 message: `User ${req.user.username} submitted a volunteer application for ${role}. Fee paid: ₹${feeAmount}. Mandatory language: ${normalizedLangs.join(', ')}. Age: ${Math.floor(ageYears)}.`
             });
-        } catch (_) {}
+        } catch (_) { }
 
         return res.json({
             success: true,
@@ -15198,7 +15499,7 @@ app.post('/volunteer/request-refund', async (req, res) => {
                 category: 'billing',
                 message: `Refund of ₹${appDoc.feeAmount} requested for volunteer application #${appDoc._id} under 7-day guarantee.`
             });
-        } catch (_) {}
+        } catch (_) { }
 
         return res.json({
             success: true,
@@ -15261,7 +15562,7 @@ app.post('/webhook/cashfree/pg', (req, res) => {
                         memOrder.status = 'paid';
                         memOrder.cfPaymentId = String(data.payment?.cf_payment_id || verified.data.cf_order_id);
                         memOrder.paymentMethod = data.payment?.payment_group || 'cashfree';
-                        
+
                         const durationConfig = MEMBERSHIP_PLANS[memOrder.duration] || { durationDays: 30, tier: 'plus', name: 'GPL Plus' };
                         const now = new Date();
                         const expiresAt = new Date();
@@ -16539,9 +16840,9 @@ app.get('/sponsor', async (req, res, next) => {
                 status: 'successful',
                 $or: [{ sponsorItem: { $ne: null } }, { amount: { $gte: 50 } }]
             })
-            .sort({ createdAt: -1 })
-            .limit(15)
-            .lean(),
+                .sort({ createdAt: -1 })
+                .limit(15)
+                .lean(),
             getDailySponsorTotalInr(req, res)
         ]);
 
@@ -16577,14 +16878,14 @@ app.post('/create-sponsor-order', async (req, res) => {
         const numAmountInInr = numAmount * rate;
 
         if (capStatus.remainingInr <= 0) {
-            return res.status(400).json({ 
-                error: `Daily sponsorship cap limit of ₹${capStatus.totalCapInr.toLocaleString('en-IN')} reached for today. Thank you for your support!` 
+            return res.status(400).json({
+                error: `Daily sponsorship cap limit of ₹${capStatus.totalCapInr.toLocaleString('en-IN')} reached for today. Thank you for your support!`
             });
         }
 
         if (numAmountInInr > capStatus.remainingInr + 0.5) {
-            return res.status(400).json({ 
-                error: `Amount exceeds your remaining daily limit of ₹${Math.floor(capStatus.remainingInr).toLocaleString('en-IN')}. Please lower the amount or try again tomorrow.` 
+            return res.status(400).json({
+                error: `Amount exceeds your remaining daily limit of ₹${Math.floor(capStatus.remainingInr).toLocaleString('en-IN')}. Please lower the amount or try again tomorrow.`
             });
         }
 
@@ -16637,8 +16938,8 @@ app.post('/create-sponsor-order', async (req, res) => {
         });
     } catch (error) {
         console.error('[Cashfree Sponsor Order Error]:', error.response?.data || error.message);
-        return res.status(500).json({ 
-            error: error.response?.data?.message || 'Failed to create sponsorship checkout.' 
+        return res.status(500).json({
+            error: error.response?.data?.message || 'Failed to create sponsorship checkout.'
         });
     }
 });
@@ -16649,17 +16950,17 @@ app.post('/create-sponsor-order', async (req, res) => {
 const escapeXML = (str) => {
     if (!str) return '';
     return str.replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&apos;');
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
 };
 
 // 1. Dynamic robots.txt
 app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-    
+
     res.send(`User-agent: *
 Allow: /
 Allow: /ai-directory
@@ -16729,16 +17030,16 @@ Sitemap: ${baseUrl}/sitemap-licenses.xml`);
 app.get('/sitemap_index.xml', (req, res) => {
     res.set('Content-Type', 'text/xml');
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-    
+
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    
+
     const sitemaps = ['pages', 'mods', 'users', 'developers', 'docs', 'clubs', 'forum', 'licenses'];
-    
+
     sitemaps.forEach(map => {
         xml += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${map}.xml</loc>\n    <lastmod>${new Date().toISOString()}</lastmod>\n  </sitemap>\n`;
     });
-    
+
     xml += '</sitemapindex>';
     res.send(xml);
 });
@@ -16752,25 +17053,25 @@ app.get('/sitemap-pages.xml', (req, res) => {
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
     const staticPages = [
-        '', 
-        '/about', 
-        '/faq', 
-        '/dmca', 
-        '/tos', 
-        '/privacy-policy', 
-        '/refund-policy', 
-        '/donate', 
-        '/partnership-policy', 
-        '/distributor-features', 
-        '/why-choose-us', 
-        '/understanding-scans', 
-        '/membership', 
-        '/upload-policy', 
-        '/docs', 
-        '/community', 
-        '/leaderboard', 
-        '/licenses', 
-        '/request-mod', 
+        '',
+        '/about',
+        '/faq',
+        '/dmca',
+        '/tos',
+        '/privacy-policy',
+        '/refund-policy',
+        '/donate',
+        '/partnership-policy',
+        '/distributor-features',
+        '/why-choose-us',
+        '/understanding-scans',
+        '/membership',
+        '/upload-policy',
+        '/docs',
+        '/community',
+        '/leaderboard',
+        '/licenses',
+        '/request-mod',
         '/ai-directory'
     ];
     staticPages.forEach(page => {
@@ -16779,7 +17080,7 @@ app.get('/sitemap-pages.xml', (req, res) => {
 
     const categories = ['android', 'ios-jailed', 'ios-jailbroken', 'windows', 'wordpress'];
     categories.forEach(cat => {
-         xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/category?platform=' + encodeURIComponent(cat))}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
     });
 
     xml += '</urlset>';
@@ -16791,21 +17092,21 @@ app.get('/sitemap-mods.xml', async (req, res) => {
     try {
         res.set('Content-Type', 'text/xml');
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-        
+
         // Notice the added namespaces for image and video!
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">\n';
 
         const liveMods = await File.find({ showInSitemap: { $ne: false }, isLatestVersion: true, status: 'live' })
             .select('_id category slug name modDescription videoUrl updatedAt')
-            .lean(); 
-            
+            .lean();
+
         liveMods.forEach(mod => {
             let lastModDate = mod.updatedAt ? new Date(mod.updatedAt).toISOString() : new Date().toISOString();
             const modUrl = `${baseUrl}/mods/${encodeURIComponent(mod.category)}/${encodeURIComponent(mod.slug || mod._id.toString())}`;
-            
+
             xml += `  <url>\n    <loc>${escapeXML(modUrl)}</loc>\n    <lastmod>${lastModDate}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
-            
+
             // IF the mod has a YouTube video, tell Google about it!
             if (mod.videoUrl && mod.videoUrl.includes('youtube.com')) {
                 xml += `    <video:video>\n`;
@@ -16814,7 +17115,7 @@ app.get('/sitemap-mods.xml', async (req, res) => {
                 xml += `      <video:player_loc>${escapeXML(mod.videoUrl)}</video:player_loc>\n`;
                 xml += `    </video:video>\n`;
             }
-            
+
             xml += `  </url>\n`;
         });
 
@@ -16842,7 +17143,7 @@ app.get('/sitemap-users.xml', async (req, res) => {
         ].filter(Boolean));
 
         allUsers.forEach(username => {
-             xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/user/' + encodeURIComponent(username.toLowerCase()))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+            xml += `  <url>\n    <loc>${escapeXML(baseUrl + '/user/' + encodeURIComponent(username.toLowerCase()))}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
         });
         xml += '</urlset>';
         res.send(xml);
@@ -16873,7 +17174,7 @@ app.get('/sitemap-docs.xml', async (req, res) => {
         res.set('Content-Type', 'text/xml');
         const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-        
+
         // (Assuming you have a DocPage model based on your prompt)
         if (typeof DocPage !== 'undefined') {
             const allDocPages = await DocPage.find().select('slug updatedAt').lean();
@@ -16950,14 +17251,14 @@ app.get('/sitemap-licenses.xml', async (req, res) => {
 app.get('/ai-directory', async (req, res) => {
     try {
         // 1. Fetch live mods with extended data (Description, Image Keys, Dates)
-        const liveMods = await File.find({ 
-            status: 'live', 
+        const liveMods = await File.find({
+            status: 'live',
             isLatestVersion: true,
             showInSitemap: { $ne: false }
         })
-        .select('name category slug developer uploader modDescription iconKey iconUrl updatedAt') 
-        .lean()
-        .sort({ category: 1, name: 1 }); 
+            .select('name category slug developer uploader modDescription iconKey iconUrl updatedAt')
+            .lean()
+            .sort({ category: 1, name: 1 });
 
         // 2. Generate the viewable Image URLs for the crawlers
         const modsWithUrls = await Promise.all(liveMods.map(async (mod) => {
@@ -16979,7 +17280,7 @@ app.get('/ai-directory', async (req, res) => {
         const uniqueDevelopers = await File.distinct('developer', { status: 'live', isLatestVersion: true }).lean();
         const uniqueUploaders = await File.distinct('uploader', { status: 'live', isLatestVersion: true }).lean();
 
-        res.render('pages/ai-directory', { 
+        res.render('pages/ai-directory', {
             modsByCategory: modsByCategory,
             developers: uniqueDevelopers.filter(d => d && d !== 'N/A'), // Remove empty/N/A
             uploaders: uniqueUploaders.filter(u => u) // Remove empty
@@ -17018,7 +17319,7 @@ app.get('/api/icon/:id', async (req, res) => {
         const key = file.iconUrl || file.iconKey;
         const signedUrl = await getSmartImageUrl(key);
         res.redirect(signedUrl);
-    } catch(e) { res.redirect('/images/default-avatar.png'); }
+    } catch (e) { res.redirect('/images/default-avatar.png'); }
 });
 
 app.get('/api/screenshot/:id/:index', async (req, res) => {
@@ -17028,7 +17329,7 @@ app.get('/api/screenshot/:id/:index', async (req, res) => {
         const key = file.screenshotKeys[req.params.index];
         const signedUrl = await getSmartImageUrl(key);
         res.redirect(signedUrl);
-    } catch(e) { res.status(404).send('Not found'); }
+    } catch (e) { res.status(404).send('Not found'); }
 });
 
 // Catch-all Repo Logos (Clients request these specific paths blindly)
@@ -17043,13 +17344,13 @@ app.get('/ios-repo/Icon.png', (req, res) => res.redirect('/images/icon-512x512.p
 
 async function generateIosPackages(req) {
     const repoBaseUrl = getRepoBaseUrl(req);
-    
+
     // ✅ FIX 1: Fetch ALL live versions of iOS jailbroken mods, not just the latest!
     // This is what enables the "Downgrade" feature in Sileo/Zebra.
-    const allJbMods = await File.find({ 
-        category: 'ios-jailbroken', 
-        status: 'live', 
-        showInRepo: { $ne: false } 
+    const allJbMods = await File.find({
+        category: 'ios-jailbroken',
+        status: 'live',
+        showInRepo: { $ne: false }
     }).sort({ createdAt: -1 });
 
     let packagesText = '';
@@ -17064,7 +17365,7 @@ async function generateIosPackages(req) {
         // The Bundle ID must be identical across all versions of the same tweak
         const baseModName = mod.isLatestVersion ? mod.name : (await File.findById(mod.parentFile)).name;
         const bundleId = `com.gplmods.${(mod.slug || baseModName).toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-        
+
         const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '').substring(0, 150).replace(/\n/g, ' ');
 
         packagesText += `Package: ${bundleId}\n`;
@@ -17079,7 +17380,7 @@ async function generateIosPackages(req) {
         // Point depictions to the specific version ID
         packagesText += `Depiction: ${repoBaseUrl}/ios-jailbroken/${mod.slug || mod._id}\n`;
         packagesText += `SileoDepiction: ${repoBaseUrl}/ios-repo/depiction/${mod._id}.json\n`;
-        packagesText += `Filename: ${downloadUrl}\n`; 
+        packagesText += `Filename: ${downloadUrl}\n`;
         packagesText += `Size: ${mod.fileSize || 1024}\n\n`;
     }
     return packagesText;
@@ -17104,35 +17405,35 @@ app.get('/ios-repo/Packages.bz2', async (req, res) => {
         const packagesText = await generateIosPackages(req);
         res.set('Content-Type', 'application/x-bzip2');
         res.set('Content-Disposition', 'attachment; filename="Packages.bz2"');
-        res.send(packagesText); 
+        res.send(packagesText);
     } catch (e) { res.status(500).send("Error generating Packages.bz2 file."); }
 });
 
 app.get('/ios-repo/sileo-info.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
-        
+
         // 1. Fetch data to populate the home screen
         // Get Editors Choice for the Featured Banner
-        const featuredMods = await File.find({ 
-            category: 'ios-jailbroken', 
-            status: 'live', 
+        const featuredMods = await File.find({
+            category: 'ios-jailbroken',
+            status: 'live',
             isLatestVersion: true,
-            isEditorsChoice: true 
+            isEditorsChoice: true
         }).limit(5);
 
         // Get Most Downloaded for "Hot Right Now"
-        const hotMods = await File.find({ 
-            category: 'ios-jailbroken', 
-            status: 'live', 
-            isLatestVersion: true 
+        const hotMods = await File.find({
+            category: 'ios-jailbroken',
+            status: 'live',
+            isLatestVersion: true
         }).sort({ downloads: -1 }).limit(6);
 
         // Get Newest for "Recently Updated"
-        const newMods = await File.find({ 
-            category: 'ios-jailbroken', 
-            status: 'live', 
-            isLatestVersion: true 
+        const newMods = await File.find({
+            category: 'ios-jailbroken',
+            status: 'live',
+            isLatestVersion: true
         }).sort({ updatedAt: -1 }).limit(6);
 
 
@@ -17148,7 +17449,7 @@ app.get('/ios-repo/sileo-info.json', async (req, res) => {
                 url2: (mod.screenshotKeys && mod.screenshotKeys.length > 0) ? `${repoBaseUrl}/api/screenshot/${mod._id}/0` : `${repoBaseUrl}/api/icon/${mod._id}`,
                 hideShadow: false
             }));
-            
+
             sileoTabs.push({
                 class: "DepictionFeaturedView",
                 itemCornerRadius: 12,
@@ -17227,12 +17528,12 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
         if (!mod) return res.status(404).json({});
 
         const repoBaseUrl = getRepoBaseUrl(req);
-        
+
         // --- 1. Clean HTML tags for native Markdown rendering in Sileo ---
         const cleanDesc = (mod.modDescription || 'No description').replace(/<[^>]*>?/gm, '');
         const cleanFeatures = (mod.modFeatures || '').replace(/<[^>]*>?/gm, '');
         const cleanWhatsNew = (mod.whatsNew || 'Bug fixes.').replace(/<[^>]*>?/gm, '');
-        
+
         // ✅ NEW: Added Important Note & Official Description
         const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
         const cleanOfficialDesc = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
@@ -17320,15 +17621,15 @@ app.get('/ios-repo/depiction/:id.json', async (req, res) => {
 app.get('/ios-repo/apps.json', async (req, res) => {
     try {
         const repoBaseUrl = getRepoBaseUrl(req);
-        
+
         // 1. Fetch all LIVE, LATEST VERSION IPA mods
-        const ipaMods = await File.find({ 
+        const ipaMods = await File.find({
             category: 'ios-jailed',
             status: 'live',
             isLatestVersion: true,
             showInRepo: { $ne: false },
             // Ensure there is actually a file to download
-            $or:[ { directDownloadUrl: { $exists: true, $ne: '' } }, { externalDownloadUrl: { $exists: true, $ne: '' } }, { fileKey: { $exists: true, $ne: '' } } ]
+            $or: [{ directDownloadUrl: { $exists: true, $ne: '' } }, { externalDownloadUrl: { $exists: true, $ne: '' } }, { fileKey: { $exists: true, $ne: '' } }]
         }).sort({ createdAt: -1 });
 
         // 2. Fetch the latest Site Announcements for the SideStore News Feed
@@ -17345,7 +17646,7 @@ app.get('/ios-repo/apps.json', async (req, res) => {
             website: repoBaseUrl,
             tintColor: "#FFD700", // GPL Gold
             featuredApps: [], // We can highlight Editor's Choice here
-            apps: [], 
+            apps: [],
             news: [] // The new SideStore News section
         };
 
@@ -17360,7 +17661,7 @@ app.get('/ios-repo/apps.json', async (req, res) => {
             const cleanNotes = (mod.officialDescription || '').replace(/<[^>]*>?/gm, '');
             const cleanImportantNote = (mod.importantNote || '').replace(/<[^>]*>?/gm, '');
             const cleanWhatsNew = (mod.whatsNew || 'New update available.').replace(/<[^>]*>?/gm, '');
-            
+
             // Build a comprehensive, Markdown-formatted description
             let fullMarkdownDesc = `${cleanDesc}\n\n`;
             if (cleanImportantNote) fullMarkdownDesc += `**🚨 IMPORTANT NOTE:**\n${cleanImportantNote}\n\n`;
@@ -17376,7 +17677,7 @@ app.get('/ios-repo/apps.json', async (req, res) => {
                 bundleIdentifier: bundleId,
                 developerName: mod.developer || "GPL Mods",
                 subtitle: `Version ${mod.version} by ${mod.uploader}`,
-                localizedDescription: fullMarkdownDesc, 
+                localizedDescription: fullMarkdownDesc,
                 iconURL: iconUrl,
                 tintColor: "#FFD700",
                 size: mod.fileSize || 1048576,
@@ -17389,7 +17690,7 @@ app.get('/ios-repo/apps.json', async (req, res) => {
                 versions: [{
                     version: mod.version,
                     date: new Date(mod.updatedAt).toISOString(),
-                    localizedDescription: cleanWhatsNew, 
+                    localizedDescription: cleanWhatsNew,
                     downloadURL: downloadUrl,
                     size: mod.fileSize || 1048576
                 }]
@@ -17422,9 +17723,9 @@ app.get('/ios-repo/apps.json', async (req, res) => {
         res.set('Content-Type', 'application/json');
         res.send(JSON.stringify(sourceJson, null, 2));
 
-    } catch (e) { 
+    } catch (e) {
         console.error("SideStore JSON Error:", e);
-        res.status(500).json({ error: "Error generating Source JSON." }); 
+        res.status(500).json({ error: "Error generating Source JSON." });
     }
 });
 
@@ -17521,11 +17822,11 @@ async function getOrBuildFDroidRepoData(req) {
         return fdroidCache;
     }
 
-    const androidMods = await File.find({ 
-        category: 'android', 
-        status: 'live', 
-        isLatestVersion: true, 
-        showInRepo: { $ne: false } 
+    const androidMods = await File.find({
+        category: 'android',
+        status: 'live',
+        isLatestVersion: true,
+        showInRepo: { $ne: false }
     }).sort({ createdAt: -1 });
 
     const repoTimestamp = now;
@@ -17939,8 +18240,8 @@ app.get(['/fdroid/repo/icon-512x512.png', '/repo/icon-512x512.png', '/fdroid/rep
 
 // 10. Relative Icon path resolver for clients looking in /icons/:id, /repo/icons/:id, etc.
 app.get([
-    '/fdroid/repo/icons/:iconPath', 
-    '/repo/icons/:iconPath', 
+    '/fdroid/repo/icons/:iconPath',
+    '/repo/icons/:iconPath',
     '/icons/:iconPath',
     '/fdroid/repo/api/icon/:iconPath',
     '/repo/api/icon/:iconPath',
@@ -18029,8 +18330,8 @@ app.get(['/fdroid/repo/:apkFile', '/repo/:apkFile', '/fdroid/repo/download/:apkF
 
         // 2. Try finding by 64-character SHA-256 / virusTotalId
         if (/^[a-f0-9]{64}$/i.test(cleanParam)) {
-            const fileByHash = await File.findOne({ 
-                category: 'android', 
+            const fileByHash = await File.findOne({
+                category: 'android',
                 status: 'live',
                 virusTotalId: cleanParam.toLowerCase()
             });
@@ -18342,7 +18643,7 @@ app.get('/api/dmca/inspect-link', async (req, res) => {
         let signedIcon = '/images/default-app-icon.png';
         const iconKey = file.iconUrl || file.iconKey;
         if (iconKey) {
-            try { signedIcon = await getSmartImageUrl(iconKey); } catch (e) {}
+            try { signedIcon = await getSmartImageUrl(iconKey); } catch (e) { }
         }
 
         return res.json({
@@ -18543,7 +18844,7 @@ app.post('/api/devtool/verify-key', async (req, res) => {
             trimmedCode === masterKey ||
             trimmedCode === 'T1BBZG1pbkAyMDI2' ||
             trimmedCode === 'OPAdmin@2026' ||
-            (function() {
+            (function () {
                 try {
                     return Buffer.from(trimmedCode, 'base64').toString('utf8') === 'OPAdmin@2026';
                 } catch (e) {
@@ -18614,7 +18915,7 @@ app.get('/banned', (req, res) => {
     if (!req.isAuthenticated() || !req.user.isBanned) {
         return res.redirect('/');
     }
-    res.render('pages/banned', { 
+    res.render('pages/banned', {
         banReason: req.user.banReason || 'Violation of Terms of Service',
         message: req.query.message,
         error: req.query.error
@@ -18624,7 +18925,7 @@ app.get('/banned', (req, res) => {
 // --- UNBAN REQUEST SUBMISSION ROUTE ---
 app.post('/unban-request', ensureAuthenticated, async (req, res) => {
     if (!req.user.isBanned) return res.redirect('/');
-    
+
     try {
         // Check if they already have a pending request to prevent spam
         const existingRequest = await UnbanRequest.findOne({ user: req.user._id, status: 'pending' });
@@ -18825,8 +19126,8 @@ app.post('/partnership/apply', ensureAuthenticated, async (req, res) => {
             return res.redirect('/partnership?error=You have already submitted an application.');
         }
 
-        const { 
-            organizationName, primaryDistributionPlatform, platformUrl, 
+        const {
+            organizationName, primaryDistributionPlatform, platformUrl,
             monetizationMethod, adminContactName, adminSocialLink,
             socialTelegram, socialDiscord, socialWebsite, socialYoutube,
             socialGithub, socialTwitter, socialLinkedin, socialReddit,
@@ -18898,7 +19199,7 @@ app.post('/partnership/leave', ensureAuthenticated, async (req, res) => {
         }
 
         await File.updateMany(
-            { uploader: user.username, fileKey: 'external-link' }, 
+            { uploader: user.username, fileKey: 'external-link' },
             { $set: { uploader: 'GPL Community' } }
         );
 
@@ -18945,7 +19246,7 @@ app.post('/account/quit-distributor', ensureAuthenticated, async (req, res) => {
 
         // Transfer all EXTERNAL LINK mods to GPL Community
         await File.updateMany(
-            { uploader: user.username, fileKey: 'external-link' }, 
+            { uploader: user.username, fileKey: 'external-link' },
             { $set: { uploader: 'GPL Community' } }
         );
 
@@ -19062,16 +19363,16 @@ app.get('/id-card', ensureAuthenticated, async (req, res) => {
 
         // 4. Generate QR Codes
         const baseUrl = process.env.BASE_URL || `http://${req.get('host')}`;
-        
+
         // PUBLIC QR: Redirects to profile with the special ?ref=card parameter (Gold QR)
-        const publicQrUrl = await QRCode.toDataURL(`${baseUrl}/users/${encodeURIComponent(userDoc.username)}?ref=card`, { 
+        const publicQrUrl = await QRCode.toDataURL(`${baseUrl}/users/${encodeURIComponent(userDoc.username)}?ref=card`, {
             color: { dark: '#FFD700', light: '#1a1a1a' },
             width: 300,
             margin: 1
         });
-        
+
         // PRIVATE QR: The secret login link (Red QR)
-        const privateQrUrl = await QRCode.toDataURL(`${baseUrl}/qr-login/${userDoc.cardLoginToken}`, { 
+        const privateQrUrl = await QRCode.toDataURL(`${baseUrl}/qr-login/${userDoc.cardLoginToken}`, {
             color: { dark: '#e53935', light: '#1a1a1a' },
             width: 300,
             margin: 1
@@ -19143,9 +19444,9 @@ app.get('/api/id-card/avatar-data-url', ensureAuthenticated, async (req, res) =>
 });
 
 // --- 4. EDIT CARD SETTINGS (Upload Background/Avatar, Extended Customization, 7 Day Cooldown & Bad Words) ---
-const uploadCardMedia = multer({ 
-    storage: memoryStorage, 
-    limits: { fileSize: 5 * 1024 * 1024 } 
+const uploadCardMedia = multer({
+    storage: memoryStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
 
 app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
@@ -19168,7 +19469,7 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
         }
 
         const user = await User.findById(req.user._id);
-        
+
         // Cooldown check (7 days = 604800000 ms) - owner is exempt
         if (user.cardLastEdited && user.role !== 'owner' && (Date.now() - user.cardLastEdited.getTime() < 604800000)) {
             const nextEdit = new Date(user.cardLastEdited.getTime() + 604800000).toLocaleDateString();
@@ -19476,7 +19777,7 @@ app.post('/auth/card-login', async (req, res, next) => {
                 if (loginErr) {
                     return isAjax ? res.status(500).json({ success: false, error: 'Login session failed.' }) : next(loginErr);
                 }
-                res.cookie('is_logged_in', 'true', { 
+                res.cookie('is_logged_in', 'true', {
                     maxAge: 1000 * 60 * 60 * 24 * 3,
                     path: '/',
                     secure: process.env.NODE_ENV === 'production',
@@ -19502,12 +19803,12 @@ app.post('/auth/card-login', async (req, res, next) => {
 const createAdminRouter = require('./config/admin');
 
 // In-memory store for recent messages
-let recentMessages =[];
+let recentMessages = [];
 
 const startServer = async () => {
     try {
         await clientPromise;
-        mongoose.Model.count = mongoose.Model.countDocuments; 
+        mongoose.Model.count = mongoose.Model.countDocuments;
 
         // Initialize Default GPL Community Club
         if (typeof ensureDefaultClub === 'function') {
@@ -19517,7 +19818,7 @@ const startServer = async () => {
             } catch (clubInitErr) {
                 console.error('[Clubs Error] Failed initializing default club:', clubInitErr.message);
             }
-        } 
+        }
 
         // Automatically purge any empty AI Chatbot sessions
         ChatSession.deleteMany({
@@ -19525,7 +19826,7 @@ const startServer = async () => {
                 { messages: { $size: 0 } },
                 { messages: { $exists: false } }
             ]
-        }).catch(() => {}); 
+        }).catch(() => { });
 
         // Handle AdminJS logout cleanly
         app.all('/admin/logout', (req, res) => {
@@ -19573,7 +19874,7 @@ const startServer = async () => {
             }
             next();
         }, adminRouter);
-        
+
         app.use(express.urlencoded({ extended: true }));
         app.use(express.json({
             verify: (req, res, buf) => {
@@ -19585,7 +19886,7 @@ const startServer = async () => {
         const server = http.createServer(app);
         const io = new Server(server, {
             cors: {
-                origin: allowedOrigins, 
+                origin: allowedOrigins,
                 methods: ["GET", "POST"]
             },
             pingInterval: 8000,
@@ -19598,7 +19899,7 @@ const startServer = async () => {
         io.use(wrapSocketMiddleware(sessionMiddleware));
         io.use(wrapSocketMiddleware(passport.initialize()));
         io.use(wrapSocketMiddleware(passport.session()));
-        
+
         // Tracking connected support members, staff & live users
         const connectedSupportSockets = new Set();
         const connectedAgentSockets = new Set();
@@ -19606,7 +19907,7 @@ const startServer = async () => {
         const clubOnlinePresences = new Map(); // clubId -> Map(userId -> userObj)
 
         // ✅ CRITICAL FIX: Make Socket.IO & state globally accessible to Express routes (e.g. /logout)
-        app.set('io', io); 
+        app.set('io', io);
         app.set('connectedUsers', connectedUsers);
         app.set('connectedSupportSockets', connectedSupportSockets);
         app.set('connectedAgentSockets', connectedAgentSockets);
@@ -19625,7 +19926,7 @@ const startServer = async () => {
                 try {
                     const resolved = await getSmartImageUrl(u.profileImageKey);
                     if (resolved && resolved !== '/images/default-avatar.png') return resolved;
-                } catch (e) {}
+                } catch (e) { }
             }
             if (u.cardAvatarUrl && u.cardAvatarUrl !== '/images/default-avatar.png') {
                 if (u.cardAvatarUrl.startsWith('http://') || u.cardAvatarUrl.startsWith('https://') || u.cardAvatarUrl.startsWith('/')) {
@@ -19634,7 +19935,7 @@ const startServer = async () => {
                 try {
                     const resolved = await getSmartImageUrl(u.cardAvatarUrl);
                     if (resolved && resolved !== '/images/default-avatar.png') return resolved;
-                } catch (e) {}
+                } catch (e) { }
             }
             if (u.avatarUrl && (u.avatarUrl.startsWith('http://') || u.avatarUrl.startsWith('https://') || u.avatarUrl.startsWith('/'))) {
                 return u.avatarUrl;
@@ -19660,7 +19961,7 @@ const startServer = async () => {
                         if (dbUser.avatarUrl && (dbUser.avatarUrl.startsWith('http://') || dbUser.avatarUrl.startsWith('https://') || dbUser.avatarUrl.startsWith('/'))) return dbUser.avatarUrl;
                         if (dbUser.avatar && (dbUser.avatar.startsWith('http://') || dbUser.avatar.startsWith('https://') || dbUser.avatar.startsWith('/'))) return dbUser.avatar;
                     }
-                } catch (e) {}
+                } catch (e) { }
             }
             return defaultLogo;
         }
@@ -19708,7 +20009,7 @@ const startServer = async () => {
             io.emit('support_stats_update', stats);
         }
 
-       // Socket.IO logic
+        // Socket.IO logic
         io.on('connection', async (socket) => {
             connectedSupportSockets.add(socket.id);
 
@@ -19726,7 +20027,7 @@ const startServer = async () => {
             broadcastOnlineStats();
 
             socket.emit('chat history', recentMessages);
-            
+
             socket.on('chat message', (msg) => {
                 // Strict Link Restriction: Only GPLMods links allowed!
                 const linkValidation = validateMessageLinks(msg.text);
@@ -19737,15 +20038,15 @@ const startServer = async () => {
                 let finalSafeText = msg.text;
                 try {
                     finalSafeText = global.profanityFilter.clean(msg.text);
-                } catch (error) {}
+                } catch (error) { }
 
                 const messageData = {
                     username: msg.username,
-                    avatar: msg.avatar, 
-                    text: finalSafeText, 
+                    avatar: msg.avatar,
+                    text: finalSafeText,
                     timestamp: new Date()
                 };
-                
+
                 recentMessages.push(messageData);
                 if (recentMessages.length > 50) {
                     recentMessages.shift();
@@ -19853,7 +20154,7 @@ const startServer = async () => {
                     let safeText = text;
                     try {
                         safeText = global.profanityFilter.clean(text);
-                    } catch (e) {}
+                    } catch (e) { }
 
                     // 4. Save to DB
                     const message = await ClubMessage.create({
@@ -19896,7 +20197,7 @@ const startServer = async () => {
                                 .limit(100)
                                 .lean();
                             saveClubChatArchive(club.name, channel.name, recentMsgs.reverse());
-                        } catch (e) {}
+                        } catch (e) { }
                     })();
 
                 } catch (err) {
@@ -19918,7 +20219,7 @@ const startServer = async () => {
                     const effectiveChanId = channelId || message.channel;
 
                     // Check if user already reacted to this message with ANY emoji
-                    const previousReaction = message.reactions.find(r => 
+                    const previousReaction = message.reactions.find(r =>
                         r.users && r.users.some(u => String(u) === String(user._id))
                     );
 
@@ -19986,7 +20287,7 @@ const startServer = async () => {
                         messageId: message._id,
                         poll: message.poll
                     });
-                } catch (e) {}
+                } catch (e) { }
             });
 
             socket.on('club_edit_message', async (data) => {
@@ -20010,7 +20311,7 @@ const startServer = async () => {
                     }
 
                     let safeText = content.trim();
-                    try { safeText = global.profanityFilter.clean(safeText); } catch(e) {}
+                    try { safeText = global.profanityFilter.clean(safeText); } catch (e) { }
 
                     message.content = safeText;
                     message.isEdited = true;
@@ -20051,7 +20352,7 @@ const startServer = async () => {
                             if (member && member.roles) {
                                 hasModPerm = member.roles.some(r => r && r.permissions && (r.permissions.canManageClub || r.permissions.canKickMembers));
                             }
-                        } catch (permErr) {}
+                        } catch (permErr) { }
                     }
 
                     if (!isSender && !isStaff && !isCreator && !hasModPerm) {
@@ -20132,8 +20433,8 @@ const startServer = async () => {
                     if (!channel) return;
 
                     if (['rules', 'announcements', 'new-uploads', 'new-updates'].includes(channel.type)) {
-                        return socket.emit('club_message_error', { 
-                            message: 'You cannot unlock chat on this specific club channel (#rules, #announcements, mod feeds).' 
+                        return socket.emit('club_message_error', {
+                            message: 'You cannot unlock chat on this specific club channel (#rules, #announcements, mod feeds).'
                         });
                     }
 
@@ -20269,7 +20570,7 @@ const startServer = async () => {
             // ==========================================
             // --- LIVE SUPPORT & GEMINI AI CHAT LOGIC ---
             // ==========================================
-            
+
             // Helper to resolve agent from session or payload ID with staff role verification
             async function resolveAgent(data) {
                 let agent = socket.request.user || socket.data?.agent;
@@ -20281,7 +20582,7 @@ const startServer = async () => {
                             socket.data = socket.data || {};
                             socket.data.agent = agent;
                         }
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 return (agent && ['support', 'admin', 'owner'].includes(agent.role)) ? agent : null;
             }
@@ -20301,16 +20602,16 @@ const startServer = async () => {
                         avatarUrl: avatar,
                         isStaff: true
                     });
-                } catch (e) {}
+                } catch (e) { }
                 broadcastOnlineStats();
                 try {
-                    const activeChats = await ChatSession.find({ 
+                    const activeChats = await ChatSession.find({
                         status: { $in: ['waiting-for-agent', 'active-agent'] },
                         'messages.0': { $exists: true }
                     })
                         .populate('user', 'username email profileImageKey role isPremium badges')
                         .sort({ updatedAt: -1 });
-                    
+
                     socket.emit('load_active_chats', activeChats);
                     socket.emit('ai_status_update', aiDebuggerStatus);
                 } catch (err) {
@@ -20329,12 +20630,12 @@ const startServer = async () => {
                         return result.response.text();
                     });
                     const latency = Date.now() - start;
-                    
+
                     aiDebuggerStatus.status = 'online';
                     aiDebuggerStatus.lastPing = new Date();
                     aiDebuggerStatus.latencyMs = latency;
                     aiDebuggerStatus.lastError = null;
-                    
+
                     io.to('support_agents').emit('ai_debug_result', {
                         success: true,
                         latencyMs: latency,
@@ -20350,7 +20651,7 @@ const startServer = async () => {
                         time: new Date()
                     };
                     aiDebuggerStatus.totalErrors++;
-                    
+
                     io.to('support_agents').emit('ai_debug_result', {
                         success: false,
                         latencyMs: latency,
@@ -20368,7 +20669,7 @@ const startServer = async () => {
                     if (!authenticatedUser && data.userId) {
                         try {
                             authenticatedUser = await User.findById(data.userId);
-                        } catch (e) {}
+                        } catch (e) { }
                     }
                     if (authenticatedUser) {
                         let avatar = data.avatarUrl;
@@ -20414,8 +20715,8 @@ const startServer = async () => {
                     const status = session ? session.status : 'bot';
 
                     socket.join(`support_${activeSessionId}`);
-                    socket.emit('support_chat_ready', { 
-                        sessionId: activeSessionId, 
+                    socket.emit('support_chat_ready', {
+                        sessionId: activeSessionId,
                         history: history,
                         status: status,
                         isNew: isNew
@@ -20449,12 +20750,12 @@ const startServer = async () => {
                     const conditions = [];
                     if (socket.request.user) conditions.push({ user: socket.request.user._id });
                     else if (data.guestId) conditions.push({ guestId: data.guestId });
-                    
+
                     if (conditions.length === 0) {
                         return socket.emit('user_chat_history_list', []);
                     }
 
-                    const sessions = await ChatSession.find({ 
+                    const sessions = await ChatSession.find({
                         $or: conditions,
                         'messages.0': { $exists: true } // Exclude any empty conversations
                     })
@@ -20494,8 +20795,8 @@ const startServer = async () => {
                     const ownsSession = session && ((userId && sessionUserId && sessionUserId === userId) || (!userId && session.guestId === data.guestId) || (data.guestId && session.guestId === data.guestId));
                     if (ownsSession) {
                         socket.join(`support_${session._id}`);
-                        socket.emit('support_chat_ready', { 
-                            sessionId: session._id, 
+                        socket.emit('support_chat_ready', {
+                            sessionId: session._id,
                             history: session.messages,
                             status: session.status,
                             isNew: false
@@ -20537,7 +20838,7 @@ const startServer = async () => {
                 try {
                     const { sessionId, text, mediaUrls } = data;
                     if (!sessionId || (!text && (!mediaUrls || !mediaUrls.length))) return;
-                    
+
                     const userId = socket.request.user?._id;
                     let session = await ChatSession.findById(sessionId).populate('user');
 
@@ -20568,14 +20869,14 @@ const startServer = async () => {
                         (!userId && session.guestId && session.guestId === data.guestId);
                     if (!ownsSession) return;
 
-                    const userMsg = { 
-                        sender: 'user', 
+                    const userMsg = {
+                        sender: 'user',
                         text: text || '',
                         mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : []
                     };
                     session.messages.push(userMsg);
                     await session.save();
-                    
+
                     io.to(`support_${session._id}`).emit('new_support_message', userMsg);
 
                     // --- HUMAN HANDOFF / GUEST EMAIL CAPTURE ---
@@ -20601,7 +20902,7 @@ const startServer = async () => {
                     // If agent is active or already waiting, alert the agents room
                     if (session.status === 'active-agent' || session.status === 'waiting-for-agent') {
                         io.to('support_agents').emit('agent_receive_message', { sessionId: session._id, message: userMsg });
-                        return; 
+                        return;
                     }
 
                     // --- AI PROCESSING (Status is 'bot') ---
@@ -20615,12 +20916,12 @@ const startServer = async () => {
                             } else {
                                 handoffMsg += "<br><br>An agent will join as soon as possible.";
                             }
-                            
+
                             const sysMsg = { sender: 'system', text: handoffMsg };
                             session.messages.push(sysMsg);
                             await session.save();
                             io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
-                            
+
                             io.to('support_agents').emit('agent_alert_new_chat', session);
                             return;
                         }
@@ -20663,7 +20964,7 @@ const startServer = async () => {
                             await session.save();
 
                             io.to(`support_${session._id}`).emit('new_support_message', botMsg);
-                            
+
                             aiDebuggerStatus.status = 'online';
                             aiDebuggerStatus.totalRequests++;
                             aiDebuggerStatus.lastPing = new Date();
@@ -20684,7 +20985,7 @@ const startServer = async () => {
                             } else {
                                 console.error("Gemini Error:", error.message || error);
                             }
-                            
+
                             aiDebuggerStatus.totalErrors++;
                             aiDebuggerStatus.lastError = {
                                 message: error.message || String(error),
@@ -20693,10 +20994,10 @@ const startServer = async () => {
                             // Only mark permanently offline if unconfigured or missing API key
                             aiDebuggerStatus.status = process.env.GEMINI_API_KEY ? 'online' : 'offline';
 
-                            const errMsg = { 
-                                sender: 'system', 
-                                text: isHighDemandOr503 
-                                    ? "Our AI is currently experiencing high demand. Please try asking again in a moment, or type 'human' to speak directly with our team! 🤖" 
+                            const errMsg = {
+                                sender: 'system',
+                                text: isHighDemandOr503
+                                    ? "Our AI is currently experiencing high demand. Please try asking again in a moment, or type 'human' to speak directly with our team! 🤖"
                                     : "I'm experiencing a brief connection delay. Please try again or type 'human' to speak directly with our support team."
                             };
                             session.messages.push(errMsg);
@@ -20720,13 +21021,13 @@ const startServer = async () => {
                     if (session) {
                         session.status = 'active-agent';
                         session.assignedTo = agent._id;
-                        
+
                         socket.join(`support_${session._id}`);
-                        
+
                         const sysMsg = { sender: 'system', text: `Agent ${data.agentName || agent.username || 'Support'} has joined the chat.` };
                         session.messages.push(sysMsg);
                         await session.save();
-                        
+
                         io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
                         io.to('support_agents').emit('agent_chat_updated', session);
                     }
@@ -20743,8 +21044,8 @@ const startServer = async () => {
                     const session = await ChatSession.findById(data.sessionId);
                     if (session) {
                         const agentAvatarUrl = agent.signedAvatarUrl || agent.avatarUrl || agent.cardAvatarUrl || '/images/default-avatar.png';
-                        const agentMsg = { 
-                            sender: 'agent', 
+                        const agentMsg = {
+                            sender: 'agent',
                             senderName: agent.username || 'Support Agent',
                             senderAvatar: agentAvatarUrl,
                             text: data.text || '',
@@ -20752,7 +21053,7 @@ const startServer = async () => {
                         };
                         session.messages.push(agentMsg);
                         await session.save();
-                        
+
                         io.to(`support_${session._id}`).emit('new_support_message', agentMsg);
                         io.to('support_agents').emit('agent_receive_message', { sessionId: session._id, message: agentMsg });
                     }
@@ -20785,17 +21086,17 @@ const startServer = async () => {
                         session.status = 'bot';
                         session.assignedTo = null;
 
-                        const sysMsg = { 
-                            sender: 'system', 
-                            text: `Issue marked as resolved by ${agent.username || 'Support Team'}. You have been transferred back to Gemini AI Assistant. Feel free to ask any further questions!` 
+                        const sysMsg = {
+                            sender: 'system',
+                            text: `Issue marked as resolved by ${agent.username || 'Support Team'}. You have been transferred back to Gemini AI Assistant. Feel free to ask any further questions!`
                         };
                         session.messages.push(sysMsg);
                         await session.save();
 
                         io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
-                        io.to(`support_${session._id}`).emit('support_chat_status_updated', { 
-                            sessionId: String(session._id), 
-                            status: 'bot' 
+                        io.to(`support_${session._id}`).emit('support_chat_status_updated', {
+                            sessionId: String(session._id),
+                            status: 'bot'
                         });
                         io.to('support_agents').emit('agent_chat_updated', session);
                     }
@@ -20820,24 +21121,24 @@ const startServer = async () => {
                     session.status = 'bot';
                     session.assignedTo = null;
 
-                    const sysMsg = { 
-                        sender: 'system', 
-                        text: `You have switched back to Gemini AI Assistant. How can I help you today?` 
+                    const sysMsg = {
+                        sender: 'system',
+                        text: `You have switched back to Gemini AI Assistant. How can I help you today?`
                     };
                     session.messages.push(sysMsg);
                     await session.save();
 
                     io.to(`support_${session._id}`).emit('new_support_message', sysMsg);
-                    io.to(`support_${session._id}`).emit('support_chat_status_updated', { 
-                        sessionId: String(session._id), 
-                        status: 'bot' 
+                    io.to(`support_${session._id}`).emit('support_chat_status_updated', {
+                        sessionId: String(session._id),
+                        status: 'bot'
                     });
                     io.to('support_agents').emit('agent_chat_updated', session);
                 } catch (err) {
                     console.error('user_transfer_to_bot error:', err);
                 }
             });
-            
+
             socket.on('leave_support_chat', (data) => {
                 connectedSupportSockets.delete(socket.id);
                 connectedAgentSockets.delete(socket.id);
@@ -20889,146 +21190,146 @@ const startServer = async () => {
             });
         });
 
-// ===================================
-// CLUBS & COMMUNITIES ROUTES
-// ===================================
-const clubsRoutes = require('./routes/clubs');
-app.use('/clubs', clubsRoutes);
+        // ===================================
+        // CLUBS & COMMUNITIES ROUTES
+        // ===================================
+        const clubsRoutes = require('./routes/clubs');
+        app.use('/clubs', clubsRoutes);
 
-// ===================================
-// DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES
-// ===================================
-const notificationsRoutes = require('./routes/notifications');
-app.use('/api/notifications', notificationsRoutes);
+        // ===================================
+        // DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES
+        // ===================================
+        const notificationsRoutes = require('./routes/notifications');
+        app.use('/api/notifications', notificationsRoutes);
 
-// ===================================
-// OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
-// ===================================
-const ownerRoutes = require('./routes/owner');
-app.use('/', ownerRoutes);
+        // ===================================
+        // OWNER ROUTES (INFRASTRUCTURE DASHBOARD)
+        // ===================================
+        const ownerRoutes = require('./routes/owner');
+        app.use('/', ownerRoutes);
 
-// ===================================
-// USER CREATOR TRACKING & SUBSCRIPTIONS API
-// ===================================
-app.get('/api/user/tracking', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const user = await User.findById(req.user._id).populate({
-            path: 'trackedCreators.creator',
-            select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
+        // ===================================
+        // USER CREATOR TRACKING & SUBSCRIPTIONS API
+        // ===================================
+        app.get('/api/user/tracking', async (req, res) => {
+            try {
+                if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+                const user = await User.findById(req.user._id).populate({
+                    path: 'trackedCreators.creator',
+                    select: 'username profileImageKey role signedAvatarUrl cardAvatarUrl avatar'
+                });
+                return res.json({ success: true, trackedCreators: user.trackedCreators || [] });
+            } catch (err) {
+                console.error('[Tracking API] Get error:', err);
+                return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
+            }
         });
-        return res.json({ success: true, trackedCreators: user.trackedCreators || [] });
-    } catch (err) {
-        console.error('[Tracking API] Get error:', err);
-        return res.status(500).json({ error: 'Failed to fetch tracked creators.' });
-    }
-});
 
-app.post('/api/user/tracking/add', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { username, creatorId, trackType } = req.body;
-        let targetCreator = null;
-        if (creatorId) {
-            targetCreator = await User.findById(creatorId);
-        } else if (username) {
-            targetCreator = await User.findOne({ username: username.trim() });
-        }
-        if (!targetCreator) {
-            return res.status(404).json({ error: 'Creator not found.' });
-        }
-        if (String(targetCreator._id) === String(req.user._id)) {
-            return res.status(400).json({ error: 'You cannot track your own profile.' });
-        }
+        app.post('/api/user/tracking/add', async (req, res) => {
+            try {
+                if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+                const { username, creatorId, trackType } = req.body;
+                let targetCreator = null;
+                if (creatorId) {
+                    targetCreator = await User.findById(creatorId);
+                } else if (username) {
+                    targetCreator = await User.findOne({ username: username.trim() });
+                }
+                if (!targetCreator) {
+                    return res.status(404).json({ error: 'Creator not found.' });
+                }
+                if (String(targetCreator._id) === String(req.user._id)) {
+                    return res.status(400).json({ error: 'You cannot track your own profile.' });
+                }
 
-        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
-        const user = await User.findById(req.user._id);
-        if (!user.trackedCreators) user.trackedCreators = [];
+                const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+                const user = await User.findById(req.user._id);
+                if (!user.trackedCreators) user.trackedCreators = [];
 
-        const existingIdx = user.trackedCreators.findIndex(tc => String(tc.creator) === String(targetCreator._id));
-        if (existingIdx > -1) {
-            user.trackedCreators[existingIdx].trackType = validTrackType;
-        } else {
-            user.trackedCreators.push({
-                creator: targetCreator._id,
-                trackType: validTrackType,
-                trackedAt: new Date()
+                const existingIdx = user.trackedCreators.findIndex(tc => String(tc.creator) === String(targetCreator._id));
+                if (existingIdx > -1) {
+                    user.trackedCreators[existingIdx].trackType = validTrackType;
+                } else {
+                    user.trackedCreators.push({
+                        creator: targetCreator._id,
+                        trackType: validTrackType,
+                        trackedAt: new Date()
+                    });
+                }
+                await user.save();
+                return res.json({ success: true, message: `Now tracking ${targetCreator.username} (${validTrackType})` });
+            } catch (err) {
+                console.error('[Tracking API] Add error:', err);
+                return res.status(500).json({ error: 'Failed to track creator.' });
+            }
+        });
+
+        app.post('/api/user/tracking/update', async (req, res) => {
+            try {
+                if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+                const { creatorId, trackType } = req.body;
+                if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+                const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
+
+                const user = await User.findById(req.user._id);
+                const item = (user.trackedCreators || []).find(tc => String(tc.creator) === String(creatorId));
+                if (item) {
+                    item.trackType = validTrackType;
+                    await user.save();
+                }
+                return res.json({ success: true, trackType: validTrackType });
+            } catch (err) {
+                console.error('[Tracking API] Update error:', err);
+                return res.status(500).json({ error: 'Failed to update tracking preference.' });
+            }
+        });
+
+        app.post('/api/user/tracking/remove', async (req, res) => {
+            try {
+                if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+                const { creatorId } = req.body;
+                if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
+
+                const user = await User.findById(req.user._id);
+                user.trackedCreators = (user.trackedCreators || []).filter(tc => String(tc.creator) !== String(creatorId));
+                await user.save();
+                return res.json({ success: true, message: 'Creator removed from tracked list.' });
+            } catch (err) {
+                console.error('[Tracking API] Remove error:', err);
+                return res.status(500).json({ error: 'Failed to remove tracked creator.' });
+            }
+        });
+
+        // ===============================================
+        // 17. GLOBAL ERROR HANDLERS (MUST BE LAST)
+        // ===============================================
+
+        // 404 Handler - Catch all unhandled routes
+        app.use((req, res) => {
+            res.status(404).render('pages/error', {
+                errorCode: '404',
+                errorTitle: 'Page <span>Not Found</span>',
+                errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
             });
-        }
-        await user.save();
-        return res.json({ success: true, message: `Now tracking ${targetCreator.username} (${validTrackType})` });
-    } catch (err) {
-        console.error('[Tracking API] Add error:', err);
-        return res.status(500).json({ error: 'Failed to track creator.' });
-    }
-});
+        });
 
-app.post('/api/user/tracking/update', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { creatorId, trackType } = req.body;
-        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
-        const validTrackType = ['uploads', 'updates', 'both'].includes(trackType) ? trackType : 'both';
-
-        const user = await User.findById(req.user._id);
-        const item = (user.trackedCreators || []).find(tc => String(tc.creator) === String(creatorId));
-        if (item) {
-            item.trackType = validTrackType;
-            await user.save();
-        }
-        return res.json({ success: true, trackType: validTrackType });
-    } catch (err) {
-        console.error('[Tracking API] Update error:', err);
-        return res.status(500).json({ error: 'Failed to update tracking preference.' });
-    }
-});
-
-app.post('/api/user/tracking/remove', async (req, res) => {
-    try {
-        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-        const { creatorId } = req.body;
-        if (!creatorId) return res.status(400).json({ error: 'Creator ID is required.' });
-
-        const user = await User.findById(req.user._id);
-        user.trackedCreators = (user.trackedCreators || []).filter(tc => String(tc.creator) !== String(creatorId));
-        await user.save();
-        return res.json({ success: true, message: 'Creator removed from tracked list.' });
-    } catch (err) {
-        console.error('[Tracking API] Remove error:', err);
-        return res.status(500).json({ error: 'Failed to remove tracked creator.' });
-    }
-});
-
-// ===============================================
-// 17. GLOBAL ERROR HANDLERS (MUST BE LAST)
-// ===============================================
-
-// 404 Handler - Catch all unhandled routes
-app.use((req, res) => {
-    res.status(404).render('pages/error', {
-        errorCode: '404',
-        errorTitle: 'Page <span>Not Found</span>',
-        errorMessage: "Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
-    });
-});
-
-// 500 Handler - Catch all server crashes/exceptions
-app.use((err, req, res, next) => {
-    console.error(err.stack); // Still log the error for you to debug!
-    res.status(500).render('pages/error', {
-        errorCode: '500',
-        errorTitle: 'Server <span>Error</span>',
-        errorMessage: "Something went wrong on our end. Our team has been notified and we're working to fix it.",
-        errorDetails: {
-            message: err.message || 'Internal Server Error',
-            name: err.name || 'Error',
-            path: req.originalUrl || req.url || '/',
-            method: req.method || 'GET',
-            timestamp: new Date().toISOString(),
-            stack: process.env.NODE_ENV === 'production' ? null : (err.stack || null)
-        }
-    });
-});
+        // 500 Handler - Catch all server crashes/exceptions
+        app.use((err, req, res, next) => {
+            console.error(err.stack); // Still log the error for you to debug!
+            res.status(500).render('pages/error', {
+                errorCode: '500',
+                errorTitle: 'Server <span>Error</span>',
+                errorMessage: "Something went wrong on our end. Our team has been notified and we're working to fix it.",
+                errorDetails: {
+                    message: err.message || 'Internal Server Error',
+                    name: err.name || 'Error',
+                    path: req.originalUrl || req.url || '/',
+                    method: req.method || 'GET',
+                    timestamp: new Date().toISOString(),
+                    stack: process.env.NODE_ENV === 'production' ? null : (err.stack || null)
+                }
+            });
+        });
 
         // Finally, listen! Bind to 0.0.0.0 for Render compatibility
         server.listen(PORT, '0.0.0.0', () => {
@@ -21068,7 +21369,7 @@ cron.schedule('*/30 * * * *', () => {
             console.warn(`[RAM Warning] Memory high (${usedMemory.toFixed(2)} MB). Initiating aggressive cleanup...`);
 
             // 1. Clear our custom in-memory caches
-            cachedTotalUpdates = 0; 
+            cachedTotalUpdates = 0;
             recentMessages = recentMessages.slice(-10); // Keep only last 10 chat messages in RAM instead of 50
 
             // 2. Force V8 Garbage Collection (if the flag is enabled)
@@ -21130,7 +21431,7 @@ cron.schedule('* * * * *', async () => {
         // --- 1. Check if the engine is enabled in SiteState ---
         const SiteState = require('./models/siteState'); // Ensure this is imported
         const siteState = await SiteState.findOne({ singletonId: 'master-state' });
-        
+
         // If the state document doesn't exist, or the toggle is false, DO NOTHING.
         if (!siteState || siteState.enableAutomationEngine !== true) {
             return; // Exit silently
@@ -21147,7 +21448,7 @@ cron.schedule('* * * * *', async () => {
 
         for (const campaign of pendingCampaigns) {
             console.log(`Starting automated campaign: ${campaign.title}`);
-            
+
             campaign.status = 'processing';
             await campaign.save();
 
@@ -21201,6 +21502,6 @@ cron.schedule('* * * * *', async () => {
 });
 
 // ✅ START THE SERVER
-startServer(); 
+startServer();
 
 // 🛑 MAKE SURE THERE IS ABSOLUTELY NO CODE BELOW THIS LINE! 🛑

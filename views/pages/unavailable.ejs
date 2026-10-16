@@ -18,11 +18,14 @@
     <div class="container">
         <!-- ✅ UPGRADE: Lottie Error Animation (Looping) -->
         <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-            <lottie-player src="<%= cdnUrl %>/animations/error.json" background="transparent" speed="1" style="width: 150px; height: 150px; filter: drop-shadow(0 0 15px var(--glow-red));" loop autoplay></lottie-player>
+            <lottie-player src="<%= locals.cdnUrl ? locals.cdnUrl : '' %>/animations/error.json" background="transparent" speed="1" style="width: 150px; height: 150px; filter: drop-shadow(0 0 15px var(--glow-red));" loop autoplay></lottie-player>
         </div>
         
-        <h1><%= title %></h1>
-        <p><%- message.replace(/\n/g, '<br>') %></p>
+        <h1><%= title || 'Service Temporarily Unavailable' %></h1>
+        <p><%- (message || 'This service is temporarily unavailable. Please check back later.').replace(/\n/g, '<br>') %></p>
+        <div style="margin-top: 25px;">
+            <a href="/" style="display: inline-block; padding: 10px 24px; background: #FFD700; color: #000; font-weight: 600; text-decoration: none; border-radius: 8px; transition: all 0.2s ease;">Return to Home</a>
+        </div>
     </div>
 </body>
 </html>

@@ -111,6 +111,41 @@ const SiteStateSchema = new Schema({
         windows: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null },
         wordpress: { type: Schema.Types.ObjectId, ref: 'DocPage', default: null }
     },
+    // --- OWNER SERVICE UNAVAILABILITY ENGINE (Applies to all users, admins, etc. Only Owner bypasses) ---
+    unavailableServices: {
+        downloads: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'Downloads Temporarily Unavailable' },
+            message: { type: String, default: 'Mod downloads are temporarily suspended for routine maintenance. Please check back shortly.' }
+        },
+        uploads: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'Uploads Temporarily Unavailable' },
+            message: { type: String, default: 'Mod submissions and uploads are temporarily closed. Please check back later.' }
+        },
+        registration: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'Registration Temporarily Closed' },
+            message: { type: String, default: 'New user registrations are temporarily paused. Existing accounts can still log in.' }
+        },
+        community: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'Community Features Temporarily Unavailable' },
+            message: { type: String, default: 'Clubs, reviews, ratings, and comments are currently in maintenance mode.' }
+        },
+        iosStore: {
+            enabled: { type: Boolean, default: false },
+            title: { type: String, default: 'iOS DNS & Store Temporarily Unavailable' },
+            message: { type: String, default: 'The iOS signing certificates and DNS service endpoints are temporarily offline.' }
+        },
+        customList: [{
+            serviceName: { type: String, default: '' },
+            pathPattern: { type: String, default: '' },
+            title: { type: String, default: 'Service Temporarily Unavailable' },
+            message: { type: String, default: 'This specific service is temporarily unavailable. Please check back later.' },
+            enabled: { type: Boolean, default: true }
+        }]
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('SiteState', SiteStateSchema);

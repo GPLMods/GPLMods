@@ -1195,8 +1195,9 @@
                 </div>
                 <!-- =========================================== -->
 
-            <!-- LINKS & PARTS MANAGEMENT (DISTRIBUTORS/ADMINS/OWNERS - Only for External Link/Multi-part uploads) -->
-            <% if (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner') && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)) { %>
+            <!-- LINKS & PARTS MANAGEMENT (DISTRIBUTORS/ADMINS/OWNERS or External Link/Multi-part uploads) -->
+            <% const canManageLinks = (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) || (typeof file !== 'undefined' && file && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)); %>
+            <% if (canManageLinks) { %>
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
 
@@ -1893,17 +1894,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const variantDetectionSubmitted = document.getElementById('variantDetectionSubmitted');
     let variantCheckTimer = null;
     let cachedMasterFile = null;
+    let cachedCurrentUpload = null;
+
+    function getVariantLiveUploadType(currentUpload) {
+        const isMultiPartActive = isMultiPartHidden && isMultiPartHidden.value === 'true';
+        const extInput = document.getElementById('externalDownloadUrl');
+        if (isMultiPartActive) return 'multipart';
+        if (extInput && extInput.value.trim()) return 'external';
+        if (currentUpload && currentUpload.uploadType) return currentUpload.uploadType;
+        return '<%= (file.fileKey === "external-link") ? "external" : (file.isMultiPart ? "multipart" : "cloud") %>';
+    }
+
+    function updateVariantFieldRequirements(isVariantActive) {
+        const devInput = document.getElementById('developerName');
+        const catSelect = document.getElementById('modCategory');
+        const ageSelect = document.getElementById('ageRating');
+        if (devInput) {
+            if (isVariantActive) devInput.removeAttribute('required');
+            else devInput.setAttribute('required', 'required');
+        }
+        if (catSelect) {
+            if (isVariantActive) catSelect.removeAttribute('required');
+            else catSelect.setAttribute('required', 'required');
+        }
+        if (ageSelect) {
+            if (isVariantActive) ageSelect.removeAttribute('required');
+            else ageSelect.setAttribute('required', 'required');
+        }
+    }
+
+    function renderVariantBanner(master, currentUpload) {
+        if (!variantInfoText || !master) return;
+        const statusColor = master.status === 'live' ? '#2ecc71' : (master.status === 'pending' ? '#f59e0b' : '#38bdf8');
+        const uploadTypeBadge = (type) => {
+            if (type === 'multipart') return '<span style="background: rgba(236,72,153,0.2); color: #f472b6; border: 1px solid rgba(236,72,153,0.4); padding: 2px 7px; border-radius: 4px; font-size: 0.8em; font-weight: 600;"><i class="fas fa-layer-group"></i> Multi-Part Download</span>';
+            if (type === 'external') return '<span style="background: rgba(14,165,233,0.2); color: #38bdf8; border: 1px solid rgba(14,165,233,0.4); padding: 2px 7px; border-radius: 4px; font-size: 0.8em; font-weight: 600;"><i class="fas fa-external-link-alt"></i> External Link</span>';
+            return '<span style="background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); padding: 2px 7px; border-radius: 4px; font-size: 0.8em; font-weight: 600;"><i class="fas fa-cloud"></i> Direct Cloud Storage</span>';
+        };
+
+        const variantUploadType = getVariantLiveUploadType(currentUpload);
+        const currentPlatform = nativePlatformSelect && nativePlatformSelect.value ? nativePlatformSelect.value : '';
+        const isCrossPlatform = currentPlatform && master.category && currentPlatform !== master.category;
+
+        variantInfoText.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                    <span>Found existing master mod: <strong>"${master.name}"</strong></span>
+                    <span style="background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); font-size: 0.78em; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; font-weight: bold;">
+                        ${master.category || 'all'}
+                    </span>
+                    <span style="background: rgba(255,255,255,0.08); color: ${statusColor}; border: 1px solid ${statusColor}; font-size: 0.78em; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; font-weight: 700;">
+                        Master Status: ${master.status}
+                    </span>
+                    <span style="color: var(--silver); font-size: 0.85em;">(v${master.version}, by @${master.uploader})</span>
+                </div>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 0.88em; color: #cbd5e1;">
+                    <span>Master File: ${uploadTypeBadge(master.uploadType)}</span>
+                    <span>Variant File: ${uploadTypeBadge(variantUploadType)}</span>
+                    ${currentUpload && currentUpload.status ? `<span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-size: 0.78em; padding: 1px 6px; border-radius: 4px;">Variant Status: ${currentUpload.status}</span>` : ''}
+                </div>
+                ${isCrossPlatform ? `<div style="font-size: 0.82em; color: #fde68a;"><i class="fas fa-arrows-split-up-and-left"></i> <strong>Cross-Platform Variant:</strong> Master platform is <strong>${master.category}</strong>; this variant is being published for <strong>${currentPlatform}</strong>.</div>` : ''}
+                <div style="background: rgba(168, 85, 247, 0.12); border: 1px dashed rgba(168, 85, 247, 0.45); padding: 8px 12px; border-radius: 6px; font-size: 0.85em; color: #e9d5ff; line-height: 1.5;">
+                    <i class="fas fa-magic" style="color: #c084fc; margin-right: 6px;"></i>
+                    <strong>Variant Mode Active:</strong> All metadata fields below (description, features, screenshots, age rating, developer) are <strong>optional</strong>. If left empty, they will automatically inherit from the master mod!
+                </div>
+            </div>
+        `;
+        updateVariantFieldRequirements(true);
+    }
 
     async function checkVariantMatch() {
-        if (!variantGroup || !modNameInput || !nativePlatformSelect) return;
+        if (!variantGroup || !modNameInput) return;
         const name = (modNameInput.value || '').trim();
-        const platform = (nativePlatformSelect.value || '').trim();
+        const platform = (nativePlatformSelect && nativePlatformSelect.value ? nativePlatformSelect.value : '').trim();
 
-        if (!name || !platform) {
+        if (!name || name.length < 2) {
             variantGroup.style.display = 'none';
             if (variantDetectionSubmitted) variantDetectionSubmitted.value = '0';
             if (detectedMasterId) detectedMasterId.value = '';
             cachedMasterFile = null;
+            cachedCurrentUpload = null;
+            updateVariantFieldRequirements(false);
             return;
         }
 
@@ -1916,19 +1987,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.exists && data.masterFile) {
                 cachedMasterFile = data.masterFile;
+                cachedCurrentUpload = data.currentUpload;
                 variantGroup.style.display = 'block';
                 if (variantDetectionSubmitted) variantDetectionSubmitted.value = '1';
                 if (detectedMasterId) detectedMasterId.value = data.masterFile._id;
                 if (isVariantCheckbox) isVariantCheckbox.checked = true;
-                if (variantInfoText) {
-                    variantInfoText.innerHTML = `Found an existing mod <strong>"${data.masterFile.name}"</strong> on platform <strong>${data.masterFile.category}</strong> (v${data.masterFile.version || '1.0'}, uploaded by @${data.masterFile.uploader}). This mod will be linked as a variant.`;
-                }
+                renderVariantBanner(data.masterFile, data.currentUpload);
             } else {
                 cachedMasterFile = null;
+                cachedCurrentUpload = null;
                 variantGroup.style.display = 'none';
                 if (variantDetectionSubmitted) variantDetectionSubmitted.value = '0';
                 if (detectedMasterId) detectedMasterId.value = '';
                 if (isVariantCheckbox) isVariantCheckbox.checked = false;
+                updateVariantFieldRequirements(false);
             }
         } catch (err) {
             console.error('Error checking variant match:', err);
@@ -1937,7 +2009,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function scheduleVariantCheck() {
         clearTimeout(variantCheckTimer);
-        variantCheckTimer = setTimeout(checkVariantMatch, 400);
+        variantCheckTimer = setTimeout(checkVariantMatch, 350);
     }
 
     if (modNameInput) {
@@ -1948,16 +2020,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (isVariantCheckbox) {
         isVariantCheckbox.addEventListener('change', function() {
+            updateVariantFieldRequirements(this.checked);
             if (!this.checked) {
                 if (variantInfoText) {
-                    variantInfoText.innerHTML = `<span style="color: #fca5a5;"><i class="fas fa-info-circle"></i> Variant linking disabled. This mod will be published as an independent mod entry instead.</span>`;
+                    variantInfoText.innerHTML = `<span style="color: #fca5a5;"><i class="fas fa-info-circle"></i> Variant linking disabled. This mod will be published as an independent mod entry instead. Standard field requirements apply.</span>`;
                 }
             } else {
                 if (cachedMasterFile) {
                     if (detectedMasterId) detectedMasterId.value = cachedMasterFile._id;
-                    if (variantInfoText) {
-                        variantInfoText.innerHTML = `Found an existing mod <strong>"${cachedMasterFile.name}"</strong> on platform <strong>${cachedMasterFile.category}</strong> (v${cachedMasterFile.version || '1.0'}, uploaded by @${cachedMasterFile.uploader}). This mod will be linked as a variant.`;
-                    }
+                    renderVariantBanner(cachedMasterFile, cachedCurrentUpload);
                 } else {
                     checkVariantMatch();
                 }
@@ -1965,7 +2036,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (modNameInput && modNameInput.value && nativePlatformSelect && nativePlatformSelect.value) {
+    if (modNameInput && modNameInput.value) {
         checkVariantMatch();
     }
 
@@ -2605,6 +2676,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            const isVariantActive = Boolean(isVariantCheckbox && isVariantCheckbox.checked);
+
             // Sync and check screenshots count
             const screenRes = syncScreenshotsToForm();
             if (!screenRes.valid) {
@@ -2612,25 +2685,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('screenshotEditorSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return; // DO NOT OPEN SUBMIT MODAL!
             }
-            if (screenRes.count === 0) {
+            if (!isVariantActive && screenRes.count === 0) {
                 showStatusAlert('At least one screenshot is required to submit the mod.', 'error');
                 document.getElementById('screenshotEditorSection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 return; // DO NOT OPEN SUBMIT MODAL!
             }
 
-            mainForm.noValidate = false;
+            mainForm.noValidate = isVariantActive;
             
             let hasError = false;
 
             if (nativePlatformSelect && !nativePlatformSelect.value) {
-                if (platformWrapper) {
-                    platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
-                    platformWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                if (isVariantActive && cachedMasterFile && cachedMasterFile.category) {
+                    nativePlatformSelect.value = cachedMasterFile.category;
+                    const platOpt = platformWrapper ? platformWrapper.querySelector(`.custom-option[data-value="${cachedMasterFile.category}"]`) : null;
+                    if (platOpt) {
+                        platformWrapper.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                        platOpt.classList.add('selected');
+                        const selText = platformWrapper.querySelector('.selected-text');
+                        if (selText) {
+                            selText.textContent = platOpt.textContent;
+                            selText.style.color = 'var(--white)';
+                        }
+                    }
+                } else {
+                    if (platformWrapper) {
+                        platformWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
+                        platformWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
+                    }
+                    hasError = true;
                 }
-                hasError = true;
             }
             
-            if (nativeCategorySelect && (!nativeCategorySelect.value || nativeCategorySelect.disabled)) {
+            if (!isVariantActive && nativeCategorySelect && (!nativeCategorySelect.value || nativeCategorySelect.disabled)) {
                 if (categoryWrapper) {
                     categoryWrapper.querySelector('.custom-select').style.borderColor = 'var(--red)';
                     categoryWrapper.querySelector('.custom-select').style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.5)';
@@ -2638,7 +2725,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 hasError = true;
             }
 
-            if (nativePlatformSelect && nativePlatformSelect.value === 'ios-jailbroken') {
+            if (!isVariantActive && nativePlatformSelect && nativePlatformSelect.value === 'ios-jailbroken') {
                 const checkedArchs = document.querySelectorAll('input[name="architectures"]:checked');
                 if (checkedArchs.length === 0) {
                     if (archWrapper) {
@@ -2649,9 +2736,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (!mainForm.checkValidity() || hasError) {
+            if (!isVariantActive && (!mainForm.checkValidity() || hasError)) {
                 mainForm.reportValidity();
                 if(hasError) showStatusAlert('Please fill out all required custom dropdowns.', 'error');
+                return;
+            }
+            if (isVariantActive && hasError) {
+                showStatusAlert('Please select a platform for this variant.', 'error');
                 return;
             }
             
@@ -2669,35 +2760,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 showStatusAlert(msg, 'error');
             }
 
-            if (document.getElementById('modDescription') && !document.getElementById('modDescription').value.trim()) {
-                highlightAndScrollTo(document.getElementById('editor-modDescription') || document.getElementById('modDescription'), 'Error: Mod Description is required.'); return;
-            }
-            if (document.getElementById('modFeatures') && !document.getElementById('modFeatures').value.trim()) {
-                highlightAndScrollTo(document.getElementById('editor-modFeatures') || document.getElementById('modFeatures'), 'Error: Mod Features are required.'); return;
-            }
-            if (document.getElementById('officialDescription') && !document.getElementById('officialDescription').value.trim()) {
-                highlightAndScrollTo(document.getElementById('editor-officialDescription') || document.getElementById('officialDescription'), 'Error: Official Description is required.'); return;
-            }
-            if (document.getElementById('modVersion') && !document.getElementById('modVersion').value.trim()) {
-                highlightAndScrollTo(document.getElementById('modVersion'), 'Error: Mod Version is required.'); return;
-            }
-            const parsedFileSize = fileSizeInput ? parseInt(fileSizeInput.value, 10) : 0;
-            if (parsedFileSize > 640 * 1024 * 1024) {
-                const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');
-                if (!hasScan) {
-                    highlightAndScrollTo(document.getElementById('manualFileScanUrl') || document.getElementById('manualFileScanGroup'), 'Files larger than 640MB require a manual scan URL before publishing.');
+            // Check external link / multipart requirements
+            const isMultiPartActive = isMultiPartHidden && isMultiPartHidden.value === 'true';
+            if (isMultiPartActive) {
+                const partUrlInputs = document.querySelectorAll('.part-card input[name="partUrls"]');
+                let hasPartUrl = false;
+                partUrlInputs.forEach(input => { if (input.value && input.value.trim()) hasPartUrl = true; });
+                if (!hasPartUrl) {
+                    highlightAndScrollTo(document.getElementById('multi-part-container'), 'Error: At least one part download URL is required for multi-part downloads.');
+                    return;
+                }
+            } else if (document.getElementById('externalDownloadUrl') && document.getElementById('single-link-container') && document.getElementById('single-link-container').style.display !== 'none') {
+                const extVal = document.getElementById('externalDownloadUrl').value.trim();
+                const isExternalUpload = <%= (file.fileKey === 'external-link') ? 'true' : 'false' %>;
+                if (isExternalUpload && !extVal) {
+                    highlightAndScrollTo(document.getElementById('externalDownloadUrl'), 'Error: Main External URL is required.');
                     return;
                 }
             }
-            if (document.getElementById('ageRating') && !document.getElementById('ageRating').value) {
-                highlightAndScrollTo(document.getElementById('ageRatingWrapper'), 'Error: Age Rating is required.'); return;
-            }
-            if (document.getElementById('developerName') && !document.getElementById('developerName').value.trim()) {
-                highlightAndScrollTo(document.getElementById('developerName'), 'Error: Developer name is required.'); return;
-            }
-            const hasSavedIcon = <%= file.iconUrl ? 'true' : 'false' %>;
-            if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0 && !hasSavedIcon) {
-                highlightAndScrollTo(document.getElementById('modIcon'), 'Error: An icon is required to publish this mod.'); return;
+
+            if (!isVariantActive) {
+                if (document.getElementById('modDescription') && !document.getElementById('modDescription').value.trim()) {
+                    highlightAndScrollTo(document.getElementById('editor-modDescription') || document.getElementById('modDescription'), 'Error: Mod Description is required.'); return;
+                }
+                if (document.getElementById('modFeatures') && !document.getElementById('modFeatures').value.trim()) {
+                    highlightAndScrollTo(document.getElementById('editor-modFeatures') || document.getElementById('modFeatures'), 'Error: Mod Features are required.'); return;
+                }
+                if (document.getElementById('officialDescription') && !document.getElementById('officialDescription').value.trim()) {
+                    highlightAndScrollTo(document.getElementById('editor-officialDescription') || document.getElementById('officialDescription'), 'Error: Official Description is required.'); return;
+                }
+                if (document.getElementById('modVersion') && !document.getElementById('modVersion').value.trim()) {
+                    highlightAndScrollTo(document.getElementById('modVersion'), 'Error: Mod Version is required.'); return;
+                }
+                const parsedFileSize = fileSizeInput ? parseInt(fileSizeInput.value, 10) : 0;
+                if (parsedFileSize > 640 * 1024 * 1024) {
+                    const hasScan = getFirstTruthyValue('input[name="manualFileScanUrl"]') || getFirstTruthyValue('input[name="manualSiteScanUrl"]');
+                    if (!hasScan) {
+                        highlightAndScrollTo(document.getElementById('manualFileScanUrl') || document.getElementById('manualFileScanGroup'), 'Files larger than 640MB require a manual scan URL before publishing.');
+                        return;
+                    }
+                }
+                if (document.getElementById('ageRating') && !document.getElementById('ageRating').value) {
+                    highlightAndScrollTo(document.getElementById('ageRatingWrapper'), 'Error: Age Rating is required.'); return;
+                }
+                if (document.getElementById('developerName') && !document.getElementById('developerName').value.trim()) {
+                    highlightAndScrollTo(document.getElementById('developerName'), 'Error: Developer name is required.'); return;
+                }
+                const hasSavedIcon = <%= file.iconUrl ? 'true' : 'false' %>;
+                if (document.getElementById('modIcon') && document.getElementById('modIcon').files.length === 0 && !hasSavedIcon) {
+                    highlightAndScrollTo(document.getElementById('modIcon'), 'Error: An icon is required to publish this mod.'); return;
+                }
             }
 
             actionTypeInput.value = 'submit';
@@ -2711,7 +2823,8 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmSubmitBtn.addEventListener('click', () => {
             if(actionTypeInput && mainForm) {
                 actionTypeInput.value = 'submit';
-                mainForm.noValidate = false;
+                const isVariantActive = Boolean(isVariantCheckbox && isVariantCheckbox.checked);
+                mainForm.noValidate = isVariantActive;
                 mainForm.submit();
             }
         });

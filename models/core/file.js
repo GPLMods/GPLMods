@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const FileSchema = new Schema({
-    name: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    name: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     slug: { 
         type: String, 
         lowercase: true,
         trim: true,
     },
-    version: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
-    modDescription: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
-    modFeatures: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    version: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
+    modDescription: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
+    modFeatures: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     officialDescription: { type: String },
     whatsNew: { type: String },
     importantNote: { type: String, trim: true },
@@ -21,8 +21,8 @@ const FileSchema = new Schema({
         default: 'NA'
     },
     
-    iconKey: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
-    screenshotKeys: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    iconKey: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
+    screenshotKeys: { type: [String], required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     videoUrl: { type: String }, 
     directDownloadUrl: { type: String, trim: true },
     iosPackageId: { type: String, trim: true },   
@@ -61,14 +61,14 @@ const FileSchema = new Schema({
         default: 'Extract all parts into the same folder and run the installer.'
     },
 
-    category: { type: String, required: function() { return this.status !== 'processing' && this.status !== 'draft'; }, enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] },
+    category: { type: String, required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; }, enum:['windows', 'android', 'ios-jailed', 'ios-jailbroken', 'wordpress', 'n/a'] },
     license: {
         type: Schema.Types.ObjectId,
         ref: 'License',
         default: null
     },
     subCategory: { type: String },
-    platforms: { type: [String], required: function() { return this.status !== 'processing' && this.status !== 'draft'; } },
+    platforms: { type: [String], required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },
     architectures: { 
         type: [String], 

@@ -6,6 +6,8 @@ import SidebarBranding from '../components/dashboard/SidebarBranding'
 AdminJS.UserComponents.SidebarBranding = SidebarBranding
 import ActionRedirect from '../components/actions/ActionRedirect'
 AdminJS.UserComponents.ActionRedirect = ActionRedirect
+import DownloadInspector from '../components/actions/DownloadInspector'
+AdminJS.UserComponents.DownloadInspector = DownloadInspector
 import VariantBadge from '../components/cells/VariantBadge'
 AdminJS.UserComponents.VariantBadge = VariantBadge
 import AvatarCell from '../components/cells/AvatarCell'

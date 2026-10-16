@@ -7,6 +7,7 @@ const Components = {
     Dashboard: componentLoader.add('Dashboard', path.resolve(__dirname, './dashboard/CustomDashboard.jsx')),
     SidebarBranding: componentLoader.override('SidebarBranding', path.resolve(__dirname, './dashboard/SidebarBranding.jsx')),
     ActionRedirect: componentLoader.add('ActionRedirect', path.resolve(__dirname, './actions/ActionRedirect.jsx')),
+    DownloadInspector: componentLoader.add('DownloadInspector', path.resolve(__dirname, './actions/DownloadInspector.jsx')),
     VariantBadge: componentLoader.add('VariantBadge', path.resolve(__dirname, './cells/VariantBadge.jsx')),
     AvatarCell: componentLoader.add('AvatarCell', path.resolve(__dirname, './cells/AvatarCell.jsx')),
     ImagePreview: componentLoader.add('ImagePreview', path.resolve(__dirname, './cells/ImagePreview.jsx'))

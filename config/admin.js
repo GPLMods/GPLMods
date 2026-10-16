@@ -547,6 +547,7 @@ async function createAdminRouter() {
                 options: {
                     navigation: modsNav,
                     listProperties: ['iconKey', 'name', 'ageRating', 'fileSize', 'version', 'isVariant', 'status', 'showInRepo', 'category'],
+                    filterProperties: ['name', 'category', 'status', 'isVariant', 'masterFile', 'developer', 'uploader', 'certification'],
                     editProperties: [
                         'name', 'version', 'ageRating', 'developer', 'uploader', 'modDescription', 'modFeatures', 'officialDescription', 'importantNote',
                         'whatsNew', 'category', 'status', 'rejectionReason', 'certification', 'isLatestVersion', 'iosPackageId',
@@ -606,12 +607,12 @@ async function createAdminRouter() {
                         'downloadParts.partVirusTotalPositiveCount': { isVisible: { edit: false, show: true, list: false } },
                         'downloadParts.partVirusTotalTotalScans': { isVisible: { edit: false, show: true, list: false } },
                         isVariant: {
-                            components: { list: Components.VariantBadge },
-                            isDisabled: true 
+                            components: { list: Components.VariantBadge, show: Components.VariantBadge },
+                            isVisible: { list: true, show: true, edit: true, filter: true }
                         },
                         masterFile: {
                             description: 'If this is a Variant, this is the ID of the original Master App it belongs to.',
-                            isDisabled: true 
+                            isVisible: { list: true, show: true, edit: true, filter: true }
                         }
                     },
                     actions: {
@@ -693,11 +694,44 @@ async function createAdminRouter() {
                             }
                         },
                         testDownload: {
-                            actionType: 'record', icon: 'Download', component: Components.ActionRedirect,
+                            actionType: 'record', icon: 'Download', component: Components.DownloadInspector,
                             handler: async (request, response, context) => {
+                                const fileDoc = await File.findById(context.record.params._id);
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
-                                updatedRecord.params.redirectUrl = `/download-file/${context.record.params._id}`;
-                                return { record: updatedRecord, notice: { message: 'Initiating test download...', type: 'success' } };
+                                if (fileDoc) {
+                                    updatedRecord.params.externalDownloadUrl = fileDoc.externalDownloadUrl || '';
+                                    updatedRecord.params.fileKey = fileDoc.fileKey || '';
+                                    updatedRecord.params.directDownloadUrl = fileDoc.directDownloadUrl || '';
+                                    updatedRecord.params.isMultiPart = Boolean(fileDoc.isMultiPart);
+                                    updatedRecord.params.fileSize = fileDoc.fileSize || '';
+                                }
+                                return { record: updatedRecord, notice: { message: 'Download inspected safely.', type: 'info' } };
+                            }
+                        },
+                        viewVariants: {
+                            actionType: 'record', icon: 'Layers', label: 'Variants / Master', component: Components.ActionRedirect,
+                            handler: async (request, response, context) => {
+                                const rec = context.record;
+                                const isVar = rec.params.isVariant === true || rec.params.isVariant === 'true';
+                                const updatedRecord = rec.toJSON(context.currentAdmin);
+                                if (isVar && rec.params.masterFile) {
+                                    const targetUrl = `/admin/resources/File/records/${rec.params.masterFile}/show`;
+                                    updatedRecord.params.redirectUrl = targetUrl;
+                                    return {
+                                        record: updatedRecord,
+                                        redirectUrl: targetUrl,
+                                        notice: { message: `Opening Master Mod (${rec.params.masterFile})...`, type: 'info' }
+                                    };
+                                } else {
+                                    const variantCount = await File.countDocuments({ masterFile: rec.params._id });
+                                    const targetUrl = `/admin/resources/File?filters.masterFile=${rec.params._id}`;
+                                    updatedRecord.params.redirectUrl = targetUrl;
+                                    return {
+                                        record: updatedRecord,
+                                        redirectUrl: targetUrl,
+                                        notice: { message: `Found ${variantCount} variant(s) for this master mod.`, type: 'info' }
+                                    };
+                                }
                             }
                         },
                         viewVirusTotal: {
@@ -1256,13 +1290,28 @@ async function createAdminRouter() {
                     navigation: systemNav,
                     actions: {
                         new: { isAccessible: async () => { const count = await SiteState.countDocuments(); return count === 0; } },
-                        delete: { isAccessible: false } 
+                        delete: { isAccessible: false },
+                        edit: {
+                            after: async (response) => {
+                                if (typeof global.invalidateSiteStateCache === 'function') {
+                                    global.invalidateSiteStateCache();
+                                }
+                                return response;
+                            }
+                        }
                     },
                     listProperties: ['status', 'targetAudience', 'enableGeminiChatbot', 'enableLinkvertise', 'enableAutomationEngine', 'updatedAt'],
                     showProperties: [
                         'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
                         'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 'unavailableTitle',
-                        'unavailableMessage', 'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
+                        'unavailableMessage',
+                        'unavailableServices.downloads.enabled', 'unavailableServices.downloads.title', 'unavailableServices.downloads.message',
+                        'unavailableServices.uploads.enabled', 'unavailableServices.uploads.title', 'unavailableServices.uploads.message',
+                        'unavailableServices.registration.enabled', 'unavailableServices.registration.title', 'unavailableServices.registration.message',
+                        'unavailableServices.community.enabled', 'unavailableServices.community.title', 'unavailableServices.community.message',
+                        'unavailableServices.iosStore.enabled', 'unavailableServices.iosStore.title', 'unavailableServices.iosStore.message',
+                        'unavailableServices.customList',
+                        'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
                         'comingSoonEnableTimer', 'comingSoonLaunchDate', 'comingSoonAllowedRoles', 'comingSoonAllowedUsers',
                         'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
@@ -1274,7 +1323,14 @@ async function createAdminRouter() {
                     editProperties: [
                         'status', 'targetAudience', 'targetUsername', 'enableGeminiChatbot', 'geminiHiddenPages',
                         'enableAutomationEngine', 'maintenanceTitle', 'maintenanceMessage', 
-                        'unavailableTitle', 'unavailableMessage', 'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
+                        'unavailableTitle', 'unavailableMessage',
+                        'unavailableServices.downloads.enabled', 'unavailableServices.downloads.title', 'unavailableServices.downloads.message',
+                        'unavailableServices.uploads.enabled', 'unavailableServices.uploads.title', 'unavailableServices.uploads.message',
+                        'unavailableServices.registration.enabled', 'unavailableServices.registration.title', 'unavailableServices.registration.message',
+                        'unavailableServices.community.enabled', 'unavailableServices.community.title', 'unavailableServices.community.message',
+                        'unavailableServices.iosStore.enabled', 'unavailableServices.iosStore.title', 'unavailableServices.iosStore.message',
+                        'unavailableServices.customList',
+                        'comingSoonTitle', 'comingSoonMessage', 'comingSoonCustomText',
                         'comingSoonEnableTimer', 'comingSoonLaunchDate', 'comingSoonAllowedRoles', 'comingSoonAllowedUsers',
                         'comingSoonAutoPublishOnTimerEnd', 'enableLinkvertise', 'linkvertiseId', 'adNetworkBaseUrl',
                         'socialLinks.youtube', 'socialLinks.discord', 'socialLinks.github', 'socialLinks.twitter',
@@ -1283,6 +1339,16 @@ async function createAdminRouter() {
                         'downloadPagePlatformDocs.android', 'downloadPagePlatformDocs.ios', 'downloadPagePlatformDocs.windows', 'downloadPagePlatformDocs.wordpress'
                     ],
                     properties: {
+                        'unavailableServices.downloads.enabled': { description: 'OWNER OVERRIDE: Set mod downloads to temporarily unavailable for ALL users, admins, etc. Only Owner bypasses.' },
+                        'unavailableServices.downloads.title': { description: 'Title shown when downloads are unavailable' },
+                        'unavailableServices.downloads.message': { type: 'textarea', description: 'Message shown when downloads are unavailable' },
+                        'unavailableServices.uploads.enabled': { description: 'OWNER OVERRIDE: Set mod uploads to temporarily unavailable for ALL users, admins, etc. Only Owner bypasses.' },
+                        'unavailableServices.uploads.title': { description: 'Title shown when uploads are unavailable' },
+                        'unavailableServices.uploads.message': { type: 'textarea', description: 'Message shown when uploads are unavailable' },
+                        'unavailableServices.registration.enabled': { description: 'OWNER OVERRIDE: Temporarily close new user registration.' },
+                        'unavailableServices.community.enabled': { description: 'OWNER OVERRIDE: Temporarily disable clubs, reviews, and comments.' },
+                        'unavailableServices.iosStore.enabled': { description: 'OWNER OVERRIDE: Temporarily disable iOS Store & DNS endpoints.' },
+                        'unavailableServices.customList': { isArray: true, description: 'OWNER OVERRIDE: Define any route path pattern (e.g. /tools, /api/custom) to make temporarily unavailable for everyone.' },
                         'downloadPagePlatformDocs.android': { description: 'Platform Guide: Select DocPage displayed on all Android download pages (e.g. APK Guide).' },
                         'downloadPagePlatformDocs.ios': { description: 'Platform Guide: Select DocPage displayed on all iOS download pages (e.g. IPA Guide).' },
                         'downloadPagePlatformDocs.windows': { description: 'Platform Guide: Select DocPage displayed on all Windows download pages.' },
