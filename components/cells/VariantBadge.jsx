@@ -14,7 +14,7 @@ const VariantBadge = (props) => {
     if (isVar && masterId) {
       window.location.href = `/admin/resources/File/records/${masterId}/show`;
     } else {
-      window.location.href = `/admin/resources/File?filters.masterFile=${recordId}`;
+      window.location.href = `/admin/resources/File/actions/list?filters.masterFile=${recordId}`;
     }
   };
 
@@ -56,7 +56,7 @@ const VariantBadge = (props) => {
 
   return (
     <a
-      href={`/admin/resources/File?filters.masterFile=${recordId}`}
+      href={`/admin/resources/File/actions/list?filters.masterFile=${recordId}`}
       onClick={handleClick}
       title="Click to view all Variants of this Master Mod"
       className="admin-custom-chip"

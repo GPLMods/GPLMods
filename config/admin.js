@@ -724,7 +724,7 @@ async function createAdminRouter() {
                                     };
                                 } else {
                                     const variantCount = await File.countDocuments({ masterFile: rec.params._id });
-                                    const targetUrl = `/admin/resources/File?filters.masterFile=${rec.params._id}`;
+                                    const targetUrl = `/admin/resources/File/actions/list?filters.masterFile=${rec.params._id}`;
                                     updatedRecord.params.redirectUrl = targetUrl;
                                     return {
                                         record: updatedRecord,

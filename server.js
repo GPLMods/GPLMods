@@ -46,7 +46,7 @@ const cron = require('node-cron');
 const FormData = require('form-data');
 const { Upload } = require("@aws-sdk/lib-storage");
 const Filter = require('bad-words');
-const { isbot } = require('isbot');
+const { isABot, isbot, getBotName } = require('./utils/botDetector');
 const zlib = require('zlib');
 const otplib = require('otplib');
 const { checkDomain } = require('./utils/tempMailDetector');
@@ -1817,12 +1817,14 @@ app.use(async (req, res, next) => {
         const svc = cachedSiteState.unavailableServices;
         const reqPath = req.path.toLowerCase();
 
-        // Check essential system assets that must never be blocked
+        // Check essential system assets, scripts, stylesheets, and sitemaps that must never be blocked
         const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') || 
                               reqPath.startsWith('/css') || reqPath.startsWith('/images') || 
                               reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
                               reqPath.startsWith('/favicon') || reqPath.startsWith('/admin') ||
-                              reqPath.startsWith('/.adminjs') || reqPath.startsWith('/api/devtool');
+                              reqPath.startsWith('/.adminjs') || reqPath.startsWith('/api/devtool') ||
+                              reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
+                              /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
 
         if (!isStaticAsset && !isOwner) {
             let blockedService = null;
