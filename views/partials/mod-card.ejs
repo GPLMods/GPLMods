@@ -60,7 +60,7 @@
         <div class="download-overlay" style="pointer-events: auto;">
             
             <!-- View Mod Button -->
-            <a href="<%= cardModLink %>" class="overlay-button overlay-btn-primary" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
+            <a href="<%= cardModLink %>" class="overlay-button overlay-btn-primary" aria-label="View <%= file.name %> details" style="position: relative; z-index: 30; margin-bottom: 10px;">View Mod</a>
             
             <!-- Add to Wishlist Button -->
             <% if (typeof user !== 'undefined' && user && user.whitelist) { %>

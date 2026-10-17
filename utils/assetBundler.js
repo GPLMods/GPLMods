@@ -114,14 +114,6 @@ function assetOptimizationMiddleware() {
         // 1. Mobile Client Hints for responsive asset serving
         res.setHeader('Accept-CH', 'Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-CH-Viewport-Width');
 
-        // 2. Preconnect headers for faster Google Fonts and CDN resource discovery
-        res.setHeader('Link', [
-            '<https://fonts.googleapis.com>; rel=preconnect',
-            '<https://fonts.gstatic.com>; rel=preconnect; crossorigin',
-            '<https://cdnjs.cloudflare.com>; rel=preconnect; crossorigin',
-            '<https://cdn.jsdelivr.net>; rel=dns-prefetch'
-        ].join(', '));
-
         const reqPath = req.path.toLowerCase();
 
         // 3. Transparent Minified Asset Delivery
@@ -144,6 +136,36 @@ function assetOptimizationMiddleware() {
         if (reqPath === '/js/main.js' || reqPath === '/js/main.min.js') {
             const minJsPath = path.join(publicDir, 'js', 'main.min.js');
             const asset = getCachedAsset(minJsPath, null, 'application/javascript; charset=UTF-8');
+            if (asset) {
+                res.setHeader('Content-Type', asset.mimeType);
+                res.setHeader('ETag', asset.etag);
+                res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+                res.setHeader('Vary', 'Accept-Encoding');
+                if (req.headers['if-none-match'] === asset.etag) {
+                    return res.status(304).end();
+                }
+                return res.send(asset.content);
+            }
+        }
+
+        if (reqPath === '/js/notifications.js' || reqPath === '/js/notifications.min.js') {
+            const minNotifJs = path.join(publicDir, 'js', 'notifications.min.js');
+            const asset = getCachedAsset(minNotifJs, null, 'application/javascript; charset=UTF-8');
+            if (asset) {
+                res.setHeader('Content-Type', asset.mimeType);
+                res.setHeader('ETag', asset.etag);
+                res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+                res.setHeader('Vary', 'Accept-Encoding');
+                if (req.headers['if-none-match'] === asset.etag) {
+                    return res.status(304).end();
+                }
+                return res.send(asset.content);
+            }
+        }
+
+        if (reqPath === '/js/currency-exchange.js' || reqPath === '/js/currency-exchange.min.js') {
+            const minCurrJs = path.join(publicDir, 'js', 'currency-exchange.min.js');
+            const asset = getCachedAsset(minCurrJs, null, 'application/javascript; charset=UTF-8');
             if (asset) {
                 res.setHeader('Content-Type', asset.mimeType);
                 res.setHeader('ETag', asset.etag);

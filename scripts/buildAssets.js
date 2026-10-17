@@ -41,6 +41,28 @@ async function buildAssets() {
         }
     }
 
+    // 4. Minify notifications.js -> notifications.min.js
+    const notifJsPath = path.join(publicDir, 'js', 'notifications.js');
+    if (fs.existsSync(notifJsPath)) {
+        const raw = fs.readFileSync(notifJsPath, 'utf8');
+        const minified = await terser.minify(raw, { compress: true, mangle: true });
+        if (minified.code) {
+            fs.writeFileSync(path.join(publicDir, 'js', 'notifications.min.js'), minified.code);
+            console.log(`[AssetBuilder] Minified notifications.js: ${raw.length} -> ${minified.code.length} bytes (-${((raw.length - minified.code.length) / raw.length * 100).toFixed(1)}%)`);
+        }
+    }
+
+    // 5. Minify currency-exchange.js -> currency-exchange.min.js
+    const currJsPath = path.join(publicDir, 'js', 'currency-exchange.js');
+    if (fs.existsSync(currJsPath)) {
+        const raw = fs.readFileSync(currJsPath, 'utf8');
+        const minified = await terser.minify(raw, { compress: true, mangle: true });
+        if (minified.code) {
+            fs.writeFileSync(path.join(publicDir, 'js', 'currency-exchange.min.js'), minified.code);
+            console.log(`[AssetBuilder] Minified currency-exchange.js: ${raw.length} -> ${minified.code.length} bytes (-${((raw.length - minified.code.length) / raw.length * 100).toFixed(1)}%)`);
+        }
+    }
+
     console.log('[AssetBuilder] Static asset optimization completed successfully!');
 }
 

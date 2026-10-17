@@ -784,9 +784,13 @@ async function getSmartImageUrl(key) {
         return key;
     }
 
-    // Otherwise, it's a Backblaze key, so generate the secure signed URL
+    // Otherwise, it's a Backblaze key, so generate the secure signed URL with 30-day client cache
     try {
-        return await getSignedUrl(s3Client, new GetObjectCommand({ Bucket: process.env.B2_BUCKET_NAME, Key: key }), { expiresIn: 3600 });
+        return await getSignedUrl(s3Client, new GetObjectCommand({
+            Bucket: process.env.B2_BUCKET_NAME,
+            Key: key,
+            ResponseCacheControl: 'public, max-age=2592000, immutable'
+        }), { expiresIn: 86400 });
     } catch (error) {
         console.error(`Could not sign URL for key: ${key}`);
         return '/images/default-avatar.png';

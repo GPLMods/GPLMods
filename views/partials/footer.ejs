@@ -126,7 +126,7 @@
                     padding-bottom: 30px;
                     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                 }
-                .footer-column h4 {
+                .footer-column h3, .footer-column h4 {
                     color: var(--gold);
                     font-size: 0.95rem;
                     font-weight: 700;
@@ -137,7 +137,7 @@
                     letter-spacing: 0.6px;
                     text-transform: uppercase;
                 }
-                .footer-column h4 i {
+                .footer-column h3 i, .footer-column h4 i {
                     font-size: 1.05em;
                 }
                 .footer-column ul {
@@ -175,7 +175,7 @@
                         margin: 25px 0;
                         padding-bottom: 25px;
                     }
-                    .footer-column h4 {
+                    .footer-column h3, .footer-column h4 {
                         justify-content: center;
                         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
                         padding-bottom: 8px;
@@ -190,7 +190,7 @@
             <div class="footer-nav-grid">
                 <!-- Column 1: Creator & Uploads -->
                 <div class="footer-column">
-                    <h4><i class="fas fa-cloud-upload-alt"></i> Creator &amp; Uploads</h4>
+                    <h3><i class="fas fa-cloud-upload-alt"></i> Creator &amp; Uploads</h3>
                     <ul>
                         <% if (user) { %>
                             <li><a href="/upload" rel="nofollow">Upload A New Mod</a></li>
@@ -206,7 +206,7 @@
 
                 <!-- Column 2: Account & VIP -->
                 <div class="footer-column">
-                    <h4><i class="fas fa-user-circle"></i> Account &amp; VIP</h4>
+                    <h3><i class="fas fa-user-circle"></i> Account &amp; VIP</h3>
                     <ul>
                         <% if (user) { %>
                             <li><a href="/dashboard">User Dashboard</a></li>
@@ -227,7 +227,7 @@
 
                 <!-- Column 3: Community & Support -->
                 <div class="footer-column">
-                    <h4><i class="fas fa-users"></i> Community &amp; Support</h4>
+                    <h3><i class="fas fa-users"></i> Community &amp; Support</h3>
                     <ul>
                         <li><a href="<%= (typeof socialLinks !== 'undefined' && socialLinks.telegram) ? socialLinks.telegram : 'https://t.me/+PFCCNra6NEk0YmRl' %>" target="_blank" rel="noopener noreferrer" style="color: #29b6f6; font-weight: 600;"><i class="fab fa-telegram" style="margin-right: 6px;"></i>Telegram Channel</a></li>
                         <li><a href="/community">Community Forums</a></li>
@@ -243,7 +243,7 @@
 
                 <!-- Column 4: Trust, Legal & About -->
                 <div class="footer-column">
-                    <h4><i class="fas fa-shield-alt"></i> Trust &amp; Legal</h4>
+                    <h3><i class="fas fa-shield-alt"></i> Trust &amp; Legal</h3>
                     <ul>
                         <li><a href="/why-choose-us">Why Choose Us</a></li>
                         <li><a href="/understanding-scans">Understanding Scans</a></li>
