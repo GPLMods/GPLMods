@@ -17,9 +17,9 @@
             <% } %>
         </div>
         
-        <!-- Image Container Logic (Prevents Cropping) -->
+        <!-- Image Container Logic (Prevents Cropping & Layout Shifts) -->
         <div class="mod-card-image">
-            <img src="<%= file.iconUrl %>" alt="<%= file.name %>">
+            <img src="<%= file.iconUrl %>" alt="<%= file.name %>" width="250" height="180" loading="lazy" decoding="async">
         </div>
         
         <% 

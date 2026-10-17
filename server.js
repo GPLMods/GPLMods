@@ -1915,12 +1915,12 @@ app.use(async (req, res, next) => {
         const reqPath = req.path.toLowerCase();
 
         // Check essential system assets, scripts, stylesheets, and sitemaps that must never be blocked
-        const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') || 
-                              reqPath.startsWith('/css') || reqPath.startsWith('/images') || 
-                              reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
-                              reqPath.startsWith('/favicon') || reqPath.startsWith('/api/devtool') ||
-                              reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
-                              /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
+        const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') ||
+            reqPath.startsWith('/css') || reqPath.startsWith('/images') ||
+            reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
+            reqPath.startsWith('/favicon') || reqPath.startsWith('/api/devtool') ||
+            reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
+            /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
 
         if (!isStaticAsset && !isOwner) {
             let blockedService = null;
@@ -11358,7 +11358,7 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 notifyClubModFeeds(justUploadedFile, false);
                 const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
                 const modUrl = `${baseUrl}/mods/${encodeURIComponent(justUploadedFile.category)}/${encodeURIComponent(justUploadedFile.slug || justUploadedFile._id)}`;
-                submitToGoogleIndex(modUrl, 'URL_UPDATED').catch(() => {});
+                submitToGoogleIndex(modUrl, 'URL_UPDATED').catch(() => { });
             }
             res.redirect('/my-uploads?success=Upload complete and submitted for review!');
         }

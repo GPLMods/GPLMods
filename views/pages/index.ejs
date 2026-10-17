@@ -184,7 +184,7 @@
     <% if (isGlobal) { %>
         <% if (allCouncilMods.length > 0) { %>
             <section class="featured-section council-featured-section" id="featured-council-global">
-                <img src="<%= allCouncilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-global" alt="<%= allCouncilMods[0].name %> Backdrop">
+                <img src="<%= allCouncilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-global" alt="<%= allCouncilMods[0].name %> Backdrop" width="800" height="400" fetchpriority="high" decoding="async">
 
                 <div class="container" style="position: relative;">
                     <div class="featured-carousel" id="featured-carousel-global">
@@ -204,7 +204,7 @@
                                             <div class="mod-type-tag"><%= mod.version %></div>
                                         <% } %>
                                     </div>
-                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon" width="240" height="240" <%- index === 0 ? 'fetchpriority="high"' : 'loading="lazy"' %> decoding="async">
                                 </div>
                                 <div class="featured-content">
                                     <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>
@@ -282,7 +282,7 @@
             if (councilMods.length > 0) { 
         %>
             <section class="featured-section council-featured-section" id="featured-council-<%= platformName %>" <%- `style="${pIdx === 0 ? '' : 'display: none;'}"` %>>
-                <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="<%= councilMods[0].name %> Backdrop">
+                <img src="<%= councilMods[0].iconUrl %>" class="featured-bg-image" id="featured-bg-<%= platformName %>" alt="<%= councilMods[0].name %> Backdrop" width="800" height="400" <%- pIdx === 0 ? 'fetchpriority="high"' : 'loading="lazy"' %> decoding="async">
 
                 <div class="container" style="position: relative;">
                     <div class="featured-carousel" id="featured-carousel-<%= platformName %>">
@@ -299,7 +299,7 @@
                                             <div class="mod-type-tag"><%= mod.version %></div>
                                         <% } %>
                                     </div>
-                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">
+                                    <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon" width="240" height="240" <%- (index === 0 && pIdx === 0) ? 'fetchpriority="high"' : 'loading="lazy"' %> decoding="async">
                                 </div>
                                 <div class="featured-content">
                                     <% const councilModSlug = mod.slug || (typeof slugify === 'function' ? slugify(mod.name) : mod._id); %>

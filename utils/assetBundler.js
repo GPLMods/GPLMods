@@ -78,13 +78,38 @@ async function minifyJs(jsContent) {
     }
 }
 
+// In-memory cache for fast, zero-disk-I/O delivery of minified critical assets
+const assetCache = new Map();
+
+function getCachedAsset(filePath, minifierFn, mimeType) {
+    try {
+        if (!fs.existsSync(filePath)) return null;
+        const stats = fs.statSync(filePath);
+        const cacheKey = `${filePath}:${stats.mtimeMs}`;
+        if (assetCache.has(cacheKey)) {
+            return assetCache.get(cacheKey);
+        }
+        const rawContent = fs.readFileSync(filePath, 'utf8');
+        const minified = minifierFn ? minifierFn(rawContent) : rawContent;
+        const etag = `W/"${Buffer.byteLength(minified)}-${stats.mtimeMs}"`;
+        const cached = { content: minified, etag, mimeType };
+        assetCache.set(cacheKey, cached);
+        return cached;
+    } catch (e) {
+        return null;
+    }
+}
+
 /**
  * Express middleware that adds mobile performance and SEO acceleration headers:
  * - Preconnect to Google Fonts and CDNs
  * - Core Web Vitals caching headers
  * - Client Hints for mobile optimization
+ * - Transparent delivery of minified CSS and JS
  */
 function assetOptimizationMiddleware() {
+    const publicDir = path.join(__dirname, '..', 'public');
+
     return (req, res, next) => {
         // 1. Mobile Client Hints for responsive asset serving
         res.setHeader('Accept-CH', 'Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-CH-Viewport-Width');
@@ -93,13 +118,62 @@ function assetOptimizationMiddleware() {
         res.setHeader('Link', [
             '<https://fonts.googleapis.com>; rel=preconnect',
             '<https://fonts.gstatic.com>; rel=preconnect; crossorigin',
+            '<https://cdnjs.cloudflare.com>; rel=preconnect; crossorigin',
             '<https://cdn.jsdelivr.net>; rel=dns-prefetch'
         ].join(', '));
 
-        // 3. Static asset caching headers
         const reqPath = req.path.toLowerCase();
-        if (reqPath.match(/\.(css|js|woff2|woff|ttf|png|jpg|jpeg|gif|svg|ico|webp)$/)) {
-            // Static assets: cache for 30 days
+
+        // 3. Transparent Minified Asset Delivery
+        if (reqPath === '/css/style.css' || reqPath === '/css/style.min.css') {
+            const minCssPath = path.join(publicDir, 'css', 'style.min.css');
+            const asset = getCachedAsset(minCssPath, null, 'text/css; charset=UTF-8') ||
+                          getCachedAsset(path.join(publicDir, 'css', 'style.css'), minifyCss, 'text/css; charset=UTF-8');
+            if (asset) {
+                res.setHeader('Content-Type', asset.mimeType);
+                res.setHeader('ETag', asset.etag);
+                res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+                res.setHeader('Vary', 'Accept-Encoding');
+                if (req.headers['if-none-match'] === asset.etag) {
+                    return res.status(304).end();
+                }
+                return res.send(asset.content);
+            }
+        }
+
+        if (reqPath === '/js/main.js' || reqPath === '/js/main.min.js') {
+            const minJsPath = path.join(publicDir, 'js', 'main.min.js');
+            const asset = getCachedAsset(minJsPath, null, 'application/javascript; charset=UTF-8');
+            if (asset) {
+                res.setHeader('Content-Type', asset.mimeType);
+                res.setHeader('ETag', asset.etag);
+                res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+                res.setHeader('Vary', 'Accept-Encoding');
+                if (req.headers['if-none-match'] === asset.etag) {
+                    return res.status(304).end();
+                }
+                return res.send(asset.content);
+            }
+        }
+
+        if (reqPath === '/css/notifications.css' || reqPath === '/css/notifications.min.css') {
+            const minNotifPath = path.join(publicDir, 'css', 'notifications.min.css');
+            const asset = getCachedAsset(minNotifPath, null, 'text/css; charset=UTF-8') ||
+                          getCachedAsset(path.join(publicDir, 'css', 'notifications.css'), minifyCss, 'text/css; charset=UTF-8');
+            if (asset) {
+                res.setHeader('Content-Type', asset.mimeType);
+                res.setHeader('ETag', asset.etag);
+                res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
+                res.setHeader('Vary', 'Accept-Encoding');
+                if (req.headers['if-none-match'] === asset.etag) {
+                    return res.status(304).end();
+                }
+                return res.send(asset.content);
+            }
+        }
+
+        // 4. Static asset caching headers
+        if (reqPath.match(/\.(css|js|woff2|woff|ttf|png|jpg|jpeg|gif|svg|ico|webp|json)$/)) {
             res.setHeader('Cache-Control', 'public, max-age=2592000, stale-while-revalidate=86400');
             res.setHeader('Vary', 'Accept-Encoding');
         }

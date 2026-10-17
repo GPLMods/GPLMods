@@ -637,11 +637,9 @@
 <% } %>
 <!-- =================================================== -->
         
-        <!-- ======== CUSTOM AI & SUPPORT CHAT WIDGET ======== -->
+        <!-- ======== CUSTOM AI & SUPPORT CHAT WIDGET (Lazy-Loaded On Demand) ======== -->
         <% if (typeof showChatbot !== 'undefined' && showChatbot && (typeof is2FAVerification === 'undefined' || !is2FAVerification)) { %>
-        <script src="/socket.io/socket.io.js"></script>
-        <!-- Import Lightweight Emoji Picker Web Component -->
-        <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
         <style>
             /* Floating Button */
             .gpl-chat-btn {
@@ -1464,6 +1462,42 @@
                 sessionStorage.removeItem('gplChatOpen');
             }
 
+            // On-demand chat dependency loader (socket.io and emoji-picker)
+            let chatDepsLoading = false;
+            let chatDepsLoaded = false;
+            const chatDepsQueue = [];
+
+            function ensureChatDependencies(onReady) {
+                if (chatDepsLoaded || typeof io !== 'undefined') {
+                    chatDepsLoaded = true;
+                    if (onReady) onReady();
+                    return;
+                }
+                if (onReady) chatDepsQueue.push(onReady);
+                if (chatDepsLoading) return;
+                chatDepsLoading = true;
+
+                const loadScript = (src, isModule = false) => new Promise(resolve => {
+                    const s = document.createElement('script');
+                    s.src = src;
+                    if (isModule) s.type = 'module';
+                    s.onload = () => resolve();
+                    s.onerror = () => resolve();
+                    document.body.appendChild(s);
+                });
+
+                Promise.all([
+                    (typeof io === 'undefined') ? loadScript('/socket.io/socket.io.js') : Promise.resolve(),
+                    (!window.customElements || !customElements.get('emoji-picker')) ? loadScript('https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js', true) : Promise.resolve()
+                ]).then(() => {
+                    chatDepsLoaded = true;
+                    chatDepsLoading = false;
+                    while (chatDepsQueue.length) {
+                        try { chatDepsQueue.shift()(); } catch (e) {}
+                    }
+                });
+            }
+
             function openChatWindow() {
                 if (!isPolicyAccepted()) {
                     const polModal = document.getElementById('policy-modal-container');
@@ -1478,9 +1512,11 @@
                 if (chatBtn) chatBtn.classList.add('active');
                 if (greeting) greeting.classList.remove('show');
                 sessionStorage.setItem('gplChatOpen', 'true');
-                if (typeof initSupportSocket === 'function') {
-                    initSupportSocket();
-                }
+                ensureChatDependencies(() => {
+                    if (typeof initSupportSocket === 'function') {
+                        initSupportSocket();
+                    }
+                });
                 if (chatInput) {
                     setTimeout(() => chatInput.focus(), 120);
                 }
@@ -1509,6 +1545,8 @@
             }
 
             if (chatBtn) {
+                chatBtn.addEventListener('mouseenter', () => ensureChatDependencies(), { once: true, passive: true });
+                chatBtn.addEventListener('touchstart', () => ensureChatDependencies(), { once: true, passive: true });
                 chatBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     toggleChatWindow();

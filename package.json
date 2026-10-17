@@ -25,7 +25,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "node adminloader.mjs",
+    "build:assets": "node scripts/buildAssets.js",
+    "build": "node scripts/buildAssets.js && node adminloader.mjs",
     "dev": "nodemon server.js"
   },
   "dependencies": {
