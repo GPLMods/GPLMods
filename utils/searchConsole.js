@@ -12,29 +12,73 @@
  */
 
 const { google } = require('googleapis');
+const axios = require('axios');
 
 // 24-hour cache for search queries to stay within Google API quota
 const analyticsCache = new Map();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Initializes Google Auth Client using Service Account credentials
+ * Extracts and normalizes Google Service Account credentials from environment
  */
-function getGoogleAuthClient() {
-    const clientEmail = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL || process.env.GSC_CLIENT_EMAIL;
-    let privateKey = process.env.GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY || process.env.GSC_PRIVATE_KEY;
+function getGoogleCredentials() {
+    let clientEmail = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL 
+        || process.env.GSC_CLIENT_EMAIL 
+        || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL 
+        || process.env.GOOGLE_INDEXING_CLIENT_EMAIL 
+        || process.env.GOOGLE_CLIENT_EMAIL;
+    let privateKey = process.env.GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY 
+        || process.env.GSC_PRIVATE_KEY 
+        || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY 
+        || process.env.GOOGLE_INDEXING_PRIVATE_KEY 
+        || process.env.GOOGLE_PRIVATE_KEY;
+
+    const rawCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+        || process.env.GOOGLE_CREDENTIALS
+        || process.env.GOOGLE_CREDENTIALS_JSON
+        || process.env.GOOGLE_CREDENTIALS_BASE64;
+
+    if (rawCredentials && (!clientEmail || !privateKey)) {
+        let jsonString = rawCredentials.trim();
+        let parsed = null;
+        if (jsonString.startsWith('{')) {
+            try { parsed = JSON.parse(jsonString); } catch (_) {}
+        }
+        if (!parsed) {
+            try {
+                const decoded = Buffer.from(jsonString, 'base64').toString('utf-8').trim();
+                parsed = JSON.parse(decoded);
+            } catch (_) {}
+        }
+        if (parsed && typeof parsed === 'object') {
+            clientEmail = parsed.client_email || clientEmail;
+            privateKey = parsed.private_key || privateKey;
+        }
+    }
 
     if (!clientEmail || !privateKey) {
         return null;
     }
 
-    // Fix escaped newlines in env private key
-    privateKey = privateKey.replace(/\\n/g, '\n');
+    return {
+        clientEmail,
+        privateKey: privateKey.replace(/\\n/g, '\n')
+    };
+}
+
+/**
+ * Initializes Google Auth Client using Service Account credentials
+ */
+function getGoogleAuthClient() {
+    const creds = getGoogleCredentials();
+    if (!creds) {
+        return null;
+    }
 
     try {
         const auth = new google.auth.JWT({
-            email: clientEmail,
-            key: privateKey,
+            email: creds.clientEmail,
+            key: creds.privateKey,
             scopes: [
                 'https://www.googleapis.com/auth/webmasters.readonly',
                 'https://www.googleapis.com/auth/indexing'
@@ -265,8 +309,133 @@ async function submitToGoogleIndex(url, type = 'URL_UPDATED') {
     }
 }
 
+/**
+ * Automatically synchronizes all public pages and live mod URLs across:
+ * 1. Google Indexing API
+ * 2. IndexNow API (Bing, Yandex, Seznam, Naver)
+ * 3. Search Engine Sitemap Pings (Google, Bing)
+ * 
+ * @param {string} baseUrl - Domain root (e.g. 'https://gplmods.webredirect.org')
+ * @param {object} FileModel - Mongoose File Model
+ * @param {object} options - Options { googleLimit: 50 }
+ */
+async function syncAllPublicUrlsForIndexing(baseUrl = 'https://gplmods.webredirect.org', FileModel = null, options = {}) {
+    const googleLimit = options.googleLimit || 40;
+    const corePages = [
+        '/',
+        '/about',
+        '/faq',
+        '/docs',
+        '/community',
+        '/leaderboard',
+        '/ai-directory',
+        '/category?platform=android',
+        '/category?platform=ios-jailed',
+        '/category?platform=ios-jailbroken',
+        '/category?platform=windows',
+        '/category?platform=wordpress',
+        '/dmca',
+        '/tos',
+        '/privacy-policy',
+        '/why-choose-us'
+    ];
+
+    const allUrls = corePages.map(p => `${baseUrl}${p}`);
+
+    // Collect live mods from database
+    if (FileModel && typeof FileModel.find === 'function') {
+        try {
+            const liveMods = await FileModel.find({ status: 'live' })
+                .select('slug category _id updatedAt')
+                .sort({ updatedAt: -1 })
+                .limit(200)
+                .lean();
+
+            liveMods.forEach(m => {
+                const modUrl = `${baseUrl}/mods/${encodeURIComponent(m.category)}/${encodeURIComponent(m.slug || m._id.toString())}`;
+                allUrls.push(modUrl);
+            });
+        } catch (dbErr) {
+            console.warn('[Sync Indexing] Error reading live mods:', dbErr.message);
+        }
+    }
+
+    const uniqueUrls = Array.from(new Set(allUrls));
+
+    // 1. Submit top prioritized URLs to Google Indexing API (with delay pacing)
+    let googleSubmitted = 0;
+    const auth = getGoogleAuthClient();
+    if (auth) {
+        const targetGoogleUrls = uniqueUrls.slice(0, googleLimit);
+        for (const u of targetGoogleUrls) {
+            try {
+                const ok = await submitToGoogleIndex(u, 'URL_UPDATED');
+                if (ok) googleSubmitted++;
+                // 120ms rate pacing between Google API calls
+                await new Promise(r => setTimeout(r, 120));
+            } catch (_) {}
+        }
+    }
+
+    // 2. Broadcast entire batch to IndexNow API (Bing, Yandex, Seznam, Naver)
+    let indexNowSuccess = false;
+    const indexNowKey = process.env.INDEXNOW_KEY || '4387532a48904cbaae6f8ba7ad35d790';
+    try {
+        const host = new URL(baseUrl).hostname;
+        const indexNowEndpoints = [
+            'https://api.indexnow.org/indexnow',
+            'https://www.bing.com/indexnow',
+            'https://yandex.com/indexnow'
+        ];
+
+        for (const ep of indexNowEndpoints) {
+            try {
+                await axios.post(ep, {
+                    host,
+                    key: indexNowKey,
+                    keyLocation: `${baseUrl}/${indexNowKey}.txt`,
+                    urlList: uniqueUrls.slice(0, 500)
+                }, {
+                    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                    timeout: 8000
+                });
+                indexNowSuccess = true;
+            } catch (_) {}
+        }
+    } catch (inErr) {
+        console.warn('[Sync Indexing] IndexNow error:', inErr.message);
+    }
+
+    // 3. Ping Google & Bing Sitemaps
+    let sitemapsPinged = 0;
+    try {
+        const sitemapUrl = encodeURIComponent(`${baseUrl}/sitemap_index.xml`);
+        const pings = [
+            `https://www.google.com/ping?sitemap=${sitemapUrl}`,
+            `https://www.bing.com/ping?sitemap=${sitemapUrl}`
+        ];
+        await Promise.allSettled(pings.map(p => axios.get(p, { timeout: 6000 })));
+        sitemapsPinged = pings.length;
+    } catch (_) {}
+
+    console.log(`[Global Indexing Sync] Complete: ${uniqueUrls.length} total URLs, Google: ${googleSubmitted}, IndexNow: ${indexNowSuccess ? 'Success' : 'Skipped/Partial'}, Sitemaps: ${sitemapsPinged}`);
+
+    return {
+        success: true,
+        totalUrls: uniqueUrls.length,
+        googleSubmitted,
+        indexNowSubmitted: indexNowSuccess,
+        sitemapsPinged,
+        timestamp: new Date().toISOString()
+    };
+}
+
 module.exports = {
+    getGoogleCredentials,
+    getGoogleAuthClient,
     getSearchAnalytics,
     generateDynamicSeoTags,
-    submitToGoogleIndex
+    submitToGoogleIndex,
+    syncAllPublicUrlsForIndexing
 };
+

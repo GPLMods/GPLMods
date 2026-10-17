@@ -53,7 +53,9 @@ const { optimizeUploadedImage } = require('./utils/imageOptimizer');
 const sharp = require('sharp');
 const { generateSitemapIndex, generatePagesSitemap, generateModsSitemap } = require('./utils/sitemapGenerator');
 const { generateRobotsTxt } = require('./utils/robotsEngine');
-const { getSearchAnalytics, generateDynamicSeoTags, submitToGoogleIndex } = require('./utils/searchConsole');
+const searchConsole = require('./utils/searchConsole');
+const { getSearchAnalytics, generateDynamicSeoTags, submitToGoogleIndex, syncAllPublicUrlsForIndexing } = searchConsole;
+const dynamicKeywords = require('./utils/dynamicKeywords');
 const { assetOptimizationMiddleware } = require('./utils/assetBundler');
 const zlib = require('zlib');
 const otplib = require('otplib');
@@ -1153,22 +1155,29 @@ async function notifyIndexNow(urlList) {
     // Ensure we only send an array
     const urls = Array.isArray(urlList) ? urlList : [urlList];
     const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
-    const host = new URL(baseUrl).hostname; // Extracts just the domain (e.g., gplmods.webredirect.org)
+    const host = new URL(baseUrl).hostname;
 
-    try {
-        console.log(`Pinging IndexNow with ${urls.length} URLs...`);
-        const response = await axios.post('https://api.indexnow.org/indexnow', {
-            host: host,
-            key: indexNowKey,
-            keyLocation: `${baseUrl}/${indexNowKey}.txt`,
-            urlList: urls
-        }, {
-            headers: { 'Content-Type': 'application/json; charset=utf-8' }
-        });
+    const endpoints = [
+        'https://api.indexnow.org/indexnow',
+        'https://www.bing.com/indexnow',
+        'https://yandex.com/indexnow'
+    ];
 
-        console.log(`IndexNow Ping Successful! Status: ${response.status}`);
-    } catch (error) {
-        console.error("IndexNow Ping Failed:", error.response ? error.response.data : error.message);
+    for (const ep of endpoints) {
+        try {
+            await axios.post(ep, {
+                host: host,
+                key: indexNowKey,
+                keyLocation: `${baseUrl}/${indexNowKey}.txt`,
+                urlList: urls
+            }, {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                timeout: 8000
+            });
+        } catch (error) {
+            // Log warning without failing
+            console.warn(`[IndexNow Warning] ${ep} failed:`, error.response ? error.response.data : error.message);
+        }
     }
 }
 // ===============================
@@ -17294,6 +17303,45 @@ app.get('/api/seo/analytics', async (req, res) => {
     }
 });
 
+// 3b.2 Live Harvested Keywords & Suggestion API Stats
+app.get('/api/seo/keywords', (req, res) => {
+    try {
+        const state = dynamicKeywords.getKeywordState();
+        res.json({
+            success: true,
+            unspacedBrandKeywords: dynamicKeywords.UNSPACED_BRAND_KEYWORDS,
+            globalRegionalCount: dynamicKeywords.GLOBAL_REGIONAL_KEYWORDS.length,
+            ...state
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 3b.3 Manual/Automated Trigger for Multi-Engine Global Indexing Sync
+app.post('/api/seo/sync-all-indexing', async (req, res) => {
+    try {
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        const limit = parseInt(req.body?.googleLimit || req.query?.googleLimit, 10) || 50;
+        const result = await syncAllPublicUrlsForIndexing(baseUrl, File, { googleLimit: limit });
+        res.json({ success: true, result });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// 3b.4 Manual Trigger to Re-harvest Live Mods & Autocomplete Keywords
+app.post('/api/seo/refresh-keywords', async (req, res) => {
+    try {
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        await dynamicKeywords.runKeywordHarvest(File, searchConsole, baseUrl);
+        const state = dynamicKeywords.getKeywordState();
+        res.json({ success: true, message: 'Keywords refreshed successfully', state });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // 3c. Public Users Sitemap
 app.get('/sitemap-users.xml', async (req, res) => {
     try {
@@ -21522,6 +21570,17 @@ const startServer = async () => {
                 console.log(`Server is running on http://localhost:${PORT}`);
                 console.log(`Server is running on port ${PORT}`);
             }
+
+            // Dynamic Keywords Harvester & Global Multi-Engine Indexing
+            const liveBaseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+            dynamicKeywords.startKeywordHarvester(File, searchConsole, liveBaseUrl, 30 * 60 * 1000);
+
+            // Automated Global Search Engine Indexing (initial push 15s after startup)
+            setTimeout(() => {
+                syncAllPublicUrlsForIndexing(liveBaseUrl, File, { googleLimit: 40 }).catch(e => {
+                    console.warn('[Startup Indexing Sync] Error:', e.message);
+                });
+            }, 15000);
         });
 
     } catch (error) {
@@ -21688,6 +21747,17 @@ cron.schedule('0 */6 * * *', async () => {
         await socialBots.broadcastPromotion();
     } catch (promoErr) {
         console.warn('[Promo Bot Cron] Error executing 6-hour promotional broadcast:', promoErr.message);
+    }
+});
+
+// --- AUTOMATED GLOBAL SEARCH ENGINE & MULTI-REGION INDEXING CRON (Every 4 hours) ---
+cron.schedule('0 */4 * * *', async () => {
+    try {
+        const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+        console.log('[Global Indexing Cron] Triggering periodic multi-engine sync...');
+        await syncAllPublicUrlsForIndexing(baseUrl, File, { googleLimit: 40 });
+    } catch (idxCronErr) {
+        console.warn('[Global Indexing Cron] Periodic sync failed:', idxCronErr.message);
     }
 });
 

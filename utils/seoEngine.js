@@ -6,6 +6,7 @@
  */
 
 const axios = require('axios');
+const dynamicKeywords = require('./dynamicKeywords');
 
 const BASE_URL = process.env.BASE_URL || 'https://gplmods.webredirect.org';
 const SITE_NAME = 'GPL Mods';
@@ -13,11 +14,31 @@ const TWITTER_HANDLE = '@GPLMods';
 const DEFAULT_IMAGE = `${BASE_URL}/images/logo.png`;
 
 // Global Brand Synonyms & Search Engine Variations
-// Ensures site is matched when users search for GPLMods, GPL Mods, GPLMod, or any TLD (.org, .com, .net, .co, .in)
+// Ensures site is matched when users search for gplmods (no spaces), GPLMods, GPL Mods, GPLMod, or any TLD (.org, .com, .net, .co, .in)
 const BRAND_KEYWORDS = [
+    'gplmods',
+    'gplmods apk',
+    'gplmods mod apk',
+    'gplmods download',
+    'gplmods free mods',
+    'gplmods app',
+    'gplmods site',
+    'gplmods official',
+    'gplmods safe download',
+    'gplmods store',
+    'gplmods hub',
+    'gplmods games',
+    'gplmods ipa',
+    'gplmods ios',
+    'gplmods windows',
+    'gplmods android',
+    'gplmods wordpress',
+    'gplmods virustotal',
+    'gplmods 2026',
+    'gplmod',
+    'gpl-mods',
     'GPLMods',
     'GPL Mods',
-    'GPLMod',
     'GPLMods.org',
     'GPLMods.com',
     'GPLMods.net',
@@ -718,7 +739,7 @@ function buildModSeo(file, masterFile, req) {
     // 140-160 character description target
     const variantDescTag = isVariant ? ` (Variant${archLabel ? ' ' + archLabel : ''}${minOs ? ' for ' + minOs + '+' : ''})` : '';
     const descPrefix = `Download ${name}${variantDescTag}${version ? ' ' + version : ''} ${platform} mod${developer ? ' by ' + developer : ''}, uploaded by ${uploader}.`;
-    const descFeatures = ` 100% VirusTotal safe, ${modType} unlocked${hashtags.length > 0 ? ' with ' + hashtags.slice(0, 3).join(' ') : ''}. Free direct download at GPL Mods.`;
+    const descFeatures = ` 100% VirusTotal safe, ${modType} unlocked${hashtags.length > 0 ? ' with ' + hashtags.slice(0, 3).join(' ') : ''}. Free direct download at GPLMods (GPL Mods).`;
     const description = truncateText(descPrefix + descFeatures, 160);
 
     const slug = (masterFile && masterFile.slug) || targetFile.slug || targetFile._id;
@@ -730,10 +751,16 @@ function buildModSeo(file, masterFile, req) {
                   DEFAULT_IMAGE;
 
     // Combine keywords
+    const lowerName = name.toLowerCase();
     const platformKeywords = getPlatformKeywords(targetFile.category);
     const keywords = [
         name,
+        `gplmods ${lowerName}`,
+        `${lowerName} gplmods`,
+        `gplmods ${lowerName} download`,
+        `${lowerName} mod apk download`,
         `${name} mod`,
+        `${name} mod apk`,
         isVariant ? `${name} variant` : '',
         architecture ? `${name} ${architecture}` : '',
         `${name} ${platform}`,
@@ -744,7 +771,7 @@ function buildModSeo(file, masterFile, req) {
         modType,
         ...normalTags,
         ...platformKeywords.slice(0, 8),
-        ...BRAND_KEYWORDS.slice(0, 10)
+        ...BRAND_KEYWORDS.slice(0, 12)
     ].filter(Boolean);
 
     // Schema.org SoftwareApplication JSON-LD
@@ -1174,6 +1201,17 @@ function resolveSeo(req, locals = {}) {
             '@type': 'Organization',
             '@id': `${BASE_URL}/#organization`,
             name: SITE_NAME,
+            alternateName: [
+                'gplmods',
+                'GPLMods',
+                'gpl mods',
+                'gpl-mods',
+                'gplmods.webredirect.org',
+                'gplmods apk',
+                'gplmods site',
+                'gplmods official',
+                'gplmods free mods'
+            ],
             url: BASE_URL,
             logo: {
                 '@type': 'ImageObject',
@@ -1189,6 +1227,18 @@ function resolveSeo(req, locals = {}) {
             '@id': `${BASE_URL}/#website`,
             url: BASE_URL,
             name: SITE_NAME,
+            alternateName: [
+                'gplmods',
+                'GPLMods',
+                'gpl mods',
+                'gpl-mods',
+                'gplmods apk',
+                'gplmods site',
+                'gplmods.webredirect.org'
+            ],
+            inLanguage: [
+                'en-US', 'en-GB', 'en-IN', 'es', 'pt-BR', 'ru', 'id', 'de', 'fr', 'ja', 'ko', 'ar', 'hi', 'tr', 'vi'
+            ],
             publisher: {
                 '@id': `${BASE_URL}/#organization`
             },
@@ -1300,10 +1350,12 @@ function resolveSeo(req, locals = {}) {
                         locals.pageDescription ||
                         STATIC_PAGE_META['/'].description;
 
-    const keywords = (locals.seo && locals.seo.keywords) ||
-                     (entitySeo && entitySeo.keywords) ||
-                     (staticMeta && staticMeta.keywords ? [...staticMeta.keywords, ...BRAND_KEYWORDS].join(', ') : '') ||
-                     locals.pageKeywords ||
+    const dynamicPageKeywords = dynamicKeywords.getDynamicKeywordsForPage(rawPath, locals);
+    const keywords = (locals.seo && locals.seo.keywords ? `${locals.seo.keywords}, ${dynamicPageKeywords}` : null) ||
+                     (entitySeo && entitySeo.keywords ? `${entitySeo.keywords}, ${dynamicPageKeywords}` : null) ||
+                     (staticMeta && staticMeta.keywords ? [...staticMeta.keywords, ...BRAND_KEYWORDS, dynamicPageKeywords].join(', ') : null) ||
+                     (locals.pageKeywords ? `${locals.pageKeywords}, ${dynamicPageKeywords}` : null) ||
+                     dynamicPageKeywords ||
                      BRAND_KEYWORDS.join(', ');
 
     const canonicalUrl = (locals.seo && locals.seo.canonicalUrl) ||
@@ -1425,23 +1477,35 @@ async function pingIndexNow(urlList) {
     const indexNowKey = process.env.INDEXNOW_KEY || '4387532a48904cbaae6f8ba7ad35d790';
     const host = new URL(BASE_URL).hostname;
 
-    try {
-        const response = await axios.post('https://api.indexnow.org/indexnow', {
-            host: host,
-            key: indexNowKey,
-            keyLocation: `${BASE_URL}/${indexNowKey}.txt`,
-            urlList: urls
-        }, {
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-            timeout: 8000
-        });
+    const endpoints = [
+        'https://api.indexnow.org/indexnow',
+        'https://www.bing.com/indexnow',
+        'https://yandex.com/indexnow'
+    ];
 
-        return { success: true, status: response.status, count: urls.length };
-    } catch (err) {
-        return { 
-            success: false, 
-            error: err.response ? err.response.data : err.message 
-        };
+    let lastStatus = 200;
+    let anySuccess = false;
+
+    for (const ep of endpoints) {
+        try {
+            const response = await axios.post(ep, {
+                host: host,
+                key: indexNowKey,
+                keyLocation: `${BASE_URL}/${indexNowKey}.txt`,
+                urlList: urls
+            }, {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                timeout: 8000
+            });
+            lastStatus = response.status;
+            anySuccess = true;
+        } catch (_) {}
+    }
+
+    if (anySuccess) {
+        return { success: true, status: lastStatus, count: urls.length };
+    } else {
+        return { success: false, error: 'All IndexNow endpoints failed or timed out' };
     }
 }
 
