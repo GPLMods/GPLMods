@@ -1,9 +1,0 @@
-Type: Runtime Error
-Message: Uncaught SyntaxError: Unexpected token '<'
-File: http://localhost:3000/
-Line: 1632
-Column: 33
-Stack: SyntaxError: Unexpected token '<'
-URL: http://localhost:3000/
-Browser: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36
-Time: 2026-10-16T16:58:41.410Z
