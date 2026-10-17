@@ -1511,14 +1511,8 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 // ===============================
 // 0. High-Performance Brotli (br) + Gzip / Deflate Dual Compression
 const { brotliCompression } = require('./utils/brotliCompression');
-app.use(brotliCompression({ quality: 4 }));
-app.use(compression({
-    level: 6,
-    filter: (req, res) => {
-        if (req.headers['x-no-compression']) return false;
-        return compression.filter(req, res);
-    }
-}));
+app.use(brotliCompression({ quality: 4, level: 6 }));
+
 
 // 0.1 Helmet & Server-Level Security Protection
 app.use(helmet({
