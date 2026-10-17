@@ -92,6 +92,12 @@ const { getUserUploadQuota, validateUploadFileSize, TIER_CONFIGS, getTierQuotaCo
 const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
+// Global Mongoose Lean Plugins (Performance Optimization)
+const leanDefaults = require('mongoose-lean-defaults').default || require('mongoose-lean-defaults');
+const leanVirtuals = require('mongoose-lean-virtuals');
+mongoose.plugin(leanDefaults);
+mongoose.plugin(leanVirtuals);
+
 // Mongoose Models
 const File = require('./models/file');
 const User = require('./models/user');
@@ -1503,7 +1509,9 @@ const uploadToB2 = async (file, folder, io = null, uploadId = null, baseName = n
 // ===============================
 // 4. PRE-ADMIN MIDDLEWARE
 // ===============================
-// 0. High-Performance Gzip / Deflate Compression
+// 0. High-Performance Brotli (br) + Gzip / Deflate Dual Compression
+const { brotliCompression } = require('./utils/brotliCompression');
+app.use(brotliCompression({ quality: 4 }));
 app.use(compression({
     level: 6,
     filter: (req, res) => {
@@ -1547,6 +1555,31 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({
     verify: (req, res, buf) => {
         req.rawBody = buf.toString('utf8');
+    }
+}));
+
+// 2.1 NoSQL Injection Protection (Sanitize MongoDB operators)
+const mongoSanitize = require('express-mongo-sanitize');
+app.use(mongoSanitize({
+    replaceWith: '_',
+    onSanitize: ({ req, key }) => {
+        console.warn(`[Security] Sanitized prohibited key "${key}" in request from ${req.ip}`);
+    }
+}));
+
+// 2.2 On-The-Fly HTML Response Minification
+const expressMinifyHtml = require('express-minify-html-2');
+app.use(expressMinifyHtml({
+    override: true,
+    exception_url: false,
+    htmlMinifier: {
+        removeComments: true,
+        collapseWhitespace: true,
+        collapseBooleanAttributes: true,
+        removeAttributeQuotes: false,
+        removeEmptyAttributes: false,
+        minifyJS: false, // Keep pre-bundled JS intact
+        minifyCSS: true
     }
 }));
 

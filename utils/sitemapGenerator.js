@@ -11,6 +11,7 @@
 
 const { SitemapStream, streamToPromise, SitemapIndexStream } = require('sitemap');
 const { Readable } = require('stream');
+const { minify: minifyXml } = require('minify-xml');
 
 // Cache map: key -> { xml: string, timestamp: number }
 const sitemapCache = new Map();
@@ -25,8 +26,14 @@ function getCached(key) {
 }
 
 function setCache(key, xml) {
-    sitemapCache.set(key, { xml, timestamp: Date.now() });
-    return xml;
+    let minified = xml;
+    try {
+        minified = minifyXml(xml);
+    } catch (e) {
+        // Fallback to unminified if parsing issue
+    }
+    sitemapCache.set(key, { xml: minified, timestamp: Date.now() });
+    return minified;
 }
 
 /**
