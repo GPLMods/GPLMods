@@ -340,10 +340,10 @@
         </script>
         <!-- ============================================ -->
 
-        <!-- ✅ High-Performance Minified Stylesheet (Non-blocking with CDN Fallback) -->
-        <link rel="preload" href="<%= cdnUrl %>/css/style.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'"
+        <!-- ✅ High-Performance Minified Stylesheet (Preloaded for rapid network fetch + synchronously applied to eliminate CLS layout shift) -->
+        <link rel="preload" href="<%= cdnUrl %>/css/style.min.css" as="style">
+        <link rel="stylesheet" href="<%= cdnUrl %>/css/style.min.css"
             onerror="this.onerror=null; this.href='/css/style.min.css'; triggerCdnFallback();">
-        <noscript><link rel="stylesheet" href="<%= cdnUrl %>/css/style.min.css"></noscript>
 
         <!-- Non-blocking Preloaded Notifications CSS -->
         <link rel="preload" href="/css/notifications.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">

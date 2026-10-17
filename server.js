@@ -50,6 +50,7 @@ const compression = require('compression');
 const helmet = require('helmet');
 const { isABot, isbot, getBotName } = require('./utils/botDetector');
 const { optimizeUploadedImage } = require('./utils/imageOptimizer');
+const sharp = require('sharp');
 const { generateSitemapIndex, generatePagesSitemap, generateModsSitemap } = require('./utils/sitemapGenerator');
 const { generateRobotsTxt } = require('./utils/robotsEngine');
 const { getSearchAnalytics, generateDynamicSeoTags, submitToGoogleIndex } = require('./utils/searchConsole');
@@ -8842,7 +8843,7 @@ app.post('/account/update-profile-image', ensureAuthenticated, (req, res, next) 
     }
 });
 
-// ======== NEW: FETCH GRAVATAR AVATAR ========
+// ======== NEW: FETCH GRAVATAR AVATAR (High Performance WebP & Secure CDN) ========
 app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) => {
     try {
         if (!req.user.email) {
@@ -8852,12 +8853,12 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
         const email = req.user.email.toLowerCase().trim();
         const hash = crypto.createHash('md5').update(email).digest('hex');
 
-        // Fetch gravatar with d=404 so it errors if not found, rather than returning a default image
-        const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=256`;
+        // Fetch gravatar from high-speed secure CDN with timeout
+        const gravatarUrl = `https://secure.gravatar.com/avatar/${hash}?d=404&s=256`;
 
         let response;
         try {
-            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer' });
+            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer', timeout: 7000 });
         } catch (err) {
             if (err.response && err.response.status === 404) {
                 return res.status(404).json({ error: 'No Gravatar profile image found for your email address.' });
@@ -8865,25 +8866,33 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
             throw err;
         }
 
-        const buffer = Buffer.from(response.data, 'binary');
-        const mimetype = response.headers['content-type'] || 'image/jpeg';
+        let buffer = Buffer.from(response.data);
+        let mimetype = 'image/webp';
+        let filename = 'user-profile-avatar.webp';
 
-        // Create a mock multer file object
+        try {
+            buffer = await sharp(buffer).resize(192, 192, { fit: 'cover' }).webp({ quality: 85 }).toBuffer();
+        } catch (sharpErr) {
+            console.warn('[Gravatar] Sharp optimization failed, using original buffer:', sharpErr.message);
+            mimetype = response.headers['content-type'] || 'image/jpeg';
+            filename = 'user-profile-avatar.jpg';
+        }
+
         const mockFile = {
             buffer: buffer,
-            originalname: `user-profile-avatar.jpg`,
+            originalname: filename,
             mimetype: mimetype,
             size: buffer.length
         };
 
-        // Before we upload the new one, delete the old one from B2 & FTP to save space
         const userDoc = await User.findById(req.user.id || req.user._id);
         if (userDoc && userDoc.profileImageKey) {
-            await deleteFromB2(userDoc.profileImageKey);
+            // Asynchronously delete old avatar from B2 in background without holding up request
+            deleteFromB2(userDoc.profileImageKey).catch(e => console.warn('[Gravatar] Old avatar delete error:', e.message));
         }
 
-        // Upload new avatar according to the users/staff or users/members folder structure
-        const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', 'user-profile-avatar.jpg');
+        // Upload new compressed WebP avatar
+        const targetKey = getUserAssetKey(userDoc || req.user, 'avatar', filename);
         const imageKey = await uploadToB2(mockFile, 'users', null, null, null, { exactKey: targetKey });
 
         const updateFields = { profileImageKey: imageKey };
@@ -8894,7 +8903,7 @@ app.post('/account/fetch-gravatar', ensureAuthenticated, async (req, res, next) 
 
         req.login(updatedUser, (err) => {
             if (err) return next(err);
-            res.json({ success: true });
+            res.json({ success: true, message: 'Gravatar profile avatar synced successfully!' });
         });
     } catch (error) {
         console.error("Error fetching/uploading gravatar:", error);
@@ -11319,10 +11328,17 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             return res.redirect(`/upload-details/${fileId}?error=${encodeURIComponent(validationErrors[0])}`);
         }
 
-        updateData.isMultiPart = isMultiPart;
-        if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
-        if (isMultiPart || updateData.externalDownloadUrl) {
-            updateData.fileKey = 'external-link';
+        const isCloudUpload = Boolean(fileToUpdate.fileKey && fileToUpdate.fileKey !== 'external-link');
+        if (!isCloudUpload) {
+            updateData.isMultiPart = isMultiPart;
+            if (downloadParts && downloadParts.length > 0) updateData.downloadParts = downloadParts;
+            if (isMultiPart || updateData.externalDownloadUrl) {
+                updateData.fileKey = 'external-link';
+            }
+        } else {
+            // For cloud uploads, ensure externalDownloadUrl is cleared so it remains a direct cloud storage file
+            updateData.externalDownloadUrl = '';
+            updateData.isMultiPart = false;
         }
 
         if (isVariant) {
@@ -19780,7 +19796,7 @@ app.post('/id-card/edit', ensureAuthenticated, (req, res, next) => {
     }
 });
 
-// --- 4b. FETCH GRAVATAR FOR CARD AVATAR ---
+// --- 4b. FETCH GRAVATAR FOR CARD AVATAR (High Performance WebP & Secure CDN) ---
 app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
     try {
         const allowedRoles = ['distributor', 'support', 'admin', 'owner'];
@@ -19794,11 +19810,11 @@ app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
 
         const email = req.user.email.toLowerCase().trim();
         const hash = crypto.createHash('md5').update(email).digest('hex');
-        const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=404&s=256`;
+        const gravatarUrl = `https://secure.gravatar.com/avatar/${hash}?d=404&s=256`;
 
         let response;
         try {
-            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer' });
+            response = await axios.get(gravatarUrl, { responseType: 'arraybuffer', timeout: 7000 });
         } catch (err) {
             if (err.response && err.response.status === 404) {
                 return res.status(404).json({ error: 'No Gravatar profile image found for your email address (' + req.user.email + ').' });
@@ -19806,21 +19822,31 @@ app.post('/id-card/fetch-gravatar', ensureAuthenticated, async (req, res) => {
             throw err;
         }
 
-        const buffer = Buffer.from(response.data, 'binary');
-        const mimetype = response.headers['content-type'] || 'image/jpeg';
+        let buffer = Buffer.from(response.data);
+        let mimetype = 'image/webp';
+        let filename = 'user-id-card-avatar.webp';
+
+        try {
+            buffer = await sharp(buffer).resize(192, 192, { fit: 'cover' }).webp({ quality: 85 }).toBuffer();
+        } catch (sharpErr) {
+            console.warn('[Gravatar] Sharp optimization failed for card avatar, using original buffer:', sharpErr.message);
+            mimetype = response.headers['content-type'] || 'image/jpeg';
+            filename = 'user-id-card-avatar.jpg';
+        }
+
         const mockFile = {
             buffer: buffer,
-            originalname: `user-id-card-avatar.jpg`,
+            originalname: filename,
             mimetype: mimetype,
             size: buffer.length
         };
 
         const user = await User.findById(req.user._id);
         if (user && user.cardAvatarUrl && !user.cardAvatarUrl.startsWith('http')) {
-            await deleteFromB2(user.cardAvatarUrl);
+            deleteFromB2(user.cardAvatarUrl).catch(e => console.warn('[Gravatar] Old card avatar delete error:', e.message));
         }
 
-        const targetKey = getUserAssetKey(user || req.user, 'card-avatar', 'user-id-card-avatar.jpg');
+        const targetKey = getUserAssetKey(user || req.user, 'card-avatar', filename);
         const imageKey = await uploadToB2(mockFile, 'users', null, null, null, { exactKey: targetKey });
 
         user.cardAvatarUrl = imageKey;

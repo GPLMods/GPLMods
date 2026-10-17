@@ -1195,8 +1195,9 @@
                 </div>
                 <!-- =========================================== -->
 
-            <!-- LINKS & PARTS MANAGEMENT (DISTRIBUTORS/ADMINS/OWNERS or External Link/Multi-part uploads) -->
-            <% const canManageLinks = (user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner')) || (typeof file !== 'undefined' && file && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)); %>
+            <!-- LINKS & PARTS MANAGEMENT (Appears ONLY for Link-based uploads, never for Cloud storage uploads) -->
+            <% const isLinkBasedUpload = Boolean(typeof file !== 'undefined' && file && (file.fileKey === 'external-link' || file.externalDownloadUrl || file.isMultiPart)); %>
+            <% const canManageLinks = Boolean(user && (user.role === 'distributor' || user.role === 'admin' || user.role === 'owner') && isLinkBasedUpload); %>
             <% if (canManageLinks) { %>
                 <fieldset class="form-section">
                     <legend>Links & Parts Management</legend>
@@ -2760,22 +2761,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 showStatusAlert(msg, 'error');
             }
 
-            // Check external link / multipart requirements
-            const isMultiPartActive = isMultiPartHidden && isMultiPartHidden.value === 'true';
-            if (isMultiPartActive) {
-                const partUrlInputs = document.querySelectorAll('.part-card input[name="partUrls"]');
-                let hasPartUrl = false;
-                partUrlInputs.forEach(input => { if (input.value && input.value.trim()) hasPartUrl = true; });
-                if (!hasPartUrl) {
-                    highlightAndScrollTo(document.getElementById('multi-part-container'), 'Error: At least one part download URL is required for multi-part downloads.');
-                    return;
-                }
-            } else if (document.getElementById('externalDownloadUrl') && document.getElementById('single-link-container') && document.getElementById('single-link-container').style.display !== 'none') {
-                const extVal = document.getElementById('externalDownloadUrl').value.trim();
-                const isExternalUpload = <%= (file.fileKey === 'external-link') ? 'true' : 'false' %>;
-                if (isExternalUpload && !extVal) {
-                    highlightAndScrollTo(document.getElementById('externalDownloadUrl'), 'Error: Main External URL is required.');
-                    return;
+            // Check external link / multipart requirements (ONLY for link-based uploads, never for Cloud uploads)
+            const isExternalUpload = <%= Boolean(file.fileKey === 'external-link' || file.isMultiPart || file.externalDownloadUrl) ? 'true' : 'false' %>;
+            if (isExternalUpload) {
+                const isMultiPartActive = isMultiPartHidden && isMultiPartHidden.value === 'true';
+                if (isMultiPartActive) {
+                    const partUrlInputs = document.querySelectorAll('.part-card input[name="partUrls"]');
+                    let hasPartUrl = false;
+                    partUrlInputs.forEach(input => { if (input.value && input.value.trim()) hasPartUrl = true; });
+                    if (!hasPartUrl) {
+                        highlightAndScrollTo(document.getElementById('multi-part-container'), 'Error: At least one part download URL is required for multi-part downloads.');
+                        return;
+                    }
+                } else if (document.getElementById('externalDownloadUrl') && document.getElementById('single-link-container') && document.getElementById('single-link-container').style.display !== 'none') {
+                    const extVal = document.getElementById('externalDownloadUrl').value.trim();
+                    if (!extVal) {
+                        highlightAndScrollTo(document.getElementById('externalDownloadUrl'), 'Error: Main External URL is required.');
+                        return;
+                    }
                 }
             }
 
