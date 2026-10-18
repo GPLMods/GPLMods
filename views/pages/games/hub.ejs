@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play classic retro and 2-player multiplayer games on Pocket Classics at GPLMods Arcade. Featuring 2048, Chess, Air Hockey, Checkers, Othello, Snake, and Tic-Tac-Toe.">
+    <meta name="keywords" content="Pocket Classics, GPLMods Arcade, 2048, Chess, Checkers, Snake, TicTacToe, Online Multiplayer, Retro Games">
+    <meta property="og:title" content="<%= title %>">
+    <meta property="og:description" content="Play classic retro and 2-player multiplayer board games online for free with real-time room chat and leaderboards.">
+    <meta property="og:image" content="/games/pocketclassics/assets/logo.png">
+    <meta property="og:type" content="website">
+
+    <link rel="manifest" href="/games/pocketclassics/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/games/pocketclassics/css/arcade.css">
+
+    <script>
+        window.__ARCADE_USER__ = {
+            username: '<%= user ? user.username : "Guest" %>',
+            country: '<%= user && user.country ? user.country : "India" %>',
+            avatar: '<%= user && (user.cardAvatarUrl || user.avatarUrl || user.profileImage) ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage) : "/images/default-avatar.png" %>'
+        };
+    </script>
+</head>
+<body class="arcade-body" data-theme="classic">
+
+    <div class="arcade-wrapper">
+        <!-- Arcade Header Partial -->
+        <%- include('./partials/header') %>
+
+        <!-- PWA Banner Partial -->
+        <%- include('./partials/pwa-banner') %>
+
+        <!-- Controls & Category Filters (Requirement 8) -->
+        <div class="arcade-controls-bar">
+            <div class="arcade-filters">
+                <button type="button" class="filter-btn active" data-filter="all">
+                    <i class="fas fa-th-large"></i> All Games (<%= Object.keys(catalog).length %>)
+                </button>
+                <button type="button" class="filter-btn" data-filter="1P">
+                    <i class="fas fa-user"></i> Single Player
+                </button>
+                <button type="button" class="filter-btn" data-filter="2P">
+                    <i class="fas fa-user-friends"></i> 2 Players Online
+                </button>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="arc-btn" id="hubRandomGameBtn" title="Launch Random Game">
+                    <i class="fas fa-dice" style="color: var(--arc-accent);"></i>
+                    <span>Surprise Me</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Games Grid -->
+        <main class="arcade-game-grid" id="arcadeGameGrid">
+            <% Object.values(catalog).forEach(game => { %>
+                <div class="arcade-game-card" 
+                     data-game-id="<%= game.id %>"
+                     data-category="<%= game.category %>"
+                     data-title="<%= game.name %>"
+                     data-desc="<%= game.description %>"
+                     data-icon="<%= game.icon %>"
+                     data-type-label="<%= game.typeLabel %>"
+                     data-screenshots='<%- JSON.stringify(game.screenshots) %>'
+                     data-url="/games/<%= game.id %><%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>">
+                    
+                    <span class="card-badge <%= game.category === '2P' ? 'badge-2p' : 'badge-1p' %>">
+                        <%= game.category === '2P' ? '2P Online' : '1P Solo' %>
+                    </span>
+
+                    <div class="card-icon-wrap">
+                        <img src="<%= game.icon %>" alt="<%= game.name %>" class="protect-asset" loading="lazy">
+                    </div>
+
+                    <h3 class="card-title">
+                        <%= game.name %>
+                    </h3>
+
+                    <p class="card-desc">
+                        <%= game.tagline %>
+                    </p>
+
+                    <div class="card-footer">
+                        <span style="font-size: 0.78rem; color: var(--arc-text-muted);"><i class="fas fa-gamepad"></i> <%= game.typeLabel %></span>
+                        <span class="card-play-hint">
+                            Play Now <i class="fas fa-arrow-right"></i>
+                        </span>
+                    </div>
+                </div>
+            <% }); %>
+
+            <!-- Coming Soon Card -->
+            <div class="arcade-game-card" style="opacity: 0.7; border-style: dashed; cursor: default;">
+                <div class="card-icon-wrap" style="background: rgba(255,255,255,0.05);">
+                    <i class="fas fa-plus" style="font-size: 1.8rem; color: var(--arc-text-muted);"></i>
+                </div>
+                <h3 class="card-title" style="color: var(--arc-text-muted);">More Games</h3>
+                <p class="card-desc">Additional retro and community multi-player board games arriving soon in GPLMods Arcade!</p>
+                <div class="card-footer">
+                    <span style="font-size: 0.78rem; color: var(--arc-text-muted);">Stay tuned</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Arcade Footer Partial -->
+        <%- include('./partials/footer') %>
+    </div>
+
+    <!-- Game Details & Screenshot Gallery Modal (Requirement 7) -->
+    <div class="arc-modal-overlay" id="gameDetailsModalOverlay">
+        <div class="arc-modal-card" style="max-width: 640px;">
+            <div class="arc-modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img id="detailModalIcon" src="" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover;" class="protect-asset">
+                    <div>
+                        <h3 id="detailModalTitle" style="margin: 0;">Game Title</h3>
+                        <span id="detailModalBadge" class="card-badge badge-1p" style="position: static; font-size: 0.7rem; margin-top: 2px;"></span>
+                    </div>
+                </div>
+                <button type="button" class="arc-btn arc-btn-icon" id="closeDetailModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="arc-modal-body">
+                <!-- Screenshots Gallery (Requirement 7) -->
+                <div style="margin-bottom: 20px;">
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--arc-accent); margin-bottom: 8px; text-transform: uppercase;">
+                        <i class="fas fa-images"></i> Gameplay Screenshots
+                    </div>
+                    <div id="detailScreenshotsContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;"></div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--arc-accent); margin-bottom: 8px; text-transform: uppercase;">
+                        <i class="fas fa-info-circle"></i> About This Game
+                    </div>
+                    <p id="detailModalDesc" style="font-size: 0.92rem; color: var(--arc-text-muted); line-height: 1.6;"></p>
+                </div>
+            </div>
+            <div class="arc-modal-footer">
+                <a href="#" id="detailPlayNowBtn" class="arc-btn arc-btn-accent" style="width: 100%; justify-content: center; padding: 12px; font-size: 1rem;">
+                    <i class="fas fa-play"></i>
+                    <span>PLAY GAME</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal Partial -->
+    <%- include('./partials/settings-modal') %>
+
+    <!-- Policy Modal Partial -->
+    <%- include('./partials/policy-modal') %>
+
+    <!-- Leaderboard Modal Partial -->
+    <%- include('./partials/leaderboard-modal') %>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/games/pocketclassics/js/audio-manager.js"></script>
+    <script src="/games/pocketclassics/js/theme-manager.js"></script>
+    <script src="/games/pocketclassics/js/protection.js"></script>
+    <script src="/games/pocketclassics/js/multiplayer-client.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Category Filter Logic
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const gameCards = document.querySelectorAll('.arcade-game-card[data-category]');
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const category = this.dataset.filter;
+
+                    gameCards.forEach(card => {
+                        if (category === 'all' || card.dataset.category === category) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+
+            // 2. Interactive Game Details Modal with Screenshot Gallery (Requirement 7)
+            const detailsOverlay = document.getElementById('gameDetailsModalOverlay');
+            const detailTitle = document.getElementById('detailModalTitle');
+            const detailDesc = document.getElementById('detailModalDesc');
+            const detailIcon = document.getElementById('detailModalIcon');
+            const detailBadge = document.getElementById('detailModalBadge');
+            const detailScreenshots = document.getElementById('detailScreenshotsContainer');
+            const detailPlayBtn = document.getElementById('detailPlayNowBtn');
+            const closeDetailBtn = document.getElementById('closeDetailModalBtn');
+
+            gameCards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    // Prevent navigation immediately; show details modal first
+                    e.preventDefault();
+                    const title = card.dataset.title;
+                    const desc = card.dataset.desc;
+                    const icon = card.dataset.icon;
+                    const typeLabel = card.dataset.typeLabel;
+                    const category = card.dataset.category;
+                    const url = card.dataset.url;
+                    let screenshots = [];
+                    try {
+                        screenshots = JSON.parse(card.dataset.screenshots || '[]');
+                    } catch (err) {}
+
+                    detailTitle.textContent = title;
+                    detailDesc.textContent = desc;
+                    detailIcon.src = icon;
+                    detailBadge.textContent = typeLabel;
+                    detailBadge.className = `card-badge ${category === '2P' ? 'badge-2p' : 'badge-1p'}`;
+                    detailPlayBtn.href = url;
+
+                    detailScreenshots.innerHTML = screenshots.map((ss, idx) => `
+                        <div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--arc-border); background: #000; aspect-ratio: 16/9;">
+                            <img src="${ss}" alt="${title} Screenshot ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;" class="protect-asset">
+                        </div>
+                    `).join('');
+
+                    detailsOverlay.classList.add('open');
+                });
+            });
+
+            closeDetailBtn?.addEventListener('click', () => {
+                detailsOverlay.classList.remove('open');
+            });
+
+            // 3. Settings Modal Toggle
+            const openSettingsBtn = document.getElementById('openSettingsBtn');
+            const settingsOverlay = document.getElementById('settingsModalOverlay');
+            openSettingsBtn?.addEventListener('click', () => {
+                settingsOverlay.classList.add('open');
+            });
+
+            // Theme switchers in settings modal
+            document.querySelectorAll('.theme-option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    window.ArcadeTheme?.setTheme(this.dataset.theme);
+                });
+            });
+
+            // Theme toggle button in header
+            document.getElementById('themeToggleBtn')?.addEventListener('click', () => {
+                window.ArcadeTheme?.nextTheme();
+            });
+
+            // Music toggle button in header
+            document.getElementById('musicToggleBtn')?.addEventListener('click', () => {
+                const state = window.ArcadeAudio?.toggleMusic();
+                const icon = document.querySelector('#musicToggleBtn i');
+                if (icon) icon.className = state ? 'fas fa-music' : 'fas fa-volume-mute';
+            });
+
+            // Policy Modal
+            document.getElementById('openPrivacyBtn')?.addEventListener('click', () => {
+                document.getElementById('policyModalOverlay').classList.add('open');
+            });
+
+            // Surprise Me / Random Game
+            document.getElementById('hubRandomGameBtn')?.addEventListener('click', () => {
+                const visibleCards = Array.from(gameCards).filter(c => c.style.display !== 'none');
+                if (visibleCards.length > 0) {
+                    const picked = visibleCards[Math.floor(Math.random() * visibleCards.length)];
+                    picked.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

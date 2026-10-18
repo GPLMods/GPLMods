@@ -1,0 +1,133 @@
+<div class="arc-modal-overlay" id="leaderboardModalOverlay">
+    <div class="arc-modal-card" style="max-width: 680px;">
+        <div class="arc-modal-header">
+            <h3><i class="fas fa-trophy" style="color: var(--arc-accent);"></i> Arcade Live Leaderboards</h3>
+            <button type="button" class="arc-btn arc-btn-icon" onclick="document.getElementById('leaderboardModalOverlay').classList.remove('open')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="arc-modal-body">
+            <!-- Filter Bar -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; gap: 6px;">
+                    <button type="button" class="arc-btn arc-btn-accent lb-metric-btn active" data-metric="score">
+                        <i class="fas fa-star"></i> High Score
+                    </button>
+                    <button type="button" class="arc-btn lb-metric-btn" data-metric="wins">
+                        <i class="fas fa-crown"></i> Most Wins
+                    </button>
+                    <button type="button" class="arc-btn lb-metric-btn" data-metric="playtime">
+                        <i class="fas fa-clock"></i> Playtime
+                    </button>
+                </div>
+
+                <div style="display: flex; gap: 6px;">
+                    <button type="button" class="arc-btn arc-btn-accent lb-filter-btn active" data-filter="global">
+                        <i class="fas fa-globe"></i> Global
+                    </button>
+                    <button type="button" class="arc-btn lb-filter-btn" data-filter="country" id="lbCountryBtn">
+                        <i class="fas fa-flag"></i> My Country
+                    </button>
+                </div>
+            </div>
+
+            <!-- List of Rankings -->
+            <div id="leaderboardListContainer" style="display: flex; flex-direction: column; gap: 8px; min-height: 200px;">
+                <div style="padding: 20px; text-align: center; color: var(--arc-text-muted);">
+                    <i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading live leaderboard...
+                </div>
+            </div>
+        </div>
+        <div class="arc-modal-footer">
+            <span style="font-size: 0.8rem; color: var(--arc-text-muted); margin-right: auto;">
+                <i class="fas fa-info-circle"></i> Stats sync live after every game completion.
+            </span>
+            <button type="button" class="arc-btn arc-btn-accent" onclick="document.getElementById('leaderboardModalOverlay').classList.remove('open')">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let activeMetric = 'score';
+        let activeFilter = 'global';
+        const userCountry = window.__ARCADE_USER__?.country || 'India';
+
+        async function fetchLeaderboard() {
+            const container = document.getElementById('leaderboardListContainer');
+            if (!container) return;
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--arc-text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+            try {
+                const url = `/games/api/leaderboard?metric=${activeMetric}&filter=${activeFilter}&country=${encodeURIComponent(userCountry)}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.leaderboard || data.leaderboard.length === 0) {
+                    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--arc-text-muted);"><i class="fas fa-trophy" style="font-size: 2rem; color: #555; display: block; margin-bottom: 10px;"></i>No recorded games in this bracket yet. Be the first to play and claim #1!</div>';
+                    return;
+                }
+
+                container.innerHTML = data.leaderboard.map((item, idx) => {
+                    let medal = `<span style="font-weight: 700; color: var(--arc-text-muted); width: 22px; text-align: center;">#${idx + 1}</span>`;
+                    if (idx === 0) medal = `<span style="color: #ffd700; font-size: 1.15rem; width: 22px; text-align: center;"><i class="fas fa-trophy"></i></span>`;
+                    else if (idx === 1) medal = `<span style="color: #c0c0c0; font-size: 1.15rem; width: 22px; text-align: center;"><i class="fas fa-medal"></i></span>`;
+                    else if (idx === 2) medal = `<span style="color: #cd7f32; font-size: 1.15rem; width: 22px; text-align: center;"><i class="fas fa-medal"></i></span>`;
+
+                    let valueDisplay = `${(item.score || 0).toLocaleString()} pts`;
+                    if (activeMetric === 'wins') valueDisplay = `${item.wins || 0} Wins`;
+                    else if (activeMetric === 'playtime') {
+                        const mins = Math.floor((item.playtime || 0) / 60);
+                        valueDisplay = `${mins}m ${(item.playtime || 0) % 60}s`;
+                    }
+
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 10px; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                                ${medal}
+                                <img src="${item.avatar || '/images/default-avatar.png'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--arc-border);" onerror="this.src='/images/default-avatar.png'">
+                                <div style="min-width: 0;">
+                                    <strong style="display: block; font-size: 0.92rem; color: var(--arc-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.username}</strong>
+                                    <span style="font-size: 0.75rem; color: var(--arc-text-muted);"><i class="fas fa-globe-americas"></i> ${item.country || 'Global'} &bull; <span style="text-transform: capitalize;">${item.gameId || 'Arcade'}</span></span>
+                                </div>
+                            </div>
+                            <div style="text-align: right; flex-shrink: 0;">
+                                <strong style="color: var(--arc-accent); font-size: 0.95rem;">${valueDisplay}</strong>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--arc-danger);">Failed to load leaderboard data.</div>';
+            }
+        }
+
+        document.querySelectorAll('.lb-metric-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.lb-metric-btn').forEach(b => b.classList.remove('arc-btn-accent'));
+                this.classList.add('arc-btn-accent');
+                activeMetric = this.dataset.metric;
+                fetchLeaderboard();
+            });
+        });
+
+        document.querySelectorAll('.lb-filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.lb-filter-btn').forEach(b => b.classList.remove('arc-btn-accent'));
+                this.classList.add('arc-btn-accent');
+                activeFilter = this.dataset.filter;
+                fetchLeaderboard();
+            });
+        });
+
+        window.openLeaderboard = function() {
+            document.getElementById('leaderboardModalOverlay').classList.add('open');
+            fetchLeaderboard();
+        };
+
+        const triggerBtn = document.getElementById('openLeaderboardBtn');
+        if (triggerBtn) triggerBtn.addEventListener('click', window.openLeaderboard);
+    })();
+</script>

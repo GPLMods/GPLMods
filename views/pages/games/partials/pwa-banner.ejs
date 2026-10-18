@@ -1,0 +1,78 @@
+<div class="pwa-banner-bar" id="arcadePwaBanner" style="display: none;">
+    <div class="pwa-banner-text">
+        <i class="fas fa-mobile-alt pwa-banner-icon"></i>
+        <div>
+            <strong style="display: block; font-size: 0.95rem; color: var(--arc-text-main);">Install Pocket Classics App</strong>
+            <span style="font-size: 0.8rem; color: var(--arc-text-muted);">Play games offline & full-screen straight from your home screen</span>
+        </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="arc-btn arc-btn-accent" id="pwaInstallActionBtn">
+            <i class="fas fa-download"></i>
+            <span>Install</span>
+        </button>
+        <button type="button" class="arc-btn" id="pwaCopyLinkBtn" title="Copy Arcade Share Link">
+            <i class="fas fa-share-alt"></i>
+            <span>Share</span>
+        </button>
+        <button type="button" class="arc-btn arc-btn-icon" id="pwaDismissBtn" title="Dismiss" style="width: 32px; height: 32px;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let deferredPrompt = null;
+        const banner = document.getElementById('arcadePwaBanner');
+        const installBtn = document.getElementById('pwaInstallActionBtn');
+        const copyBtn = document.getElementById('pwaCopyLinkBtn');
+        const dismissBtn = document.getElementById('pwaDismissBtn');
+
+        if (sessionStorage.getItem('arc_pwa_dismissed') === 'true') return;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (banner) banner.style.display = 'flex';
+        });
+
+        // Always show on mobile if not standalone and not dismissed
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        if (!isStandalone && banner && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+            banner.style.display = 'flex';
+        }
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted' && banner) banner.style.display = 'none';
+                    deferredPrompt = null;
+                } else {
+                    alert('To install: Tap the browser share/menu button (⋮) and choose "Add to Home Screen" or "Install App".');
+                }
+            });
+        }
+
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(window.location.origin + '/games/hub').then(() => {
+                    const origHtml = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => { copyBtn.innerHTML = origHtml; }, 2000);
+                }).catch(() => {
+                    alert('Arcade link: ' + window.location.origin + '/games/hub');
+                });
+            });
+        }
+
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                if (banner) banner.style.display = 'none';
+                sessionStorage.setItem('arc_pwa_dismissed', 'true');
+            });
+        }
+    })();
+</script>

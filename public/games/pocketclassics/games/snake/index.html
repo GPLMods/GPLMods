@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Modern Snake Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <div class="ui-overlay">
+            <div id="game-ui">
+                <p>SCORE: <span id="score">0</span></p>
+                <button id="pause-btn" aria-label="Pause"><i class="fas fa-pause"></i></button>
+            </div>
+
+            <div id="main-menu-screen" class="screen active">
+                <h1>SNAKE</h1>
+                <button id="play-btn" class="action-btn"><i class="fas fa-play"></i> Play</button>
+                <button id="settings-btn" class="action-btn secondary"><i class="fas fa-cog"></i> Settings</button>
+                <button id="home-btn" class="action-btn secondary"><i class="fas fa-home"></i> Home</button>
+            </div>
+
+            <div id="settings-screen" class="screen">
+                <h2>Settings</h2>
+                <div class="setting-item"><span>Music</span><button id="music-toggle-btn" class="toggle-btn active"><span></span></button></div>
+                <div class="setting-item"><span>Sound FX</span><button id="sfx-toggle-btn" class="toggle-btn active"><span></span></button></div>
+                <button id="back-from-settings-btn" class="action-btn"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+            
+            <div id="difficulty-screen" class="screen">
+                <h2>Select Difficulty</h2>
+                <div class="difficulty-selector">
+                    <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
+                    <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+                    <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+                </div>
+                <button id="start-game-btn" class="action-btn"><i class="fas fa-play"></i> Start Game</button>
+                <button id="back-from-difficulty-btn" class="action-btn secondary"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+
+            <div id="pause-screen" class="screen">
+                <h2>Paused</h2>
+                <button id="resume-btn" class="action-btn"><i class="fas fa-play"></i> Resume</button>
+                <button id="menu-from-pause-btn" class="action-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
+            </div>
+            
+            <div id="game-over-screen" class="screen">
+                <h2>Game Over</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <button id="restart-btn" class="action-btn"><i class="fas fa-rotate-right"></i> Play Again</button>
+                <button id="menu-from-gameover-btn" class="action-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <audio id="bg-music" src="sounds/bg-music.mp3" loop></audio>
+    <audio id="eat-sound" src="sounds/eat.wav" preload="auto"></audio>
+    <audio id="game-over-sound" src="sounds/game-over.wav" preload="auto"></audio>
+    <audio id="click-sound" src="sounds/click.wav" preload="auto"></audio>
+    <audio id="turn-sound" src="sounds/turn.wav" preload="auto"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>

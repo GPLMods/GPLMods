@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Checkers Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Audio Elements -->
+    <audio id="sound-move" src="sounds/move.wav" preload="auto"></audio>
+    <audio id="sound-capture" src="sounds/capture.wav" preload="auto"></audio>
+    <audio id="sound-game-over" src="sounds/game-over.wav" preload="auto"></audio>
+    <audio id="sound-ui-click" src="sounds/ui_click.wav" preload="auto"></audio>
+    <audio id="sound-game-start" src="sounds/game_start.wav" preload="auto"></audio>
+    <audio id="sound-select" src="sounds/select.wav" preload="auto"></audio>
+    <audio id="sound-invalid" src="sounds/invalid.wav" preload="auto"></audio>
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/game-music.mp3" preload="auto" loop></audio>
+
+    <h1>Checkers Master</h1>
+
+    <!-- Main Menu Updated -->
+    <div id="main-menu">
+        <h2>Game Menu</h2>
+        <button id="play-player"><i class="fas fa-user-friends"></i> Player vs Player</button>
+        <div class="ai-options">
+            <button id="play-ai"><i class="fas fa-robot"></i> Player vs AI</button>
+            <div id="ai-difficulty-selector" class="hidden">
+                <select id="ai-difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+                <button id="start-ai-game">Play</button>
+            </div>
+        </div>
+        <button id="settings-button"><i class="fas fa-cog"></i> Settings</button>
+        <button id="home-button"><i class="fas fa-home"></i> Home</button>
+    </div>
+
+    <!-- Game Container (Promotion Dialog removed) -->
+    <div id="game-container" class="hidden">
+        <div id="status-panel">
+            <div id="status">White's Turn</div>
+        </div>
+        <div id="board-container"><div id="board"></div></div>
+        <div id="controls"><button id="back-to-menu">Back to Main Menu</button></div>
+    </div>
+
+    <!-- NEW SETTINGS DIALOG (MODAL) -->
+    <div id="settings-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h2>Settings</h2>
+            <div class="settings-option">
+                <label for="music-toggle">Background Music</label>
+                <input type="checkbox" id="music-toggle" checked>
+            </div>
+            <div class="settings-option">
+                <label for="sfx-toggle">Sound Effects</label>
+                <input type="checkbox" id="sfx-toggle" checked>
+            </div>
+            <button id="close-settings-button">Done</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

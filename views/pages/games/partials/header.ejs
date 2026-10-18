@@ -1,0 +1,44 @@
+<header class="arcade-header">
+    <div style="display: flex; align-items: center; gap: 14px;">
+        <a href="/games/hub<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>" class="arcade-brand">
+            <img src="/games/pocketclassics/assets/logo.png" alt="Pocket Classics" class="arcade-logo-thumb protect-asset">
+            <div class="arcade-title-wrap">
+                <h1>Pocket <span>Classics</span></h1>
+                <div class="arcade-presence-badge">
+                    <span class="presence-dot"></span>
+                    <span id="arcadeTotalOnline">1 Online</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="arcade-nav-actions">
+        <% if (typeof clubData !== 'undefined' && clubData) { %>
+            <a href="/clubs/<%= clubId %>" class="arc-btn" style="border-color: #5865F2; color: #fff;">
+                <i class="fas fa-arrow-left"></i>
+                <span><%= clubData.name %></span>
+            </a>
+        <% } else { %>
+            <a href="/clubs" class="arc-btn">
+                <i class="fas fa-users"></i>
+                <span>Clubs</span>
+            </a>
+        <% } %>
+
+        <button type="button" class="arc-btn arc-btn-icon" id="openLeaderboardBtn" title="Live Leaderboards">
+            <i class="fas fa-trophy" style="color: var(--arc-accent);"></i>
+        </button>
+
+        <button type="button" class="arc-btn arc-btn-icon" id="themeToggleBtn" title="Switch Theme (Classic / Cyber / India)">
+            <i class="fas fa-palette"></i>
+        </button>
+
+        <button type="button" class="arc-btn arc-btn-icon" id="musicToggleBtn" title="Toggle Background Music">
+            <i class="fas fa-music"></i>
+        </button>
+
+        <button type="button" class="arc-btn arc-btn-icon" id="openSettingsBtn" title="Arcade Settings">
+            <i class="fas fa-sliders-h"></i>
+        </button>
+    </div>
+</header>

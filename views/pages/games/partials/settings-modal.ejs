@@ -1,0 +1,62 @@
+<div class="arc-modal-overlay" id="settingsModalOverlay">
+    <div class="arc-modal-card">
+        <div class="arc-modal-header">
+            <h3><i class="fas fa-sliders-h" style="color: var(--arc-accent);"></i> Arcade Settings</h3>
+            <button type="button" class="arc-btn arc-btn-icon" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="arc-modal-body">
+            <!-- Audio Toggles -->
+            <div style="margin-bottom: 22px;">
+                <h4 style="font-size: 0.95rem; color: var(--arc-accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Audio & Sound</h4>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 10px; margin-bottom: 10px;">
+                    <div>
+                        <strong style="display: block; font-size: 0.95rem;">Background Music</strong>
+                        <span style="font-size: 0.8rem; color: var(--arc-text-muted);">Auto-plays & rotates dynamic soundtrack tracks</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="settingsMusicToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 10px;">
+                    <div>
+                        <strong style="display: block; font-size: 0.95rem;">Sound Effects (SFX)</strong>
+                        <span style="font-size: 0.8rem; color: var(--arc-text-muted);">Game moves, clicks, captures, and celebrations</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="settingsSfxToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Theme Switcher -->
+            <div>
+                <h4 style="font-size: 0.95rem; color: var(--arc-accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Arcade Visual Theme</h4>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                    <button type="button" class="arc-btn theme-option-btn" data-theme="classic" style="flex-direction: column; padding: 14px 10px; text-align: center;">
+                        <span style="display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #FFD700; border: 2px solid #fff; margin-bottom: 6px;"></span>
+                        <strong style="font-size: 0.82rem;">Classic Gold</strong>
+                    </button>
+                    <button type="button" class="arc-btn theme-option-btn" data-theme="cyber" style="flex-direction: column; padding: 14px 10px; text-align: center;">
+                        <span style="display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: #00f0ff; border: 2px solid #ff007f; margin-bottom: 6px;"></span>
+                        <strong style="font-size: 0.82rem;">Cyber Neon</strong>
+                    </button>
+                    <button type="button" class="arc-btn theme-option-btn" data-theme="india" style="flex-direction: column; padding: 14px 10px; text-align: center;">
+                        <span style="display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(180deg, #FF9933 33%, #FFFFFF 33%, #FFFFFF 66%, #138808 66%); border: 2px solid #000080; margin-bottom: 6px;"></span>
+                        <strong style="font-size: 0.82rem;">India Tiranga</strong>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="arc-modal-footer">
+            <button type="button" class="arc-btn arc-btn-accent" onclick="document.getElementById('settingsModalOverlay').classList.remove('open')">
+                Done
+            </button>
+        </div>
+    </div>
+</div>

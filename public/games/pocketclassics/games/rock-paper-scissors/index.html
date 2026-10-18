@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Rock Paper Scissors</title>
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Menu Screen -->
+        <div id="main-menu" class="screen">
+            <h1>Rock Paper Scissors</h1>
+            <p>Can you beat the computer?</p>
+            <div class="main-menu-buttons">
+                <button id="play-btn" class="btn btn-primary"><i class="fas fa-play"></i> Play Game</button>
+                <button id="settings-btn" class="btn btn-secondary"><i class="fas fa-cog"></i> Settings</button>
+                <button id="home-btn" class="btn btn-danger"><i class="fas fa-home"></i> Home</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen hidden">
+            <div class="score-board">
+                <div>Player: <span id="player-score">0</span></div>
+                <div>Computer: <span id="computer-score">0</span></div>
+            </div>
+            <div class="result-message" id="result-message">Choose your weapon!</div>
+            <div class="choices-display">
+                <div class="player-choice"><span id="player-choice-display" class="choice-display">?</span><h3>You</h3></div>
+                <div class="computer-choice"><span id="computer-choice-display" class="choice-display">?</span><h3>CPU</h3></div>
+            </div>
+            <div class="choices">
+                <button class="choice-btn" data-choice="rock" title="Rock"><i class="fas fa-hand-back-fist"></i></button>
+                <button class="choice-btn" data-choice="paper" title="Paper"><i class="fas fa-hand"></i></button>
+                <button class="choice-btn" data-choice="scissors" title="Scissors"><i class="fas fa-hand-scissors"></i></button>
+            </div>
+            <div class="controls">
+                <button id="back-to-menu-btn" class="btn btn-danger"><i class="fas fa-arrow-left"></i> Back to Menu</button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen hidden">
+            <h2>Settings</h2>
+            <div class="setting-option">
+                <label for="sfx-toggle">Sound Effects (SFX)</label>
+                <label class="switch">
+                    <input type="checkbox" id="sfx-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="setting-option">
+                <label for="music-toggle">Background Music</label>
+                <label class="switch">
+                    <input type="checkbox" id="music-toggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="controls">
+                <button id="back-from-settings-btn" class="btn btn-primary">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to the external JavaScript file (defer ensures it runs after the HTML is parsed) -->
+    <script src="script.js" defer></script>
+</body>
+</html>

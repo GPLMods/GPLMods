@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake and Ladder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Main Menu Container -->
+    <div id="main-menu" class="container">
+        <div class="menu-header">
+            <button id="home-btn" class="icon-btn" title="Back to Arcade"><i class="fas fa-home"></i></button>
+            <h1>Snake & Ladder</h1>
+            <button id="open-settings-btn" class="icon-btn" title="Settings"><i class="fas fa-cog"></i></button>
+        </div>
+        <div class="menu-options">
+            <div class="option-section">
+                <div class="option-label">Game Mode</div>
+                <div class="button-group" id="game-mode-btns">
+                    <button class="option-btn active" data-mode="pvp">Player vs Player</button>
+                    <button class="option-btn" data-mode="pva">Player vs AI</button>
+                </div>
+            </div>
+            <div class="option-section">
+                <div class="option-label">Players</div>
+                <div class="button-group" id="player-count-btns">
+                    <button class="option-btn active" data-count="2">2</button>
+                    <button class="option-btn" data-count="3">3</button>
+                    <button class="option-btn" data-count="4">4</button>
+                </div>
+            </div>
+        </div>
+        <button id="start-game-btn" class="start-button"><i class="fas fa-play"></i> Start Game</button>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="popup-overlay hidden">
+        <div class="modal-content">
+            <button id="close-settings-btn" class="close-btn" title="Close"><i class="fas fa-times"></i></button>
+            <h2>Settings</h2>
+            <div class="setting-item">
+                <label for="music-toggle">Background Music</label>
+                <label class="switch"><input type="checkbox" id="music-toggle"><span class="slider"></span></label>
+            </div>
+            <div class="setting-item">
+                <label for="sfx-toggle">Sound Effects</label>
+                <label class="switch"><input type="checkbox" id="sfx-toggle"><span class="slider"></span></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="hidden">
+        <div id="game-board"></div>
+        <div id="game-controls">
+            <div id="turn-info">Player 1's Turn</div>
+            <div class="dice-container">
+                <div id="dice"><div class="dice-face" data-face="1">⚀</div><div class="dice-face" data-face="2">⚁</div><div class="dice-face" data-face="3">⚂</div><div class="dice-face" data-face="4">⚃</div><div class="dice-face" data-face="5">⚄</div><div class="dice-face" data-face="6">⚅</div></div>
+            </div>
+            <button id="roll-dice-btn"><i class="fas fa-dice"></i> Roll Dice</button>
+            <div id="message-log"></div>
+            <button id="back-to-menu-btn"><i class="fas fa-arrow-left"></i> Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Modernized Win Popup -->
+    <div id="win-popup" class="popup-overlay hidden">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="popup-content">
+            <span class="popup-icon"><i class="fas fa-trophy" style="color: #f59e0b; font-size: 2.5rem;"></i></span>
+            <h2 id="win-message">Player 1 Wins!</h2>
+            <div class="popup-buttons">
+                <button id="play-again-btn" class="popup-btn primary"><i class="fas fa-rotate-right"></i> Play Again</button>
+                <button id="menu-from-win-btn" class="popup-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="bg-music" src="assets/music.mp3" loop></audio>
+    <audio id="dice-sound" src="assets/dice.mp3"></audio>
+    <audio id="move-sound" src="assets/move.mp3"></audio>
+    <audio id="ladder-sound" src="assets/ladder.mp3"></audio>
+    <audio id="snake-sound" src="assets/snake.mp3"></audio>
+    <audio id="win-sound" src="assets/win.mp3"></audio>
+    <audio id="click-sound" src="assets/click.mp3"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>

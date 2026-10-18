@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Othello</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <audio id="bg-music" src="sounds/music.mp3" loop></audio>
+    <audio id="sfx-sound" src="sounds/click.wav"></audio>
+    <audio id="win-sound" src="sounds/game over.wav"></audio>
+    <audio id="ui-click-sound" src="sounds/pop.wav"></audio>
+
+    <div id="menu-overlay" class="overlay">
+        <div id="main-menu" class="menu">
+            <h1>Othello</h1>
+            <button id="pvp-btn"><i class="fas fa-users"></i> Player vs Player</button>
+            <button id="pvai-btn"><i class="fas fa-robot"></i> Player vs AI</button>
+            <button id="open-settings-btn"><i class="fas fa-cog"></i> Settings</button>
+            <button id="home-btn"><i class="fas fa-home"></i> Home</button>
+        </div>
+        <div id="ai-difficulty-menu" class="menu hidden">
+            <h1>Select AI Difficulty</h1>
+            <button data-difficulty="easy">Easy (Random)</button>
+            <button data-difficulty="medium">Medium (Greedy)</button>
+            <button data-difficulty="hard">Hard (Strategic)</button>
+            <button id="back-to-main-btn"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+    </div>
+
+    <div id="settings-menu" class="overlay invisible">
+        <div class="menu">
+            <h2>Settings</h2>
+            <div class="settings-row"><label>Background Music</label><label class="toggle-switch"><input type="checkbox" id="music-toggle" checked> <span class="slider"></span></label></div>
+            <div class="settings-row"><label>Sound Effects (SFX)</label><label class="toggle-switch"><input type="checkbox" id="sfx-toggle" checked> <span class="slider"></span></label></div>
+            <button id="close-settings-btn" style="margin-top: 20px;"><i class="fas fa-times"></i> Close</button>
+        </div>
+    </div>
+    
+    <div id="win-popup-overlay" class="overlay invisible">
+        <canvas id="win-particles-canvas"></canvas>
+        <div id="win-popup-content" class="menu">
+            <h1 id="win-result"></h1><p id="win-score"></p>
+            <button id="play-again-btn"><i class="fas fa-rotate-right"></i> Play Again</button>
+            <button id="win-back-to-menu-btn"><i class="fas fa-bars"></i> Back to Menu</button>
+        </div>
+    </div>
+    
+    <div id="game-screen" class="hidden">
+        <div class="game-info">
+            <div class="score"><div class="piece black"></div><div id="black-score">2</div></div>
+            <div id="player-turn"></div>
+            <div class="score"><div class="piece white"></div><div id="white-score">2</div></div>
+        </div>
+        <div class="status-bar"><div id="status-message"></div></div>
+        <div id="board-container"></div>
+        <button id="back-to-menu-game-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 1em;">Back to Menu</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

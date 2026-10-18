@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Neon Air Hockey</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-wrapper">
+        <!-- Main Menu -->
+        <div id="main-menu" class="menu-screen active">
+            <h1>NEON HOCKEY</h1>
+            <button id="pvp-button"><i class="fas fa-users"></i> Player vs Player</button>
+            <button id="pva-button"><i class="fas fa-robot"></i> Player vs AI</button>
+            <button id="settings-button"><i class="fas fa-cog"></i> Settings</button>
+            <button id="home-button" class="back-button"><i class="fas fa-home"></i> Home</button>
+        </div>
+
+        <!-- AI Difficulty Menu -->
+        <div id="difficulty-menu" class="menu-screen">
+            <h2>SELECT AI</h2>
+            <button data-difficulty="easy">Easy</button>
+            <button data-difficulty="medium">Medium</button>
+            <button data-difficulty="hard">Hard</button>
+            <button id="difficulty-back-button" class="back-button"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu" class="menu-screen">
+            <h2>SETTINGS</h2>
+            <div class="setting-item">
+                <span>Background Music</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="music-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span>Sound Effects</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sfx-toggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="setting-item">
+                <span>Puck Speed</span>
+                <div class="slider-container">
+                    <input type="range" min="0.5" max="1.5" value="1" step="0.1" class="speed-slider" id="puck-speed-slider">
+                    <span id="puck-speed-value">1.0x</span>
+                </div>
+            </div>
+            <button id="settings-back-button" class="back-button">Back</button>
+        </div>
+        
+        <!-- Game Container -->
+        <div id="game-container">
+            <div id="score-display">
+                <div id="score-player2">0</div>
+                <div id="score-player1">0</div>
+            </div>
+            <canvas id="game-canvas"></canvas>
+            <button id="back-to-menu-ingame-button" class="ingame-button"><i class="fas fa-bars"></i> Menu</button>
+        </div>
+
+        <!-- Win Popup -->
+        <div id="win-popup">
+            <canvas id="particle-canvas"></canvas>
+            <div id="win-popup-content">
+                <h2 id="win-message"></h2>
+                <button id="play-again-button"><i class="fas fa-rotate-right"></i> Play Again</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

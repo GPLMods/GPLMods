@@ -20439,6 +20439,9 @@ const startServer = async () => {
         app.set('broadcastOnlineStats', broadcastOnlineStats);
         app.set('getSmartImageUrl', getSmartImageUrl);
 
+        // Pocket Classics Arcade Socket.IO Handler
+        require('./sockets/gameSocket')(io);
+
         async function resolveUserAvatar(u) {
             if (!u) return '/images/default-avatar.png';
             const isGPLMods = u.username === 'GPLMods';
@@ -21720,6 +21723,12 @@ const startServer = async () => {
         // ===================================
         const clubsRoutes = require('./routes/clubs');
         app.use('/clubs', clubsRoutes);
+
+        // ===================================
+        // POCKET CLASSICS ARCADE ROUTES
+        // ===================================
+        const gamesRoutes = require('./routes/games');
+        app.use('/games', gamesRoutes);
 
         // ===================================
         // DYNAMIC NOTIFICATIONS & PWA PUSH ROUTES

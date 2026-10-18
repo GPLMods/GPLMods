@@ -1,0 +1,36 @@
+<div class="arc-modal-overlay" id="rulesModalOverlay">
+    <div class="arc-modal-card">
+        <div class="arc-modal-header">
+            <h3>
+                <i class="fas fa-book-open" style="color: var(--arc-accent);"></i> 
+                <span>How to Play: <%= typeof game !== 'undefined' ? game.name : 'Rules' %></span>
+            </h3>
+            <button type="button" class="arc-btn arc-btn-icon" onclick="document.getElementById('rulesModalOverlay').classList.remove('open')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="arc-modal-body">
+            <% if (typeof game !== 'undefined' && game.rules && game.rules.length > 0) { %>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <% game.rules.forEach((rule, idx) => { %>
+                        <div style="display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); padding: 12px 14px; border-radius: 10px;">
+                            <span style="display: inline-flex; width: 26px; height: 26px; border-radius: 50%; background: var(--arc-accent); color: var(--arc-accent-text); align-items: center; justify-content: center; font-weight: 800; font-size: 0.82rem; flex-shrink: 0;">
+                                <%= idx + 1 %>
+                            </span>
+                            <p style="font-size: 0.9rem; line-height: 1.5; color: var(--arc-text-main); margin: 0;">
+                                <%= rule %>
+                            </p>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <p style="color: var(--arc-text-muted);">Select any game to read its official strategy rules and guides.</p>
+            <% } %>
+        </div>
+        <div class="arc-modal-footer">
+            <button type="button" class="arc-btn arc-btn-accent" onclick="document.getElementById('rulesModalOverlay').classList.remove('open')">
+                Got It, Let's Play!
+            </button>
+        </div>
+    </div>
+</div>

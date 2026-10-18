@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title><%= title %></title>
+    
+    <!-- SEO Meta Tags (Requirement 5) -->
+    <meta name="description" content="<%= game.description %>">
+    <meta name="keywords" content="<%= game.name %>, Pocket Classics, GPLMods, Online Retro Game, <%= game.category === '2P' ? '2 Player Multiplayer' : 'Single Player Puzzle' %>">
+    <meta property="og:title" content="<%= game.name %> - Pocket Classics | GPLMods">
+    <meta property="og:description" content="<%= game.tagline %>">
+    <meta property="og:image" content="<%= game.icon %>">
+    <meta property="og:type" content="game">
+
+    <link rel="manifest" href="/games/pocketclassics/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/games/pocketclassics/css/arcade.css">
+
+    <script>
+        window.__GAME_ID__ = '<%= game.id %>';
+        window.__GAME_ROOM__ = '<%= typeof roomCode !== "undefined" ? roomCode : "" %>';
+        window.__ARCADE_USER__ = {
+            username: '<%= user ? user.username : "Guest" %>',
+            country: '<%= user && user.country ? user.country : "India" %>',
+            avatar: '<%= user && (user.cardAvatarUrl || user.avatarUrl || user.profileImage) ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage) : "/images/default-avatar.png" %>'
+        };
+    </script>
+</head>
+<body class="arcade-body" data-theme="classic">
+
+    <div class="arcade-wrapper" style="padding-top: 14px;">
+        <!-- Top Game Header Bar -->
+        <div class="game-viewport-card">
+            <div class="game-viewport-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <a href="/games/hub<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>" class="arc-btn" title="Back to Arcade Hub">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Arcade Hub</span>
+                    </a>
+
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img src="<%= game.icon %>" alt="<%= game.name %>" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" class="protect-asset">
+                        <div>
+                            <strong style="font-size: 1.05rem; display: block; color: var(--arc-text-main); line-height: 1.1;"><%= game.name %></strong>
+                            <span style="font-size: 0.75rem; color: var(--arc-accent); font-weight: 600;"><%= game.typeLabel %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Rules Modal Button (Requirement 7) -->
+                    <button type="button" class="arc-btn" id="openRulesBtn" title="How to Play / Game Rules">
+                        <i class="fas fa-book-open" style="color: var(--arc-accent);"></i>
+                        <span>Rules</span>
+                    </button>
+
+                    <!-- Multiplayer Button (Requirement 9) -->
+                    <% if (game.category === '2P') { %>
+                        <button type="button" class="arc-btn arc-btn-accent" id="openMultiplayerBtn" title="Multiplayer Rooms & Chat">
+                            <i class="fas fa-users"></i>
+                            <span>Multiplayer</span>
+                        </button>
+                    <% } %>
+
+                    <!-- Leaderboards Button -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="openLeaderboardBtn" title="Leaderboards">
+                        <i class="fas fa-trophy" style="color: var(--arc-accent);"></i>
+                    </button>
+
+                    <!-- In-Game Music Toggle -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="gameMusicToggleBtn" title="Toggle Music">
+                        <i class="fas fa-music"></i>
+                    </button>
+
+                    <!-- Settings Button -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="openSettingsBtn" title="Settings">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+
+                    <!-- Fullscreen Toggle -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="fullscreenToggleBtn" title="Fullscreen">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sandboxed Game Iframe -->
+            <iframe id="gameIframe" 
+                    src="/games/pocketclassics/games/<%= game.id %>/index.html" 
+                    class="game-iframe-wrapper" 
+                    allow="autoplay; fullscreen"
+                    sandbox="allow-scripts allow-same-origin allow-popups">
+            </iframe>
+        </div>
+
+        <!-- Arcade Footer Partial -->
+        <%- include('./partials/footer') %>
+    </div>
+
+    <!-- Rules Modal Partial (Requirement 7) -->
+    <%- include('./partials/rules-modal', { game }) %>
+
+    <!-- Multiplayer Room Modal Partial (Requirement 9) -->
+    <% if (game.category === '2P') { %>
+        <%- include('./partials/multiplayer-room-modal') %>
+    <% } %>
+
+    <!-- Settings Modal Partial -->
+    <%- include('./partials/settings-modal') %>
+
+    <!-- Policy Modal Partial -->
+    <%- include('./partials/policy-modal') %>
+
+    <!-- Leaderboard Modal Partial -->
+    <%- include('./partials/leaderboard-modal') %>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/games/pocketclassics/js/audio-manager.js"></script>
+    <script src="/games/pocketclassics/js/theme-manager.js"></script>
+    <script src="/games/pocketclassics/js/protection.js"></script>
+    <script src="/games/pocketclassics/js/multiplayer-client.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let sessionStartTime = Date.now();
+
+            // 1. Rules Modal
+            const rulesModal = document.getElementById('rulesModalOverlay');
+            document.getElementById('openRulesBtn')?.addEventListener('click', () => {
+                rulesModal.classList.add('open');
+            });
+
+            // 2. Multiplayer Modal
+            const mpModal = document.getElementById('multiplayerRoomOverlay');
+            document.getElementById('openMultiplayerBtn')?.addEventListener('click', () => {
+                mpModal.classList.add('open');
+            });
+
+            // Auto-join room if roomCode param is present in URL
+            if (window.__GAME_ROOM__ && window.ArcadeMP) {
+                setTimeout(() => {
+                    mpModal.classList.add('open');
+                    document.getElementById('mpJoinCodeInput').value = window.__GAME_ROOM__;
+                    window.ArcadeMP.joinPrivateRoom(window.__GAME_ROOM__);
+                }, 800);
+            }
+
+            // 3. Settings Modal
+            const settingsModal = document.getElementById('settingsModalOverlay');
+            document.getElementById('openSettingsBtn')?.addEventListener('click', () => {
+                settingsModal.classList.add('open');
+            });
+
+            // 4. Music Toggle
+            const musicBtn = document.getElementById('gameMusicToggleBtn');
+            musicBtn?.addEventListener('click', () => {
+                const state = window.ArcadeAudio?.toggleMusic();
+                const icon = musicBtn.querySelector('i');
+                if (icon) icon.className = state ? 'fas fa-music' : 'fas fa-volume-mute';
+            });
+
+            // 5. Fullscreen Toggle
+            const fsBtn = document.getElementById('fullscreenToggleBtn');
+            const iframe = document.getElementById('gameIframe');
+            fsBtn?.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    if (iframe.requestFullscreen) iframe.requestFullscreen();
+                    else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+                } else {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                }
+            });
+
+            // 6. Record Playtime on Unload / Leave
+            window.addEventListener('beforeunload', () => {
+                const playtimeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
+                if (playtimeSec > 5) {
+                    const data = JSON.stringify({
+                        gameId: window.__GAME_ID__,
+                        playtime: playtimeSec,
+                        score: 0
+                    });
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon('/games/api/record-session', new Blob([data], { type: 'application/json' }));
+                    }
+                }
+            });
+
+            // 7. Communication bridge between parent shell and embedded game iframe
+            window.addEventListener('message', (event) => {
+                const data = event.data;
+                if (!data || typeof data !== 'object') return;
+
+                if (data.type === 'ARCADE_GAME_MOVE' && window.ArcadeMP) {
+                    window.ArcadeMP.sendAction('MOVE', data.payload);
+                } else if (data.type === 'ARCADE_GAME_OVER' && window.ArcadeMP) {
+                    const playtimeSec = Math.floor((Date.now() - sessionStartTime) / 1000);
+                    window.ArcadeMP.recordGameOver(data.winner, data.score, playtimeSec);
+                }
+            });
+
+            // Relay incoming opponent action to iframe
+            if (window.ArcadeMP) {
+                window.ArcadeMP.callbacks.onOpponentAction = (actionData) => {
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({
+                            type: 'ARCADE_OPPONENT_MOVE',
+                            payload: actionData.payload
+                        }, '*');
+                    }
+                };
+            }
+        });
+    </script>
+</body>
+</html>

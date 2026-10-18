@@ -1,0 +1,326 @@
+/* ==========================================================================
+   Global Styles & Typography
+   ========================================================================== */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #312e2b; /* Dark, warm background */
+    color: #fff;
+    margin: 0;
+    overflow-x: hidden; /* Prevent horizontal scroll, allow vertical if needed */
+}
+
+h1, h2 {
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+h1 {
+    font-size: 3em;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 1.8em;
+    margin-bottom: 15px;
+}
+
+/* ==========================================================================
+   Main Menu
+   ========================================================================== */
+
+#main-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding: 30px 40px;
+    background-color: #262421;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+#main-menu button {
+    width: 250px;
+    padding: 15px 30px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #4a4a4a;
+    color: white;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+#main-menu button:hover {
+    background-color: #6a6a6a;
+}
+
+#main-menu button:active {
+    transform: scale(0.98);
+}
+
+#home-button {
+    background-color: #005f73 !important;
+}
+
+#home-button:hover {
+    background-color: #0a9396 !important;
+}
+
+.ai-options {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+#ai-difficulty-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#ai-difficulty-selector select, 
+#ai-difficulty-selector button {
+    padding: 10px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1px solid #333;
+    background-color: #6a6a6a;
+    color: white;
+}
+
+#ai-difficulty-selector button {
+    cursor: pointer;
+    background-color: #4CAF50;
+    font-weight: bold;
+    border: none;
+}
+
+#ai-difficulty-selector button:hover {
+    background-color: #45a049;
+}
+
+/* ==========================================================================
+   Game Container & Board (Desktop First)
+   ========================================================================== */
+
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+#board-container {
+    border: 5px solid #1a1a1a;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    background-color: #1a1a1a;
+}
+
+#board {
+    display: grid;
+    /* Desktop size */
+    grid-template-columns: repeat(8, 70px);
+    grid-template-rows: repeat(8, 70px);
+    width: 560px;
+    height: 560px;
+}
+
+.square {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 50px; /* Base size */
+    position: relative;
+    cursor: pointer;
+}
+
+.light { background-color: #f0d9b5; }
+.dark { background-color: #b58863; }
+
+/* CHECKERS Pieces & Highlights */
+.piece {
+    width: 80%;
+    height: 80%;
+    border-radius: 50%;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 2px 5px rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+    user-select: none;
+    position: relative;
+    cursor: pointer;
+}
+.white-piece {
+    background-color: #fff;
+    border: 2px solid #ccc;
+}
+.black-piece {
+    background-color: #333;
+    border: 2px solid #000;
+}
+.piece.king::after {
+    content: '👑';
+    font-size: 50%; /* Relative to the square's font-size */
+    color: #ffd700;
+    text-shadow: 1px 1px 2px black;
+    position: absolute;
+}
+.selected { background-color: #6a994e !important; }
+.valid-move-dot {
+    width: 25px; /* Desktop size */
+    height: 25px; /* Desktop size */
+    background-color: rgba(4, 153, 23, 0.5);
+    border-radius: 50%;
+    position: absolute;
+    z-index: 10;
+}
+.last-move { background-color: #cccc66b3 !important; }
+
+/* Status Panel & Controls */
+#status-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 560px; /* Desktop size */
+    font-size: 1.5em;
+    padding: 5px 10px;
+    background-color: #262421;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+#controls { width: 100%; text-align: center; }
+#controls button { padding: 10px 20px; font-size: 1em; cursor: pointer; border: none; border-radius: 5px; background-color: #8a2a21; color: white; transition: background-color 0.3s; }
+#controls button:hover { background-color: #a13e3e; }
+
+
+/* ==========================================================================
+   Dialogs (Settings)
+   ========================================================================== */
+
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.dialog-box {
+    background-color: #4a4a4a;
+    padding: 20px 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    min-width: 300px;
+}
+
+.settings-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    font-size: 1.2em;
+}
+
+.settings-option label {
+    margin-right: 20px;
+}
+
+.settings-option input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+#close-settings-button {
+    margin-top: 20px;
+    padding: 10px 30px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+}
+
+#close-settings-button:hover {
+    background-color: #45a049;
+}
+
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+
+/* ==========================================================================
+   MOBILE OPTIMIZATION (MEDIA QUERY)
+   ========================================================================== */
+
+@media screen and (max-width: 600px) {
+    body {
+        padding-top: 10px;
+    }
+
+    h1 {
+        font-size: 2.2em;
+        margin-bottom: 15px;
+    }
+
+    #board, #status-panel {
+        width: 95vw;
+    }
+
+    #board {
+        height: 95vw;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+    }
+    
+    .piece.king::after {
+        font-size: 4vw; /* Scale king crown on mobile */
+    }
+
+    .valid-move-dot {
+        width: 3.5vw;
+        height: 3.5vw;
+    }
+
+    #status-panel {
+        font-size: 1.2em;
+        padding: 8px;
+    }
+
+    #main-menu button {
+        width: 220px;
+        padding: 12px 20px;
+        font-size: 1.1em;
+    }
+
+    .dialog-box {
+        min-width: 80vw;
+    }
+}

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Advanced</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Audio paths are correct, looking inside the 'audio' subfolder -->
+    <audio id="background-music" src="audio/background.mp3" loop></audio>
+
+    <!-- Main Menu Screen -->
+    <div id="main-menu" class="screen active">
+        <h1>Tic-Tac-Toe</h1>
+        <button id="vs-player-btn"><i class="fas fa-users"></i> Player vs Player</button>
+        <button id="vs-ai-btn"><i class="fas fa-robot"></i> Player vs AI</button>
+        <button id="settings-btn"><i class="fas fa-cog"></i> Settings</button>
+        <button id="home-btn"><i class="fas fa-home"></i> Home</button>
+        
+        <div id="ai-difficulty-selection" class="hidden">
+            <h3>Select AI Difficulty</h3>
+            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
+            <button class="difficulty-btn" data-difficulty="medium">Medium</button>
+            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
+        </div>
+    </div>
+
+    <!-- The rest of your file is exactly as you provided it, which is correct. -->
+
+    <!-- Settings Screen -->
+    <div id="settings-screen" class="screen hidden">
+        <h2>Settings</h2>
+        <div class="setting-item">
+            <span>Background Music</span>
+            <label class="switch">
+                <input type="checkbox" id="music-toggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div class="setting-item">
+            <span>Sound Effects (SFX)</span>
+            <label class="switch">
+                <input type="checkbox" id="sfx-toggle" checked>
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <button id="back-to-menu-btn">Back</button>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-container" class="screen hidden">
+        <div class="game-header">
+            <h2 id="status-display">X's Turn</h2>
+            <button id="main-menu-btn">Main Menu</button>
+        </div>
+        <div id="board-container">
+            <div id="board" class="board">
+                <div class="cell" data-cell-index="0"></div>
+                <div class="cell" data-cell-index="1"></div>
+                <div class="cell" data-cell-index="2"></div>
+                <div class="cell" data-cell-index="3"></div>
+                <div class="cell" data-cell-index="4"></div>
+                <div class="cell" data-cell-index="5"></div>
+                <div class="cell" data-cell-index="6"></div>
+                <div class="cell" data-cell-index="7"></div>
+                <div class="cell" data-cell-index="8"></div>
+            </div>
+            <canvas id="line-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Win Popup Screen -->
+    <div id="win-popup" class="popup-container hidden">
+        <canvas id="particle-canvas"></canvas>
+        <div class="popup-content">
+            <h2 id="win-message"></h2>
+            <button id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <!-- This link is correct, as script.js is in the same folder -->
+    <script src="script.js"></script>
+</body>
+</html>

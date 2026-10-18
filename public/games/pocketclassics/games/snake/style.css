@@ -1,0 +1,159 @@
+:root {
+    --bg-color: #1a1a1a;
+    --primary-color: #34d399; /* Emerald green */
+    --secondary-color: #f43f5e; /* Rose red */
+    --text-color: #f5f5f5;
+    --border-color: #444;
+    --overlay-bg: rgba(0, 0, 0, 0.85);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+.game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vw;
+    max-width: 500px;
+    max-height: 500px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    background-color: #222;
+}
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+}
+.ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+#game-ui {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    font-size: 1.2em;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: all;
+}
+#pause-btn {
+    background: none;
+    border: 2px solid var(--text-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    width: 35px;
+    height: 35px;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--overlay-bg);
+    display: none; /* Hide all screens by default */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: all;
+    gap: 20px;
+}
+.screen.active {
+    display: flex;
+    opacity: 1;
+}
+.screen h1 { font-size: 3em; color: var(--primary-color); margin-bottom: 0; }
+.screen h2 { font-size: 2.5em; color: var(--primary-color); margin-bottom: 0; }
+#game-over-screen h2 { color: var(--secondary-color); }
+.screen p { font-size: 1.2em; margin: 0; }
+.difficulty-selector { display: flex; gap: 10px; }
+.difficulty-btn {
+    padding: 10px 20px;
+    font-size: 1em; font-weight: 600;
+    background-color: var(--border-color);
+    color: var(--text-color);
+    border: 2px solid transparent;
+    border-radius: 8px; cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.difficulty-btn:hover { background-color: #555; }
+.difficulty-btn.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--bg-color);
+}
+.action-btn {
+    padding: 15px 30px; font-size: 1.2em;
+    font-weight: 600; border: none;
+    border-radius: 8px; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+    min-width: 200px;
+}
+.action-btn.secondary {
+    background-color: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+}
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+/* Settings Screen Styles */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 220px;
+    font-size: 1.2em;
+}
+.toggle-btn {
+    width: 60px;
+    height: 30px;
+    background-color: var(--border-color);
+    border-radius: 15px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+.toggle-btn span {
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    width: 24px;
+    height: 24px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
+.toggle-btn.active {
+    background-color: var(--primary-color);
+}
+.toggle-btn.active span {
+    transform: translateX(29px);
+}

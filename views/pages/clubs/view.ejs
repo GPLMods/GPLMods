@@ -2516,6 +2516,11 @@ function getUserAvatarUrl(u) {
         <a href="/clubs" class="rail-item" title="Discover Clubs &amp; Communities">
             <i class="fas fa-compass" style="font-size: 1.2rem;"></i>
         </a>
+
+        <!-- Pocket Classics Arcade -->
+        <a href="/games/hub?clubId=<%= club._id %>" class="rail-item" title="Play Pocket Classics Arcade Games" style="color: #ffd700; background: rgba(255, 215, 0, 0.12); border: 1px solid rgba(255, 215, 0, 0.35);">
+            <i class="fas fa-gamepad" style="font-size: 1.2rem;"></i>
+        </a>
     </div>
 
     <!-- ========================================== -->
@@ -2550,6 +2555,10 @@ function getUserAvatarUrl(u) {
                 <a href="/clubs/<%= club.slug %>/preview" class="club-menu-item">
                     <i class="fas fa-info-circle"></i>
                     <span>Club Overview &amp; Info</span>
+                </a>
+                <a href="/games/hub?clubId=<%= club._id %>" class="club-menu-item" style="color: #ffd700;">
+                    <i class="fas fa-gamepad" style="color: #ffd700;"></i>
+                    <span>Play Arcade Games</span>
                 </a>
                 <div class="club-menu-item" onclick="openUniqueInviteModal(); toggleClubMenu();">
                     <i class="fas fa-user-plus" style="color: var(--gold);"></i>
@@ -2756,6 +2765,12 @@ function getUserAvatarUrl(u) {
                         <% } %>
                     </button>
 
+                    <!-- Play Arcade Games (Desktop Quick Button) -->
+                    <a href="/games/hub?clubId=<%= club._id %>" class="topbar-btn" title="Play Pocket Classics Arcade Games with Club Members" style="color: #ffd700; border-color: rgba(255,215,0,0.35); background: rgba(255,215,0,0.1); border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-weight: 600;">
+                        <i class="fas fa-gamepad"></i>
+                        <span>Arcade</span>
+                    </a>
+
                     <!-- Tracked Creators Quick Button (Desktop only) -->
                     <button type="button" class="topbar-btn" onclick="openTrackedCreatorsModal()" title="Tracked Creators & Updates" style="color: #64b5f6; border-color: rgba(100,181,246,0.3); background: rgba(100,181,246,0.08); border-radius: 8px;">
                         <i class="fas fa-rss"></i>
@@ -2794,6 +2809,10 @@ function getUserAvatarUrl(u) {
                             <i class="fas fa-users" style="color: #a78bfa; font-size: 0.95rem;"></i>
                             <span>Channel Members</span>
                         </div>
+                        <a href="/games/hub?clubId=<%= club._id %>" class="topbar-dropdown-item" style="color: #ffd700; text-decoration: none;">
+                            <i class="fas fa-gamepad" style="color: #ffd700; font-size: 0.95rem;"></i>
+                            <span>Play Arcade Games</span>
+                        </a>
                     </div>
                 </div>
             </div>

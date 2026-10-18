@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pocket Classics | GPLMods Arcade</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Pocket Classics - A premium retro and multiplayer arcade collection with 2048, Chess, Checkers, Air Hockey, Snake, and Tic-Tac-Toe on GPLMods.">
+    <meta name="keywords" content="Pocket Classics, GPLMods Arcade, 2048, Chess, Checkers, Snake, TicTacToe, Online Multiplayer, Retro Games">
+    <meta property="og:title" content="Pocket Classics | GPLMods Arcade">
+    <meta property="og:description" content="Play classic retro and 2-player multiplayer board games online for free with real-time room chat and leaderboards.">
+    <meta property="og:image" content="/games/pocketclassics/assets/logo.png">
+    <meta property="og:type" content="website">
+
+    <link rel="manifest" href="/games/pocketclassics/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/games/pocketclassics/css/arcade.css">
+
+    <style>
+        .splash-stage {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+            transition: opacity 0.5s ease;
+        }
+
+        .video-box {
+            width: 100%;
+            max-width: 820px;
+            aspect-ratio: 16 / 9;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 0 40px var(--arc-accent-glow), 0 20px 60px rgba(0,0,0,0.8);
+            border: 2px solid var(--arc-accent);
+            background: #000;
+            position: relative;
+        }
+
+        .video-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .progress-box {
+            width: 100%;
+            max-width: 380px;
+            margin-top: 25px;
+            text-align: center;
+        }
+
+        .bar-outer {
+            width: 100%;
+            height: 10px;
+            background: #222;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--arc-border);
+            margin-bottom: 10px;
+        }
+
+        .bar-inner {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--arc-accent), #fff);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px var(--arc-accent-glow);
+        }
+
+        .status-txt {
+            font-size: 0.88rem;
+            color: var(--arc-text-muted);
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body class="arcade-body" data-theme="classic">
+
+    <div class="splash-stage" id="splashScreen">
+        <!-- 16:9 Video Animation of Logo -->
+        <div class="video-box">
+            <video id="splashVideo" autoplay muted playsinline poster="/games/pocketclassics/assets/logo.png">
+                <source src="/games/pocketclassics/assets/logo.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="progress-box">
+            <div class="bar-outer">
+                <div class="bar-inner" id="splashProgressBar"></div>
+            </div>
+            <div class="status-txt" id="splashStatusText">
+                <i class="fas fa-gamepad" style="color: var(--arc-accent); margin-right: 6px;"></i> Loading Pocket Classics...
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" class="arc-btn arc-btn-accent" id="enterArcadeBtn" style="padding: 10px 24px;">
+                    <span>Enter Arcade</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <button type="button" class="arc-btn" id="muteSplashBtn" title="Toggle Music">
+                    <i class="fas fa-volume-up" id="muteIcon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Audio Engine -->
+    <script src="/games/pocketclassics/js/audio-manager.js"></script>
+    <script src="/games/pocketclassics/js/theme-manager.js"></script>
+    <script src="/games/pocketclassics/js/protection.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('splashVideo');
+            const pBar = document.getElementById('splashProgressBar');
+            const statusTxt = document.getElementById('splashStatusText');
+            const enterBtn = document.getElementById('enterArcadeBtn');
+            const muteBtn = document.getElementById('muteSplashBtn');
+            const muteIcon = document.getElementById('muteIcon');
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.floor(Math.random() * 20) + 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(progressInterval);
+                    pBar.style.width = '100%';
+                    statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Ready to Play!</span>';
+                } else {
+                    pBar.style.width = progress + '%';
+                }
+            }, 300);
+
+            // Attempt video playback
+            if (video) {
+                video.play().catch(() => {});
+                video.addEventListener('ended', () => {
+                    setTimeout(() => {
+                        window.location.href = '/games/hub';
+                    }, 500);
+                });
+            }
+
+            // Enter button
+            enterBtn.addEventListener('click', () => {
+                window.location.href = '/games/hub';
+            });
+
+            // Mute button
+            muteBtn.addEventListener('click', () => {
+                if (window.ArcadeAudio) {
+                    const enabled = window.ArcadeAudio.toggleMusic();
+                    muteIcon.className = enabled ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+/* Note: The :root variables have been removed as they are defined globally now */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; margin: 0; background-color: #333;
+    color: #f0f0f0; overflow: hidden;
+}
+.game-container { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+.game-info, .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; max-width: 500px; font-size: 1.2em; padding: 0 10px; min-height: 30px;
+}
+#status-message { flex-grow: 1; text-align: center; font-style: italic; color: #ffc107; }
+.score { display: flex; align-items: center; gap: 10px; }
+.score .piece { width: 24px; height: 24px; border-radius: 50%; }
+#board-container {
+    width: 90vw; height: 90vw; max-width: 500px; max-height: 500px;
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    background-color: #008000; border: 5px solid #004d00;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+.cell {
+    border: 1px solid #004d00; display: flex; justify-content: center;
+    align-items: center; position: relative;
+}
+.piece {
+    width: 85%; height: 85%; border-radius: 50%;
+    transition: transform 0.6s, background-color 0.5s; transform-style: preserve-3d;
+}
+.piece.black { background-color: #111; box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
+.piece.white { background-color: #f0f0f0; box-shadow: inset 0 3px 5px rgba(255,255,255,0.5); }
+.valid-move-highlighter {
+    position: absolute; width: 40%; height: 40%; background-color: rgba(255, 255, 0, 0.5);
+    border-radius: 50%; cursor: pointer; transition: transform 0.2s ease-out, background-color 0.2s;
+}
+.valid-move-highlighter:hover { transform: scale(1.15); background-color: rgba(255, 255, 0, 0.7); }
+.overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center;
+    align-items: center; z-index: 100; flex-direction: column; text-align: center;
+    transition: opacity 0.3s;
+}
+.menu { background-color: #2c2c2c; padding: 40px; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+.menu h1, .menu h2 { margin-top: 0; }
+.menu button {
+    display: block; width: 100%; padding: 15px; margin: 10px 0; font-size: 1.1em;
+    cursor: pointer; border: none; border-radius: 5px; background-color: #4CAF50;
+    color: white; transition: background-color 0.3s;
+}
+.menu button:hover { background-color: #45a049; }
+.hidden { display: none !important; }
+.invisible { opacity: 0; pointer-events: none; }
+#game-screen { display: flex; flex-direction: column; align-items: center; }
+#settings-btn { font-size: 1.5rem; cursor: pointer; user-select: none; padding: 0 10px; }
+.settings-row { display: flex; justify-content: space-between; align-items: center; margin: 20px 0; gap: 20px; }
+.toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 26px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: #4CAF50; }
+input:checked + .slider:before { transform: translateX(24px); }
+#win-particles-canvas { position: absolute; top: 0; left: 0; z-index: 101; pointer-events: none; }
+#win-popup-content { position: relative; z-index: 102; }
+#win-result { font-size: 3rem; margin-bottom: 10px; }
+#win-score { font-size: 1.5rem; margin-bottom: 30px; }
