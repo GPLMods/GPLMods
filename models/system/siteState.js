@@ -25,15 +25,48 @@ const SiteStateSchema = new Schema({
     maintenanceMessage: { type: String, default: 'GPL Mods is currently down for scheduled maintenance. We will be back online shortly. Thank you for your patience!' },
     unavailableTitle: { type: String, default: 'Service Temporarily Unavailable' },
     unavailableMessage: { type: String, default: 'This specific service or page is currently unavailable. Please check back later.' },
+    // --- STATUS LABELS & CUSTOM STATUS NAME ---
+    customStatusName: { type: String, default: '', trim: true },
+    currentStatusLabel: { type: String, default: '', trim: true },
+
     // --- DYNAMIC COMING SOON CONFIGURATION ---
     comingSoonTitle: { type: String, default: 'Something Awesome is Coming Soon' },
     comingSoonMessage: { type: String, default: "We're working hard to bring you a new and exciting feature. Stay tuned for the big reveal!" },
+    comingSoonMessages: [{ type: String, trim: true }],
     comingSoonCustomText: { type: String, default: 'Feature is currently under development. Stay tuned for official announcements!' },
     comingSoonEnableTimer: { type: Boolean, default: true },
+    comingSoonTimeType: {
+        type: String,
+        enum: ['countdown', 'date', 'flexible', 'unknown'],
+        default: 'countdown'
+    },
+    comingSoonTimeframeText: { type: String, default: '', trim: true },
     comingSoonLaunchDate: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
     comingSoonAllowedRoles: [{ type: String, trim: true }],
     comingSoonAllowedUsers: [{ type: String, trim: true }],
+    comingSoonTargetRoles: [{ type: String, trim: true }],
     comingSoonAutoPublishOnTimerEnd: { type: Boolean, default: true },
+
+    // --- PATH-SPECIFIC COMING SOON ENGINE ---
+    comingSoonPaths: [{
+        pathPattern: { type: String, default: '', trim: true },
+        title: { type: String, default: 'Coming Soon' },
+        message: { type: String, default: '' },
+        messages: [{ type: String, trim: true }],
+        customText: { type: String, default: '' },
+        timeType: {
+            type: String,
+            enum: ['countdown', 'date', 'flexible', 'unknown'],
+            default: 'countdown'
+        },
+        timeframeText: { type: String, default: '', trim: true },
+        launchDate: { type: Date, default: null },
+        allowedRoles: [{ type: String, trim: true }],
+        allowedUsers: [{ type: String, trim: true }],
+        targetRoles: [{ type: String, trim: true }],
+        autoPublishOnTimerEnd: { type: Boolean, default: true },
+        enabled: { type: Boolean, default: true }
+    }],
     enableAutomationEngine: {
         type: Boolean,
         default: false

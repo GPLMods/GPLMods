@@ -268,6 +268,140 @@
             border-top: 1px solid rgba(255,255,255,0.05); 
         }
 
+        /* Multiple Messages Cards Container */
+        .coming-soon-messages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 750px;
+            margin-bottom: 30px;
+        }
+        .coming-soon-msg-card {
+            background: rgba(26, 30, 41, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--gold);
+            border-radius: 12px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            text-align: left;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .coming-soon-msg-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 215, 0, 0.4);
+        }
+        .coming-soon-msg-card .msg-card-icon {
+            font-size: 1.25em;
+            color: var(--gold);
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .coming-soon-msg-card .msg-card-content {
+            color: #e2e8f0;
+            font-size: 0.98em;
+            line-height: 1.55;
+        }
+
+        /* Flexible & Unknown Timeframe Cards */
+        .timeframe-unknown-card {
+            background: rgba(26, 30, 41, 0.85);
+            border: 1px dashed rgba(255, 215, 0, 0.4);
+            border-radius: 16px;
+            padding: 24px 30px;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .timeframe-unknown-card .unknown-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid var(--gold);
+            border-radius: 20px;
+            color: var(--gold);
+            font-weight: 600;
+            font-size: 0.92em;
+            margin-bottom: 10px;
+        }
+        .timeframe-unknown-card .unknown-subtext {
+            color: var(--silver);
+            font-size: 0.92em;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .timeframe-flexible-card {
+            background: rgba(26, 30, 41, 0.85);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 16px;
+            padding: 18px 28px;
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 25px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .timeframe-flexible-card .timeframe-label {
+            font-size: 0.82em;
+            color: var(--silver);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .timeframe-flexible-card .timeframe-value {
+            font-size: 1.35em;
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 10px var(--glow-gold);
+        }
+
+        /* Top Status and Path Badges */
+        .top-badges-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .status-indicator-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            padding: 5px 14px;
+            border-radius: 30px;
+            color: #00e5ff;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .path-indicator-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(162, 133, 245, 0.12);
+            border: 1px solid rgba(162, 133, 245, 0.4);
+            padding: 5px 14px;
+            border-radius: 30px;
+            color: #c4b5fd;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
         @media (max-width: 768px) {
             .main-content h1 { font-size: 2.2em; }
             .main-content .hero-desc { font-size: 1.05em; }
@@ -277,6 +411,7 @@
             .form-group { flex-direction: column; }
             .form-group button { width: 100%; }
             .coming-soon-custom-card { flex-direction: column; text-align: center; }
+            .timeframe-flexible-card { flex-direction: column; text-align: center; gap: 8px; }
         }
     </style>
 </head>
@@ -300,23 +435,104 @@
 
     <main class="main-content container">
         
-        <div class="pulse-badge">
-            <i class="fas fa-rocket"></i>
-            <span>Exciting Update in Progress</span>
+        <div class="top-badges-row">
+            <div class="pulse-badge" style="margin-bottom: 0;">
+                <i class="fas fa-rocket"></i>
+                <span>Exciting Update in Progress</span>
+            </div>
+
+            <% if (typeof customStatusName !== 'undefined' && customStatusName) { %>
+                <div class="status-indicator-badge">
+                    <i class="fas fa-satellite-dish"></i>
+                    <span>Status: <%= customStatusName %></span>
+                </div>
+            <% } else if (typeof currentStatusLabel !== 'undefined' && currentStatusLabel && currentStatusLabel !== 'online') { %>
+                <div class="status-indicator-badge">
+                    <i class="fas fa-satellite-dish"></i>
+                    <span>Status: <%= currentStatusLabel %></span>
+                </div>
+            <% } %>
+
+            <% if (typeof pathPattern !== 'undefined' && pathPattern) { %>
+                <div class="path-indicator-badge">
+                    <i class="fas fa-route"></i>
+                    <span>Path: <%= pathPattern %></span>
+                </div>
+            <% } %>
         </div>
 
         <h1>
             <%- (typeof title !== 'undefined' && title) ? title.replace(/Coming Soon/i, '<span>Coming Soon</span>') : '<span>Something Awesome</span> is Coming Soon' %>
         </h1>
         
-        <p class="hero-desc">
-            <%= (typeof message !== 'undefined' && message) ? message : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!" %>
-        </p>
+        <!-- MULTIPLE SEPARATE MESSAGES OR SINGLE HERO MESSAGE -->
+        <% const hasMultipleMessages = typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0; %>
+        <% if (hasMultipleMessages) { %>
+            <div class="coming-soon-messages-container">
+                <% messages.forEach((msg, idx) => { %>
+                    <% if (msg && typeof msg === 'string' && msg.trim()) { %>
+                        <div class="coming-soon-msg-card">
+                            <div class="msg-card-icon"><i class="fas fa-bullhorn"></i></div>
+                            <div class="msg-card-content"><%= msg.trim() %></div>
+                        </div>
+                    <% } %>
+                <% }); %>
+            </div>
+        <% } else { %>
+            <p class="hero-desc">
+                <%= (typeof message !== 'undefined' && message) ? message : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!" %>
+            </p>
+        <% } %>
 
-        <% const showTimer = (typeof enableTimer === 'undefined' || enableTimer === true || enableTimer === 'true'); %>
+        <% const resolvedTimeType = typeof timeType !== 'undefined' ? timeType : 'countdown'; %>
+        <% const resolvedTimeframe = (typeof timeframeText !== 'undefined' && timeframeText) ? timeframeText.trim() : ''; %>
+        <% const isUnknownTime = resolvedTimeType === 'unknown' || resolvedTimeframe.toLowerCase() === 'unknown' || resolvedTimeframe.toLowerCase() === 'tba'; %>
+        <% const showTimer = (typeof enableTimer === 'undefined' || enableTimer === true || enableTimer === 'true') && !isUnknownTime; %>
         <% const targetLaunchStr = (typeof launchDate !== 'undefined' && launchDate) ? launchDate : ''; %>
 
-        <% if (showTimer && targetLaunchStr) { %>
+        <% if (isUnknownTime) { %>
+            <!-- UNKNOWN / TO BE ANNOUNCED TIMEFRAME BOX -->
+            <div class="timeframe-unknown-card">
+                <div class="unknown-pill">
+                    <i class="fas fa-hourglass-half"></i>
+                    <span>Launch Window: To Be Announced (TBA)</span>
+                </div>
+                <p class="unknown-subtext">
+                    <%= resolvedTimeframe && resolvedTimeframe.toLowerCase() !== 'unknown' && resolvedTimeframe.toLowerCase() !== 'tba' ? resolvedTimeframe : "Our engineering team is actively building this release. Final launch date is currently undisclosed and will be broadcasted once ready." %>
+                </p>
+            </div>
+        <% } else if (resolvedTimeType === 'flexible' || (resolvedTimeframe && resolvedTimeframe.toLowerCase() !== 'countdown')) { %>
+            <!-- FLEXIBLE TIMEFRAME (e.g. "December 2026", "Late 2026", "Q4 2026", "2027") -->
+            <div class="timeframe-flexible-card">
+                <i class="far fa-calendar-check" style="color: var(--gold); font-size: 1.8em;"></i>
+                <div>
+                    <div class="timeframe-label">Target Release Window</div>
+                    <div class="timeframe-value"><%= resolvedTimeframe || 'Coming Soon' %></div>
+                </div>
+            </div>
+
+            <% if (showTimer && targetLaunchStr) { %>
+                <!-- Optional Countdown Timer below flexible timeframe -->
+                <div id="countdown" data-launch="<%= targetLaunchStr %>">
+                    <div class="time-block">
+                        <div id="days" class="number">--</div>
+                        <div class="label">Days</div>
+                    </div>
+                    <div class="time-block">
+                        <div id="hours" class="number">--</div>
+                        <div class="label">Hours</div>
+                    </div>
+                    <div class="time-block">
+                        <div id="minutes" class="number">--</div>
+                        <div class="label">Minutes</div>
+                    </div>
+                    <div class="time-block">
+                        <div id="seconds" class="number">--</div>
+                        <div class="label">Seconds</div>
+                    </div>
+                </div>
+            <% } %>
+        <% } else if (showTimer && targetLaunchStr) { %>
             <!-- DYNAMIC COUNTDOWN TIMER (Days, Hours, Minutes, Seconds) -->
             <div id="countdown" data-launch="<%= targetLaunchStr %>">
                 <div class="time-block">

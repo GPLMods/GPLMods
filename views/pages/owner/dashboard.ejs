@@ -20,6 +20,7 @@
     .owner-card.dns::before { background: #9c27b0; }
     .owner-card.improvmx::before { background: #ff9800; }
     .owner-card.devtool::before { background: #e53935; }
+    .owner-card.sitestate::before { background: #FFD700; }
 
     .owner-card:hover { border-color: #555; transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.5); }
     
@@ -37,6 +38,8 @@
     .owner-card.dns .card-title i { color: #9c27b0; }
     .owner-card.improvmx .card-title i { color: #ff9800; }
     .owner-card.devtool .card-title i { color: #e53935; }
+    .owner-card.sitestate .card-title i { color: #FFD700; }
+    .owner-modal-card.wide-modal { max-width: 600px; }
     
     .card-desc { color: #aaa; font-size: 0.88em; margin: 0; line-height: 1.4; flex-grow: 1; }
     
@@ -427,7 +430,128 @@
         </div>
     </div>
 
-    <!-- 10. DevTools & Debugger Protection -->
+    <!-- 10. Site State & Path-Specific Coming Soon Manager -->
+    <div class="owner-card sitestate" style="grid-column: 1 / -1;">
+        <div class="card-title">
+            <div class="card-title-left">
+                <i class="fas fa-hourglass-half"></i> 
+                <span>Site State & Path-Specific Coming Soon Hub</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <% if (typeof siteState !== 'undefined' && siteState && siteState.status === 'online') { %>
+                    <div class="owner-badge active"><i class="fas fa-check-circle"></i> Online</div>
+                <% } else if (typeof siteState !== 'undefined' && siteState && siteState.status === 'coming-soon') { %>
+                    <div class="owner-badge warning"><i class="fas fa-clock"></i> Coming Soon Mode</div>
+                <% } else { %>
+                    <div class="owner-badge error"><i class="fas fa-tools"></i> Maintenance</div>
+                <% } %>
+                <% if (typeof siteState !== 'undefined' && siteState && (siteState.customStatusName || siteState.currentStatusLabel)) { %>
+                    <div class="owner-badge info">
+                        <i class="fas fa-tag"></i> 
+                        <%= (siteState.currentStatusLabel || 'Current Status') %>: <%= (siteState.customStatusName || 'Active') %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        <p class="card-desc">
+            Granular access control & launch choreography. Restrict full site or individual route paths (e.g. <code>/clubs</code>, <code>/vip</code>) to Coming Soon mode with custom bulletin messages, targeted roles, and flexible timeframes (Year/Month/Date or Unknown/TBA).
+        </p>
+
+        <!-- Current Configuration Summary Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 4px;">
+            <div style="background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px;">
+                <div style="font-size: 0.75em; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
+                    <i class="fas fa-globe"></i> Global Status & Timeframe
+                </div>
+                <div style="font-size: 0.9em; color: #fff; font-weight: 600; margin-bottom: 2px;">
+                    Status: <span style="color: var(--gold);"><%= (typeof siteState !== 'undefined' && siteState && siteState.status) || 'online' %></span>
+                </div>
+                <div style="font-size: 0.8em; color: #aaa;">
+                    Timeframe: 
+                    <span style="color: #4fc3f7;">
+                        <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'unknown') ? 'Unknown / TBA' : ((typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeframeText) || (typeof siteState !== 'undefined' && siteState && siteState.comingSoonLaunchDate ? new Date(siteState.comingSoonLaunchDate).toLocaleDateString() : 'None')) %>
+                    </span>
+                </div>
+                <div style="font-size: 0.8em; color: #aaa; margin-top: 2px;">
+                    Messages: <b style="color: #fff;"><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessages && siteState.comingSoonMessages.length) ? siteState.comingSoonMessages.length : (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessage ? 1 : 0) %></b> bulletin cards configured
+                </div>
+            </div>
+
+            <div style="background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px;">
+                <div style="font-size: 0.75em; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
+                    <i class="fas fa-route"></i> Path-Specific Rules
+                </div>
+                <div style="font-size: 0.9em; color: #fff; font-weight: 600; margin-bottom: 2px;">
+                    Active Rules: <span style="color: var(--gold);"><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonPaths) ? siteState.comingSoonPaths.filter(p => p.enabled !== false).length : 0 %></span> / <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonPaths) ? siteState.comingSoonPaths.length : 0 %>
+                </div>
+                <div style="font-size: 0.8em; color: #aaa;">
+                    Route paths intercept assigned roles with tailored Coming Soon notices while exempting owners and bypass users.
+                </div>
+            </div>
+        </div>
+
+        <!-- Path Rules Table -->
+        <% if (typeof siteState !== 'undefined' && siteState && siteState.comingSoonPaths && siteState.comingSoonPaths.length > 0) { %>
+            <div style="background: #111; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px; margin-top: 6px; overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.82em; color: #ccc;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #2a2a2a; text-align: left; color: #888;">
+                            <th style="padding: 6px 8px;">Path</th>
+                            <th style="padding: 6px 8px;">Title</th>
+                            <th style="padding: 6px 8px;">Target Roles</th>
+                            <th style="padding: 6px 8px;">Timeframe</th>
+                            <th style="padding: 6px 8px;">Status</th>
+                            <th style="padding: 6px 8px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% siteState.comingSoonPaths.forEach(function(rule) { %>
+                            <tr style="border-bottom: 1px solid #1f1f1f;">
+                                <td style="padding: 6px 8px; font-family: monospace; color: var(--gold); font-weight: 600;"><%= rule.pathPattern %></td>
+                                <td style="padding: 6px 8px;"><%= rule.title || 'Coming Soon' %></td>
+                                <td style="padding: 6px 8px;">
+                                    <% if (rule.targetRoles && rule.targetRoles.length > 0) { %>
+                                        <span class="owner-badge warning" style="padding: 2px 6px; font-size: 0.72em;"><%= rule.targetRoles.join(', ') %></span>
+                                    <% } else { %>
+                                        <span style="color: #777;">All non-exempt</span>
+                                    <% } %>
+                                </td>
+                                <td style="padding: 6px 8px; color: #81d4fa;">
+                                    <%= rule.timeType === 'unknown' ? 'Unknown / TBA' : (rule.timeframeText || (rule.launchDate ? new Date(rule.launchDate).toLocaleDateString() : 'N/A')) %>
+                                </td>
+                                <td style="padding: 6px 8px;">
+                                    <% if (rule.enabled !== false) { %>
+                                        <span class="owner-badge active" style="padding: 2px 6px; font-size: 0.7em;">Active</span>
+                                    <% } else { %>
+                                        <span class="owner-badge" style="padding: 2px 6px; font-size: 0.7em; color: #777;">Disabled</span>
+                                    <% } %>
+                                </td>
+                                <td style="padding: 6px 8px; text-align: right;">
+                                    <button class="btn-action danger" style="padding: 3px 8px; font-size: 0.75em; display: inline-flex;" onclick="deleteComingSoonPath('<%= rule._id %>', '<%= rule.pathPattern %>')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+
+        <div class="action-group" style="margin-top: 10px;">
+            <div class="action-row">
+                <button type="button" class="btn-action primary" onclick="openSiteStateModal()">
+                    <i class="fas fa-sliders-h"></i> Configure Global Site State & Messages
+                </button>
+                <button type="button" class="btn-action info" onclick="openComingSoonPathModal()">
+                    <i class="fas fa-plus-circle"></i> Add Path-Specific Coming Soon Rule
+                </button>
+            </div>
+            <div class="status-feedback" id="siteStateFeedback"></div>
+        </div>
+    </div>
+
+    <!-- 11. DevTools & Debugger Protection -->
     <div class="owner-card devtool">
         <div class="card-title">
             <div class="card-title-left"><i class="fas fa-shield-alt"></i> <span>DevTools & Debugger Protection</span></div>
@@ -534,6 +658,150 @@
                 <i class="fas fa-check"></i> Done
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Modal: Configure Global Site State & Messages -->
+<div id="siteStateModal" class="owner-modal-overlay">
+    <div class="owner-modal-card wide-modal">
+        <h3>
+            <span><i class="fas fa-sliders-h" style="color: var(--gold);"></i> Global Site State & Coming Soon</span>
+            <button type="button" class="close-btn" onclick="closeSiteStateModal()">&times;</button>
+        </h3>
+        <p style="color: #bbb; font-size: 0.85em; margin-bottom: 12px;">
+            Configure system status, custom status badges, multiple bulletin messages, and flexible launch timeframes.
+        </p>
+        <form id="siteStateForm" onsubmit="submitSiteState(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">System Status:</label>
+                    <select id="siteStateStatusSelect" class="owner-modal-input">
+                        <option value="online" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'online') ? 'selected' : '' %>>Online (Full Access)</option>
+                        <option value="coming-soon" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'coming-soon') ? 'selected' : '' %>>Coming Soon Mode</option>
+                        <option value="maintenance" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'maintenance') ? 'selected' : '' %>>Maintenance Mode</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Status Label:</label>
+                    <input type="text" id="siteStateCustomLabelInput" class="owner-modal-input" placeholder="e.g. Current Status" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.currentStatusLabel) || 'Current Status' %>">
+                </div>
+            </div>
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Custom Status Name / Headline:</label>
+            <input type="text" id="siteStateCustomNameInput" class="owner-modal-input" placeholder="e.g. Major V3 Overhaul, Server Migration, Beta Testing" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.customStatusName) || '' %>">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Type:</label>
+                    <select id="siteStateTimeTypeSelect" class="owner-modal-input">
+                        <option value="countdown" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'countdown') ? 'selected' : '' %>>Countdown Timer (Date)</option>
+                        <option value="flexible" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'flexible') ? 'selected' : '' %>>Flexible (Month/Year/Season)</option>
+                        <option value="unknown" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'unknown') ? 'selected' : '' %>>Unknown / TBA (Active Dev Card)</option>
+                        <option value="date" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'date') ? 'selected' : '' %>>Fixed Calendar Date</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Text (Year/Month/TBA):</label>
+                    <input type="text" id="siteStateTimeframeTextInput" class="owner-modal-input" placeholder="e.g. December 2026, Q4 2026, Unknown / TBA" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeframeText) || '' %>">
+                </div>
+            </div>
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date (for Countdown Timer):</label>
+            <input type="datetime-local" id="siteStateLaunchDateInput" class="owner-modal-input" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonLaunchDate) ? new Date(new Date(siteState.comingSoonLaunchDate).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '' %>">
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">
+                Multiple Separate Messages (1 bulletin card per line):
+            </label>
+            <textarea id="siteStateMessagesInput" class="owner-modal-input" rows="3" placeholder="Line 1: We are rebuilding the core backend engine.&#10;Line 2: New high-speed cloud mirrors are being provisioned.&#10;Line 3: Beta testers will receive early access keys."><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessages && siteState.comingSoonMessages.length > 0) ? siteState.comingSoonMessages.join('\n') : ((typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessage) || '') %></textarea>
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Target Roles (Optional comma-separated):</label>
+            <input type="text" id="siteStateTargetRolesInput" class="owner-modal-input" placeholder="e.g. user, guest (leave blank to show coming soon to all visitors)" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTargetRoles) ? siteState.comingSoonTargetRoles.join(', ') : '' %>">
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-action" style="flex: 1;" onclick="closeSiteStateModal()">Cancel</button>
+                <button type="submit" class="btn-action primary" style="flex: 2;" id="submitSiteStateBtn">
+                    <i class="fas fa-save"></i> Save Site State
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add / Edit Path-Specific Coming Soon Rule -->
+<div id="comingSoonPathModal" class="owner-modal-overlay">
+    <div class="owner-modal-card wide-modal">
+        <h3>
+            <span><i class="fas fa-route" style="color: #4fc3f7;"></i> Add Route Coming Soon Rule</span>
+            <button type="button" class="close-btn" onclick="closeComingSoonPathModal()">&times;</button>
+        </h3>
+        <p style="color: #bbb; font-size: 0.85em; margin-bottom: 12px;">
+            Target a specific route (e.g. <code>/clubs</code>, <code>/vip</code>) to show Coming Soon with custom role access and bulletin messages.
+        </p>
+        <form id="comingSoonPathForm" onsubmit="submitComingSoonPath(event)">
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Path Pattern (Exact or wildcard):</label>
+            <input type="text" id="pathRulePatternInput" class="owner-modal-input" placeholder="e.g. /clubs, /vip, /ios-store, /beta/*" required>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Page Title:</label>
+                    <input type="text" id="pathRuleTitleInput" class="owner-modal-input" placeholder="e.g. VIP Club Launching Soon">
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Type:</label>
+                    <select id="pathRuleTimeTypeSelect" class="owner-modal-input">
+                        <option value="countdown">Countdown to Date</option>
+                        <option value="flexible">Flexible (Month/Year/Season)</option>
+                        <option value="unknown">Unknown / TBA (Active Dev Card)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Text (Year/Month/TBA):</label>
+                    <input type="text" id="pathRuleTimeframeTextInput" class="owner-modal-input" placeholder="e.g. December 2026, Q4 2026, Unknown / TBA">
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date (Optional):</label>
+                    <input type="datetime-local" id="pathRuleLaunchDateInput" class="owner-modal-input">
+                </div>
+            </div>
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Primary Message / Summary:</label>
+            <input type="text" id="pathRuleMessageInput" class="owner-modal-input" placeholder="e.g. This upcoming section is undergoing final testing.">
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">
+                Multiple Separate Messages (1 bulletin card per line):
+            </label>
+            <textarea id="pathRuleMessagesInput" class="owner-modal-input" rows="3" placeholder="Enter separate bulleted cards (1 per line)..."></textarea>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Target Roles (roles that see Coming Soon):</label>
+                    <input type="text" id="pathRuleTargetRolesInput" class="owner-modal-input" placeholder="e.g. user, guest (blank = all non-exempt)">
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Allowed Roles (roles that bypass):</label>
+                    <input type="text" id="pathRuleAllowedRolesInput" class="owner-modal-input" placeholder="e.g. admin, moderator, vip">
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 16px; margin: 10px 0; font-size: 0.85em; color: #ccc;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="pathRuleAutoPublishCheckbox" checked> Auto-Publish on Timer End
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="pathRuleEnabledCheckbox" checked> Rule Enabled
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button type="button" class="btn-action" style="flex: 1;" onclick="closeComingSoonPathModal()">Cancel</button>
+                <button type="submit" class="btn-action info" style="flex: 2;" id="submitPathRuleBtn">
+                    <i class="fas fa-check"></i> Save Route Rule
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -1261,6 +1529,157 @@
             btn.innerHTML = orig;
             setTimeout(() => { feedbackEl.style.display = 'none'; }, 6000);
         }
+    }
+
+    // ==========================================
+    // SITE STATE & PATH-SPECIFIC COMING SOON
+    // ==========================================
+    function openSiteStateModal() {
+        const modal = document.getElementById('siteStateModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeSiteStateModal() {
+        const modal = document.getElementById('siteStateModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    }
+
+    async function submitSiteState(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitSiteStateBtn');
+        const origText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const rawMessages = document.getElementById('siteStateMessagesInput').value;
+        const messages = rawMessages.split('\n').map(s => s.trim()).filter(Boolean);
+
+        const payload = {
+            status: document.getElementById('siteStateStatusSelect').value,
+            customStatusName: document.getElementById('siteStateCustomNameInput').value.trim(),
+            currentStatusLabel: document.getElementById('siteStateCustomLabelInput').value.trim(),
+            comingSoonTimeType: document.getElementById('siteStateTimeTypeSelect').value,
+            comingSoonTimeframeText: document.getElementById('siteStateTimeframeTextInput').value.trim(),
+            comingSoonLaunchDate: document.getElementById('siteStateLaunchDateInput').value || null,
+            comingSoonMessages: messages,
+            comingSoonTargetRoles: document.getElementById('siteStateTargetRolesInput').value.split(',').map(s => s.trim()).filter(Boolean)
+        };
+
+        try {
+            const res = await fetch('/api/owner/site-state/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeSiteStateModal();
+                showOwnerSuccessModal({
+                    title: 'Site State Updated',
+                    message: data.message || 'Site state & Coming Soon configuration saved successfully.',
+                    details: 'Status: <b>' + data.siteState.status + '</b><br>Custom Status: <b>' + (data.siteState.customStatusName || 'Default') + '</b><br>Timeframe: ' + (data.siteState.comingSoonTimeframeText || data.siteState.comingSoonTimeType)
+                });
+                setTimeout(() => window.location.reload(), 1400);
+            } else {
+                alert('Failed to update site state: ' + (data.message || data.error));
+            }
+        } catch (err) {
+            alert('Error updating site state: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origText;
+        }
+    }
+
+    function openComingSoonPathModal() {
+        const modal = document.getElementById('comingSoonPathModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    function closeComingSoonPathModal() {
+        const modal = document.getElementById('comingSoonPathModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        setTimeout(() => { modal.style.display = 'none'; }, 200);
+    }
+
+    async function submitComingSoonPath(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitPathRuleBtn');
+        const origText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        const rawMessages = document.getElementById('pathRuleMessagesInput').value;
+        const messages = rawMessages.split('\n').map(s => s.trim()).filter(Boolean);
+
+        const payload = {
+            pathPattern: document.getElementById('pathRulePatternInput').value.trim(),
+            title: document.getElementById('pathRuleTitleInput').value.trim(),
+            message: document.getElementById('pathRuleMessageInput').value.trim(),
+            messages: messages,
+            timeType: document.getElementById('pathRuleTimeTypeSelect').value,
+            timeframeText: document.getElementById('pathRuleTimeframeTextInput').value.trim(),
+            launchDate: document.getElementById('pathRuleLaunchDateInput').value || null,
+            targetRoles: document.getElementById('pathRuleTargetRolesInput').value.split(',').map(s => s.trim()).filter(Boolean),
+            allowedRoles: document.getElementById('pathRuleAllowedRolesInput').value.split(',').map(s => s.trim()).filter(Boolean),
+            autoPublishOnTimerEnd: document.getElementById('pathRuleAutoPublishCheckbox').checked,
+            enabled: document.getElementById('pathRuleEnabledCheckbox').checked
+        };
+
+        try {
+            const res = await fetch('/api/owner/site-state/coming-soon-path', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeComingSoonPathModal();
+                showOwnerSuccessModal({
+                    title: 'Coming Soon Route Configured',
+                    message: data.message || 'Route-specific rule saved.',
+                    details: 'Path: <code>' + payload.pathPattern + '</code><br>Target Roles: ' + (payload.targetRoles.length ? payload.targetRoles.join(', ') : 'All non-exempt visitors')
+                });
+                setTimeout(() => window.location.reload(), 1400);
+            } else {
+                alert('Failed to configure path rule: ' + (data.message || data.error));
+            }
+        } catch (err) {
+            alert('Error configuring path rule: ' + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origText;
+        }
+    }
+
+    function deleteComingSoonPath(ruleId, pattern) {
+        openOwnerDeleteModal({
+            title: 'Delete Coming Soon Route Rule',
+            message: 'Are you sure you want to delete the Coming Soon interception rule for ' + pattern + '?',
+            details: 'Rule ID: <code>' + ruleId + '</code><br>Visitors will immediately regain normal access to this path.',
+            confirmText: 'Delete Rule',
+            onConfirm: async () => {
+                const res = await fetch('/api/owner/site-state/coming-soon-path/' + encodeURIComponent(ruleId), {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showOwnerSuccessModal({
+                        title: 'Rule Removed',
+                        message: 'Route rule for ' + pattern + ' was deleted successfully.'
+                    });
+                    setTimeout(() => window.location.reload(), 1400);
+                } else {
+                    alert('Failed to delete rule: ' + (data.message || data.error));
+                }
+            }
+        });
     }
 
     // Auto-load diagnostics on startup

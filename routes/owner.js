@@ -806,6 +806,203 @@ router.post('/api/owner/debugger/generate-key', catchAsync(async (req, res) => {
         masterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2' 
     });
 }));
+// ==========================================
+// SITE STATE & COMING SOON ENGINE API
+// ==========================================
+router.get('/api/owner/site-state', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        siteState = new SiteState({ singletonId: 'master-state' });
+        await siteState.save();
+    }
+    res.json({
+        success: true,
+        siteState: {
+            status: siteState.status,
+            customStatusName: siteState.customStatusName || '',
+            currentStatusLabel: siteState.currentStatusLabel || '',
+            targetAudience: siteState.targetAudience,
+            comingSoonTitle: siteState.comingSoonTitle,
+            comingSoonMessage: siteState.comingSoonMessage,
+            comingSoonMessages: siteState.comingSoonMessages || [],
+            comingSoonCustomText: siteState.comingSoonCustomText,
+            comingSoonEnableTimer: siteState.comingSoonEnableTimer,
+            comingSoonTimeType: siteState.comingSoonTimeType,
+            comingSoonTimeframeText: siteState.comingSoonTimeframeText,
+            comingSoonLaunchDate: siteState.comingSoonLaunchDate,
+            comingSoonAllowedRoles: siteState.comingSoonAllowedRoles || [],
+            comingSoonAllowedUsers: siteState.comingSoonAllowedUsers || [],
+            comingSoonTargetRoles: siteState.comingSoonTargetRoles || [],
+            comingSoonAutoPublishOnTimerEnd: siteState.comingSoonAutoPublishOnTimerEnd,
+            comingSoonPaths: siteState.comingSoonPaths || []
+        }
+    });
+}));
+
+router.post('/api/owner/site-state/status', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        siteState = new SiteState({ singletonId: 'master-state' });
+    }
+
+    const {
+        status,
+        customStatusName,
+        currentStatusLabel,
+        comingSoonTitle,
+        comingSoonMessage,
+        comingSoonMessages,
+        comingSoonCustomText,
+        comingSoonEnableTimer,
+        comingSoonTimeType,
+        comingSoonTimeframeText,
+        comingSoonLaunchDate,
+        comingSoonAllowedRoles,
+        comingSoonAllowedUsers,
+        comingSoonTargetRoles,
+        comingSoonAutoPublishOnTimerEnd
+    } = req.body;
+
+    if (status) siteState.status = status;
+    if (customStatusName !== undefined) siteState.customStatusName = String(customStatusName).trim();
+    if (currentStatusLabel !== undefined) siteState.currentStatusLabel = String(currentStatusLabel).trim();
+    if (comingSoonTitle !== undefined) siteState.comingSoonTitle = comingSoonTitle;
+    if (comingSoonMessage !== undefined) siteState.comingSoonMessage = comingSoonMessage;
+    if (comingSoonMessages !== undefined) {
+        siteState.comingSoonMessages = Array.isArray(comingSoonMessages)
+            ? comingSoonMessages.map(m => String(m).trim()).filter(Boolean)
+            : (comingSoonMessages ? [String(comingSoonMessages).trim()] : []);
+    }
+    if (comingSoonCustomText !== undefined) siteState.comingSoonCustomText = comingSoonCustomText;
+    if (comingSoonEnableTimer !== undefined) siteState.comingSoonEnableTimer = Boolean(comingSoonEnableTimer);
+    if (comingSoonTimeType !== undefined) siteState.comingSoonTimeType = comingSoonTimeType;
+    if (comingSoonTimeframeText !== undefined) siteState.comingSoonTimeframeText = String(comingSoonTimeframeText).trim();
+    if (comingSoonLaunchDate !== undefined) siteState.comingSoonLaunchDate = comingSoonLaunchDate ? new Date(comingSoonLaunchDate) : null;
+    if (comingSoonAllowedRoles !== undefined) siteState.comingSoonAllowedRoles = Array.isArray(comingSoonAllowedRoles) ? comingSoonAllowedRoles : [];
+    if (comingSoonAllowedUsers !== undefined) siteState.comingSoonAllowedUsers = Array.isArray(comingSoonAllowedUsers) ? comingSoonAllowedUsers : [];
+    if (comingSoonTargetRoles !== undefined) siteState.comingSoonTargetRoles = Array.isArray(comingSoonTargetRoles) ? comingSoonTargetRoles : [];
+    if (comingSoonAutoPublishOnTimerEnd !== undefined) siteState.comingSoonAutoPublishOnTimerEnd = Boolean(comingSoonAutoPublishOnTimerEnd);
+
+    await siteState.save();
+    if (typeof global.invalidateSiteStateCache === 'function') {
+        global.invalidateSiteStateCache();
+    }
+
+    res.json({
+        success: true,
+        message: 'Site status and Coming Soon configuration updated successfully.',
+        siteState: {
+            status: siteState.status,
+            customStatusName: siteState.customStatusName,
+            currentStatusLabel: siteState.currentStatusLabel,
+            comingSoonMessages: siteState.comingSoonMessages,
+            comingSoonTimeType: siteState.comingSoonTimeType,
+            comingSoonTimeframeText: siteState.comingSoonTimeframeText
+        }
+    });
+}));
+
+router.post('/api/owner/site-state/coming-soon-path', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        siteState = new SiteState({ singletonId: 'master-state' });
+    }
+
+    const {
+        ruleId,
+        pathPattern,
+        title,
+        message,
+        messages,
+        customText,
+        timeType,
+        timeframeText,
+        launchDate,
+        allowedRoles,
+        allowedUsers,
+        targetRoles,
+        autoPublishOnTimerEnd,
+        enabled
+    } = req.body;
+
+    if (!pathPattern) {
+        return res.status(400).json({ success: false, error: 'Path pattern is required (e.g. /clubs, /vip).' });
+    }
+
+    if (!siteState.comingSoonPaths) siteState.comingSoonPaths = [];
+
+    const processedMessages = Array.isArray(messages)
+        ? messages.map(m => String(m).trim()).filter(Boolean)
+        : (messages ? [String(messages).trim()] : []);
+
+    if (ruleId) {
+        const existingRule = siteState.comingSoonPaths.id(ruleId);
+        if (existingRule) {
+            existingRule.pathPattern = String(pathPattern).trim().toLowerCase();
+            existingRule.title = title || 'Coming Soon';
+            existingRule.message = message || '';
+            existingRule.messages = processedMessages;
+            existingRule.customText = customText || '';
+            existingRule.timeType = timeType || 'countdown';
+            existingRule.timeframeText = String(timeframeText || '').trim();
+            existingRule.launchDate = launchDate ? new Date(launchDate) : null;
+            existingRule.allowedRoles = Array.isArray(allowedRoles) ? allowedRoles : [];
+            existingRule.allowedUsers = Array.isArray(allowedUsers) ? allowedUsers : [];
+            existingRule.targetRoles = Array.isArray(targetRoles) ? targetRoles : [];
+            existingRule.autoPublishOnTimerEnd = autoPublishOnTimerEnd !== undefined ? Boolean(autoPublishOnTimerEnd) : true;
+            existingRule.enabled = enabled !== undefined ? Boolean(enabled) : true;
+        }
+    } else {
+        siteState.comingSoonPaths.push({
+            pathPattern: String(pathPattern).trim().toLowerCase(),
+            title: title || 'Coming Soon',
+            message: message || '',
+            messages: processedMessages,
+            customText: customText || '',
+            timeType: timeType || 'countdown',
+            timeframeText: String(timeframeText || '').trim(),
+            launchDate: launchDate ? new Date(launchDate) : null,
+            allowedRoles: Array.isArray(allowedRoles) ? allowedRoles : [],
+            allowedUsers: Array.isArray(allowedUsers) ? allowedUsers : [],
+            targetRoles: Array.isArray(targetRoles) ? targetRoles : [],
+            autoPublishOnTimerEnd: autoPublishOnTimerEnd !== undefined ? Boolean(autoPublishOnTimerEnd) : true,
+            enabled: enabled !== undefined ? Boolean(enabled) : true
+        });
+    }
+
+    await siteState.save();
+    if (typeof global.invalidateSiteStateCache === 'function') {
+        global.invalidateSiteStateCache();
+    }
+
+    res.json({
+        success: true,
+        message: 'Path-specific Coming Soon rule saved successfully.',
+        comingSoonPaths: siteState.comingSoonPaths
+    });
+}));
+
+router.delete('/api/owner/site-state/coming-soon-path/:id', catchAsync(async (req, res) => {
+    let siteState = await SiteState.findOne({ singletonId: 'master-state' });
+    if (!siteState) {
+        return res.status(404).json({ success: false, error: 'Site state not found.' });
+    }
+
+    const ruleId = req.params.id;
+    if (siteState.comingSoonPaths) {
+        siteState.comingSoonPaths = siteState.comingSoonPaths.filter(p => String(p._id) !== String(ruleId));
+        await siteState.save();
+        if (typeof global.invalidateSiteStateCache === 'function') {
+            global.invalidateSiteStateCache();
+        }
+    }
+
+    res.json({
+        success: true,
+        message: 'Path rule removed successfully.',
+        comingSoonPaths: siteState.comingSoonPaths
+    });
+}));
 
 router.get('/owner', catchAsync(async (req, res) => {
     let siteState = await SiteState.findOne({ singletonId: 'master-state' });
@@ -821,7 +1018,8 @@ router.get('/owner', catchAsync(async (req, res) => {
         debuggerKey: siteState.debuggerHourlyKey || 'N/A',
         debuggerExpiresAt: siteState.debuggerHourlyKeyExpiresAt,
         debuggerMasterKey: siteState.debuggerMasterKey || 'T1BBZG1pbkAyMDI2',
-        recentDevtoolLogs: recentDevtoolLogs || []
+        recentDevtoolLogs: recentDevtoolLogs || [],
+        siteState: siteState
     });
 }));
 

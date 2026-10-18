@@ -1934,6 +1934,7 @@ app.use(async (req, res, next) => {
             reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
             reqPath.startsWith('/favicon') || reqPath.startsWith('/api/devtool') ||
             reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
+            reqPath.startsWith('/admin') || reqPath === '/notify-launch' || reqPath === '/coming-soon' ||
             /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
 
         if (!isStaticAsset && !isOwner) {
@@ -2016,6 +2017,112 @@ app.use(async (req, res, next) => {
         }
     }
 
+    // Expose Custom Status and Status Label to templates
+    res.locals.customStatusName = cachedSiteState?.customStatusName || '';
+    res.locals.currentStatusLabel = cachedSiteState?.currentStatusLabel || cachedSiteState?.status || 'online';
+
+    // --- 1.2 PATH-SPECIFIC COMING SOON ENGINE ---
+    // Intercepts specific routes / paths and renders a tailored Coming Soon page with custom messages and role targeting
+    const reqPath = req.path.toLowerCase();
+    const isOwner = Boolean(req.user && req.user.role === 'owner');
+    const isStaticAsset = reqPath.startsWith('/public') || reqPath.startsWith('/dist') ||
+        reqPath.startsWith('/css') || reqPath.startsWith('/images') ||
+        reqPath.startsWith('/js') || reqPath.startsWith('/assets') ||
+        reqPath.startsWith('/favicon') || reqPath.startsWith('/api/devtool') ||
+        reqPath === '/robots.txt' || reqPath.startsWith('/sitemap') ||
+        reqPath.startsWith('/admin') || reqPath === '/notify-launch' || reqPath === '/coming-soon' ||
+        /\.(css|js|map|png|jpg|jpeg|gif|svg|ico|webp|woff|woff2|ttf|eot|otf|json|xml|txt)$/i.test(reqPath);
+
+    if (!isStaticAsset && cachedSiteState && Array.isArray(cachedSiteState.comingSoonPaths) && cachedSiteState.comingSoonPaths.length > 0) {
+        const userRole = req.user ? String(req.user.role || '').toLowerCase().trim() : '';
+        const userName = req.user ? String(req.user.username || '').toLowerCase().trim() : '';
+
+        for (const p of cachedSiteState.comingSoonPaths) {
+            if (!p || p.enabled === false || !p.pathPattern) continue;
+
+            const pattern = p.pathPattern.toLowerCase().trim();
+            const isMatch = pattern && (reqPath === pattern || reqPath.startsWith(pattern.endsWith('/') ? pattern : pattern + '/'));
+
+            if (!isMatch) continue;
+
+            // Check auto-timer expiration on this path rule
+            const now = new Date();
+            const pathLaunchDate = p.launchDate ? new Date(p.launchDate) : null;
+            if (p.autoPublishOnTimerEnd && pathLaunchDate && p.timeType !== 'unknown' && now >= pathLaunchDate) {
+                // Rule has expired! Disable rule and let user through
+                p.enabled = false;
+                SiteState.updateOne(
+                    { singletonId: 'master-state', 'comingSoonPaths._id': p._id },
+                    { $set: { 'comingSoonPaths.$.enabled': false } }
+                ).catch(() => {});
+                continue;
+            }
+
+            // Owner can always bypass
+            if (isOwner) {
+                break;
+            }
+
+            const allowedRoles = Array.isArray(p.allowedRoles) ? p.allowedRoles.map(r => String(r || '').toLowerCase().trim()).filter(Boolean) : [];
+            const allowedUsers = Array.isArray(p.allowedUsers) ? p.allowedUsers.map(u => String(u || '').toLowerCase().trim()).filter(Boolean) : [];
+            const targetRoles = Array.isArray(p.targetRoles) ? p.targetRoles.map(r => String(r || '').toLowerCase().trim()).filter(Boolean) : [];
+
+            // If user is explicitly in allowedRoles or allowedUsers, allow them through
+            const isAllowedRole = userRole && allowedRoles.includes(userRole);
+            const isAllowedUser = userName && allowedUsers.includes(userName);
+            if (isAllowedRole || isAllowedUser) {
+                break;
+            }
+
+            // If targetRoles is specified, only users with those roles see coming soon
+            if (targetRoles.length > 0) {
+                const isTargetRole = userRole && targetRoles.includes(userRole);
+                if (!isTargetRole) {
+                    break;
+                }
+            }
+
+            // Intercept and show path-specific Coming Soon!
+            const title = p.title || 'Coming Soon';
+            const message = p.message || cachedSiteState.comingSoonMessage || "This feature is currently in active development. Stay tuned for the big reveal!";
+            const messages = (p.messages && p.messages.length > 0) ? p.messages : (p.message ? [p.message] : []);
+            const customText = p.customText || '';
+            const enableTimer = p.timeType === 'countdown' || (p.timeType !== 'unknown' && Boolean(p.launchDate));
+            const timeType = p.timeType || 'countdown';
+            const timeframeText = p.timeframeText || '';
+            const launchDateStr = p.launchDate ? new Date(p.launchDate).toISOString() : '';
+
+            if (req.xhr || req.headers.accept?.includes('application/json') || reqPath.startsWith('/api/')) {
+                return res.status(200).json({
+                    success: false,
+                    isComingSoon: true,
+                    title,
+                    message,
+                    messages,
+                    customText,
+                    timeType,
+                    timeframeText,
+                    launchDate: launchDateStr
+                });
+            }
+
+            return res.status(200).render('pages/coming-soon', {
+                title,
+                message,
+                messages,
+                customText,
+                enableTimer,
+                timeType,
+                timeframeText,
+                launchDate: launchDateStr,
+                customStatusName: cachedSiteState.customStatusName || '',
+                currentStatusLabel: cachedSiteState.currentStatusLabel || 'Coming Soon',
+                pathPattern: p.pathPattern,
+                user: req.user || null
+            });
+        }
+    }
+
     // 2. If the site is online, proceed normally
     if (!cachedSiteState || cachedSiteState.status === 'online') {
         return next();
@@ -2035,15 +2142,7 @@ app.use(async (req, res, next) => {
 
     // 3. Always allow access to the Admin Panel, static assets, and essential endpoints
     if (
-        req.path.startsWith('/admin') ||
-        req.path === '/notify-launch' ||
-        req.path === '/coming-soon' ||
-        req.path.startsWith('/public') ||
-        req.path.startsWith('/dist') ||
-        req.path.startsWith('/css') ||
-        req.path.startsWith('/images') ||
-        req.path.startsWith('/js') ||
-        req.path.startsWith('/api/devtool') ||
+        isStaticAsset ||
         (req.user && (req.user.role === 'admin' || req.user.role === 'owner'))
     ) {
         return next();
@@ -2057,6 +2156,9 @@ app.use(async (req, res, next) => {
         const allowedUsers = Array.isArray(cachedSiteState.comingSoonAllowedUsers)
             ? cachedSiteState.comingSoonAllowedUsers.map(u => String(u || '').toLowerCase().trim()).filter(Boolean)
             : [];
+        const targetRoles = Array.isArray(cachedSiteState.comingSoonTargetRoles)
+            ? cachedSiteState.comingSoonTargetRoles.map(r => String(r || '').toLowerCase().trim()).filter(Boolean)
+            : [];
 
         const userRole = req.user ? String(req.user.role || '').toLowerCase().trim() : '';
         const userName = req.user ? String(req.user.username || '').toLowerCase().trim() : '';
@@ -2065,17 +2167,35 @@ app.use(async (req, res, next) => {
         const isRoleAllowed = userRole && allowedRoles.includes(userRole);
         const isUserAllowed = userName && allowedUsers.includes(userName);
 
-        if (isRoleAllowed || isUserAllowed) {
+        if (isRoleAllowed || isUserAllowed || isOwner) {
             return next();
         }
+
+        // If targetRoles is specified, only users with those roles see coming soon
+        if (targetRoles.length > 0) {
+            const isTargetRole = userRole && targetRoles.includes(userRole);
+            if (!isTargetRole) {
+                return next();
+            }
+        }
+
+        const messages = (cachedSiteState.comingSoonMessages && cachedSiteState.comingSoonMessages.length > 0)
+            ? cachedSiteState.comingSoonMessages
+            : (cachedSiteState.comingSoonMessage ? [cachedSiteState.comingSoonMessage] : []);
 
         // Intercept and render dynamic Coming Soon page
         return res.status(200).render('pages/coming-soon', {
             title: cachedSiteState.comingSoonTitle || 'Something Awesome is Coming Soon',
             message: cachedSiteState.comingSoonMessage || "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!",
+            messages: messages,
             customText: cachedSiteState.comingSoonCustomText || 'Feature is currently under development. Stay tuned for official announcements!',
             enableTimer: cachedSiteState.comingSoonEnableTimer !== false,
+            timeType: cachedSiteState.comingSoonTimeType || 'countdown',
+            timeframeText: cachedSiteState.comingSoonTimeframeText || '',
             launchDate: cachedSiteState.comingSoonLaunchDate ? new Date(cachedSiteState.comingSoonLaunchDate).toISOString() : '',
+            customStatusName: cachedSiteState.customStatusName || '',
+            currentStatusLabel: cachedSiteState.currentStatusLabel || cachedSiteState.status || '',
+            pathPattern: '',
             user: req.user || null
         });
     }
