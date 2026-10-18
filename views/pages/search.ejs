@@ -370,6 +370,16 @@
                     </div>
                 </div>
 
+                <!-- 4. SHOW VARIANTS FILTER TOGGLE -->
+                <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 4px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--silver); font-size: 0.88rem; user-select: none; margin-bottom: 0;">
+                        <input type="checkbox" name="showVariants" value="true" <%= (typeof currentShowVariants !== 'undefined' && currentShowVariants) ? 'checked' : '' %> onchange="this.form.submit()" style="accent-color: #a855f7; width: 17px; height: 17px; cursor: pointer;">
+                        <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #d8b4fe;">
+                            <i class="fas fa-code-branch" style="color: #a855f7;"></i> Show Variants
+                        </span>
+                    </label>
+                </div>
+
                 <button type="submit" class="filter-button" style="background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; border: none; font-size: 1em; font-weight: 600; cursor: pointer; align-self: end; height: 48px; box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
             </form>
 
@@ -387,9 +397,9 @@
                     <h2 style="color: var(--silver); margin-bottom: 10px;">No Mods Found</h2>
                     <p style="color: #777; font-size: 1.1em; margin-bottom: 25px;">
                         We couldn't find any mods matching "<strong><%= query %></strong>".<br>
-                        Try adjusting your filters or checking the Users &amp; Community tabs above.
+                        Try adjusting your filters, enabling <strong>Show Variants</strong>, or checking the Users &amp; Community tabs above.
                     </p>
-                    <% if (currentPlatform !== 'all' || currentSubCategory !== 'all') { %>
+                    <% if (currentPlatform !== 'all' || currentSubCategory !== 'all' || (typeof currentShowVariants !== 'undefined' && currentShowVariants)) { %>
                         <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods" class="btn" style="display: inline-block; background: transparent; border: 2px solid var(--gold); color: var(--gold); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none;">Clear Filters</a>
                     <% } else { %>
                         <a href="/" class="btn" style="display: inline-block; background: var(--gold); color: var(--black); padding: 12px 30px; border-radius: 25px; font-weight: bold; text-decoration: none; box-shadow: 0 0 15px var(--glow-gold);">Return Home</a>
@@ -401,7 +411,7 @@
             <% if (totalPages > 1) { %>
                 <nav class="pagination">
                     <% for(let i = 1; i <= totalPages; i++) { %>
-                        <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>" 
+                        <a href="/search?q=<%= encodeURIComponent(query) %>&tab=mods&page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>&showVariants=<%= (typeof currentShowVariants !== 'undefined' && currentShowVariants) ? 'true' : 'false' %>" 
                            class="<%= currentPage === i ? 'active' : '' %>">
                             <%= i %>
                         </a>

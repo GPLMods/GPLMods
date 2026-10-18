@@ -952,6 +952,36 @@
                                     Upload as a Variant of this existing mod
                                 </span>
                             </label>
+
+                            <!-- Variant Locked Fields & Master Default Inheritance Preset -->
+                            <div id="variant-inheritance-panel" style="margin-top: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 14px 16px;">
+                                <div style="font-weight: 700; color: #e9d5ff; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                    <i class="fas fa-lock" style="color: #c084fc;"></i> Managed by Original Uploader (Locked for Variants):
+                                </div>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-image"></i> App Icon</span>
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-align-left"></i> Official Description</span>
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-tags"></i> Core Tags</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.4; margin-bottom: 12px;">
+                                    These branding assets are strictly managed by the original mod uploader. All variants inherit them to preserve consistency. You can customize description, mod features, screenshots, version, and architecture flags below.
+                                </div>
+
+                                <div>
+                                    <label for="variantInheritDropdown" style="color: #e9d5ff; font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                                        <i class="fas fa-sliders" style="color: #c084fc;"></i> Master Default Inheritance Preset:
+                                    </label>
+                                    <select id="variantInheritDropdown" name="variantInheritanceMode" style="width: 100%; background: #121212; border: 1px solid rgba(168,85,247,0.5); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; cursor: pointer;">
+                                        <option value="all-default" selected>Inherit All Master Defaults (Quick Variant - Uses Master Description, Features &amp; Screenshots)</option>
+                                        <option value="custom-features">Custom Features &amp; Description (Enter custom mod description &amp; features, inherit screenshots)</option>
+                                        <option value="custom-all">Full Custom Variant (Custom description, features, screenshots, and requirements)</option>
+                                    </select>
+                                    <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 5px;">
+                                        <i class="fas fa-info-circle"></i> If left empty, fields automatically use the master mod's defaults. Direct cloud link &amp; files are always unique to this variant.
+                                    </div>
+                                </div>
+                            </div>
+
                             <input type="hidden" id="detectedMasterId" name="masterFileId" value="">
                             <input type="hidden" id="variantDetectionSubmitted" name="variantDetectionSubmitted" value="0">
                         </div>
@@ -1062,9 +1092,12 @@
                 </div>
 
                 <!-- Platform-Specific Compatibility Flags -->
-                <div id="platform-flags-container" style="display: none; margin-top: 15px; width: 100%; box-sizing: border-box;">
+                <% 
+                    const initialHasFlagsPlatform = file && ['android', 'ios-jailbroken', 'windows'].includes(file.category);
+                %>
+                <div id="platform-flags-container" style="display: <%= initialHasFlagsPlatform ? 'block' : 'none' %>; margin-top: 15px; width: 100%; box-sizing: border-box;">
                     <!-- Android Flags -->
-                    <div id="flags-android" class="platform-flags-box" style="display: none; background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25); margin-bottom: 15px;">
+                    <div id="flags-android" class="platform-flags-box" style="display: <%= (file && file.category === 'android') ? 'block' : 'none' %>; background: rgba(0, 230, 118, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(0, 230, 118, 0.25); margin-bottom: 15px;">
                         <h4 style="color: #00e676; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                             <i class="fab fa-android"></i> Android Compatibility Flags
                         </h4>
@@ -1074,14 +1107,14 @@
                                 <span><strong>Requires Root</strong> <span style="color: var(--silver); font-size: 0.88em;">(App requires root permissions like Magisk, KernelSU, or APatch to work)</span></span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
-                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeAndroid" value="true" <%= (file && file.requiresDevMode && file.category === 'android') ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeAndroid" value="true" <%= (file && file.requiresDevMode && file.category === 'android') ? 'checked' : '' %> <%= (file && file.category !== 'android') ? 'disabled' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
                                 <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(App needs Developer Options or USB Debugging enabled, but does not require root)</span></span>
                             </label>
                         </div>
                     </div>
 
                     <!-- iOS Jailbroken Flags -->
-                    <div id="flags-ios-jailbroken" class="platform-flags-box" style="display: none; background: rgba(255, 152, 0, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.25); margin-bottom: 15px;">
+                    <div id="flags-ios-jailbroken" class="platform-flags-box" style="display: <%= (file && file.category === 'ios-jailbroken') ? 'block' : 'none' %>; background: rgba(255, 152, 0, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(255, 152, 0, 0.25); margin-bottom: 15px;">
                         <h4 style="color: #ff9800; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-terminal"></i> Jailbreak Compatibility & Dependencies
                         </h4>
@@ -1098,7 +1131,7 @@
                     </div>
 
                     <!-- Windows Flags -->
-                    <div id="flags-windows" class="platform-flags-box" style="display: none; background: rgba(33, 150, 243, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.25); margin-bottom: 15px;">
+                    <div id="flags-windows" class="platform-flags-box" style="display: <%= (file && file.category === 'windows') ? 'block' : 'none' %>; background: rgba(33, 150, 243, 0.06); padding: 18px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.25); margin-bottom: 15px;">
                         <h4 style="color: #2196f3; font-size: 0.95em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                             <i class="fab fa-windows"></i> Windows Compatibility Flags
                         </h4>
@@ -1108,7 +1141,7 @@
                                 <span><strong>Requires Disabling Antivirus</strong> <span style="color: var(--silver); font-size: 0.88em;">(May be flagged as false positive; user must disable Windows Defender or add an exclusion)</span></span>
                             </label>
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--white); font-weight: normal; margin-bottom: 0;">
-                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeWindows" value="true" <%= (file && file.requiresDevMode && file.category === 'windows') ? 'checked' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
+                                <input type="checkbox" name="requiresDevMode" id="requiresDevModeWindows" value="true" <%= (file && file.requiresDevMode && file.category === 'windows') ? 'checked' : '' %> <%= (file && file.category !== 'windows') ? 'disabled' : '' %> style="accent-color: var(--gold); width: 18px; height: 18px; cursor: pointer;">
                                 <span><strong>Requires Developer Mode</strong> <span style="color: var(--silver); font-size: 0.88em;">(Requires Windows Developer Mode enabled to install/run unsigned packages)</span></span>
                             </label>
                         </div>
@@ -2120,10 +2153,75 @@ document.addEventListener('DOMContentLoaded', () => {
         directDownloadInput.addEventListener('input', updateScanFieldVisibility);
     }
 
+    // Platform Flags UI Logic Helper
+    function updatePlatformFlagsUI(platform) {
+        const selectedPlatform = (platform || '').toLowerCase().trim();
+        const platformFlagsContainer = document.getElementById('platform-flags-container');
+        const flagsAndroid = document.getElementById('flags-android');
+        const flagsIosJailbroken = document.getElementById('flags-ios-jailbroken');
+        const flagsWindows = document.getElementById('flags-windows');
+        const reqDevAndroid = document.getElementById('requiresDevModeAndroid');
+        const reqDevWindows = document.getElementById('requiresDevModeWindows');
+
+        if (!platformFlagsContainer) return;
+
+        if (selectedPlatform === 'android') {
+            platformFlagsContainer.style.display = 'block';
+            if (flagsAndroid) flagsAndroid.style.display = 'block';
+            if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+            if (flagsWindows) flagsWindows.style.display = 'none';
+            if (reqDevAndroid) reqDevAndroid.disabled = false;
+            if (reqDevWindows) reqDevWindows.disabled = true;
+        } else if (selectedPlatform === 'ios-jailbroken') {
+            platformFlagsContainer.style.display = 'block';
+            if (flagsAndroid) flagsAndroid.style.display = 'none';
+            if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'block';
+            if (flagsWindows) flagsWindows.style.display = 'none';
+            if (reqDevAndroid) reqDevAndroid.disabled = true;
+            if (reqDevWindows) reqDevWindows.disabled = true;
+        } else if (selectedPlatform === 'windows') {
+            platformFlagsContainer.style.display = 'block';
+            if (flagsAndroid) flagsAndroid.style.display = 'none';
+            if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+            if (flagsWindows) flagsWindows.style.display = 'block';
+            if (reqDevAndroid) reqDevAndroid.disabled = true;
+            if (reqDevWindows) reqDevWindows.disabled = false;
+        } else {
+            platformFlagsContainer.style.display = 'none';
+            if (flagsAndroid) flagsAndroid.style.display = 'none';
+            if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
+            if (flagsWindows) flagsWindows.style.display = 'none';
+            if (reqDevAndroid) reqDevAndroid.disabled = true;
+            if (reqDevWindows) reqDevWindows.disabled = true;
+        }
+    }
+
+    // Variant Master Inheritance Preset Listener
+    const variantInheritDropdown = document.getElementById('variantInheritDropdown');
+    if (variantInheritDropdown) {
+        variantInheritDropdown.addEventListener('change', function() {
+            const mode = this.value;
+            if (!cachedMasterFile) return;
+
+            const devInput = document.getElementById('developerName');
+            const minOsInput = document.getElementById('minOsVersion');
+
+            if (mode === 'all-default' || mode === 'custom-features') {
+                if (devInput && !devInput.value.trim() && cachedMasterFile.developer && cachedMasterFile.developer !== 'N/A') {
+                    devInput.value = cachedMasterFile.developer;
+                }
+                if (minOsInput && !minOsInput.value.trim() && cachedMasterFile.minOsVersion) {
+                    minOsInput.value = cachedMasterFile.minOsVersion;
+                }
+            }
+        });
+    }
+
     if (nativePlatformSelect) {
         nativePlatformSelect.addEventListener('change', function() {
             populateCategories();
             const selectedPlatform = this.value;
+            updatePlatformFlagsUI(selectedPlatform);
 
             // Architecture Logic
             const archMap = {
@@ -2141,46 +2239,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const osReqStar = document.getElementById('os-req-star');
             const minOsInput = document.getElementById('minOsVersion');
             const pkgIdGroup = document.getElementById('pkg-id-group');
-
-            // Platform Flags UI Logic
-            const platformFlagsContainer = document.getElementById('platform-flags-container');
-            const flagsAndroid = document.getElementById('flags-android');
-            const flagsIosJailbroken = document.getElementById('flags-ios-jailbroken');
-            const flagsWindows = document.getElementById('flags-windows');
-            const reqDevAndroid = document.getElementById('requiresDevModeAndroid');
-            const reqDevWindows = document.getElementById('requiresDevModeWindows');
-
-            if (platformFlagsContainer) {
-                if (selectedPlatform === 'android') {
-                    platformFlagsContainer.style.display = 'block';
-                    if (flagsAndroid) flagsAndroid.style.display = 'block';
-                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
-                    if (flagsWindows) flagsWindows.style.display = 'none';
-                    if (reqDevAndroid) reqDevAndroid.disabled = false;
-                    if (reqDevWindows) reqDevWindows.disabled = true;
-                } else if (selectedPlatform === 'ios-jailbroken') {
-                    platformFlagsContainer.style.display = 'block';
-                    if (flagsAndroid) flagsAndroid.style.display = 'none';
-                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'block';
-                    if (flagsWindows) flagsWindows.style.display = 'none';
-                    if (reqDevAndroid) reqDevAndroid.disabled = true;
-                    if (reqDevWindows) reqDevWindows.disabled = true;
-                } else if (selectedPlatform === 'windows') {
-                    platformFlagsContainer.style.display = 'block';
-                    if (flagsAndroid) flagsAndroid.style.display = 'none';
-                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
-                    if (flagsWindows) flagsWindows.style.display = 'block';
-                    if (reqDevAndroid) reqDevAndroid.disabled = true;
-                    if (reqDevWindows) reqDevWindows.disabled = false;
-                } else {
-                    platformFlagsContainer.style.display = 'none';
-                    if (flagsAndroid) flagsAndroid.style.display = 'none';
-                    if (flagsIosJailbroken) flagsIosJailbroken.style.display = 'none';
-                    if (flagsWindows) flagsWindows.style.display = 'none';
-                    if (reqDevAndroid) reqDevAndroid.disabled = true;
-                    if (reqDevWindows) reqDevWindows.disabled = true;
-                }
-            }
 
             if (archMap[selectedPlatform]) {
                 if(archGroup) archGroup.style.display = 'block';
@@ -2256,10 +2314,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Initial trigger
-        const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>";
+        const preSelectedPlatform = "<%= typeof defaultPlatform !== 'undefined' ? defaultPlatform : '' %>" || (nativePlatformSelect && nativePlatformSelect.value) || "<%= (file && file.category) ? file.category : '' %>";
         if (preSelectedPlatform) {
-            const optionToSelect = platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`);
-            if(optionToSelect) optionToSelect.click();
+            const optionToSelect = platformWrapper ? platformWrapper.querySelector(`.custom-option[data-value="${preSelectedPlatform}"]`) : null;
+            if(optionToSelect) {
+                optionToSelect.click();
+            } else if (nativePlatformSelect) {
+                nativePlatformSelect.value = preSelectedPlatform;
+                nativePlatformSelect.dispatchEvent(new Event('change'));
+            }
+            updatePlatformFlagsUI(preSelectedPlatform);
+        } else if (nativePlatformSelect && nativePlatformSelect.value) {
+            updatePlatformFlagsUI(nativePlatformSelect.value);
         }
     }
 

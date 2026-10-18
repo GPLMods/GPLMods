@@ -6,6 +6,12 @@
         
         <!-- Top Badges Row: Prevents overlap between Certification and Version tags -->
         <div class="card-top-badges">
+            <% if (file.isVariant) { %>
+                <div class="mod-variant-badge" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 0 10px rgba(168,85,247,0.3); letter-spacing: 0.3px;"><i class="fas fa-code-branch"></i> Variant</div>
+            <% } else if (file.variants && file.variants.length > 0) { %>
+                <div class="mod-master-badge" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); padding: 2px 7px; border-radius: 4px; font-size: 0.72rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="<%= file.variants.length %> alternative variants available"><i class="fas fa-layer-group"></i> Master (<%= file.variants.length %>)</div>
+            <% } %>
+
             <% if (file.certification === 'certified') { %>
                 <div class="app-feature-tag"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
             <% } else if (file.certification === 'community-tested') { %>
@@ -33,7 +39,12 @@
                     <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
                 </a>
             </h3>
-            <p><%= file.developer %></p>
+            <p style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                <span><%= file.developer %></span>
+                <% if (file.isVariant) { %>
+                    <span style="color: #c084fc; font-size: 0.78em; font-weight: 600; white-space: nowrap;"><i class="fas fa-code-branch"></i> @<%= file.uploader %></span>
+                <% } %>
+            </p>
             <div class="rating" style="margin-bottom: 10px;">
                 <div class="stars-outer">
                     <div class="stars-inner" style="width: <%= (file.averageRating / 5) * 100 %>%;"></div>

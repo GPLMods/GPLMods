@@ -1205,6 +1205,44 @@
                 <h1>
                     <%= file.name %>
                 </h1>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px;">
+                    <% if (file.isVariant) { %>
+                        <div class="mod-variant-badge" style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 0 12px rgba(168,85,247,0.35);">
+                            <i class="fas fa-code-branch"></i> Variant by @<%= file.uploader %>
+                        </div>
+                    <% } %>
+
+                    <% if (file.requiresRoot) { %>
+                        <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            <i class="fas fa-hashtag"></i> Requires Root
+                        </div>
+                    <% } %>
+
+                    <% if (file.requiresDevMode) { %>
+                        <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            <i class="fas fa-code"></i> Developer Mode
+                        </div>
+                    <% } %>
+
+                    <% if (file.isTweakConvertible) { %>
+                        <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            <i class="fas fa-sync-alt"></i> Convertible Tweak
+                        </div>
+                    <% } %>
+
+                    <% if (file.requiresDependencies) { %>
+                        <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            <i class="fas fa-cubes"></i> Requires Dependencies
+                        </div>
+                    <% } %>
+
+                    <% if (file.requiresDisableAntivirus) { %>
+                        <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.4); padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">
+                            <i class="fas fa-shield-virus"></i> Antivirus Exclusion Required
+                        </div>
+                    <% } %>
+                </div>
                 
                 <% if (file.isPromoted && file.promotedUntil && new Date(file.promotedUntil) > new Date()) { %>
                     <div class="sponsored-badge" style="margin-bottom: 12px;">
@@ -2001,13 +2039,44 @@
             <!-- ============================ -->
             <section class="details-panel">
 
-                <!-- ======== NEW: VARIANTS SELECTOR ======== -->
+                <!-- ======== VARIANT VIEWER BANNER (ACTIVE WHEN VIEWING A VARIANT) ======== -->
+                <% if (typeof isViewingVariant !== 'undefined' && isViewingVariant && typeof masterFile !== 'undefined' && masterFile) { %>
+                    <div class="variant-viewer-card" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(168, 85, 247, 0.06)); border: 1px solid rgba(168, 85, 247, 0.45); border-left: 4px solid #a855f7; border-radius: 12px; padding: 18px 22px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.18);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; padding: 3px 9px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px;">
+                                        <i class="fas fa-code-branch"></i> Mod Variant Active
+                                    </span>
+                                    <span style="color: #e9d5ff; font-weight: 600; font-size: 0.95rem;">
+                                        Uploaded by <strong style="color: #fff;">@<%= file.uploader %></strong>
+                                    </span>
+                                </div>
+                                <p style="margin: 0; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
+                                    You are viewing a specialized variant of Master Mod <strong style="color: var(--gold);"><%= masterFile.name %></strong> (v<%= masterFile.version %>) by <strong>@<%= masterFile.uploader %></strong>.
+                                    <% if (file.architectures && file.architectures.length > 0) { %>
+                                        <span style="display: inline-block; margin-left: 6px; background: rgba(168, 85, 247, 0.2); color: #d8b4fe; padding: 1px 7px; border-radius: 4px; font-size: 0.82em; font-weight: 600;">
+                                            <i class="fas fa-microchip"></i> <%= file.architectures.join(', ') %>
+                                        </span>
+                                    <% } %>
+                                </p>
+                            </div>
+                            <% const masterSlug = masterFile.slug || (typeof slugify === 'function' ? slugify(masterFile.name) : masterFile._id); %>
+                            <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>" class="btn" style="background: rgba(255, 215, 0, 0.15); color: #ffd700; border: 1px solid rgba(255, 215, 0, 0.4); border-radius: 8px; padding: 9px 18px; font-weight: 700; font-size: 0.88rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; transition: all 0.2s;">
+                                <i class="fas fa-arrow-left"></i> Switch to Master Mod
+                            </a>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- ======== VARIANTS SELECTOR ======== -->
                 <% if (typeof masterFile !=='undefined' && masterFile.variants && masterFile.variants.filter(v=>
                     v.status === 'live').length > 0) { %>
                     <div class="variants-panel"
                         style="background-color: var(--black); border: 1px solid #333; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                        <h3 style="color: var(--gold); margin-bottom: 15px; font-size: 1.2em;">
-                            <i class="fas fa-layer-group" style="margin-right: 10px;"></i>Available Mod Variants
+                        <h3 style="color: var(--gold); margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fas fa-layer-group" style="margin-right: 10px;"></i>Available Mod Editions &amp; Variants</span>
+                            <span style="font-size: 0.78em; color: var(--silver); font-weight: normal;"><%= masterFile.variants.filter(v => v.status === 'live').length + 1 %> versions available</span>
                         </h3>
 
                         <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -2015,17 +2084,23 @@
                             <% const masterSlug = masterFile.slug || (typeof slugify === 'function' ? slugify(masterFile.name) : masterFile._id); %>
                             <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>"
                                 class="btn <%= !isViewingVariant ? 'btn-primary' : 'btn-secondary' %>"
-                                <%- `style="border-color: ${!isViewingVariant ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
-                                <%= masterFile.uploader %>'s Mod (Main)
+                                <%- `style="border-color: ${!isViewingVariant ? 'var(--gold)' : '#555'}; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;"` %>>
+                                <i class="fas fa-crown" style="color: <%= !isViewingVariant ? '#000' : 'var(--gold)' %>;"></i>
+                                <%= masterFile.uploader %>'s Mod (Master)
                             </a>
 
                             <!-- Buttons for each Live Variant -->
                             <% masterFile.variants.forEach(variant=> { %>
                                 <% if (variant.status==='live' ) { %>
+                                    <% const isThisVariantActive = (file._id.toString() === variant._id.toString()); %>
                                     <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>/<%= variant._id %>"
-                                        class="btn <%= (file._id.toString() === variant._id.toString()) ? 'btn-primary' : 'btn-secondary' %>"
-                                        <%- `style="border-color: ${(file._id.toString() === variant._id.toString()) ? 'var(--gold)' : '#555'}; padding: 8px 15px; border-radius: 8px;"` %>>
-                                        <%= variant.uploader %>'s Mod
+                                        class="btn <%= isThisVariantActive ? 'btn-primary' : 'btn-secondary' %>"
+                                        <%- `style="border-color: ${isThisVariantActive ? '#a855f7' : '#555'}; ${isThisVariantActive ? 'background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff;' : ''} padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;"` %>>
+                                        <i class="fas fa-code-branch" style="color: <%= isThisVariantActive ? '#fff' : '#c084fc' %>;"></i>
+                                        <%= variant.uploader %>'s Variant
+                                        <% if (variant.architectures && variant.architectures.length > 0) { %>
+                                            <span style="font-size: 0.75em; opacity: 0.85;">(<%= variant.architectures[0] %>)</span>
+                                        <% } %>
                                     </a>
                                     <% } %>
                                         <% }) %>
@@ -2062,8 +2137,10 @@
                                                         <% // Split the HTML by li tags to isolate list items
                                                            const listItems = file.modFeatures.split(/<li[^>]*>/);
                                                            listItems.forEach(function(item) {
-                                                               if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
-                                                                   let cleanText = item.replace('<\/li>', '').replace('<\/ul>', '').replace('<\/ol>', '');
+                                                               if (!item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                                                   let cleanText = item.replace(/<\/li>/gi, '').replace(/<\/ul>/gi, '').replace(/<\/ol>/gi, '');
+                                                                   let strippedText = cleanText.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+                                                                   if (strippedText !== '' || cleanText.includes('<img')) {
                                                         %>
                                                     <li>
                                                         <!-- The Lottie Animation -->
@@ -2077,7 +2154,7 @@
                                                             <span><%- cleanText %></span>
                                                         </div>
                                                     </li>
-                                                    <% } }); %>
+                                                    <% } } }); %>
                                                         </ul>
                                                         <% } else { %>
                                                             <!-- If they didn't use bullet points, just output the raw HTML safely -->
@@ -2103,8 +2180,10 @@
                                                     <% // Split the HTML by li tags to isolate list items
                                                        const noteItems = file.importantNote.split(/<li[^>]*>/);
                                                        noteItems.forEach(function(item) {
-                                                           if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
-                                                               let cleanText = item.replace('<\/li>', '').replace('<\/ul>', '').replace('<\/ol>', '');
+                                                           if (!item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                                               let cleanText = item.replace(/<\/li>/gi, '').replace(/<\/ul>/gi, '').replace(/<\/ol>/gi, '');
+                                                               let strippedText = cleanText.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+                                                               if (strippedText !== '' || cleanText.includes('<img')) {
                                                     %>
                                                 <li>
                                                     <!-- The Red Lottie Arrow Wrapper -->
@@ -2119,7 +2198,7 @@
                                                         <span><%- cleanText %></span>
                                                     </div>
                                                 </li>
-                                                <% } }); %>
+                                                <% } } }); %>
                                                     </ul>
                                                     <% } else { %>
                                                         <!-- If they didn't use bullet points, just output the raw HTML safely -->

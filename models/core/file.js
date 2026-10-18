@@ -70,6 +70,7 @@ const FileSchema = new Schema({
     subCategory: { type: String },
     platforms: { type: [String], required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },
+    dynamicKeywords: { type: [String], default: [] },
     architectures: { 
         type: [String], 
         default:[] 

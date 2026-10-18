@@ -2315,6 +2315,24 @@ function shouldHideAdultContent(user) {
         : isUnder18(user.dateOfBirth);
 }
 
+function shouldShowVariants(req) {
+    if (!req) return false;
+    // 1. Explicit query parameter override (e.g. ?showVariants=true or ?showVariants=false)
+    if (req.query && req.query.showVariants !== undefined) {
+        return String(req.query.showVariants).toLowerCase() === 'true';
+    }
+    // 2. User setting preference
+    if (req.user && typeof req.user.viewVariants === 'boolean') {
+        return req.user.viewVariants;
+    }
+    // 3. Fallback to cookie preference (for guests or persistent browser toggle)
+    if (req.cookies && req.cookies.view_variants !== undefined) {
+        return String(req.cookies.view_variants).toLowerCase() === 'true';
+    }
+    // Default: false (hide variants, show main master files only)
+    return false;
+}
+
 app.use(async (req, res, next) => {
     try {
         // 1. ======== BASIC LOCALS & HELPERS ========
@@ -2324,6 +2342,7 @@ app.use(async (req, res, next) => {
         }
         res.locals.user = req.user || null;
         res.locals.hideAdultContent = shouldHideAdultContent(req.user);
+        res.locals.showVariants = shouldShowVariants(req);
         res.locals.globalCouncil = req.user ? !!req.user.globalCouncil : false;
         res.locals.timeAgo = timeAgo;
         res.locals.formatCompactNumber = formatCompactNumber;
@@ -3020,7 +3039,11 @@ function formatUptime(seconds) {
 // --- NEW: Reusable Homepage Logic ---
 const renderHomepage = async (req, res) => {
     try {
+        const showVariants = shouldShowVariants(req);
         const findQuery = { status: 'live', isLatestVersion: true };
+        if (!showVariants) {
+            findQuery.isVariant = { $ne: true };
+        }
 
         // --- Separated Editor's Choice Councils (Android, iOS, WordPress, Windows) ---
         const mapWithIcons = async (rawFiles) => {
@@ -4434,8 +4457,13 @@ app.get('/category', async (req, res, next) => {
         const limit = 12;
         const currentPage = parseInt(page);
 
+        const showVariants = shouldShowVariants(req);
+
         // Base query: Only show live, latest version mods
         const queryFilter = { isLatestVersion: true, status: 'live' };
+        if (!showVariants) {
+            queryFilter.isVariant = { $ne: true };
+        }
 
         // 1. Filter by Main Platform & Council
         if (rawPlatform === 'android') {
@@ -4470,6 +4498,9 @@ app.get('/category', async (req, res, next) => {
 
         // --- Platform-Specific Editor's Choice Council ---
         let editorQuery = { isLatestVersion: true, status: 'live', isEditorsChoice: true };
+        if (!showVariants) {
+            editorQuery.isVariant = { $ne: true };
+        }
         const userGlobalCouncil = req.user && req.user.globalCouncil;
         if (queryFilter.category && !userGlobalCouncil) {
             editorQuery.category = queryFilter.category;
@@ -4513,7 +4544,8 @@ app.get('/category', async (req, res, next) => {
             // Pass the current filters back to the frontend so the dropdowns stay selected
             currentPlatform: platform || 'all',
             currentSubCategory: subCategory || 'all', // NEW
-            currentSort: sort || 'latest'
+            currentSort: sort || 'latest',
+            currentShowVariants: showVariants
         });
 
     } catch (error) {
@@ -4587,6 +4619,8 @@ app.get('/search', async (req, res, next) => {
             };
         });
 
+        const showVariants = shouldShowVariants(req);
+
         // 1. MODS & PLATFORM QUERY
         let searchQuery = {
             isLatestVersion: true,
@@ -4600,6 +4634,9 @@ app.get('/search', async (req, res, next) => {
                 ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         };
+        if (!showVariants) {
+            searchQuery.isVariant = { $ne: true };
+        }
 
         if (platform && platform !== 'all') {
             searchQuery.category = platform;
@@ -4749,7 +4786,8 @@ app.get('/search', async (req, res, next) => {
             currentPage: page,
             currentPlatform: platform,
             currentSubCategory: subCategory,
-            currentSort: sort
+            currentSort: sort,
+            currentShowVariants: showVariants
         });
 
     } catch (error) {
@@ -5263,6 +5301,24 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                     virusTotalScanDate: promotedVariant.virusTotalScanDate,
                     virusTotalPositiveCount: promotedVariant.virusTotalPositiveCount,
                     virusTotalTotalScans: promotedVariant.virusTotalTotalScans,
+                    isVariant: true,
+                    variantMasterId: masterFile._id,
+                    architectures: promotedVariant.architectures || [],
+                    screenshotKeys: (promotedVariant.screenshotKeys && promotedVariant.screenshotKeys.length > 0) ? promotedVariant.screenshotKeys : (masterFile.screenshotKeys || []),
+                    screenshotUrls: (promotedVariant.screenshotUrls && promotedVariant.screenshotUrls.length > 0) ? promotedVariant.screenshotUrls : [],
+                    requiresRoot: Boolean(promotedVariant.requiresRoot),
+                    requiresDevMode: Boolean(promotedVariant.requiresDevMode),
+                    isTweakConvertible: Boolean(promotedVariant.isTweakConvertible),
+                    requiresDependencies: Boolean(promotedVariant.requiresDependencies),
+                    requiresDisableAntivirus: Boolean(promotedVariant.requiresDisableAntivirus),
+                    fileKey: promotedVariant.fileKey || '',
+                    directDownloadUrl: promotedVariant.directDownloadUrl || '',
+                    fastDownloadUrl: promotedVariant.fastDownloadUrl || '',
+                    secondaryDownloadUrl: promotedVariant.secondaryDownloadUrl || '',
+                    fileType: promotedVariant.fileType || masterFile.fileType,
+                    originalApkName: promotedVariant.originalApkName || masterFile.originalApkName,
+                    minOsVersion: promotedVariant.minOsVersion || masterFile.minOsVersion,
+                    packageId: promotedVariant.packageId || masterFile.packageId,
                     isTemporaryPromoted: true
                 };
                 // Remove the promoted variant from the remaining variants list so it is not duplicated
@@ -5300,7 +5356,25 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                     virusTotalId: requestedVariant.virusTotalId,
                     virusTotalScanDate: requestedVariant.virusTotalScanDate,
                     virusTotalPositiveCount: requestedVariant.virusTotalPositiveCount,
-                    virusTotalTotalScans: requestedVariant.virusTotalTotalScans
+                    virusTotalTotalScans: requestedVariant.virusTotalTotalScans,
+                    isVariant: true,
+                    variantMasterId: masterFile._id,
+                    architectures: requestedVariant.architectures || [],
+                    screenshotKeys: (requestedVariant.screenshotKeys && requestedVariant.screenshotKeys.length > 0) ? requestedVariant.screenshotKeys : (masterFile.screenshotKeys || []),
+                    screenshotUrls: (requestedVariant.screenshotUrls && requestedVariant.screenshotUrls.length > 0) ? requestedVariant.screenshotUrls : [],
+                    requiresRoot: Boolean(requestedVariant.requiresRoot),
+                    requiresDevMode: Boolean(requestedVariant.requiresDevMode),
+                    isTweakConvertible: Boolean(requestedVariant.isTweakConvertible),
+                    requiresDependencies: Boolean(requestedVariant.requiresDependencies),
+                    requiresDisableAntivirus: Boolean(requestedVariant.requiresDisableAntivirus),
+                    fileKey: requestedVariant.fileKey || '',
+                    directDownloadUrl: requestedVariant.directDownloadUrl || '',
+                    fastDownloadUrl: requestedVariant.fastDownloadUrl || '',
+                    secondaryDownloadUrl: requestedVariant.secondaryDownloadUrl || '',
+                    fileType: requestedVariant.fileType || masterFile.fileType,
+                    originalApkName: requestedVariant.originalApkName || masterFile.originalApkName,
+                    minOsVersion: requestedVariant.minOsVersion || masterFile.minOsVersion,
+                    packageId: requestedVariant.packageId || masterFile.packageId
                 };
                 isViewingVariant = true;
             }
@@ -5357,8 +5431,13 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         const iconKey = masterFile.iconUrl || masterFile.iconKey;
         const iconUrl = await getSmartImageUrl(iconKey);
 
-        const screenKeys = (masterFile.screenshotUrls && masterFile.screenshotUrls.length > 0)
-            ? masterFile.screenshotUrls : (masterFile.screenshotKeys || []);
+        const screenKeys = (displayFile.screenshotUrls && displayFile.screenshotUrls.length > 0)
+            ? displayFile.screenshotUrls
+            : ((displayFile.screenshotKeys && displayFile.screenshotKeys.length > 0)
+                ? displayFile.screenshotKeys
+                : (masterFile.screenshotUrls && masterFile.screenshotUrls.length > 0
+                    ? masterFile.screenshotUrls
+                    : (masterFile.screenshotKeys || [])));
         const screenshotUrls = await Promise.all(screenKeys.map(key => getSmartImageUrl(key)));
 
         // --- REVIEWS HANDLING ---
@@ -7750,6 +7829,36 @@ app.post('/settings/global-council', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Global Council preference error:', error);
         res.redirect('/settings?error=Unable to update Global Council preference.');
+    }
+});
+
+app.post('/settings/view-variants', async (req, res) => {
+    try {
+        const viewVariants = req.body.viewVariants === 'on' || req.body.viewVariants === 'true' || req.body.viewVariants === true;
+
+        if (req.user) {
+            await User.findByIdAndUpdate(req.user._id, { viewVariants });
+            req.user.viewVariants = viewVariants;
+        }
+
+        res.cookie('view_variants', String(viewVariants), {
+            maxAge: 365 * 24 * 60 * 60 * 1000,
+            httpOnly: false,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production'
+        });
+
+        if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+            return res.json({ success: true, viewVariants });
+        }
+
+        res.redirect('/settings?success=Variant visibility preference updated.');
+    } catch (error) {
+        console.error('View variants preference error:', error);
+        if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json'))) {
+            return res.status(500).json({ error: 'Failed to update preference.' });
+        }
+        res.redirect('/settings?error=Unable to update variant visibility preference.');
     }
 });
 
@@ -10437,6 +10546,32 @@ app.post('/mods/:id/delete', ensureAuthenticated, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Resource not found.' });
         }
 
+        // If the file being deleted IS A VARIANT:
+        if (file.isVariant) {
+            // Delete only this variant, never delete master file's icon or shared master screenshots!
+            if (file.fileKey && file.fileKey !== 'external-link') {
+                await deleteFromB2(file.fileKey);
+            }
+            let masterShots = [];
+            if (file.masterFile) {
+                const masterDoc = await File.findById(file.masterFile);
+                if (masterDoc) {
+                    masterShots = masterDoc.screenshotKeys || [];
+                    await File.findByIdAndUpdate(file.masterFile, { $pull: { variants: file._id } });
+                }
+            }
+            if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+                for (const key of file.screenshotKeys) {
+                    if (!masterShots.includes(key)) {
+                        await deleteFromB2(key);
+                    }
+                }
+            }
+            await Review.deleteMany({ file: file._id });
+            await File.findByIdAndDelete(file._id);
+            return res.json({ success: true, message: 'Variant deleted successfully.' });
+        }
+
         // Check if any variant files exist for this master file
         const variantsList = await File.find({ masterFile: file._id }).sort({ createdAt: 1 });
 
@@ -10651,8 +10786,8 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // --- HANDLE ICON OVERWRITE ---
         if (softwareIcon && softwareIcon.length > 0) {
-            // Delete the old icon from B2 first
-            if (file.iconKey) {
+            // Delete the old icon from B2 first only if NOT a variant sharing master's icon
+            if (file.iconKey && !file.isVariant) {
                 await deleteFromB2(file.iconKey);
             }
             // Upload the new one with standardized app-icon key
@@ -10711,10 +10846,17 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
                 }
             }
 
-            // Delete old screenshots that are no longer kept
+            // Delete old screenshots that are no longer kept (protect master screenshots)
             if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+                let masterShots = [];
+                if (file.isVariant && file.masterFile) {
+                    const masterDoc = await File.findById(file.masterFile).select('screenshotKeys');
+                    if (masterDoc) {
+                        masterShots = masterDoc.screenshotKeys || [];
+                    }
+                }
                 for (const oldShotKey of file.screenshotKeys) {
-                    if (!finalScreenshotKeys.includes(oldShotKey)) {
+                    if (!finalScreenshotKeys.includes(oldShotKey) && !masterShots.includes(oldShotKey)) {
                         await deleteFromB2(oldShotKey);
                     }
                 }
@@ -10724,10 +10866,19 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             if (screenshots.length > 4) {
                 return res.redirect(`/mods/${file._id}/edit?error=${encodeURIComponent(`You have uploaded more then 4 Screenshot of the app/game. There are only 4 maximum screenshot are allowed for an app or game please remove unnecessary ${screenshots.length - 4} of Screenshot`)}`);
             }
-            // Fallback: Delete ALL old screenshots from B2 first.
+            // Fallback: Delete ALL old screenshots from B2 first (excluding master screenshots).
             if (file.screenshotKeys && file.screenshotKeys.length > 0) {
+                let masterShots = [];
+                if (file.isVariant && file.masterFile) {
+                    const masterDoc = await File.findById(file.masterFile).select('screenshotKeys');
+                    if (masterDoc) {
+                        masterShots = masterDoc.screenshotKeys || [];
+                    }
+                }
                 for (const oldShotKey of file.screenshotKeys) {
-                    await deleteFromB2(oldShotKey);
+                    if (!masterShots.includes(oldShotKey)) {
+                        await deleteFromB2(oldShotKey);
+                    }
                 }
             }
             // Upload the new ones
@@ -10756,7 +10907,6 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.modDescription = formData.modDescription || file.modDescription;
         file.modFeatures = formData.modFeatures || file.modFeatures;
         file.whatsNew = formData.whatsNew || file.whatsNew;
-        file.officialDescription = formData.officialDescription || file.officialDescription;
         file.importantNote = formData.importantNote || file.importantNote;
         file.videoUrl = formData.videoUrl || file.videoUrl;
         file.category = formData.modPlatform || file.category;
@@ -10764,6 +10914,18 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         file.minOsVersion = formData.minOsVersion !== undefined ? formData.minOsVersion : file.minOsVersion;
         if (formData.architectures !== undefined) {
             file.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
+        }
+
+        if (!file.isVariant) {
+            file.officialDescription = formData.officialDescription || file.officialDescription;
+            file.tags = processedTags;
+        } else if (file.masterFile) {
+            const masterDoc = await File.findById(file.masterFile).select('officialDescription tags iconKey');
+            if (masterDoc) {
+                file.officialDescription = masterDoc.officialDescription || '';
+                file.tags = masterDoc.tags || [];
+                file.iconKey = masterDoc.iconKey || file.iconKey;
+            }
         }
 
         const activePlatform = formData.modPlatform || file.category;
@@ -10799,7 +10961,6 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         if (formData.iosPackageId !== undefined) {
             file.iosPackageId = formData.iosPackageId;
         }
-        file.tags = processedTags;
         if (formData.manualFileScanUrl !== undefined) {
             if (file.manualFileScanUrl !== manualFileScanUrlValue) {
                 file.virusTotalScanDate = null;
@@ -10904,6 +11065,10 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
         // 4. IMPORTANT: Status Logic
         if (actionType === 'draft') {
             file.status = 'draft';
+        } else if (file.isVariant) {
+            // Variants always require admin review!
+            file.status = 'pending';
+            file.rejectionReason = '';
         } else {
             // If they clicked Submit...
             // Transition from draft, rejected, or processing to pending!
@@ -11100,8 +11265,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
 
             // Delete old screenshots that are no longer kept
             if (fileToUpdate.screenshotKeys && fileToUpdate.screenshotKeys.length > 0) {
+                const masterShots = (isVariant && existingMasterFile) ? (existingMasterFile.screenshotKeys || []) : [];
                 for (const oldShotKey of fileToUpdate.screenshotKeys) {
-                    if (!finalScreenshotKeys.includes(oldShotKey)) {
+                    if (!finalScreenshotKeys.includes(oldShotKey) && !masterShots.includes(oldShotKey)) {
                         await deleteFromB2(oldShotKey);
                     }
                 }
@@ -11223,7 +11389,10 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanWhatsNew = safeClean(formData.whatsNew);
         const cleanOfficialDescription = safeClean(formData.officialDescription);
         const cleanImportantNote = safeClean(formData.importantNote);
-        const finalStatus = actionType === 'draft' ? 'draft' : ((req.user.role === 'admin' || req.user.role === 'owner') ? 'live' : 'pending');
+        // Variants always require admin approval before going live!
+        const finalStatus = isVariant
+            ? (actionType === 'draft' ? 'draft' : 'pending')
+            : (actionType === 'draft' ? 'draft' : ((req.user.role === 'admin' || req.user.role === 'owner') ? 'live' : 'pending'));
 
         let requiresRoot = false;
         let requiresDevMode = false;
@@ -11276,8 +11445,14 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             status: finalStatus
         };
 
-        // If this is a variant, all data are optional and automatically inherit from master file
+        // If this is a variant, original master uploader controls App Icon, Official Description, and Core Tags
         if (isVariant && existingMasterFile) {
+            // Lock original master assets
+            iconKey = existingMasterFile.iconKey;
+            updateData.iconKey = existingMasterFile.iconKey;
+            updateData.officialDescription = existingMasterFile.officialDescription || '';
+            updateData.tags = existingMasterFile.tags || [];
+
             if (!updateData.category || updateData.category === 'n/a') {
                 updateData.category = existingMasterFile.category || formData.modPlatform || 'android';
             }
@@ -11286,14 +11461,11 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                     ? existingMasterFile.platforms
                     : (formData.modCategory ? [formData.modCategory] : ['Other']);
             }
-            if (!updateData.modDescription) {
+            if (!updateData.modDescription || !updateData.modDescription.trim()) {
                 updateData.modDescription = existingMasterFile.modDescription || `Variant release for ${existingMasterFile.name}.`;
             }
-            if (!updateData.modFeatures) {
+            if (!updateData.modFeatures || !updateData.modFeatures.trim()) {
                 updateData.modFeatures = existingMasterFile.modFeatures || `Features inherited from ${existingMasterFile.name}.`;
-            }
-            if (!updateData.officialDescription) {
-                updateData.officialDescription = existingMasterFile.officialDescription || '';
             }
             if (!formData.developerName || !formData.developerName.trim()) {
                 updateData.developer = existingMasterFile.developer || 'N/A';
@@ -11307,16 +11479,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             if (!formData.modVersion || !formData.modVersion.trim()) {
                 updateData.version = existingMasterFile.version || '1.0';
             }
-            if (!iconKey) {
-                iconKey = existingMasterFile.iconKey;
-                updateData.iconKey = iconKey;
-            }
             if (!screenshotKeys || screenshotKeys.length === 0) {
                 screenshotKeys = existingMasterFile.screenshotKeys || [];
                 updateData.screenshotKeys = screenshotKeys;
-            }
-            if (!formData.tags || !formData.tags.trim()) {
-                updateData.tags = existingMasterFile.tags || [];
             }
             if (!updateData.minOsVersion && existingMasterFile.minOsVersion) {
                 updateData.minOsVersion = existingMasterFile.minOsVersion;

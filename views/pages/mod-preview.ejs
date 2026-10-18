@@ -772,8 +772,10 @@
                                 <ul class="features-list">
                                     <% const listItems = file.modFeatures.split(/<li[^>]*>/);
                                        listItems.forEach(function(item) {
-                                           if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
-                                               let cleanText = item.replace('</li>', '').replace('</ul>', '').replace('</ol>', ''); %>
+                                           if (!item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                               let cleanText = item.replace(/<\/li>/gi, '').replace(/<\/ul>/gi, '').replace(/<\/ol>/gi, '');
+                                               let strippedText = cleanText.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+                                               if (strippedText !== '' || cleanText.includes('<img')) { %>
                                         <li>
                                             <div class="lottie-icon-wrapper">
                                                 <lottie-player src="<%= cdnUrl %>/animations/ticmark.json"
@@ -783,7 +785,7 @@
                                                 <span><%- cleanText %></span>
                                             </div>
                                         </li>
-                                    <% } }); %>
+                                    <% } } }); %>
                                 </ul>
                             <% } else { %>
                                 <div class="raw-features-text"><%- file.modFeatures %></div>
@@ -803,8 +805,10 @@
                             <ul class="features-list">
                                 <% const noteItems = file.importantNote.split(/<li[^>]*>/);
                                    noteItems.forEach(function(item) {
-                                       if (item.trim() !== '' && !item.startsWith('<ul') && !item.startsWith('<ol')) {
-                                           let cleanText = item.replace('</li>', '').replace('</ul>', '').replace('</ol>', ''); %>
+                                       if (!item.startsWith('<ul') && !item.startsWith('<ol')) {
+                                           let cleanText = item.replace(/<\/li>/gi, '').replace(/<\/ul>/gi, '').replace(/<\/ol>/gi, '');
+                                           let strippedText = cleanText.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+                                           if (strippedText !== '' || cleanText.includes('<img')) { %>
                                     <li>
                                         <div class="lottie-icon-wrapper">
                                             <lottie-player src="<%= cdnUrl %>/animations/arrow.json"
@@ -815,7 +819,7 @@
                                             <span><%- cleanText %></span>
                                         </div>
                                     </li>
-                                <% } }); %>
+                                <% } } }); %>
                             </ul>
                         <% } else { %>
                             <div class="raw-features-text" style="color: var(--silver);"><%- file.importantNote %></div>

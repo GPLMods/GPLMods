@@ -493,6 +493,16 @@
                             </div>
                         </div>
 
+                        <!-- 4. SHOW VARIANTS FILTER TOGGLE -->
+                        <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 4px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--silver); font-size: 0.88rem; user-select: none; margin-bottom: 0;">
+                                <input type="checkbox" name="showVariants" value="true" <%= (typeof currentShowVariants !== 'undefined' && currentShowVariants) ? 'checked' : '' %> onchange="document.getElementById('categoryFilterForm').submit()" style="accent-color: #a855f7; width: 17px; height: 17px; cursor: pointer;">
+                                <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #d8b4fe;">
+                                    <i class="fas fa-code-branch" style="color: #a855f7;"></i> Show Variants
+                                </span>
+                            </label>
+                        </div>
+
                         <button type="submit" class="filter-button"
                             style="box-shadow: 0 0 15px var(--glow-gold); transition: transform 0.2s;">Filter</button>
                     </form>
@@ -506,12 +516,55 @@
                                     <% }) %>
                                         <% } else { %>
                                             <div
-                                                style="grid-column: 1 / -1; text-align: center; padding: 50px; background: var(--dark-gray); border-radius: 12px; border: 1px solid #333;">
-                                                <i class="fas fa-search"
-                                                    style="font-size: 3em; color: #444; margin-bottom: 15px;"></i>
-                                                <h2 style="color: var(--silver);">No Mods Found</h2>
-                                                <p style="color: #777;">Try adjusting your filters to see more results.
-                                                </p>
+                                                style="grid-column: 1 / -1; text-align: center; padding: 60px 30px; background: linear-gradient(180deg, rgba(30,30,30,0.95), rgba(18,18,18,0.98)); border-radius: 16px; border: 1px solid rgba(255, 215, 0, 0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                                                <div style="width: 80px; height: 80px; margin: 0 auto 20px; border-radius: 50%; background: rgba(255, 215, 0, 0.1); border: 2px solid rgba(255, 215, 0, 0.3); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);">
+                                                    <i class="fas fa-box-open" style="font-size: 2.4em; color: var(--gold);"></i>
+                                                </div>
+                                                <% 
+                                                    const isSpecificCategory = (currentPlatform && currentPlatform !== 'all') || (currentSubCategory && currentSubCategory !== 'all');
+                                                    let categoryDisplayLabel = '';
+                                                    if (currentPlatform && currentPlatform !== 'all') {
+                                                        categoryDisplayLabel += (platformLabels && platformLabels[currentPlatform.toLowerCase()] ? platformLabels[currentPlatform.toLowerCase()] : currentPlatform);
+                                                    }
+                                                    if (currentSubCategory && currentSubCategory !== 'all') {
+                                                        categoryDisplayLabel += (categoryDisplayLabel ? ' - ' : '') + currentSubCategory;
+                                                    }
+                                                %>
+                                                <h2 style="color: var(--white); font-size: 1.6rem; font-weight: 700; margin-bottom: 12px;">
+                                                    <%= isSpecificCategory ? `No mods were uploaded in this specific category yet` : `No Mods Found` %>
+                                                </h2>
+                                                <% if (isSpecificCategory) { %>
+                                                    <p style="color: var(--silver); max-width: 620px; margin: 0 auto 25px; font-size: 1rem; line-height: 1.6;">
+                                                        Be the first to share your creation! Upload or update a mod in <strong style="color: var(--gold);"><%= categoryDisplayLabel || 'this category' %></strong> to help the GPL community grow.
+                                                    </p>
+                                                <% } else { %>
+                                                    <p style="color: var(--silver); max-width: 580px; margin: 0 auto 25px; font-size: 1rem; line-height: 1.6;">
+                                                        No mods currently match your selected filters. Try adjusting your platform/category filters or enable variants below.
+                                                    </p>
+                                                <% } %>
+
+                                                <% if (typeof currentShowVariants !== 'undefined' && !currentShowVariants) { %>
+                                                    <div style="display: inline-block; background: rgba(168, 85, 247, 0.12); border: 1px dashed rgba(168, 85, 247, 0.4); padding: 8px 16px; border-radius: 8px; color: #e9d5ff; font-size: 0.88rem; margin-bottom: 25px;">
+                                                        <i class="fas fa-code-branch" style="color: #c084fc; margin-right: 6px;"></i>
+                                                        Looking for variants? Check the <strong>Show Variants</strong> filter box above to see platform &amp; architecture variants.
+                                                    </div>
+                                                <% } %>
+
+                                                <div style="display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap;">
+                                                    <a href="/upload<%= (currentPlatform && currentPlatform !== 'all') ? `?platform=${encodeURIComponent(currentPlatform)}` : '' %>"
+                                                        class="btn btn-primary"
+                                                        style="display: inline-flex; align-items: center; gap: 10px; padding: 13px 26px; border-radius: 8px; font-weight: 700; font-size: 0.95rem; text-decoration: none; background: linear-gradient(135deg, #ffd700, #ffb700); color: #000; box-shadow: 0 4px 18px rgba(255, 215, 0, 0.35); transition: transform 0.2s;">
+                                                        <i class="fas fa-cloud-arrow-up" style="font-size: 1.1em;"></i>
+                                                        <%= isSpecificCategory ? `Upload / Update Mod in this Category` : `Upload New Mod` %>
+                                                    </a>
+                                                    <% if (isSpecificCategory || (typeof currentShowVariants !== 'undefined' && currentShowVariants)) { %>
+                                                        <a href="/category"
+                                                            class="btn btn-secondary"
+                                                            style="display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 8px; font-size: 0.95rem; color: var(--silver); border: 1px solid #444; background: rgba(255,255,255,0.04); text-decoration: none;">
+                                                            <i class="fas fa-rotate-left"></i> Reset All Filters
+                                                        </a>
+                                                    <% } %>
+                                                </div>
                                             </div>
                                             <% } %>
                     </section>
@@ -520,7 +573,7 @@
                     <% if (totalPages> 1) { %>
                         <nav class="pagination">
                             <% for(let i=1; i <=totalPages; i++) { %>
-                                <a href="/category?page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>"
+                                <a href="/category?page=<%= i %>&platform=<%= currentPlatform %>&subCategory=<%= currentSubCategory %>&sort=<%= currentSort %>&showVariants=<%= (typeof currentShowVariants !== 'undefined' && currentShowVariants) ? 'true' : 'false' %>"
                                     class="<%= currentPage === i ? 'active' : '' %>">
                                     <%= i %>
                                 </a>

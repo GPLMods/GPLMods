@@ -224,6 +224,10 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false
     },
+    viewVariants: {
+        type: Boolean,
+        default: false
+    },
     notificationSettings: {
         enabled: { type: Boolean, default: true },
         newUploads: { type: Boolean, default: true },
