@@ -672,10 +672,10 @@
             Configure system status, custom status badges, multiple bulletin messages, and flexible launch timeframes.
         </p>
         <form id="siteStateForm" onsubmit="submitSiteState(event)">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">System Status:</label>
-                    <select id="siteStateStatusSelect" class="owner-modal-input">
+                    <select id="siteStateStatusSelect" class="owner-modal-input custom-select-auto">
                         <option value="online" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'online') ? 'selected' : '' %>>Online (Full Access)</option>
                         <option value="coming-soon" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'coming-soon') ? 'selected' : '' %>>Coming Soon Mode</option>
                         <option value="maintenance" <%= (typeof siteState !== 'undefined' && siteState && siteState.status === 'maintenance') ? 'selected' : '' %>>Maintenance Mode</option>
@@ -687,13 +687,27 @@
                 </div>
             </div>
 
-            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Custom Status Name / Headline:</label>
-            <input type="text" id="siteStateCustomNameInput" class="owner-modal-input" placeholder="e.g. Major V3 Overhaul, Server Migration, Beta Testing" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.customStatusName) || '' %>">
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Custom Status Name / Headline:</label>
+                    <input type="text" id="siteStateCustomNameInput" class="owner-modal-input" placeholder="e.g. Major V3 Overhaul, Beta Testing" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.customStatusName) || '' %>">
+                </div>
+                <div>
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Coming Soon Page Title:</label>
+                    <input type="text" id="siteStateTitleInput" class="owner-modal-input" placeholder="e.g. Something Awesome is Coming Soon" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTitle) || '' %>">
+                </div>
+            </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Primary Custom Message / Description:</label>
+            <textarea id="siteStateMessageInput" class="owner-modal-input" rows="2" placeholder="e.g. We are working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!"><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessage) || '' %></textarea>
+
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Custom Announcement Note (Optional Blue Banner):</label>
+            <input type="text" id="siteStateCustomTextInput" class="owner-modal-input" placeholder="e.g. VIP subscribers will receive early access keys..." value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonCustomText) || '' %>">
+
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Type:</label>
-                    <select id="siteStateTimeTypeSelect" class="owner-modal-input">
+                    <select id="siteStateTimeTypeSelect" class="owner-modal-input custom-select-auto">
                         <option value="countdown" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'countdown') ? 'selected' : '' %>>Countdown Timer (Date)</option>
                         <option value="flexible" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'flexible') ? 'selected' : '' %>>Flexible (Month/Year/Season)</option>
                         <option value="unknown" <%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTimeType === 'unknown') ? 'selected' : '' %>>Unknown / TBA (Active Dev Card)</option>
@@ -706,13 +720,13 @@
                 </div>
             </div>
 
-            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date (for Countdown Timer):</label>
-            <input type="datetime-local" id="siteStateLaunchDateInput" class="owner-modal-input" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonLaunchDate) ? new Date(new Date(siteState.comingSoonLaunchDate).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '' %>">
+            <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date & Time (Custom Calendar Picker):</label>
+            <input type="text" id="siteStateLaunchDateInput" class="owner-modal-input custom-datetime-auto" placeholder="Pick Date & Time" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonLaunchDate) ? new Date(new Date(siteState.comingSoonLaunchDate).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '' %>">
 
             <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">
                 Multiple Separate Messages (1 bulletin card per line):
             </label>
-            <textarea id="siteStateMessagesInput" class="owner-modal-input" rows="3" placeholder="Line 1: We are rebuilding the core backend engine.&#10;Line 2: New high-speed cloud mirrors are being provisioned.&#10;Line 3: Beta testers will receive early access keys."><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessages && siteState.comingSoonMessages.length > 0) ? siteState.comingSoonMessages.join('\n') : ((typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessage) || '') %></textarea>
+            <textarea id="siteStateMessagesInput" class="owner-modal-input" rows="3" placeholder="Line 1: We are rebuilding the core backend engine.&#10;Line 2: New high-speed cloud mirrors are being provisioned.&#10;Line 3: Beta testers will receive early access keys."><%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonMessages && siteState.comingSoonMessages.length > 0) ? siteState.comingSoonMessages.join('\n') : '' %></textarea>
 
             <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Target Roles (Optional comma-separated):</label>
             <input type="text" id="siteStateTargetRolesInput" class="owner-modal-input" placeholder="e.g. user, guest (leave blank to show coming soon to all visitors)" value="<%= (typeof siteState !== 'undefined' && siteState && siteState.comingSoonTargetRoles) ? siteState.comingSoonTargetRoles.join(', ') : '' %>">
@@ -741,14 +755,14 @@
             <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Path Pattern (Exact or wildcard):</label>
             <input type="text" id="pathRulePatternInput" class="owner-modal-input" placeholder="e.g. /clubs, /vip, /ios-store, /beta/*" required>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Page Title:</label>
                     <input type="text" id="pathRuleTitleInput" class="owner-modal-input" placeholder="e.g. VIP Club Launching Soon">
                 </div>
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Type:</label>
-                    <select id="pathRuleTimeTypeSelect" class="owner-modal-input">
+                    <select id="pathRuleTimeTypeSelect" class="owner-modal-input custom-select-auto">
                         <option value="countdown">Countdown to Date</option>
                         <option value="flexible">Flexible (Month/Year/Season)</option>
                         <option value="unknown">Unknown / TBA (Active Dev Card)</option>
@@ -756,14 +770,14 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Timeframe Text (Year/Month/TBA):</label>
                     <input type="text" id="pathRuleTimeframeTextInput" class="owner-modal-input" placeholder="e.g. December 2026, Q4 2026, Unknown / TBA">
                 </div>
                 <div>
-                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date (Optional):</label>
-                    <input type="datetime-local" id="pathRuleLaunchDateInput" class="owner-modal-input">
+                    <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Launch Date & Time (Calendar):</label>
+                    <input type="text" id="pathRuleLaunchDateInput" class="owner-modal-input custom-datetime-auto" placeholder="Pick Date & Time">
                 </div>
             </div>
 
@@ -775,7 +789,7 @@
             </label>
             <textarea id="pathRuleMessagesInput" class="owner-modal-input" rows="3" placeholder="Enter separate bulleted cards (1 per line)..."></textarea>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label style="font-size: 0.78em; color: #aaa; text-transform: uppercase;">Target Roles (roles that see Coming Soon):</label>
                     <input type="text" id="pathRuleTargetRolesInput" class="owner-modal-input" placeholder="e.g. user, guest (blank = all non-exempt)">
@@ -1215,6 +1229,7 @@
         modal.style.display = 'flex';
         setTimeout(() => modal.classList.add('show'), 10);
     }
+    const openOwnerDeleteModal = showOwnerDeleteModal;
 
     function closeOwnerDeleteModal() {
         const modal = document.getElementById('ownerDeleteModal');
@@ -1561,6 +1576,9 @@
             status: document.getElementById('siteStateStatusSelect').value,
             customStatusName: document.getElementById('siteStateCustomNameInput').value.trim(),
             currentStatusLabel: document.getElementById('siteStateCustomLabelInput').value.trim(),
+            comingSoonTitle: document.getElementById('siteStateTitleInput').value.trim(),
+            comingSoonMessage: document.getElementById('siteStateMessageInput').value.trim(),
+            comingSoonCustomText: document.getElementById('siteStateCustomTextInput').value.trim(),
             comingSoonTimeType: document.getElementById('siteStateTimeTypeSelect').value,
             comingSoonTimeframeText: document.getElementById('siteStateTimeframeTextInput').value.trim(),
             comingSoonLaunchDate: document.getElementById('siteStateLaunchDateInput').value || null,

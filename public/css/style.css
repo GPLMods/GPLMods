@@ -525,6 +525,24 @@ a.overlay-btn-primary:hover {
     box-shadow: 0 10px 25px var(--glow-gold); 
 }
 
+/* Color Coding for Variant and Master Edition Mod Cards */
+.mod-card.mod-card-variant {
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    box-shadow: 0 4px 18px rgba(124, 58, 237, 0.12);
+}
+.mod-card.mod-card-variant:hover {
+    border-color: #c084fc;
+    box-shadow: 0 10px 25px rgba(168, 85, 247, 0.35);
+}
+.mod-card.mod-card-master {
+    border: 1px solid rgba(255, 215, 0, 0.45);
+    box-shadow: 0 4px 18px rgba(255, 215, 0, 0.12);
+}
+.mod-card.mod-card-master:hover {
+    border-color: #ffd700;
+    box-shadow: 0 10px 25px rgba(255, 215, 0, 0.35);
+}
+
 /* Desktop Adjustment */
 @media (min-width: 768px) {
     .mod-card { 
@@ -572,7 +590,7 @@ a.overlay-btn-primary:hover {
 
 .download-overlay, .overlay-button, form { position: relative; z-index: 10; }
 
-/* Card Top Badges Layout (Prevents conflict between Certification and Version tags) */
+/* Card Top Badges Layout (Prevents conflict between Edition, Certification, and Version tags) */
 .card-top-badges {
     position: absolute;
     top: 8px;
@@ -581,10 +599,51 @@ a.overlay-btn-primary:hover {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     z-index: 6;
     pointer-events: none;
     box-sizing: border-box;
+}
+.card-top-badges .badges-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 68%;
+    overflow: hidden;
+    pointer-events: auto;
+}
+.card-top-badges .badges-right {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    flex-shrink: 0;
+    max-width: 32%;
+    pointer-events: auto;
+}
+.mod-edition-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    letter-spacing: 0.3px;
+    box-sizing: border-box;
+}
+.mod-edition-pill.variant-pill {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.35);
+}
+.mod-edition-pill.master-pill {
+    background: rgba(255, 215, 0, 0.15);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.4);
 }
 .card-top-badges .app-feature-tag,
 .card-top-badges .mod-type-tag {
@@ -608,16 +667,16 @@ a.overlay-btn-primary:hover {
 }
 .card-top-badges .app-feature-tag {
     flex-shrink: 1;
-    max-width: 55%;
-    padding: 3px 8px;
+    padding: 3px 7px;
     font-size: 0.72em;
+    border-radius: 4px;
 }
 .card-top-badges .mod-type-tag {
     margin-left: auto;
     flex-shrink: 0;
-    max-width: 45%;
-    padding: 3px 8px;
+    padding: 3px 7px;
     font-size: 0.72em;
+    border-radius: 4px;
 }
 
 /* 6. Tags & Badges */
@@ -3673,6 +3732,15 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         gap: 3px !important;
     }
 
+    .card-top-badges .mod-edition-pill.variant-pill .pill-label,
+    .card-top-badges .mod-edition-pill.master-pill .pill-label {
+        display: none !important;
+    }
+    .card-top-badges .mod-edition-pill {
+        padding: 2px 5px !important;
+        font-size: 0.65rem !important;
+    }
+
     .mod-grid .card-top-badges .app-feature-tag,
     .mod-grid .card-top-badges .mod-type-tag {
         position: static !important;
@@ -3684,8 +3752,8 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
         justify-content: center !important;
         text-align: center !important;
         line-height: 1.2 !important;
-        font-size: 0.68em !important;
-        padding: 2px 6px !important;
+        font-size: 0.65em !important;
+        padding: 2px 5px !important;
     }
 
     .mod-grid .app-feature-tag:not(.card-top-badges *) {

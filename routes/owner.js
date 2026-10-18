@@ -866,14 +866,17 @@ router.post('/api/owner/site-state/status', catchAsync(async (req, res) => {
     if (status) siteState.status = status;
     if (customStatusName !== undefined) siteState.customStatusName = String(customStatusName).trim();
     if (currentStatusLabel !== undefined) siteState.currentStatusLabel = String(currentStatusLabel).trim();
-    if (comingSoonTitle !== undefined) siteState.comingSoonTitle = comingSoonTitle;
-    if (comingSoonMessage !== undefined) siteState.comingSoonMessage = comingSoonMessage;
+    if (comingSoonTitle !== undefined) siteState.comingSoonTitle = String(comingSoonTitle).trim();
+    if (comingSoonMessage !== undefined) siteState.comingSoonMessage = String(comingSoonMessage).trim();
     if (comingSoonMessages !== undefined) {
         siteState.comingSoonMessages = Array.isArray(comingSoonMessages)
             ? comingSoonMessages.map(m => String(m).trim()).filter(Boolean)
             : (comingSoonMessages ? [String(comingSoonMessages).trim()] : []);
+        if (!siteState.comingSoonMessage && siteState.comingSoonMessages.length > 0) {
+            siteState.comingSoonMessage = siteState.comingSoonMessages[0];
+        }
     }
-    if (comingSoonCustomText !== undefined) siteState.comingSoonCustomText = comingSoonCustomText;
+    if (comingSoonCustomText !== undefined) siteState.comingSoonCustomText = String(comingSoonCustomText).trim();
     if (comingSoonEnableTimer !== undefined) siteState.comingSoonEnableTimer = Boolean(comingSoonEnableTimer);
     if (comingSoonTimeType !== undefined) siteState.comingSoonTimeType = comingSoonTimeType;
     if (comingSoonTimeframeText !== undefined) siteState.comingSoonTimeframeText = String(comingSoonTimeframeText).trim();
@@ -895,7 +898,10 @@ router.post('/api/owner/site-state/status', catchAsync(async (req, res) => {
             status: siteState.status,
             customStatusName: siteState.customStatusName,
             currentStatusLabel: siteState.currentStatusLabel,
+            comingSoonTitle: siteState.comingSoonTitle,
+            comingSoonMessage: siteState.comingSoonMessage,
             comingSoonMessages: siteState.comingSoonMessages,
+            comingSoonCustomText: siteState.comingSoonCustomText,
             comingSoonTimeType: siteState.comingSoonTimeType,
             comingSoonTimeframeText: siteState.comingSoonTimeframeText
         }

@@ -2182,13 +2182,14 @@ app.use(async (req, res, next) => {
         const messages = (cachedSiteState.comingSoonMessages && cachedSiteState.comingSoonMessages.length > 0)
             ? cachedSiteState.comingSoonMessages
             : (cachedSiteState.comingSoonMessage ? [cachedSiteState.comingSoonMessage] : []);
+        const primaryMessage = cachedSiteState.comingSoonMessage || (messages.length > 0 ? messages[0] : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!");
 
         // Intercept and render dynamic Coming Soon page
         return res.status(200).render('pages/coming-soon', {
             title: cachedSiteState.comingSoonTitle || 'Something Awesome is Coming Soon',
-            message: cachedSiteState.comingSoonMessage || "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!",
+            message: primaryMessage,
             messages: messages,
-            customText: cachedSiteState.comingSoonCustomText || 'Feature is currently under development. Stay tuned for official announcements!',
+            customText: cachedSiteState.comingSoonCustomText || '',
             enableTimer: cachedSiteState.comingSoonEnableTimer !== false,
             timeType: cachedSiteState.comingSoonTimeType || 'countdown',
             timeframeText: cachedSiteState.comingSoonTimeframeText || '',
@@ -12709,12 +12710,23 @@ app.post('/api/subscribe', async (req, res) => {
 app.get('/coming-soon', async (req, res) => {
     try {
         const state = cachedSiteState || await SiteState.findOne({ singletonId: 'master-state' });
+        const messages = (state?.comingSoonMessages && state.comingSoonMessages.length > 0)
+            ? state.comingSoonMessages
+            : (state?.comingSoonMessage ? [state.comingSoonMessage] : []);
+        const primaryMessage = state?.comingSoonMessage || (messages.length > 0 ? messages[0] : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!");
+
         res.render('pages/coming-soon', {
             title: state?.comingSoonTitle || 'Something Awesome is Coming Soon',
-            message: state?.comingSoonMessage || "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!",
-            customText: state?.comingSoonCustomText || 'Feature is currently under development. Stay tuned for official announcements!',
+            message: primaryMessage,
+            messages: messages,
+            customText: state?.comingSoonCustomText || '',
             enableTimer: state?.comingSoonEnableTimer !== false,
+            timeType: state?.comingSoonTimeType || 'countdown',
+            timeframeText: state?.comingSoonTimeframeText || '',
             launchDate: state?.comingSoonLaunchDate ? new Date(state.comingSoonLaunchDate).toISOString() : '',
+            customStatusName: state?.customStatusName || '',
+            currentStatusLabel: state?.currentStatusLabel || 'Coming Soon',
+            pathPattern: '',
             user: req.user || null
         });
     } catch (e) {

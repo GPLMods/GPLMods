@@ -1,0 +1,712 @@
+<!-- views/partials/custom-ui.ejs -->
+<!-- Universal GPLMods Custom UI Particle: Custom Dropdowns, Calendar & DateTime Picker, Color Swatches -->
+
+<style>
+/* ==========================================================
+   1. CUSTOM SELECT / DROPDOWN ENGINE
+   ========================================================== */
+.custom-select-wrapper {
+    position: relative;
+    user-select: none;
+    width: 100%;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+.custom-select-wrapper.open {
+    z-index: 100100 !important;
+}
+
+.custom-select-wrapper .custom-select-trigger {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    background: #12131a;
+    border: 1px solid #383842;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.9em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.custom-select-wrapper .custom-select-trigger:hover {
+    border-color: var(--gold, #ffd700);
+}
+
+.custom-select-wrapper.open .custom-select-trigger {
+    border-color: var(--gold, #ffd700);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.25);
+    background: #141622;
+}
+
+.custom-select-wrapper .selected-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-grow: 1;
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.custom-select-wrapper .custom-select-arrow {
+    color: #888;
+    font-size: 0.85em;
+    transition: transform 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.custom-select-wrapper.open .custom-select-arrow {
+    transform: rotate(180deg);
+    color: var(--gold, #ffd700);
+}
+
+.custom-select-wrapper .custom-options-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #12131a;
+    border: 1px solid var(--gold, #ffd700);
+    border-top: none;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 100150;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
+    display: none;
+    box-sizing: border-box;
+}
+
+.custom-select-wrapper.open .custom-options-menu {
+    display: block;
+}
+
+.custom-select-wrapper .custom-option-item {
+    padding: 10px 14px;
+    color: #ddd;
+    font-size: 0.88em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.custom-select-wrapper .custom-option-item:last-child {
+    border-bottom: none;
+}
+
+.custom-select-wrapper .custom-option-item:hover {
+    background: rgba(255, 215, 0, 0.15);
+    color: var(--gold, #ffd700);
+}
+
+.custom-select-wrapper .custom-option-item.selected {
+    background: rgba(255, 215, 0, 0.22);
+    color: var(--gold, #ffd700);
+    font-weight: 700;
+}
+
+.custom-select-wrapper .custom-option-item .check-icon {
+    font-size: 0.8em;
+    opacity: 0;
+    color: var(--gold, #ffd700);
+}
+
+.custom-select-wrapper .custom-option-item.selected .check-icon {
+    opacity: 1;
+}
+
+/* ==========================================================
+   2. CUSTOM CALENDAR & DATE-TIME PICKER ENGINE
+   ========================================================== */
+.custom-datetime-container {
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+}
+
+.custom-datetime-trigger {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px;
+    background: #12131a;
+    border: 1px solid #383842;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.9em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-datetime-trigger:hover {
+    border-color: var(--gold, #ffd700);
+}
+
+.custom-datetime-container.open .custom-datetime-trigger {
+    border-color: var(--gold, #ffd700);
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.25);
+}
+
+.custom-datetime-trigger .dt-text {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-weight: 500;
+}
+
+.custom-datetime-trigger .dt-icon {
+    color: var(--gold, #ffd700);
+    font-size: 0.95em;
+    margin-right: 6px;
+}
+
+.custom-datetime-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 320px;
+    max-width: 95vw;
+    background: #161824;
+    border: 1px solid #3a3f55;
+    border-radius: 12px;
+    padding: 14px;
+    z-index: 100200;
+    box-shadow: 0 18px 45px rgba(0,0,0,0.92);
+    display: none;
+    box-sizing: border-box;
+    color: #fff;
+}
+
+.custom-datetime-container.open .custom-datetime-popover {
+    display: block;
+}
+
+.cal-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.cal-month-title {
+    font-weight: 700;
+    color: var(--gold, #ffd700);
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+}
+
+.cal-nav-btn {
+    background: #202434;
+    border: 1px solid #383d54;
+    color: #fff;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75em;
+    transition: background 0.15s;
+}
+
+.cal-nav-btn:hover {
+    background: #2a3048;
+    color: var(--gold, #ffd700);
+}
+
+.cal-weekdays-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    text-align: center;
+    font-size: 0.72em;
+    color: #8890a6;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.cal-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+}
+
+.cal-day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82em;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #e0e0e0;
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+    user-select: none;
+}
+
+.cal-day-cell:hover:not(.empty) {
+    background: rgba(255, 215, 0, 0.2);
+    color: var(--gold, #ffd700);
+    transform: scale(1.08);
+}
+
+.cal-day-cell.today {
+    border: 1px solid rgba(255, 215, 0, 0.6);
+    color: var(--gold, #ffd700);
+    font-weight: 700;
+}
+
+.cal-day-cell.selected {
+    background: var(--gold, #ffd700) !important;
+    color: #090a0f !important;
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.cal-day-cell.empty {
+    cursor: default;
+    opacity: 0;
+}
+
+/* Time Picker Section */
+.cal-time-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #282c3e;
+    font-size: 0.82em;
+}
+
+.cal-time-row .time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cal-time-input {
+    width: 44px;
+    padding: 4px 6px;
+    background: #0d0f17;
+    border: 1px solid #383d54;
+    border-radius: 6px;
+    color: var(--gold, #ffd700);
+    font-weight: 700;
+    text-align: center;
+    font-family: monospace;
+    font-size: 0.95em;
+}
+
+.cal-time-input:focus {
+    outline: none;
+    border-color: var(--gold, #ffd700);
+}
+
+.cal-actions-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.cal-action-btn {
+    flex: 1;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    font-size: 0.78em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.15s;
+    background: #252a3d;
+    color: #ddd;
+}
+
+.cal-action-btn:hover {
+    background: #313750;
+    color: #fff;
+}
+
+.cal-action-btn.primary {
+    background: var(--gold, #ffd700);
+    color: #000;
+}
+
+.cal-action-btn.primary:hover {
+    background: #ffca28;
+}
+
+/* ==========================================================
+   3. MOBILE-OPTIMIZED MODALS & FORM GRIDS
+   ========================================================== */
+@media (max-width: 640px) {
+    .owner-modal-card.wide-modal {
+        width: 95% !important;
+        max-width: 95% !important;
+        max-height: 90vh !important;
+        overflow-y: auto !important;
+        padding: 16px 14px !important;
+        margin: auto !important;
+    }
+
+    .owner-modal-card [style*="grid-template-columns: 1fr 1fr"],
+    .form-grid-2col {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    .custom-datetime-popover {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 90vw !important;
+        max-width: 320px !important;
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.7), 0 20px 50px rgba(0,0,0,0.95) !important;
+    }
+}
+</style>
+
+<script>
+// ==========================================================
+// UNIVERSAL CUSTOM UI AUTO-INITIALIZER
+// ==========================================================
+(function() {
+    function enhanceSelectElement(selectEl) {
+        if (!selectEl || selectEl.dataset.customUiInitialized === 'true') return;
+        selectEl.dataset.customUiInitialized = 'true';
+        selectEl.style.display = 'none';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper ' + (selectEl.className.replace('custom-select-auto', '').trim());
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+        trigger.setAttribute('tabindex', '0');
+        trigger.setAttribute('role', 'button');
+
+        const selectedText = document.createElement('span');
+        selectedText.className = 'selected-text';
+
+        const arrow = document.createElement('i');
+        arrow.className = 'fas fa-chevron-down custom-select-arrow';
+
+        trigger.appendChild(selectedText);
+        trigger.appendChild(arrow);
+
+        const optionsMenu = document.createElement('div');
+        optionsMenu.className = 'custom-options-menu';
+
+        function updateOptions() {
+            optionsMenu.innerHTML = '';
+            Array.from(selectEl.options).forEach(opt => {
+                const item = document.createElement('div');
+                item.className = 'custom-option-item' + (opt.selected ? ' selected' : '');
+                item.dataset.value = opt.value;
+                item.innerHTML = `<span>${opt.text}</span><i class="fas fa-check check-icon"></i>`;
+
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectEl.value = opt.value;
+                    selectedText.textContent = opt.text;
+                    optionsMenu.querySelectorAll('.custom-option-item').forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    wrapper.classList.remove('open');
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                optionsMenu.appendChild(item);
+                if (opt.selected) {
+                    selectedText.textContent = opt.text;
+                }
+            });
+            if (!selectedText.textContent && selectEl.options.length > 0) {
+                selectedText.textContent = selectEl.options[0].text;
+            }
+        }
+
+        updateOptions();
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = wrapper.classList.contains('open');
+            document.querySelectorAll('.custom-select-wrapper.open, .custom-datetime-container.open').forEach(el => {
+                if (el !== wrapper) el.classList.remove('open');
+            });
+            wrapper.classList.toggle('open', !isOpen);
+        });
+
+        // Listen for external change events on native select
+        selectEl.addEventListener('change', () => {
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            if (selectedOpt) {
+                selectedText.textContent = selectedOpt.text;
+                optionsMenu.querySelectorAll('.custom-option-item').forEach(item => {
+                    item.classList.toggle('selected', item.dataset.value === selectEl.value);
+                });
+            }
+        });
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(optionsMenu);
+        selectEl.parentNode.insertBefore(wrapper, selectEl.nextSibling);
+    }
+
+    function enhanceDateTimeElement(inputEl) {
+        if (!inputEl || inputEl.dataset.customUiInitialized === 'true') return;
+        inputEl.dataset.customUiInitialized = 'true';
+        inputEl.style.display = 'none';
+
+        const container = document.createElement('div');
+        container.className = 'custom-datetime-container';
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-datetime-trigger';
+        trigger.setAttribute('tabindex', '0');
+
+        const dtText = document.createElement('span');
+        dtText.className = 'dt-text';
+        dtText.innerHTML = '<i class="far fa-calendar-alt dt-icon"></i> <span class="val-label">Select Date & Time</span>';
+
+        const arrow = document.createElement('i');
+        arrow.className = 'fas fa-chevron-down custom-select-arrow';
+
+        trigger.appendChild(dtText);
+        trigger.appendChild(arrow);
+
+        const popover = document.createElement('div');
+        popover.className = 'custom-datetime-popover';
+
+        let currDate = inputEl.value ? new Date(inputEl.value) : new Date();
+        if (isNaN(currDate.getTime())) currDate = new Date();
+        let viewYear = currDate.getFullYear();
+        let viewMonth = currDate.getMonth();
+        let selectedDay = currDate.getDate();
+        let selectedHour = String(currDate.getHours()).padStart(2, '0');
+        let selectedMinute = String(currDate.getMinutes()).padStart(2, '0');
+
+        function formatDisplay(d, hr, min) {
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} ${hr}:${min}`;
+        }
+
+        function syncToInput() {
+            const finalDate = new Date(viewYear, viewMonth, selectedDay, parseInt(selectedHour, 10), parseInt(selectedMinute, 10));
+            // ISO format YYYY-MM-DDTHH:mm
+            const iso = finalDate.getFullYear() + '-' +
+                String(finalDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(finalDate.getDate()).padStart(2, '0') + 'T' +
+                selectedHour + ':' + selectedMinute;
+            inputEl.value = iso;
+            inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            dtText.innerHTML = `<i class="far fa-calendar-check dt-icon" style="color: var(--gold);"></i> <span>${formatDisplay(finalDate, selectedHour, selectedMinute)}</span>`;
+        }
+
+        if (inputEl.value) {
+            syncToInput();
+        }
+
+        function renderCalendar() {
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+            const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+            const today = new Date();
+
+            popover.innerHTML = `
+                <div class="cal-header-row">
+                    <button type="button" class="cal-nav-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                    <span class="cal-month-title">${months[viewMonth]} ${viewYear}</span>
+                    <button type="button" class="cal-nav-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-weekdays-grid">
+                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                </div>
+                <div class="cal-days-grid"></div>
+                <div class="cal-time-row">
+                    <span style="color: #aaa;"><i class="far fa-clock"></i> Time (24h):</span>
+                    <div class="time-inputs">
+                        <input type="number" min="0" max="23" class="cal-time-input hr-input" value="${selectedHour}">
+                        <span style="color: var(--gold); font-weight: bold;">:</span>
+                        <input type="number" min="0" max="59" class="cal-time-input min-input" value="${selectedMinute}">
+                    </div>
+                </div>
+                <div class="cal-actions-row">
+                    <button type="button" class="cal-action-btn clear-btn">Clear</button>
+                    <button type="button" class="cal-action-btn now-btn">Now</button>
+                    <button type="button" class="cal-action-btn primary apply-btn">Done</button>
+                </div>
+            `;
+
+            const daysGrid = popover.querySelector('.cal-days-grid');
+            for (let i = 0; i < firstDay; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'cal-day-cell empty';
+                daysGrid.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'cal-day-cell';
+                cell.textContent = day;
+
+                const isToday = today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day;
+                if (isToday) cell.classList.add('today');
+
+                if (selectedDay === day && currDate.getFullYear() === viewYear && currDate.getMonth() === viewMonth) {
+                    cell.classList.add('selected');
+                }
+
+                cell.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectedDay = day;
+                    currDate = new Date(viewYear, viewMonth, selectedDay);
+                    daysGrid.querySelectorAll('.cal-day-cell').forEach(c => c.classList.remove('selected'));
+                    cell.classList.add('selected');
+                    syncToInput();
+                });
+
+                daysGrid.appendChild(cell);
+            }
+
+            popover.querySelector('.prev-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewMonth--;
+                if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+                renderCalendar();
+            });
+
+            popover.querySelector('.next-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewMonth++;
+                if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+                renderCalendar();
+            });
+
+            const hrInput = popover.querySelector('.hr-input');
+            const minInput = popover.querySelector('.min-input');
+
+            hrInput.addEventListener('change', () => {
+                selectedHour = String(Math.max(0, Math.min(23, parseInt(hrInput.value || 0, 10)))).padStart(2, '0');
+                hrInput.value = selectedHour;
+                syncToInput();
+            });
+
+            minInput.addEventListener('change', () => {
+                selectedMinute = String(Math.max(0, Math.min(59, parseInt(minInput.value || 0, 10)))).padStart(2, '0');
+                minInput.value = selectedMinute;
+                syncToInput();
+            });
+
+            popover.querySelector('.now-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                const now = new Date();
+                viewYear = now.getFullYear();
+                viewMonth = now.getMonth();
+                selectedDay = now.getDate();
+                selectedHour = String(now.getHours()).padStart(2, '0');
+                selectedMinute = String(now.getMinutes()).padStart(2, '0');
+                syncToInput();
+                renderCalendar();
+            });
+
+            popover.querySelector('.clear-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                inputEl.value = '';
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                dtText.innerHTML = '<i class="far fa-calendar-alt dt-icon"></i> <span class="val-label">Select Date & Time</span>';
+                container.classList.remove('open');
+            });
+
+            popover.querySelector('.apply-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                syncToInput();
+                container.classList.remove('open');
+            });
+        }
+
+        renderCalendar();
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = container.classList.contains('open');
+            document.querySelectorAll('.custom-select-wrapper.open, .custom-datetime-container.open').forEach(el => {
+                if (el !== container) el.classList.remove('open');
+            });
+            container.classList.toggle('open', !isOpen);
+        });
+
+        // Listen for direct program changes
+        inputEl.addEventListener('change', () => {
+            if (inputEl.value) {
+                const parsed = new Date(inputEl.value);
+                if (!isNaN(parsed.getTime())) {
+                    viewYear = parsed.getFullYear();
+                    viewMonth = parsed.getMonth();
+                    selectedDay = parsed.getDate();
+                    selectedHour = String(parsed.getHours()).padStart(2, '0');
+                    selectedMinute = String(parsed.getMinutes()).padStart(2, '0');
+                    dtText.innerHTML = `<i class="far fa-calendar-check dt-icon" style="color: var(--gold);"></i> <span>${formatDisplay(parsed, selectedHour, selectedMinute)}</span>`;
+                    renderCalendar();
+                }
+            } else {
+                dtText.innerHTML = '<i class="far fa-calendar-alt dt-icon"></i> <span class="val-label">Select Date & Time</span>';
+            }
+        });
+
+        container.appendChild(trigger);
+        container.appendChild(popover);
+        inputEl.parentNode.insertBefore(container, inputEl.nextSibling);
+    }
+
+    function initAllCustomUI(root = document) {
+        root.querySelectorAll('select.custom-select-auto, select[data-custom-dropdown="true"]').forEach(enhanceSelectElement);
+        root.querySelectorAll('input.custom-datetime-auto, input[data-custom-datetime="true"]').forEach(enhanceDateTimeElement);
+    }
+
+    // Global listener to close popovers on outer click or Escape
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('.custom-datetime-container')) {
+            document.querySelectorAll('.custom-select-wrapper.open, .custom-datetime-container.open').forEach(el => el.classList.remove('open'));
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.custom-select-wrapper.open, .custom-datetime-container.open').forEach(el => el.classList.remove('open'));
+        }
+    });
+
+    window.initCustomUI = initAllCustomUI;
+    window.enhanceSelectElement = enhanceSelectElement;
+    window.enhanceDateTimeElement = enhanceDateTimeElement;
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => initAllCustomUI(document));
+    } else {
+        initAllCustomUI(document);
+    }
+})();
+</script>

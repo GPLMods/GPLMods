@@ -465,23 +465,29 @@
             <%- (typeof title !== 'undefined' && title) ? title.replace(/Coming Soon/i, '<span>Coming Soon</span>') : '<span>Something Awesome</span> is Coming Soon' %>
         </h1>
         
-        <!-- MULTIPLE SEPARATE MESSAGES OR SINGLE HERO MESSAGE -->
-        <% const hasMultipleMessages = typeof messages !== 'undefined' && Array.isArray(messages) && messages.length > 0; %>
-        <% if (hasMultipleMessages) { %>
+        <!-- HERO CUSTOM MESSAGE -->
+        <% 
+            const defaultHeroMsg = "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!";
+            const heroMsg = (typeof message !== 'undefined' && message && message.trim()) ? message.trim() : defaultHeroMsg;
+            const rawMessages = (typeof messages !== 'undefined' && Array.isArray(messages)) ? messages.filter(m => m && typeof m === 'string' && m.trim()) : [];
+            // Additional bulletins excluding exact duplicate of hero
+            const distinctBulletins = rawMessages.filter(m => m.trim().toLowerCase() !== heroMsg.toLowerCase());
+        %>
+
+        <p class="hero-desc">
+            <%= heroMsg %>
+        </p>
+
+        <!-- MULTIPLE SEPARATE BULLETINS / ANNOUNCEMENT CARDS -->
+        <% if (distinctBulletins.length > 0) { %>
             <div class="coming-soon-messages-container">
-                <% messages.forEach((msg, idx) => { %>
-                    <% if (msg && typeof msg === 'string' && msg.trim()) { %>
-                        <div class="coming-soon-msg-card">
-                            <div class="msg-card-icon"><i class="fas fa-bullhorn"></i></div>
-                            <div class="msg-card-content"><%= msg.trim() %></div>
-                        </div>
-                    <% } %>
+                <% distinctBulletins.forEach((msg) => { %>
+                    <div class="coming-soon-msg-card">
+                        <div class="msg-card-icon"><i class="fas fa-bullhorn"></i></div>
+                        <div class="msg-card-content"><%= msg.trim() %></div>
+                    </div>
                 <% }); %>
             </div>
-        <% } else { %>
-            <p class="hero-desc">
-                <%= (typeof message !== 'undefined' && message) ? message : "We're working hard behind the scenes to deliver an exceptional experience. Stay tuned for the big reveal!" %>
-            </p>
         <% } %>
 
         <% const resolvedTimeType = typeof timeType !== 'undefined' ? timeType : 'countdown'; %>
