@@ -3934,3 +3934,46 @@ input[type="checkbox"]:not(.switch input):not(.custom-control-input):not(.toggle
     display: none !important;
 }
 
+/* ==========================================================================
+   GLOBAL WORD BREAK & OVERFLOW PROTECTION FOR FORMS & UPLOADS
+   Prevents long filenames, hashes, and titles from blowing out layouts
+   ========================================================================== */
+.upload-container,
+.upload-form-container {
+    box-sizing: border-box !important;
+    max-width: 100%;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+#file-name-display,
+.file-name-display {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    line-height: 1.4 !important;
+}
+
+.upload-filename-pill {
+    display: inline-block !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    background: rgba(255, 215, 0, 0.1) !important;
+    color: var(--gold, #FFD700) !important;
+    border: 1px solid rgba(255, 215, 0, 0.35) !important;
+    padding: 2px 10px !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+}
+
+.break-long-text {
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;
+}
+
+

@@ -17,9 +17,9 @@
     }
     
     /* Reusing your standard form styles */
-    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; box-sizing: border-box; }
-    .upload-form-container h2 { text-align: center; font-size: 2.5em; margin-bottom: 1rem; color: var(--white); }
-    .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); }
+    .upload-form-container { width: 100%; max-width: 800px; margin: 2rem auto; padding: 30px; background-color: var(--dark-gray); border: 1px solid #333; border-radius: 15px; box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; }
+    .upload-form-container h2 { text-align: center; font-size: 2.5em; margin-bottom: 1rem; color: var(--white); overflow-wrap: anywhere; word-break: break-word; line-height: 1.3; }
+    .upload-form-container h2 span { color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); overflow-wrap: anywhere; word-break: break-word; }
     .form-section { border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 30px; width: 100%; max-width: 100%; min-width: 0; min-inline-size: 0; box-sizing: border-box; margin-left: 0; margin-right: 0; }
     .form-section legend { padding: 0 10px; margin-left: 15px; font-size: 1.3em; font-weight: 600; color: var(--gold); }
     .form-group { margin-bottom: 25px; position: relative; width: 100%; max-width: 100%; box-sizing: border-box; } 
@@ -185,7 +185,7 @@
     .submit-button { display: block; width: 100%; background: var(--gold); color: var(--black); padding: 15px 20px; border-radius: 8px; font-size: 1.2em; font-weight: 700; border: none; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 0 15px var(--glow-gold); margin-top: 20px; }
     .submit-button:hover { transform: translateY(-5px); box-shadow: 0 0 25px var(--glow-gold); }
 
-    .status-banner { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; }
+    .status-banner { text-align: center; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; overflow-wrap: anywhere; word-break: break-word; max-width: 100%; box-sizing: border-box; }
     .status-banner.rejected { background-color: rgba(229, 57, 53, 0.1); border: 1px solid var(--red); color: var(--red); }
 
     /* --- Custom Styles for Quill v1.3.7 --- */
@@ -275,9 +275,14 @@
             margin: 1rem auto !important;
             border-radius: 12px !important;
             box-sizing: border-box !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
         }
         .upload-form-container h2 {
             font-size: 1.8em !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+            line-height: 1.25 !important;
         }
         .form-section {
             padding: 16px 12px !important;
@@ -463,7 +468,7 @@
         
         <h2>
             Edit 
-            <span style="color: var(--gold); text-shadow: 0 0 4px var(--glow-gold);">
+            <span style="color: var(--gold); text-shadow: 0 0 4px var(--glow-gold); overflow-wrap: anywhere; word-break: break-word;">
                 <%= file.isVariant ? 'Variant: ' : 'Mod: ' %><%= file.name %>
             </span>
         </h2>
