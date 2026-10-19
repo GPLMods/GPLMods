@@ -57,8 +57,10 @@ const ChatSettings = require('./chatSettings');
 const AIKnowledge = require('./aiKnowledge');
 const VolunteerApplication = require('./system/volunteerApplication');
 const PushSubscription = require('./pushSubscription');
+const KeywordCache = require('./system/keywordCache');
 
 module.exports = {
+    KeywordCache,
     PushSubscription,
     // Core
     File,
@@ -116,6 +118,6 @@ module.exports = {
     Core: { File, User, Review, Reply },
     Community: { Issue, Request, SupportTicket, UserNotification, UnbanRequest, Club, ClubChannel, ClubRole, ClubMember, ClubMessage, ClubJoinRequest },
     Content: { DocPage, DocCategory, Announcement, License, ModPromotion },
-    System: { DistributorApplication, VolunteerApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache },
+    System: { DistributorApplication, VolunteerApplication, Dmca, Report, IosCert, IosDns, SiteState, Subscriber, DailyStat, AutomatedCampaign, NewsletterCampaign, PointHistory, TempDomain, TranslationCache, TranslationQuota, ApiLimit, VpnCache, KeywordCache },
     Repositories: { SourceCode }
 };

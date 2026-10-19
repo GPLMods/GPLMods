@@ -477,7 +477,7 @@
 
         <% if (file.isVariant) { %>
             <div class="status-banner" style="background-color: rgba(33, 150, 243, 0.1); border: 1px solid var(--blue); color: var(--blue);">
-                <i class="fas fa-info-circle"></i> You are editing a Variant of an existing app. The App Icon, Official Description, and Tags are managed by the original uploader.
+                <i class="fas fa-info-circle"></i> You are editing a Variant of an existing app. Official Description and Tags are inherited by default, but you can set a custom App Icon and Screenshots.
             </div>
         <% } %>
         
@@ -499,7 +499,6 @@
             <fieldset class="form-section">
                 <legend>Core Details</legend>
 
-                <% if (!file.isVariant) { %>
                 <div class="icon-upload-container">
                     <label>Mod Icon</label>
                     <div class="icon-preview" id="iconPreviewBox">
@@ -510,7 +509,6 @@
                         <label for="modIcon" class="file-input-label">Change Icon (Optional)</label>
                     </div>
                 </div>
-                <% } %>
 
                 <div class="auto-fetch-box" style="background-color: #0b1a2a; border: 1px solid var(--blue); padding: 20px; border-radius: 8px; margin-bottom: 25px; width: 100%; box-sizing: border-box;">
                     <h4 style="color: var(--blue); margin-bottom: 12px; font-size: 1.1em; display: flex; align-items: center; gap: 8px; text-align: left;"><i class="fas fa-magic"></i> Auto-Fetch App Details</h4>

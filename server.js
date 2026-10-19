@@ -5624,7 +5624,23 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
         let versionHistory = [];
         let fileForHistory = await File.findById(displayFile._id).populate('olderVersions');
         if (fileForHistory) {
-            versionHistory = [fileForHistory, ...fileForHistory.olderVersions.slice().reverse()];
+            versionHistory = [fileForHistory, ...(fileForHistory.olderVersions || []).slice().reverse()];
+        }
+        // Also fetch any live versions that reference this mod or its parentFile
+        const historyIds = versionHistory.map(v => v._id.toString());
+        const rootParentId = displayFile.parentFile || displayFile._id;
+        const additionalVersions = await File.find({
+            status: 'live',
+            _id: { $nin: historyIds },
+            $or: [
+                { parentFile: rootParentId },
+                { _id: rootParentId },
+                { parentFile: displayFile._id }
+            ]
+        }).sort({ createdAt: -1 });
+
+        if (additionalVersions && additionalVersions.length > 0) {
+            versionHistory = [...versionHistory, ...additionalVersions];
         }
 
         // --- USER INTERACTIONS ---
@@ -6881,10 +6897,90 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             if (formData.requiresDevMode !== undefined) newRequiresDevMode = (formData.requiresDevMode === 'true' || formData.requiresDevMode === true || formData.requiresDevMode === 'on');
         }
 
+        let finalDirectDownloadUrl = normalizeSingleValue(formData.directDownloadUrl) || '';
+        let finalExternalDownloadUrl = !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '';
+        let altLinks = [];
+
+        if (finalDirectDownloadUrl) {
+            const cloudConverted = convertCloudToDirectLink(finalDirectDownloadUrl);
+            if (cloudConverted) {
+                finalDirectDownloadUrl = cloudConverted.directUrl;
+                altLinks.push({
+                    providerName: cloudConverted.providerName,
+                    url: cloudConverted.directUrl
+                });
+            }
+        }
+
+        if (finalExternalDownloadUrl) {
+            const cloudConverted = convertCloudToDirectLink(finalExternalDownloadUrl);
+            if (cloudConverted) {
+                if (!finalDirectDownloadUrl) {
+                    finalDirectDownloadUrl = cloudConverted.directUrl;
+                }
+                const exists = altLinks.some(link => link.url === cloudConverted.directUrl);
+                if (!exists) {
+                    altLinks.push({
+                        providerName: cloudConverted.providerName,
+                        url: cloudConverted.directUrl
+                    });
+                }
+            }
+        }
+
+        // Check if updating/overwriting the exact same version on previousVersion
+        const normVer = (v) => (v || '').toString().toLowerCase().replace(/^v/, '').trim();
+        const incomingVer = normVer(req.body.softwareVersion);
+        const prevVer = normVer(previousVersion.version);
+
+        if (incomingVer && incomingVer === prevVer) {
+            console.log(`[Add-Version] Same version detected (${incomingVer}). Overwriting previousVersion in-place.`);
+            if (newFileKey && newFileKey !== 'external-link') {
+                if (previousVersion.fileKey && previousVersion.fileKey !== 'external-link' && previousVersion.fileKey !== newFileKey) {
+                    await deleteFromB2(previousVersion.fileKey);
+                }
+                previousVersion.fileKey = newFileKey;
+                previousVersion.fileSize = actualFileSize;
+                previousVersion.originalFilename = originalFilename;
+            }
+            if (finalDirectDownloadUrl) previousVersion.directDownloadUrl = finalDirectDownloadUrl;
+            if (finalExternalDownloadUrl) previousVersion.externalDownloadUrl = finalExternalDownloadUrl;
+            if (altLinks.length > 0) previousVersion.alternativeLinks = altLinks;
+            if (isMultiPart) {
+                previousVersion.isMultiPart = true;
+                previousVersion.downloadParts = downloadParts;
+            }
+            if (req.body.whatsNew) previousVersion.whatsNew = req.body.whatsNew;
+            if (formData.architectures) {
+                previousVersion.architectures = Array.isArray(formData.architectures) ? formData.architectures : [formData.architectures];
+            }
+            if (formData.minOsVersion) previousVersion.minOsVersion = formData.minOsVersion;
+            previousVersion.requiresRoot = newRequiresRoot;
+            previousVersion.requiresDevMode = newRequiresDevMode;
+            previousVersion.isTweakConvertible = newIsTweakConvertible;
+            previousVersion.requiresDependencies = newRequiresDependencies;
+            previousVersion.requiresDisableAntivirus = newRequiresDisableAntivirus;
+            previousVersion.updatedAt = new Date();
+
+            await previousVersion.save();
+            saveModMetadata(previousVersion);
+
+            const baseUrl = process.env.BASE_URL || 'https://gplmods.webredirect.org';
+            const modUrl = `${baseUrl}/mods/${encodeURIComponent(previousVersion.category)}/${encodeURIComponent(previousVersion.slug || previousVersion._id.toString())}`;
+            notifyIndexNow([modUrl]);
+            notifyGoogle(modUrl, 'URL_UPDATED');
+
+            return res.json({ success: true, redirectUrl: `/mods/${previousVersion._id}` });
+        }
+
         const combinedOlderVersions = [
             ...(previousVersion.olderVersions || []),
             previousVersion._id
         ];
+
+        const isPrivileged = (req.user.role === 'admin' || req.user.role === 'owner' || req.user.role === 'distributor');
+        const newStatus = isPrivileged ? 'live' : 'pending';
+        const isLatest = isPrivileged;
 
         const newVersion = new File({
             name: previousVersion.name,
@@ -6914,19 +7010,29 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             originalFilename: originalFilename,
             isMultiPart: isMultiPart,
             downloadParts: downloadParts,
-            externalDownloadUrl: !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '',
-            directDownloadUrl: normalizeSingleValue(formData.directDownloadUrl) || '',
+            alternativeLinks: altLinks,
+            externalDownloadUrl: finalExternalDownloadUrl,
+            directDownloadUrl: finalDirectDownloadUrl,
             manualFileScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualFileScanUrl) || '') : '',
             manualSiteScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualSiteScanUrl) || '') : '',
-            isLatestVersion: false,
+            isLatestVersion: isLatest,
             parentFile: parentFileId,
-            status: 'pending',
+            status: newStatus,
             isVariant: Boolean(previousVersion.isVariant),
             masterFile: previousVersion.masterFile || null,
             olderVersions: combinedOlderVersions
         });
 
         await newVersion.save();
+
+        if (isLatest) {
+            previousVersion.isLatestVersion = false;
+        }
+        previousVersion.olderVersions = previousVersion.olderVersions || [];
+        if (!previousVersion.olderVersions.some(id => id.toString() === newVersion._id.toString())) {
+            previousVersion.olderVersions.push(newVersion._id);
+        }
+        await previousVersion.save();
 
         // If the updated mod is a variant, update master's variants array to reference the new active version
         if (previousVersion.isVariant && previousVersion.masterFile) {
@@ -7128,7 +7234,12 @@ app.get('/download-file/:id', async (req, res) => {
         }
         // ==========================================
 
-        // --- 1. CHECK FOR EXTERNAL CLOUD LINK FIRST ---
+        // --- 1. CHECK FOR DIRECT CLOUD DOWNLOAD FIRST (Dropbox, Google Drive, OneDrive, etc.) ---
+        if (file.directDownloadUrl) {
+            return res.redirect(file.directDownloadUrl);
+        }
+
+        // --- 1b. CHECK FOR EXTERNAL CLOUD LINK ---
         if (file.externalDownloadUrl) {
             const encodedUrl = encodeURIComponent(file.externalDownloadUrl);
             const encodedName = encodeURIComponent(file.originalFilename || file.name);
@@ -7157,8 +7268,15 @@ app.get('/download-file/:id', async (req, res) => {
             return res.redirect(requestedUrl);
         }
 
-        // --- 3. FALLBACK TO BACKBLAZE B2 ---
+        // --- 3. FALLBACK TO ALTERNATIVE LINKS IF EXTERNAL LINK KEY ---
         const fileKey = file.fileKey || file.fileUrl;
+        if (fileKey === 'external-link') {
+            if (file.alternativeLinks && file.alternativeLinks.length > 0 && file.alternativeLinks[0].url) {
+                return res.redirect(file.alternativeLinks[0].url);
+            }
+            return res.status(404).send("File download link not available.");
+        }
+
         if (!fileKey) return res.status(500).send("File record incomplete.");
 
         const command = new GetObjectCommand({
@@ -10943,9 +11061,21 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
 
         // --- HANDLE ICON OVERWRITE ---
         if (softwareIcon && softwareIcon.length > 0) {
-            // Delete the old icon from B2 first only if NOT a variant sharing master's icon
-            if (file.iconKey && !file.isVariant) {
-                await deleteFromB2(file.iconKey);
+            // Delete the old icon from B2 first only if NOT a master icon
+            if (file.iconKey) {
+                let isMasterIcon = false;
+                if (file.isVariant && file.masterFile) {
+                    const masterDoc = await File.findById(file.masterFile).select('iconKey');
+                    if (masterDoc && masterDoc.iconKey === file.iconKey) {
+                        isMasterIcon = true;
+                    }
+                }
+                if (!isMasterIcon) {
+                    const otherIconSharing = await File.countDocuments({ iconKey: file.iconKey, _id: { $ne: file._id } });
+                    if (otherIconSharing === 0) {
+                        await deleteFromB2(file.iconKey);
+                    }
+                }
             }
             // Upload the new one with standardized app-icon key
             const iconTargetKey = getModStorageKey({
@@ -11081,7 +11211,9 @@ app.post('/mods/:id/edit', ensureAuthenticated, upload.fields([
             if (masterDoc) {
                 file.officialDescription = masterDoc.officialDescription || '';
                 file.tags = masterDoc.tags || [];
-                file.iconKey = masterDoc.iconKey || file.iconKey;
+                if (!file.iconKey) {
+                    file.iconKey = masterDoc.iconKey;
+                }
             }
         }
 
@@ -11362,6 +11494,13 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         };
 
         if (softwareIcon && softwareIcon.length > 0) {
+            const masterIconKey = existingMasterFile ? existingMasterFile.iconKey : null;
+            if (fileToUpdate.iconKey && fileToUpdate.iconKey !== masterIconKey) {
+                const otherIconSharing = await File.countDocuments({ iconKey: fileToUpdate.iconKey, _id: { $ne: fileToUpdate._id } });
+                if (otherIconSharing === 0) {
+                    await deleteFromB2(fileToUpdate.iconKey);
+                }
+            }
             const iconTargetKey = getModStorageKey({
                 category: formData.modPlatform,
                 modName: formData.modName,
@@ -11373,8 +11512,8 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 originalFilename: softwareIcon[0].originalname
             });
             iconKey = await uploadToB2(softwareIcon[0], 'icons', null, null, null, { exactKey: iconTargetKey });
-        } else if (isVariant && existingMasterFile) {
-            // Variant uses shared icon from master file
+        } else if (isVariant && existingMasterFile && !iconKey && !fileToUpdate.iconKey) {
+            // Variant uses shared icon from master file only if no icon already set
             iconKey = existingMasterFile.iconKey;
         }
 
@@ -11600,13 +11739,20 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             status: finalStatus
         };
 
-        // If this is a variant, original master uploader controls App Icon, Official Description, and Core Tags
+        // If this is a variant, inherit master assets ONLY IF the variant does not provide its own
         if (isVariant && existingMasterFile) {
-            // Lock original master assets
-            iconKey = existingMasterFile.iconKey;
-            updateData.iconKey = existingMasterFile.iconKey;
-            updateData.officialDescription = existingMasterFile.officialDescription || '';
-            updateData.tags = existingMasterFile.tags || [];
+            if (!iconKey && !fileToUpdate.iconKey) {
+                iconKey = existingMasterFile.iconKey;
+                updateData.iconKey = existingMasterFile.iconKey;
+            } else {
+                updateData.iconKey = iconKey || fileToUpdate.iconKey;
+            }
+            if (!updateData.officialDescription) {
+                updateData.officialDescription = existingMasterFile.officialDescription || '';
+            }
+            if (!updateData.tags || updateData.tags.length === 0) {
+                updateData.tags = existingMasterFile.tags || [];
+            }
 
             if (!updateData.category || updateData.category === 'n/a') {
                 updateData.category = existingMasterFile.category || formData.modPlatform || 'android';
@@ -11635,7 +11781,9 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
                 updateData.version = existingMasterFile.version || '1.0';
             }
             if (!screenshotKeys || screenshotKeys.length === 0) {
-                screenshotKeys = existingMasterFile.screenshotKeys || [];
+                screenshotKeys = fileToUpdate.screenshotKeys && fileToUpdate.screenshotKeys.length > 0
+                    ? fileToUpdate.screenshotKeys
+                    : (existingMasterFile.screenshotKeys || []);
                 updateData.screenshotKeys = screenshotKeys;
             }
             if (!updateData.minOsVersion && existingMasterFile.minOsVersion) {
@@ -11643,6 +11791,83 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
             }
             if (!updateData.architectures || updateData.architectures.length === 0) {
                 updateData.architectures = existingMasterFile.architectures || [];
+            }
+        }
+
+        // --- DUPLICATE OVERWRITE HANDLER ---
+        if (formData.isOverwrite === 'true' && formData.overwriteTargetId && Types.ObjectId.isValid(formData.overwriteTargetId)) {
+            const targetDoc = await File.findById(formData.overwriteTargetId);
+            if (targetDoc && (targetDoc.uploader.toLowerCase() === req.user.username.toLowerCase() || req.user.role === 'admin' || req.user.role === 'owner')) {
+                // 1. Overwrite binary file if draft has a valid uploaded file
+                if (fileToUpdate.fileKey && fileToUpdate.fileKey !== 'external-link') {
+                    if (targetDoc.fileKey && targetDoc.fileKey !== fileToUpdate.fileKey && targetDoc.fileKey !== 'external-link') {
+                        const otherSharing = await File.countDocuments({ fileKey: targetDoc.fileKey, _id: { $ne: targetDoc._id } });
+                        if (otherSharing === 0) {
+                            await deleteFromB2(targetDoc.fileKey);
+                        }
+                    }
+                    targetDoc.fileKey = fileToUpdate.fileKey;
+                    targetDoc.fileSize = fileToUpdate.fileSize;
+                    targetDoc.originalFilename = fileToUpdate.originalFilename || targetDoc.originalFilename;
+                }
+
+                // 2. Overwrite download links & scans
+                targetDoc.isMultiPart = isMultiPart;
+                targetDoc.downloadParts = downloadParts;
+                targetDoc.directDownloadUrl = finalDirectDownloadUrl || targetDoc.directDownloadUrl;
+                if (currentAltLinks.length > 0) targetDoc.alternativeLinks = currentAltLinks;
+                targetDoc.externalDownloadUrl = !isMultiPart ? (normalizeSingleValue(formData.externalDownloadUrl) || '') : '';
+                targetDoc.manualFileScanUrl = manualFileScanUrlValue;
+                targetDoc.manualSiteScanUrl = manualSiteScanUrlValue;
+
+                // 3. Overwrite icons & screenshots
+                if (iconKey && iconKey !== targetDoc.iconKey) {
+                    if (targetDoc.iconKey && (!targetDoc.isVariant || targetDoc.iconKey !== existingMasterFile?.iconKey)) {
+                        const otherIconSharing = await File.countDocuments({ iconKey: targetDoc.iconKey, _id: { $ne: targetDoc._id } });
+                        if (otherIconSharing === 0) {
+                            await deleteFromB2(targetDoc.iconKey);
+                        }
+                    }
+                    targetDoc.iconKey = iconKey;
+                }
+                if (screenshotKeys && screenshotKeys.length > 0) {
+                    targetDoc.screenshotKeys = screenshotKeys;
+                }
+
+                // 4. Overwrite metadata
+                targetDoc.name = cleanName || targetDoc.name;
+                targetDoc.version = formData.modVersion || targetDoc.version;
+                targetDoc.modDescription = cleanDescription || targetDoc.modDescription;
+                if (cleanFeatures) targetDoc.modFeatures = cleanFeatures;
+                if (cleanOfficialDescription) targetDoc.officialDescription = cleanOfficialDescription;
+                if (cleanWhatsNew) targetDoc.whatsNew = cleanWhatsNew;
+                if (cleanImportantNote) targetDoc.importantNote = cleanImportantNote;
+                if (formData.developerName) targetDoc.developer = formData.developerName;
+                if (formData.minOsVersion) targetDoc.minOsVersion = formData.minOsVersion;
+                if (req.body.ageRating) targetDoc.ageRating = req.body.ageRating;
+                if (processedTags.length > 0) targetDoc.tags = processedTags;
+                if (archData.length > 0) targetDoc.architectures = archData;
+                targetDoc.requiresRoot = requiresRoot;
+                targetDoc.requiresDevMode = requiresDevMode;
+                targetDoc.isTweakConvertible = isTweakConvertible;
+                targetDoc.requiresDependencies = requiresDependencies;
+                targetDoc.requiresDisableAntivirus = requiresDisableAntivirus;
+                targetDoc.updatedAt = new Date();
+                if (actionType === 'submit') {
+                    targetDoc.status = (req.user.role === 'admin' || req.user.role === 'owner' || isDistributor) ? 'live' : 'pending';
+                }
+
+                await targetDoc.save();
+
+                // Clean up draft file
+                await File.findByIdAndDelete(fileId);
+
+                if (actionType === 'draft') {
+                    return res.redirect(`/upload-details/${targetDoc._id}?success=${encodeURIComponent('Draft overwritten and updated successfully!')}`);
+                }
+                return res.redirect((req.user.role === 'admin' || req.user.role === 'owner' || targetDoc.status === 'live')
+                    ? `/mods/${targetDoc._id}?success=${encodeURIComponent('Mod file and version overwritten successfully!')}`
+                    : `/my-mods?success=${encodeURIComponent('Mod file overwritten and submitted for review!')}`);
             }
         }
 
@@ -12664,11 +12889,12 @@ app.get('/api/trending-searches', async (req, res) => {
     }
 });
 
-// --- API: Check if mod exists for live variant detection ---
+// --- API: Check if mod exists for live variant detection & duplicate overwrite check ---
 app.get('/api/check-mod-exists', ensureAuthenticated, async (req, res) => {
     try {
         const name = (req.query.name || '').trim();
         const platform = (req.query.platform || '').trim();
+        const version = (req.query.version || '').trim();
         const currentId = req.query.currentId;
 
         if (!name || name.length < 2) {
@@ -12692,15 +12918,59 @@ app.get('/api/check-mod-exists', ensureAuthenticated, async (req, res) => {
             });
         }
 
+        // Check for exact version match
+        let exactVersionMatch = false;
+        let existingVersionMod = null;
+        if (version) {
+            const normVer = (v) => (v || '').toString().toLowerCase().replace(/^v/, '').trim();
+            const currentReqVer = normVer(version);
+            
+            if (normVer(matchedDoc.version) === currentReqVer) {
+                exactVersionMatch = true;
+                existingVersionMod = getFileUploadInfo(matchedDoc);
+            } else if (matchedDoc.variants && matchedDoc.variants.length > 0) {
+                const varDocs = await File.find({ _id: { $in: matchedDoc.variants }, status: { $nin: ['rejected'] } }).lean();
+                for (const vDoc of varDocs) {
+                    if (normVer(vDoc.version) === currentReqVer) {
+                        exactVersionMatch = true;
+                        existingVersionMod = getFileUploadInfo(vDoc);
+                        break;
+                    }
+                }
+            }
+
+            if (!exactVersionMatch) {
+                // Also check if any mod by this user with same name and version exists
+                const userMatch = await File.findOne({
+                    uploader: req.user.username,
+                    name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') },
+                    category: platform || matchedDoc.category,
+                    status: { $nin: ['rejected'] },
+                    ...(currentId && Types.ObjectId.isValid(currentId) ? { _id: { $ne: currentId } } : {})
+                }).lean();
+                if (userMatch && normVer(userMatch.version) === currentReqVer) {
+                    exactVersionMatch = true;
+                    existingVersionMod = getFileUploadInfo(userMatch);
+                }
+            }
+        }
+
         // Resolve root master file if matched file is itself a variant
         const master = await resolveRootMasterFile(matchedDoc);
         const masterInfo = getFileUploadInfo(master);
         masterInfo.isExactPlatformMatch = Boolean(platform && master.category === platform);
 
+        const canOverwrite = existingVersionMod
+            ? ((existingVersionMod.uploader || '').toLowerCase() === req.user.username.toLowerCase() || req.user.role === 'admin' || req.user.role === 'owner')
+            : false;
+
         return res.json({
             exists: true,
             masterFile: masterInfo,
-            currentUpload: currentUploadInfo
+            currentUpload: currentUploadInfo,
+            exactVersionMatch,
+            existingVersionMod,
+            canOverwrite
         });
     } catch (err) {
         console.error("Error in /api/check-mod-exists:", err);

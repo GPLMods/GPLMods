@@ -991,18 +991,18 @@
                                 </span>
                             </label>
 
-                            <!-- Variant Locked Fields & Master Default Inheritance Preset -->
+                            <!-- Variant Inheritance & Customization Preset -->
                             <div id="variant-inheritance-panel" style="margin-top: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 14px 16px;">
                                 <div style="font-weight: 700; color: #e9d5ff; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
-                                    <i class="fas fa-lock" style="color: #c084fc;"></i> Managed by Original Uploader (Locked for Variants):
+                                    <i class="fas fa-info-circle" style="color: #c084fc;"></i> Variant Brand Inheritance &amp; Custom Assets:
                                 </div>
                                 <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-image"></i> App Icon</span>
-                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-align-left"></i> Official Description</span>
-                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-tags"></i> Core Tags</span>
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-image"></i> Custom or Inherited Icon</span>
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-images"></i> Custom or Inherited Screenshots</span>
+                                    <span style="background: rgba(168,85,247,0.25); color: #f3e8ff; border: 1px solid rgba(168,85,247,0.45); padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;"><i class="fas fa-tags"></i> Inherited Tags</span>
                                 </div>
                                 <div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.4; margin-bottom: 12px;">
-                                    These branding assets are strictly managed by the original mod uploader. All variants inherit them to preserve consistency. You can customize description, mod features, screenshots, version, and architecture flags below.
+                                    Official Description and core tags inherit from the master mod by default to keep branding cohesive. You can upload custom icons, screenshots, description, mod features, version, and architecture flags below.
                                 </div>
 
                                 <div>
@@ -1022,6 +1022,8 @@
 
                             <input type="hidden" id="detectedMasterId" name="masterFileId" value="">
                             <input type="hidden" id="variantDetectionSubmitted" name="variantDetectionSubmitted" value="0">
+                            <input type="hidden" id="isOverwrite" name="isOverwrite" value="false">
+                            <input type="hidden" id="overwriteTargetId" name="overwriteTargetId" value="">
                         </div>
                     </div>
                 </div>
@@ -1387,6 +1389,21 @@
         <div style="display: flex; gap: 15px; justify-content: center;">
             <button type="button" class="btn btn-primary" id="confirmDraftBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: var(--silver); color: var(--black); border: none; cursor: pointer;">Save Draft</button>
             <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('draft-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid #555; color: var(--silver); cursor: pointer;">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Overwrite Existing Mod Confirmation Modal -->
+<div id="overwrite-confirm-modal" class="policy-modal" style="display: none;">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); padding: 30px; text-align: center; border-radius: 15px; max-width: 480px; width: 90%; border-top: 3px solid #f59e0b; box-shadow: 0 10px 30px rgba(0,0,0,0.6);">
+        <i class="fas fa-file-export" style="font-size: 3em; color: #f59e0b; margin-bottom: 15px;"></i>
+        <h2 style="color: var(--white); margin-bottom: 12px;">Overwrite Existing Mod?</h2>
+        <p style="margin-bottom: 25px; color: var(--silver); line-height: 1.6; font-size: 0.95em;">
+            A mod with the same name and version (<strong id="overwriteModVersionText" style="color: #ffd700;"></strong>) already exists in your library. Do you want to overwrite the old file with this new upload?
+        </p>
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button type="button" class="btn btn-primary" id="confirmOverwriteBtn" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: #f59e0b; color: #000; border: none; cursor: pointer;">Yes, Overwrite Old File</button>
+            <button type="button" class="btn btn-secondary" onclick="closeConfirmModal('overwrite-confirm-modal')" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; background-color: transparent; border: 2px solid var(--silver); color: var(--silver); cursor: pointer;">Cancel</button>
         </div>
     </div>
 </div>
@@ -1967,6 +1984,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let variantCheckTimer = null;
     let cachedMasterFile = null;
     let cachedCurrentUpload = null;
+    let cachedExactVersionMatch = null;
 
     function getVariantLiveUploadType(currentUpload) {
         const isMultiPartActive = isMultiPartHidden && isMultiPartHidden.value === 'true';
@@ -2039,6 +2057,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!variantGroup || !modNameInput) return;
         const name = (modNameInput.value || '').trim();
         const platform = (nativePlatformSelect && nativePlatformSelect.value ? nativePlatformSelect.value : '').trim();
+        const modVerInput = document.getElementById('modVersion');
+        const version = (modVerInput && modVerInput.value ? modVerInput.value : '').trim();
 
         if (!name || name.length < 2) {
             variantGroup.style.display = 'none';
@@ -2046,16 +2066,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (detectedMasterId) detectedMasterId.value = '';
             cachedMasterFile = null;
             cachedCurrentUpload = null;
+            cachedExactVersionMatch = null;
             updateVariantFieldRequirements(false);
             return;
         }
 
         try {
             const currentFileId = '<%= fileId %>';
-            const url = `/api/check-mod-exists?name=${encodeURIComponent(name)}&platform=${encodeURIComponent(platform)}&currentId=${encodeURIComponent(currentFileId)}`;
+            const url = `/api/check-mod-exists?name=${encodeURIComponent(name)}&platform=${encodeURIComponent(platform)}&version=${encodeURIComponent(version)}&currentId=${encodeURIComponent(currentFileId)}`;
             const res = await fetch(url);
             if (!res.ok) return;
             const data = await res.json();
+
+            if (data.exactVersionMatch && data.canOverwrite) {
+                cachedExactVersionMatch = data.existingVersionMod;
+            } else {
+                cachedExactVersionMatch = null;
+            }
 
             if (data.exists && data.masterFile) {
                 cachedMasterFile = data.masterFile;
@@ -2086,6 +2113,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (modNameInput) {
         modNameInput.addEventListener('input', scheduleVariantCheck);
+    }
+    const modVersionInput = document.getElementById('modVersion');
+    if (modVersionInput) {
+        modVersionInput.addEventListener('input', scheduleVariantCheck);
     }
     if (nativePlatformSelect) {
         nativePlatformSelect.addEventListener('change', scheduleVariantCheck);
@@ -2920,8 +2951,43 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             actionTypeInput.value = 'submit';
+            const isOverwriteInput = document.getElementById('isOverwrite');
+            if (cachedExactVersionMatch && isOverwriteInput && isOverwriteInput.value !== 'true') {
+                const overwriteModal = document.getElementById('overwrite-confirm-modal');
+                const overwriteVerText = document.getElementById('overwriteModVersionText');
+                if (overwriteVerText) {
+                    overwriteVerText.textContent = `${cachedExactVersionMatch.name} (v${cachedExactVersionMatch.version || '1.0'})`;
+                }
+                if (overwriteModal) {
+                    overwriteModal.style.display = 'flex';
+                    setTimeout(() => overwriteModal.classList.add('show'), 10);
+                    return;
+                }
+            }
+
             submitModal.style.display = 'flex';
             setTimeout(() => submitModal.classList.add('show'), 10);
+        });
+    }
+
+    const confirmOverwriteBtn = document.getElementById('confirmOverwriteBtn');
+    if (confirmOverwriteBtn) {
+        confirmOverwriteBtn.addEventListener('click', () => {
+            const isOverwriteInput = document.getElementById('isOverwrite');
+            const overwriteTargetIdInput = document.getElementById('overwriteTargetId');
+            if (isOverwriteInput) isOverwriteInput.value = 'true';
+            if (overwriteTargetIdInput && cachedExactVersionMatch) overwriteTargetIdInput.value = cachedExactVersionMatch._id;
+            const overwriteModal = document.getElementById('overwrite-confirm-modal');
+            if (overwriteModal) {
+                overwriteModal.classList.remove('show');
+                overwriteModal.style.display = 'none';
+            }
+            if (actionTypeInput && mainForm) {
+                actionTypeInput.value = 'submit';
+                const isVariantActive = Boolean(isVariantCheckbox && isVariantCheckbox.checked);
+                mainForm.noValidate = isVariantActive;
+                mainForm.submit();
+            }
         });
     }
 

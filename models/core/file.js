@@ -71,6 +71,7 @@ const FileSchema = new Schema({
     platforms: { type: [String], required: function() { return !this.isVariant && this.status !== 'processing' && this.status !== 'draft'; } },
     tags: { type: [String] },
     dynamicKeywords: { type: [String], default: [] },
+    keywordsLastFetchedAt: { type: Date, default: null },
     architectures: { 
         type: [String], 
         default:[] 

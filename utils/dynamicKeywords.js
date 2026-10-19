@@ -256,18 +256,89 @@ function generateKeywordsForMod(mod) {
     return keywords.map(cleanKeyword).filter(Boolean);
 }
 
+// 7 Days Cache TTL
+const KEYWORD_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function getKeywordCacheModel() {
+    try {
+        return require('../models/keywordCache');
+    } catch (_) {
+        return null;
+    }
+}
+
 /**
- * Queries MongoDB for live mods and builds compound keyword matrices
+ * Loads cached keywords from MongoDB on server startup so no external API calls are made for existing data.
+ */
+async function loadKeywordsFromDbCache(FileModel = null) {
+    try {
+        const KeywordCache = getKeywordCacheModel();
+        if (!KeywordCache) return false;
+
+        const cachedEntries = await KeywordCache.find({}).lean();
+        let loadedGoogle = [];
+        let loadedDdg = [];
+        let loadedGsc = [];
+        const loadedModKws = new Set(liveModKeywords);
+
+        for (const entry of cachedEntries) {
+            if (entry.type === 'google_suggest' && Array.isArray(entry.keywords)) {
+                entry.keywords.forEach(k => loadedGoogle.push(k));
+            } else if (entry.type === 'ddg_suggest' && Array.isArray(entry.keywords)) {
+                entry.keywords.forEach(k => loadedDdg.push(k));
+            } else if (entry.type === 'search_console' && Array.isArray(entry.keywords)) {
+                entry.keywords.forEach(k => loadedGsc.push(k));
+            } else if (entry.type === 'mod_keywords' && Array.isArray(entry.keywords)) {
+                entry.keywords.forEach(k => loadedModKws.add(k));
+            }
+        }
+
+        if (loadedGoogle.length > 0) googleSuggestKeywords = Array.from(new Set(loadedGoogle));
+        if (loadedDdg.length > 0) ddgSuggestKeywords = Array.from(new Set(loadedDdg));
+        if (loadedGsc.length > 0) searchConsoleLiveQueries = Array.from(new Set(loadedGsc));
+        if (loadedModKws.size > 0) liveModKeywords = Array.from(loadedModKws);
+
+        if (FileModel) {
+            const filesWithKws = await FileModel.find({
+                status: 'live',
+                dynamicKeywords: { $exists: true, $not: { $size: 0 } }
+            }).select('name dynamicKeywords').lean();
+
+            const names = new Set(liveModNames);
+            filesWithKws.forEach(f => {
+                if (f.name) names.add(f.name);
+                if (Array.isArray(f.dynamicKeywords)) {
+                    f.dynamicKeywords.forEach(k => loadedModKws.add(k));
+                }
+            });
+            liveModNames = Array.from(names);
+            liveModKeywords = Array.from(loadedModKws);
+        }
+
+        console.log(`[Dynamic Keywords Cache] Loaded from DB on server startup: ${liveModKeywords.length} mod keywords, ${googleSuggestKeywords.length} Google suggest queries, ${ddgSuggestKeywords.length} DDG queries, ${searchConsoleLiveQueries.length} GSC queries.`);
+        return true;
+    } catch (err) {
+        console.warn('[Dynamic Keywords Cache] Error loading cached keywords on startup:', err.message);
+        return false;
+    }
+}
+
+/**
+ * Queries MongoDB for live mods and builds compound keyword matrices with 7-day database caching.
  */
 async function harvestLiveModsKeywords(FileModel) {
     if (!FileModel) return [];
 
     try {
+        const KeywordCache = getKeywordCacheModel();
+        const now = Date.now();
+        const sevenDaysAgo = new Date(now - KEYWORD_CACHE_TTL_MS);
+
         const liveMods = await FileModel.find({
             status: 'live',
             isLatestVersion: { $ne: false }
         })
-            .select('name slug category tags version downloads averageRating')
+            .select('name slug category tags version downloads averageRating dynamicKeywords keywordsLastFetchedAt')
             .sort({ downloads: -1, averageRating: -1 })
             .limit(120)
             .lean();
@@ -277,12 +348,52 @@ async function harvestLiveModsKeywords(FileModel) {
         }
 
         liveModNames = liveMods.map(m => m.name).filter(Boolean);
+        const modKeywordsSet = new Set(liveModKeywords);
 
-        const modKeywordsSet = new Set();
-        liveMods.forEach(mod => {
+        for (const mod of liveMods) {
+            // Check if keywords already cached in File doc or KeywordCache within last 7 days
+            const isFreshInMod = mod.keywordsLastFetchedAt && (now - new Date(mod.keywordsLastFetchedAt).getTime()) < KEYWORD_CACHE_TTL_MS;
+            if (isFreshInMod && Array.isArray(mod.dynamicKeywords) && mod.dynamicKeywords.length > 0) {
+                // Re-use cached keywords without re-generating
+                mod.dynamicKeywords.forEach(kw => modKeywordsSet.add(kw));
+                continue;
+            }
+
+            // Check KeywordCache collection
+            let cachedDoc = null;
+            if (KeywordCache) {
+                cachedDoc = await KeywordCache.findOne({ modId: mod._id, type: 'mod_keywords', lastFetchedAt: { $gte: sevenDaysAgo } }).lean();
+            }
+
+            if (cachedDoc && Array.isArray(cachedDoc.keywords) && cachedDoc.keywords.length > 0) {
+                cachedDoc.keywords.forEach(kw => modKeywordsSet.add(kw));
+                continue;
+            }
+
+            // Generate keywords only for mods missing cache or older than 7 days
             const kws = generateKeywordsForMod(mod);
             kws.forEach(kw => modKeywordsSet.add(kw));
-        });
+
+            // Store in database cache with lastFetchedAt timestamp
+            if (KeywordCache) {
+                await KeywordCache.findOneAndUpdate(
+                    { modId: mod._id, type: 'mod_keywords' },
+                    {
+                        key: `mod_${mod._id}`,
+                        modId: mod._id,
+                        type: 'mod_keywords',
+                        keywords: kws,
+                        lastFetchedAt: new Date()
+                    },
+                    { upsert: true, new: true }
+                ).catch(() => {});
+            }
+
+            await FileModel.findByIdAndUpdate(mod._id, {
+                dynamicKeywords: kws,
+                keywordsLastFetchedAt: new Date()
+            }).catch(() => {});
+        }
 
         liveModKeywords = Array.from(modKeywordsSet);
         return liveModKeywords;
@@ -293,9 +404,32 @@ async function harvestLiveModsKeywords(FileModel) {
 }
 
 /**
- * Harvests Google & DuckDuckGo Suggest API autocomplete queries
+ * Harvests Google & DuckDuckGo Suggest API autocomplete queries with 7-day database caching.
  */
 async function harvestSearchSuggestKeywords(seedList = []) {
+    const KeywordCache = getKeywordCacheModel();
+    const now = Date.now();
+    const sevenDaysAgo = new Date(now - KEYWORD_CACHE_TTL_MS);
+
+    // Check if Google and DDG suggestions are already cached in DB within 7 days
+    if (KeywordCache) {
+        const cachedGoogle = await KeywordCache.findOne({ key: 'google_suggest_global', lastFetchedAt: { $gte: sevenDaysAgo } }).lean();
+        const cachedDdg = await KeywordCache.findOne({ key: 'ddg_suggest_global', lastFetchedAt: { $gte: sevenDaysAgo } }).lean();
+
+        let usedCache = false;
+        if (cachedGoogle && Array.isArray(cachedGoogle.keywords) && cachedGoogle.keywords.length > 0) {
+            googleSuggestKeywords = cachedGoogle.keywords;
+            usedCache = true;
+        }
+        if (cachedDdg && Array.isArray(cachedDdg.keywords) && cachedDdg.keywords.length > 0) {
+            ddgSuggestKeywords = cachedDdg.keywords;
+            usedCache = true;
+        }
+        if (usedCache && cachedGoogle && cachedDdg) {
+            return { google: googleSuggestKeywords, duckduckgo: ddgSuggestKeywords };
+        }
+    }
+
     const seeds = [
         'gplmods',
         'gplmods apk',
@@ -309,10 +443,10 @@ async function harvestSearchSuggestKeywords(seedList = []) {
         ...seedList.slice(0, 10)
     ];
 
-    const googleResults = new Set();
-    const ddgResults = new Set();
+    const googleResults = new Set(googleSuggestKeywords);
+    const ddgResults = new Set(ddgSuggestKeywords);
 
-    // Query both search engines concurrently with rate pacing
+    // Query search engines only when cache is expired or missing
     for (const seed of seeds) {
         try {
             const [gList, dList] = await Promise.all([
@@ -328,6 +462,32 @@ async function harvestSearchSuggestKeywords(seedList = []) {
     googleSuggestKeywords = Array.from(googleResults);
     ddgSuggestKeywords = Array.from(ddgResults);
 
+    // Persist to MongoDB cache with 7-day TTL
+    if (KeywordCache) {
+        await Promise.all([
+            KeywordCache.findOneAndUpdate(
+                { key: 'google_suggest_global' },
+                {
+                    key: 'google_suggest_global',
+                    type: 'google_suggest',
+                    keywords: googleSuggestKeywords,
+                    lastFetchedAt: new Date()
+                },
+                { upsert: true, new: true }
+            ).catch(() => {}),
+            KeywordCache.findOneAndUpdate(
+                { key: 'ddg_suggest_global' },
+                {
+                    key: 'ddg_suggest_global',
+                    type: 'ddg_suggest',
+                    keywords: ddgSuggestKeywords,
+                    lastFetchedAt: new Date()
+                },
+                { upsert: true, new: true }
+            ).catch(() => {})
+        ]);
+    }
+
     return {
         google: googleSuggestKeywords,
         duckduckgo: ddgSuggestKeywords
@@ -335,17 +495,43 @@ async function harvestSearchSuggestKeywords(seedList = []) {
 }
 
 /**
- * Integrates Google Search Console live search queries if configured
+ * Integrates Google Search Console live search queries with 7-day database caching.
  */
 async function harvestSearchConsoleQueries(searchConsoleModule, baseUrl) {
     if (!searchConsoleModule || typeof searchConsoleModule.getSearchAnalytics !== 'function') {
-        return [];
+        return searchConsoleLiveQueries;
+    }
+
+    const KeywordCache = getKeywordCacheModel();
+    const now = Date.now();
+    const sevenDaysAgo = new Date(now - KEYWORD_CACHE_TTL_MS);
+
+    // Check DB cache for Search Console queries within 7 days
+    if (KeywordCache) {
+        const cachedGsc = await KeywordCache.findOne({ key: 'search_console_live_queries', lastFetchedAt: { $gte: sevenDaysAgo } }).lean();
+        if (cachedGsc && Array.isArray(cachedGsc.keywords) && cachedGsc.keywords.length > 0) {
+            searchConsoleLiveQueries = cachedGsc.keywords;
+            return searchConsoleLiveQueries;
+        }
     }
 
     try {
         const analytics = await searchConsoleModule.getSearchAnalytics(baseUrl, { rowLimit: 100 });
         if (analytics && Array.isArray(analytics.queries) && analytics.queries.length > 0) {
             searchConsoleLiveQueries = analytics.queries.map(q => q.query).filter(Boolean);
+
+            if (KeywordCache) {
+                await KeywordCache.findOneAndUpdate(
+                    { key: 'search_console_live_queries' },
+                    {
+                        key: 'search_console_live_queries',
+                        type: 'search_console',
+                        keywords: searchConsoleLiveQueries,
+                        lastFetchedAt: new Date()
+                    },
+                    { upsert: true, new: true }
+                ).catch(() => {});
+            }
         }
         return searchConsoleLiveQueries;
     } catch (err) {
@@ -355,30 +541,30 @@ async function harvestSearchConsoleQueries(searchConsoleModule, baseUrl) {
 
 /**
  * Runs the full keyword harvest workflow:
- * 1. Live mods extraction from database
- * 2. Autocomplete suggestions from Google & DuckDuckGo
- * 3. Search Console live query sync
- * 4. Merging with unspaced brand and global regional keywords
+ * 1. Checks 7-day database cache first
+ * 2. Live mods extraction from database (caches per mod for 7 days)
+ * 3. Autocomplete suggestions from Google & DuckDuckGo (cached for 7 days)
+ * 4. Search Console live query sync (cached for 7 days)
  */
-async function runKeywordHarvest(FileModel, searchConsoleModule, baseUrl) {
+async function runKeywordHarvest(FileModel, searchConsoleModule, baseUrl, forceRefresh = false) {
     if (isHarvesting) return;
     isHarvesting = true;
 
     try {
-        // Step 1: Live mods from database
+        // Step 1: Live mods from database (re-uses 7-day cache)
         await harvestLiveModsKeywords(FileModel);
 
-        // Step 2: Autocomplete APIs using top live mod names as seeds
+        // Step 2: Autocomplete APIs using top live mod names as seeds (re-uses 7-day cache)
         const topModNames = liveModNames.slice(0, 8);
         await harvestSearchSuggestKeywords(topModNames);
 
-        // Step 3: Google Search Console real-time queries
+        // Step 3: Google Search Console real-time queries (re-uses 7-day cache)
         if (searchConsoleModule) {
             await harvestSearchConsoleQueries(searchConsoleModule, baseUrl);
         }
 
         lastHarvestTimestamp = Date.now();
-        console.log(`[Dynamic Keywords] Harvested: ${liveModNames.length} live mods, ${liveModKeywords.length} mod keywords, ${googleSuggestKeywords.length} Google suggest queries, ${ddgSuggestKeywords.length} DDG queries.`);
+        console.log(`[Dynamic Keywords] Active keyword pools: ${liveModNames.length} live mods, ${liveModKeywords.length} mod keywords, ${googleSuggestKeywords.length} Google suggest queries, ${ddgSuggestKeywords.length} DDG queries.`);
     } catch (err) {
         console.error('[Dynamic Keywords] Harvest error:', err.message);
     } finally {
@@ -387,15 +573,20 @@ async function runKeywordHarvest(FileModel, searchConsoleModule, baseUrl) {
 }
 
 /**
- * Starts periodic automated keyword harvesting (runs every intervalMs)
+ * Starts periodic automated keyword harvesting:
+ * 1. Loads from database cache immediately on startup.
+ * 2. Checks/refreshes keywords regularly every 7 days (with a 24-hour cycle checking for stale 7-day items).
  */
-function startKeywordHarvester(FileModel, searchConsoleModule, baseUrl, intervalMs = 30 * 60 * 1000) {
-    // Initial harvest after short delay for server startup
-    setTimeout(() => {
-        runKeywordHarvest(FileModel, searchConsoleModule, baseUrl);
-    }, 5000);
+function startKeywordHarvester(FileModel, searchConsoleModule, baseUrl, intervalMs = 24 * 60 * 60 * 1000) {
+    // Initial fast load from DB cache on server startup (no network lag)
+    loadKeywordsFromDbCache(FileModel).then(() => {
+        // Run harvest to fill in any items older than 7 days
+        setTimeout(() => {
+            runKeywordHarvest(FileModel, searchConsoleModule, baseUrl);
+        }, 3000);
+    });
 
-    // Periodic interval
+    // Check periodically (every 24h) to refresh any items that have passed the 7-day TTL
     const timer = setInterval(() => {
         runKeywordHarvest(FileModel, searchConsoleModule, baseUrl);
     }, intervalMs);
@@ -487,6 +678,7 @@ module.exports = {
     harvestSearchConsoleQueries,
     runKeywordHarvest,
     startKeywordHarvester,
+    loadKeywordsFromDbCache,
     getDynamicKeywordsForPage,
     getKeywordState
 };

@@ -122,6 +122,81 @@ async function createAdminRouter() {
     const AdminJSMongoose = await import('@adminjs/mongoose');
     const { dark, light } = await import('@adminjs/themes');
 
+    function safeConvertFilter(filter, resource) {
+        if (!filter) return {};
+        const memo = {};
+        const entries = filter.filters ? Object.values(filter.filters) : [];
+
+        for (const item of entries) {
+            const { property, value } = item;
+            if (!property || value === undefined || value === null || value === '') continue;
+
+            const propName = typeof property.name === 'function' ? property.name() : (property.path || property.name);
+            const propType = typeof property.type === 'function' ? property.type() : (property.type || 'string');
+
+            if (propType === 'boolean') {
+                if (value === true || value === 'true' || value === '1') {
+                    memo[propName] = true;
+                } else if (value === false || value === 'false' || value === '0') {
+                    // Match false, null, and non-existent fields reliably
+                    memo[propName] = { $ne: true };
+                }
+            } else if (propType === 'reference' || propType === 'id' || propName === 'masterFile') {
+                if (typeof value === 'string' && mongoose.Types.ObjectId.isValid(value)) {
+                    memo[propName] = new mongoose.Types.ObjectId(value);
+                } else if (typeof value === 'object' && value && value._id && mongoose.Types.ObjectId.isValid(value._id)) {
+                    memo[propName] = new mongoose.Types.ObjectId(value._id);
+                }
+            } else if (propType === 'date' || propType === 'datetime') {
+                if (value && (value.from || value.to)) {
+                    const dateQuery = {};
+                    if (value.from) dateQuery.$gte = new Date(value.from);
+                    if (value.to) dateQuery.$lte = new Date(value.to);
+                    memo[propName] = dateQuery;
+                }
+            } else if (propType === 'number' || propType === 'float') {
+                const num = Number(value);
+                if (!isNaN(num)) memo[propName] = num;
+            } else if (propType === 'string') {
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (trimmed) {
+                        const escaped = trimmed.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                        memo[propName] = { $regex: escaped, $options: 'i' };
+                    }
+                } else {
+                    memo[propName] = value;
+                }
+            } else {
+                memo[propName] = value;
+            }
+        }
+        return memo;
+    }
+
+    // Patch AdminJSMongoose.Resource find and count with robust safeConvertFilter
+    AdminJSMongoose.Resource.prototype.find = async function(filters = {}, { limit = 20, offset = 0, sort = {} } = {}, context) {
+        const queryFilter = safeConvertFilter(filters, this);
+        const { direction, sortBy } = sort;
+        const sortingParam = sortBy ? { [sortBy]: direction || 'asc' } : { createdAt: -1 };
+        const mongooseObjects = await this.MongooseModel
+            .find(queryFilter, {}, {
+                skip: offset,
+                limit,
+                sort: sortingParam,
+            });
+        const BaseRecord = AdminJS.BaseRecord || AdminJSModule.BaseRecord;
+        return mongooseObjects.map((mongooseObject) => new BaseRecord(AdminJSMongoose.Resource.stringifyId(mongooseObject), this));
+    };
+
+    AdminJSMongoose.Resource.prototype.count = async function(filters = null, context) {
+        const queryFilter = safeConvertFilter(filters, this);
+        if (Object.keys(queryFilter).length > 0) {
+            return this.MongooseModel.countDocuments(queryFilter);
+        }
+        return this.MongooseModel.estimatedDocumentCount();
+    };
+
     AdminJS.registerAdapter({
         Database: AdminJSMongoose.Database,
         Resource: AdminJSMongoose.Resource,
@@ -286,6 +361,7 @@ async function createAdminRouter() {
                 options: {
                     navigation: usersNav,
                     listProperties: ['profileImageKey', '_id', 'username', 'cardId', 'dateOfBirth', 'forumPoints', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'lastSeen'],
+                    filterProperties: ['username', 'email', 'role', 'membership', 'isVerifiedAccount', 'isBanned', 'cardId'],
                     showProperties: ['_id', 'username', 'email', 'cardId', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'role', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'createdAt', 'lastSeen', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube', 'socialLinks.github', 'socialLinks.twitter', 'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook', 'socialLinks.threads', 'socialLinks.gravatar', 'socialLinks.whatsapp'],
                     editProperties: ['username', 'dateOfBirth', 'forumPoints', 'email', 'role', 'showCardVerifiedBadge', 'cardVerifiedBadgeOrder', 'membership', 'membershipExpiresAt', 'subscriptionId', 'membershipPlan', 'isVerified', 'isBanned', 'banReason', 'bio', 'isVerifiedAccount', 'verifiedBadgeText', 'profileLottieBadges', 'country', 'newPassword', 'socialLinks.telegram', 'socialLinks.discord', 'socialLinks.website', 'socialLinks.youtube', 'socialLinks.github', 'socialLinks.twitter', 'socialLinks.linkedin', 'socialLinks.reddit', 'socialLinks.instagram', 'socialLinks.facebook', 'socialLinks.threads', 'socialLinks.gravatar', 'socialLinks.whatsapp'],
                     properties: {
@@ -335,6 +411,12 @@ async function createAdminRouter() {
                         banReason: { type: 'textarea', description: 'Reason for banning the user' },
                         cardId: { isVisible: { edit: false, filter: true, list: true, show: true } },
                         role: {
+                            availableValues: [
+                                { value: 'member', label: 'Member' },
+                                { value: 'distributor', label: 'Distributor' },
+                                { value: 'admin', label: 'Admin' },
+                                { value: 'owner', label: 'Owner' }
+                            ],
                             isVisible: {
                                 list: true,
                                 show: true,
@@ -568,6 +650,34 @@ async function createAdminRouter() {
                         'isVariant', 'showInRepo', 'masterFile', 'license'
                     ],
                     properties: {
+                        status: {
+                            availableValues: [
+                                { value: 'pending', label: 'Pending Review' },
+                                { value: 'live', label: 'Live (Published)' },
+                                { value: 'rejected', label: 'Rejected' },
+                                { value: 'processing', label: 'Processing' },
+                                { value: 'draft', label: 'Draft' }
+                            ],
+                            isVisible: { list: true, show: true, edit: true, filter: true }
+                        },
+                        category: {
+                            availableValues: [
+                                { value: 'windows', label: 'Windows' },
+                                { value: 'android', label: 'Android' },
+                                { value: 'ios-jailed', label: 'iOS Jailed (IPA)' },
+                                { value: 'ios-jailbroken', label: 'iOS Jailbroken (DEB)' },
+                                { value: 'wordpress', label: 'WordPress' }
+                            ],
+                            isVisible: { list: true, show: true, edit: true, filter: true }
+                        },
+                        certification: {
+                            availableValues: [
+                                { value: 'none', label: 'None' },
+                                { value: 'certified', label: 'Certified' },
+                                { value: 'community-tested', label: 'Community Tested' }
+                            ],
+                            isVisible: { list: true, show: true, edit: true, filter: true }
+                        },
                         requiresRoot: { type: 'boolean', label: 'Requires Root', description: 'Android: App requires root access (Magisk, KernelSU, APatch).' },
                         requiresDevMode: { type: 'boolean', label: 'Requires Developer Mode', description: 'Android / Windows: Requires Developer Mode or USB debugging enabled.' },
                         isTweakConvertible: { type: 'boolean', label: 'Tweak is Convertible', description: 'iOS Jailbroken: Tweak is convertible between rootful and rootless (Derootifier, RootHide, Xina).' },
@@ -667,21 +777,124 @@ async function createAdminRouter() {
                             before: async (request, context) => {
                                 const recordId = request.params.recordId;
                                 const fileToDelete = await File.findById(recordId).populate('olderVersions');
-                                if (fileToDelete) {
-                                    await deleteFromB2Admin(fileToDelete.fileKey);
-                                    await deleteFromB2Admin(fileToDelete.iconKey);
-                                    if (fileToDelete.screenshotKeys) {
-                                        for (const key of fileToDelete.screenshotKeys) await deleteFromB2Admin(key);
+                                if (!fileToDelete) return request;
+
+                                const isVariant = Boolean(fileToDelete.isVariant || fileToDelete.masterFile);
+
+                                if (isVariant) {
+                                    // VARIANT DELETION: Protect Master Mod assets!
+                                    let masterDoc = null;
+                                    if (fileToDelete.masterFile) {
+                                        masterDoc = await File.findById(fileToDelete.masterFile);
+                                        if (masterDoc) {
+                                            await File.findByIdAndUpdate(masterDoc._id, {
+                                                $pull: { variants: fileToDelete._id }
+                                            });
+                                        }
                                     }
-                                    if (fileToDelete.olderVersions) {
+
+                                    // 1. Delete variant binary file ONLY if not shared with master or other files
+                                    if (fileToDelete.fileKey && fileToDelete.fileKey !== 'external-link') {
+                                        const isSharedFile = (masterDoc && masterDoc.fileKey === fileToDelete.fileKey) ||
+                                            (await File.countDocuments({ _id: { $ne: fileToDelete._id }, fileKey: fileToDelete.fileKey })) > 0;
+                                        if (!isSharedFile) {
+                                            await deleteFromB2Admin(fileToDelete.fileKey);
+                                        }
+                                    }
+
+                                    // 2. Delete variant icon ONLY if custom to this variant and not used by master or other files
+                                    if (fileToDelete.iconKey) {
+                                        const isSharedIcon = (masterDoc && masterDoc.iconKey === fileToDelete.iconKey) ||
+                                            (await File.countDocuments({ _id: { $ne: fileToDelete._id }, iconKey: fileToDelete.iconKey })) > 0;
+                                        if (!isSharedIcon) {
+                                            await deleteFromB2Admin(fileToDelete.iconKey);
+                                        }
+                                    }
+
+                                    // 3. Delete variant screenshots ONLY if not shared with master or other files
+                                    if (Array.isArray(fileToDelete.screenshotKeys) && fileToDelete.screenshotKeys.length > 0) {
+                                        const masterScreenshots = masterDoc?.screenshotKeys || [];
+                                        for (const key of fileToDelete.screenshotKeys) {
+                                            if (masterScreenshots.includes(key)) continue; // Inherited from master, keep it!
+                                            const isSharedShot = (await File.countDocuments({ _id: { $ne: fileToDelete._id }, screenshotKeys: key })) > 0;
+                                            if (!isSharedShot) {
+                                                await deleteFromB2Admin(key);
+                                            }
+                                        }
+                                    }
+
+                                    // 4. Delete older versions of this variant if any
+                                    if (fileToDelete.olderVersions && fileToDelete.olderVersions.length > 0) {
                                         for (const oldV of fileToDelete.olderVersions) {
-                                            await deleteFromB2Admin(oldV.fileKey);
+                                            if (oldV.fileKey && oldV.fileKey !== 'external-link') {
+                                                await deleteFromB2Admin(oldV.fileKey);
+                                            }
                                             await File.findByIdAndDelete(oldV._id);
                                         }
                                     }
+
                                     await Review.deleteMany({ file: recordId });
                                     await Report.updateMany({ file: recordId }, { status: 'resolved' });
+                                    return request;
                                 }
+
+                                // MASTER MOD DELETION:
+                                const variantsList = await File.find({ masterFile: fileToDelete._id }).sort({ createdAt: 1 });
+                                if (variantsList.length > 0) {
+                                    // If variants exist, promote the first variant instead of deleting everything
+                                    const firstVariant = variantsList[0];
+                                    if (fileToDelete.fileKey && fileToDelete.fileKey !== 'external-link' && fileToDelete.fileKey !== firstVariant.fileKey) {
+                                        await deleteFromB2Admin(fileToDelete.fileKey);
+                                    }
+                                    fileToDelete.uploader = firstVariant.uploader;
+                                    fileToDelete.modDescription = firstVariant.modDescription || fileToDelete.modDescription;
+                                    fileToDelete.modFeatures = firstVariant.modFeatures || fileToDelete.modFeatures;
+                                    fileToDelete.version = firstVariant.version;
+                                    fileToDelete.fileKey = firstVariant.fileKey;
+                                    fileToDelete.fileSize = firstVariant.fileSize;
+                                    fileToDelete.originalFilename = firstVariant.originalFilename;
+                                    fileToDelete.externalDownloadUrl = firstVariant.externalDownloadUrl;
+                                    fileToDelete.directDownloadUrl = firstVariant.directDownloadUrl;
+                                    fileToDelete.downloadParts = firstVariant.downloadParts;
+                                    fileToDelete.isMultiPart = firstVariant.isMultiPart;
+                                    if (firstVariant.screenshotKeys && firstVariant.screenshotKeys.length > 0) {
+                                        fileToDelete.screenshotKeys = firstVariant.screenshotKeys;
+                                    }
+                                    if (firstVariant.iconKey) {
+                                        fileToDelete.iconKey = firstVariant.iconKey;
+                                    }
+                                    fileToDelete.variants = (fileToDelete.variants || []).filter(vId => vId.toString() !== firstVariant._id.toString());
+                                    await File.findByIdAndDelete(firstVariant._id);
+                                    await fileToDelete.save();
+                                    request.params.recordId = null;
+                                    return request;
+                                }
+
+                                // Standard standalone deletion (no variants exist)
+                                if (fileToDelete.fileKey && fileToDelete.fileKey !== 'external-link') {
+                                    const count = await File.countDocuments({ _id: { $ne: fileToDelete._id }, fileKey: fileToDelete.fileKey });
+                                    if (count === 0) await deleteFromB2Admin(fileToDelete.fileKey);
+                                }
+                                if (fileToDelete.iconKey) {
+                                    const count = await File.countDocuments({ _id: { $ne: fileToDelete._id }, iconKey: fileToDelete.iconKey });
+                                    if (count === 0) await deleteFromB2Admin(fileToDelete.iconKey);
+                                }
+                                if (fileToDelete.screenshotKeys) {
+                                    for (const key of fileToDelete.screenshotKeys) {
+                                        const count = await File.countDocuments({ _id: { $ne: fileToDelete._id }, screenshotKeys: key });
+                                        if (count === 0) await deleteFromB2Admin(key);
+                                    }
+                                }
+                                if (fileToDelete.olderVersions) {
+                                    for (const oldV of fileToDelete.olderVersions) {
+                                        if (oldV.fileKey && oldV.fileKey !== 'external-link') {
+                                            await deleteFromB2Admin(oldV.fileKey);
+                                        }
+                                        await File.findByIdAndDelete(oldV._id);
+                                    }
+                                }
+                                await Review.deleteMany({ file: recordId });
+                                await Report.updateMany({ file: recordId }, { status: 'resolved' });
                                 return request;
                             }
                         },
