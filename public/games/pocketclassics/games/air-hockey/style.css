@@ -7,7 +7,21 @@
     --text-color: #f0f0f0;
 }
 body { background-color: var(--background-color); color: var(--text-color); font-family: 'Orbitron', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
-#game-wrapper { position: relative; width: 95vw; height: 90vh; max-width: 500px; max-height: 900px; aspect-ratio: 9 / 16; background: #0a0a0a; border: 3px solid var(--neon-cyan); border-radius: 20px; box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan) inset; display: flex; justify-content: center; align-items: center; }
+#game-wrapper { 
+    position: relative; 
+    width: min(92vw, calc((94vh - 16px) * 9 / 16), 440px); 
+    height: min(calc(100vh - 20px), calc(92vw * 16 / 9), 780px); 
+    aspect-ratio: 9 / 16; 
+    background: #0a0a0a; 
+    border: 2.5px solid var(--neon-cyan); 
+    border-radius: 18px; 
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px rgba(0, 255, 255, 0.2) inset; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    margin: auto;
+    overflow: hidden;
+}
 .menu-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 10; border-radius: 18px; }
 .menu-screen.active { display: flex; }
 .menu-screen h1, .menu-screen h2 { font-size: clamp(2em, 10vw, 3.5em); margin-bottom: 40px; color: var(--neon-cyan); text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); text-align: center; }

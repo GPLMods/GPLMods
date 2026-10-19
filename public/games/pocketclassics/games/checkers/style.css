@@ -2,17 +2,21 @@
    Global Styles & Typography
    ========================================================================== */
 
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     background-color: #312e2b; /* Dark, warm background */
     color: #fff;
     margin: 0;
-    overflow-x: hidden; /* Prevent horizontal scroll, allow vertical if needed */
+    overflow: hidden;
 }
 
 h1, h2 {
@@ -313,7 +317,7 @@ h2 {
 
 @media screen and (max-width: 600px) {
     body {
-        padding-top: 10px;
+        padding: 8px;
     }
 
     h1 {
@@ -322,11 +326,12 @@ h2 {
     }
 
     #board, #status-panel {
-        width: 95vw;
+        width: min(92vw, calc(100vh - 180px), 480px);
     }
 
     #board {
-        height: 95vw;
+        height: min(92vw, calc(100vh - 180px), 480px);
+        aspect-ratio: 1 / 1;
         grid-template-columns: repeat(8, 1fr);
         grid-template-rows: repeat(8, 1fr);
     }

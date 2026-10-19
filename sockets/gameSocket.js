@@ -85,6 +85,10 @@ module.exports = function initGameSockets(io) {
             if (!gameId) return socket.emit('arcade_error', { message: 'Missing game ID.' });
 
             const profile = getPlayerProfile(socket);
+            if (profile.isGuest) {
+                return socket.emit('arcade_error', { message: 'Guests cannot play online multiplayer. Please sign in or register to match with online players.' });
+            }
+
             const queue = waitingQuickMatch.get(gameId) || [];
 
             // Find an open room in queue
@@ -152,6 +156,10 @@ module.exports = function initGameSockets(io) {
             if (!gameId) return socket.emit('arcade_error', { message: 'Missing game ID.' });
 
             const profile = getPlayerProfile(socket);
+            if (profile.isGuest) {
+                return socket.emit('arcade_error', { message: 'Guests cannot create private rooms. Please sign in or register to invite friends!' });
+            }
+
             let roomCode;
             do {
                 roomCode = generateRoomCode();
@@ -186,6 +194,11 @@ module.exports = function initGameSockets(io) {
 
         // --- JOIN PRIVATE ROOM ---
         socket.on('arcade_join_private_room', (data) => {
+            const profile = getPlayerProfile(socket);
+            if (profile.isGuest) {
+                return socket.emit('arcade_error', { message: 'Guests cannot join online rooms. Please sign in or register to play with friends!' });
+            }
+
             const rawCode = (data?.roomCode || '').toUpperCase().trim();
             const room = gameRooms.get(rawCode);
 
@@ -198,8 +211,6 @@ module.exports = function initGameSockets(io) {
             if (room.host.socketId === socket.id) {
                 return socket.emit('arcade_error', { message: 'You are already the host of this room.' });
             }
-
-            const profile = getPlayerProfile(socket);
             room.guest = { ...profile, socketId: socket.id, role: 'player2' };
             room.status = 'playing';
             room.turn = 'player1';

@@ -19,14 +19,14 @@ body {
 }
 .game-container {
     position: relative;
-    width: 100vw;
-    height: 100vw;
-    max-width: 500px;
-    max-height: 500px;
+    width: min(92vw, calc(100vh - 30px), 480px);
+    height: min(92vw, calc(100vh - 30px), 480px);
+    aspect-ratio: 1 / 1;
     border: 2px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     background-color: #222;
+    overflow: hidden;
 }
 #gameCanvas {
     width: 100%;

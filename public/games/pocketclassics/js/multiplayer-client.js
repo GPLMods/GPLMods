@@ -13,6 +13,8 @@
             this.gameId = null;
             this.callbacks = {
                 onMatchFound: null,
+                onPrivateRoomCreated: null,
+                onRoomWaiting: null,
                 onOpponentAction: null,
                 onChatMessage: null,
                 onOpponentLeft: null,
@@ -44,6 +46,22 @@
                 }
                 if (this.callbacks.onPresenceUpdate) {
                     this.callbacks.onPresenceUpdate(data);
+                }
+            });
+
+            this.socket.on('arcade_private_room_created', (data) => {
+                this.currentRoom = data.roomCode;
+                this.isHost = true;
+                if (this.callbacks.onPrivateRoomCreated) {
+                    this.callbacks.onPrivateRoomCreated(data);
+                }
+            });
+
+            this.socket.on('arcade_room_created', (data) => {
+                this.currentRoom = data.roomCode;
+                this.isHost = true;
+                if (this.callbacks.onRoomWaiting) {
+                    this.callbacks.onRoomWaiting(data);
                 }
             });
 

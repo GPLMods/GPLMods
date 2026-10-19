@@ -30,6 +30,102 @@
     </div>
 </div>
 
+<!-- Dedicated Multi-Platform PWA Install Modal (Requirement 6) -->
+<div class="arc-modal-overlay" id="arcadePwaModalOverlay">
+    <div class="arc-modal-card" style="max-width: 500px; width: 94%; box-sizing: border-box; overflow: hidden; padding: 0;">
+        <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(15, 18, 29, 0.95)); padding: 22px 20px 16px; border-bottom: 1px solid var(--arc-border); text-align: center; position: relative;">
+            <button type="button" class="arc-btn arc-btn-icon" id="closeArcadePwaModalBtn" style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; min-width: 32px; padding: 0;">
+                <i class="fas fa-times"></i>
+            </button>
+            <div style="width: 68px; height: 68px; border-radius: 16px; background: #000; border: 2px solid var(--arc-accent); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--arc-accent-glow);">
+                <img src="/games/pocketclassics/assets/logo-192.png" alt="Pocket Classics" style="width: 54px; height: 54px; border-radius: 12px; object-fit: cover;" class="protect-asset">
+            </div>
+            <h3 style="font-size: 1.35rem; color: var(--arc-text-main); margin-bottom: 4px;">Install Pocket Classics</h3>
+            <p style="font-size: 0.85rem; color: var(--arc-text-muted); margin: 0;">Play fullscreen, offline & ad-free directly on your device</p>
+        </div>
+
+        <div class="arc-modal-body" style="padding: 18px 20px; box-sizing: border-box;">
+            <!-- App Details Box -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-gamepad" style="font-size: 1.3rem; color: var(--arc-accent);"></i>
+                    <div>
+                        <strong style="font-size: 0.92rem; display: block; color: var(--arc-text-main);">Pocket Classics Arcade</strong>
+                        <span style="font-size: 0.74rem; color: var(--arc-text-muted);" id="pwaDomainOrigin">GPLMods Arcade</span>
+                    </div>
+                </div>
+                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">
+                    <i class="fas fa-shield-alt"></i> Verified
+                </span>
+            </div>
+
+            <!-- Features Grid -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px;">
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--arc-border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+                    <i class="fas fa-expand" style="color: var(--arc-accent);"></i>
+                    <span>Fullscreen App</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--arc-border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+                    <i class="fas fa-bolt" style="color: #38bdf8;"></i>
+                    <span>Instant Loading</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--arc-border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+                    <i class="fas fa-wifi" style="color: #34d399;"></i>
+                    <span>Offline Ready</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--arc-border); border-radius: 10px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 0.82rem;">
+                    <i class="fas fa-ban" style="color: #f43f5e;"></i>
+                    <span>100% Ad-Free</span>
+                </div>
+            </div>
+
+            <!-- Platform Guide (Always accessible or auto-expanded) -->
+            <div id="pwaInstructionsGuide" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--arc-border); border-radius: 12px; padding: 14px; margin-bottom: 18px;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: var(--arc-accent); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <i class="fas fa-info-circle"></i> Installation Instructions
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px; font-size: 0.82rem;">
+                        <span style="color: #4ade80; font-size: 1.1rem; flex-shrink: 0;"><i class="fab fa-android"></i></span>
+                        <div>
+                            <strong style="color: #fff; display: block;">Android (Chrome / Brave / Edge):</strong>
+                            <span style="color: var(--arc-text-muted);">Tap the browser menu (<i class="fas fa-ellipsis-v"></i>) and select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; font-size: 0.82rem;">
+                        <span style="color: #60a5fa; font-size: 1.1rem; flex-shrink: 0;"><i class="fab fa-apple"></i></span>
+                        <div>
+                            <strong style="color: #fff; display: block;">iOS (Safari):</strong>
+                            <span style="color: var(--arc-text-muted);">Tap the Share button (<i class="fas fa-share-square"></i>) at the bottom, then tap <strong>"Add to Home Screen"</strong> (<i class="fas fa-plus-square"></i>).</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; font-size: 0.82rem;">
+                        <span style="color: #f59e0b; font-size: 1.1rem; flex-shrink: 0;"><i class="fas fa-desktop"></i></span>
+                        <div>
+                            <strong style="color: #fff; display: block;">Desktop (Windows / Mac):</strong>
+                            <span style="color: var(--arc-text-muted);">Click the Install icon (<i class="fas fa-arrow-circle-down"></i>) in your browser address bar.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+                <button type="button" class="arc-btn" id="cancelPwaModalBtn" style="padding: 10px 18px;">
+                    Cancel
+                </button>
+                <button type="button" class="arc-btn arc-btn-accent" id="triggerNativeInstallBtn" style="padding: 10px 22px;">
+                    <i class="fas fa-download"></i>
+                    <span>Install Now</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     (function() {
         let deferredPrompt = null;
@@ -37,16 +133,30 @@
         const installBtn = document.getElementById('pwaInstallActionBtn');
         const copyBtn = document.getElementById('pwaCopyLinkBtn');
         const dismissBtn = document.getElementById('pwaDismissBtn');
+        
+        const modal = document.getElementById('arcadePwaModalOverlay');
+        const closeModalBtn = document.getElementById('closeArcadePwaModalBtn');
+        const cancelModalBtn = document.getElementById('cancelPwaModalBtn');
+        const triggerNativeBtn = document.getElementById('triggerNativeInstallBtn');
+        const domainOrigin = document.getElementById('pwaDomainOrigin');
 
-        if (sessionStorage.getItem('arc_pwa_dismissed') === 'true') return;
+        if (domainOrigin) {
+            domainOrigin.textContent = window.location.host;
+        }
+
+        if (sessionStorage.getItem('arc_pwa_dismissed') === 'true') {
+            // Already dismissed this session
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (banner) banner.style.display = 'flex';
+            if (banner && sessionStorage.getItem('arc_pwa_dismissed') !== 'true') {
+                banner.style.display = 'flex';
+            }
         });
 
-        // Always show floating card on mobile devices if not running in standalone display mode
+        // Show floating card on mobile if not already standalone
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         if (!isStandalone && banner && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
             setTimeout(() => {
@@ -56,25 +166,52 @@
             }, 1200);
         }
 
+        function openInstallModal() {
+            if (modal) modal.classList.add('open');
+        }
+
+        function closeInstallModal() {
+            if (modal) modal.classList.remove('open');
+        }
+
+        // Clicking Install App on floating card opens the dedicated Multi-Platform Modal
         if (installBtn) {
-            installBtn.addEventListener('click', async () => {
+            installBtn.addEventListener('click', () => {
+                openInstallModal();
+            });
+        }
+
+        closeModalBtn?.addEventListener('click', closeInstallModal);
+        cancelModalBtn?.addEventListener('click', closeInstallModal);
+
+        // Native Install Trigger inside Modal
+        if (triggerNativeBtn) {
+            triggerNativeBtn.addEventListener('click', async () => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted' && banner) {
-                        banner.style.display = 'none';
+                    if (outcome === 'accepted') {
+                        closeInstallModal();
+                        if (banner) banner.style.display = 'none';
                         if (window.ArcadeToast) {
                             window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
                         }
                     }
                     deferredPrompt = null;
                 } else {
-                    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                    const msg = isIOS
-                        ? 'To Install on iOS: Tap Share (<i class="fas fa-share-square"></i>) and choose "Add to Home Screen".'
-                        : 'To Install: Tap browser menu (<i class="fas fa-ellipsis-v"></i>) and choose "Install App" or "Add to Home Screen".';
+                    // Highlight the instructions for the user's platform
+                    const guide = document.getElementById('pwaInstructionsGuide');
+                    if (guide) {
+                        guide.style.borderColor = 'var(--arc-accent)';
+                        guide.style.boxShadow = '0 0 15px var(--arc-accent-glow)';
+                        setTimeout(() => {
+                            guide.style.borderColor = 'var(--arc-border)';
+                            guide.style.boxShadow = 'none';
+                        }, 2000);
+                    }
                     if (window.ArcadeToast) {
-                        window.ArcadeToast.show(msg, 'pwa', 6500);
+                        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                        window.ArcadeToast.show(isIOS ? 'Tap Share and choose "Add to Home Screen"' : 'Tap browser menu and select "Install app"', 'info', 4000);
                     }
                 }
             });
@@ -104,10 +241,7 @@
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => {
                 if (banner) {
-                    banner.style.animation = 'pwa-float-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards';
-                    setTimeout(() => {
-                        banner.style.display = 'none';
-                    }, 250);
+                    banner.style.display = 'none';
                 }
                 sessionStorage.setItem('arc_pwa_dismissed', 'true');
             });

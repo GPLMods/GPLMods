@@ -1,113 +1,138 @@
 <div class="arc-modal-overlay" id="multiplayerRoomOverlay">
-    <div class="arc-modal-card" style="max-width: 540px;">
+    <div class="arc-modal-card" style="max-width: 520px; width: 94%;">
         <div class="arc-modal-header">
-            <h3><i class="fas fa-users" style="color: var(--arc-accent);"></i> Online Multiplayer Room</h3>
+            <h3><i class="fas fa-users" style="color: var(--arc-accent);"></i> Online Multiplayer</h3>
             <button type="button" class="arc-btn arc-btn-icon" onclick="document.getElementById('multiplayerRoomOverlay').classList.remove('open')">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="arc-modal-body">
-            <!-- Setup Pane (Before Match) -->
-            <div id="mpSetupPane">
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button type="button" class="arc-btn arc-btn-accent" id="mpQuickMatchBtn" style="flex: 1; padding: 14px; justify-content: center;">
-                        <i class="fas fa-bolt"></i>
-                        <span>Quick Match (Random)</span>
-                    </button>
-                    <button type="button" class="arc-btn" id="mpCreateRoomBtn" style="flex: 1; padding: 14px; justify-content: center;">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>Create Private Room</span>
-                    </button>
-                </div>
+        <div class="arc-modal-body" style="box-sizing: border-box; overflow-x: hidden;">
+            <% const isGuestUser = !user || user.username === 'Guest'; %>
 
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; color: var(--arc-text-muted); margin-bottom: 8px; font-weight: 600;">Have an invite room code?</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="mpJoinCodeInput" placeholder="Enter 6-char Room Code (e.g. ARC942)" maxlength="8" style="flex: 1; background: #000; border: 1px solid var(--arc-border); color: #fff; padding: 10px 14px; border-radius: 8px; font-family: monospace; font-size: 1.1rem; text-transform: uppercase; outline: none;">
-                        <button type="button" class="arc-btn arc-btn-accent" id="mpJoinRoomBtn">
-                            <i class="fas fa-sign-in-alt"></i> Join
+            <% if (isGuestUser) { %>
+                <!-- Guest Block: Requirement 3 (Guests cannot do online multiplayer or join rooms) -->
+                <div id="mpGuestNotice" style="background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 14px; padding: 24px 18px; text-align: center; box-sizing: border-box;">
+                    <div style="width: 58px; height: 58px; border-radius: 50%; background: rgba(255, 215, 0, 0.1); border: 1.5px solid var(--arc-accent); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 14px;">
+                        <i class="fas fa-user-lock" style="font-size: 1.6rem; color: var(--arc-accent);"></i>
+                    </div>
+                    <h4 style="font-size: 1.15rem; color: var(--arc-text-main); margin-bottom: 8px;">Account Required for Online Play</h4>
+                    <p style="font-size: 0.88rem; color: var(--arc-text-muted); line-height: 1.5; margin-bottom: 20px; max-width: 380px; margin-left: auto; margin-right: auto;">
+                        Guests can play Solo vs AI or 2-Player Pass &amp; Play locally. Sign in or create a free account to unlock real-time Online Multiplayer, Private Rooms, and Global Leaderboards!
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/login" class="arc-btn arc-btn-accent" style="padding: 10px 22px;">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Sign In / Register</span>
+                        </a>
+                        <button type="button" class="arc-btn" onclick="document.getElementById('multiplayerRoomOverlay').classList.remove('open')" style="padding: 10px 18px;">
+                            <i class="fas fa-gamepad"></i>
+                            <span>Play Local / AI</span>
                         </button>
                     </div>
                 </div>
+            <% } else { %>
+                <!-- Setup Pane (For Registered Users) -->
+                <div id="mpSetupPane">
+                    <div style="display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;">
+                        <button type="button" class="arc-btn arc-btn-accent" id="mpQuickMatchBtn" style="flex: 1 1 180px; padding: 12px; justify-content: center; font-size: 0.92rem;">
+                            <i class="fas fa-bolt"></i>
+                            <span>Quick Match</span>
+                        </button>
+                        <button type="button" class="arc-btn" id="mpCreateRoomBtn" style="flex: 1 1 180px; padding: 12px; justify-content: center; font-size: 0.92rem;">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create Private Room</span>
+                        </button>
+                    </div>
 
-                <!-- Waiting Lobby Status (Hidden until code generated or matching) -->
-                <div id="mpWaitingLobby" style="display: none; background: rgba(255, 215, 0, 0.08); border: 1px solid var(--arc-accent); border-radius: 12px; padding: 20px; text-align: center;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2.2rem; color: var(--arc-accent); margin-bottom: 12px; display: block;"></i>
-                    <h4 id="mpWaitingTitle" style="color: var(--arc-text-main); margin-bottom: 6px;">Searching for Opponent...</h4>
-                    <p id="mpWaitingSub" style="font-size: 0.85rem; color: var(--arc-text-muted); margin-bottom: 15px;">Waiting for a challenger to join your room.</p>
-                    
-                    <div id="mpRoomCodeBox" style="display: none; margin-bottom: 15px;">
-                        <div style="font-size: 0.8rem; color: var(--arc-text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Invite Code</div>
-                        <div style="display: inline-flex; align-items: center; gap: 10px; background: #000; border: 1px dashed var(--arc-accent); padding: 8px 18px; border-radius: 8px;">
-                            <strong id="mpDisplayCode" style="font-size: 1.6rem; letter-spacing: 3px; color: var(--arc-accent); font-family: monospace;">------</strong>
-                            <button type="button" class="arc-btn" id="mpCopyCodeBtn" style="padding: 6px 12px; font-size: 0.8rem;">
-                                <i class="fas fa-copy"></i> Copy
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 12px; padding: 14px; margin-bottom: 18px; box-sizing: border-box; width: 100%;">
+                        <label style="display: block; font-size: 0.82rem; color: var(--arc-text-muted); margin-bottom: 8px; font-weight: 600;">Have an invite room code?</label>
+                        <div style="display: flex; gap: 8px; align-items: stretch; width: 100%; box-sizing: border-box;">
+                            <input type="text" id="mpJoinCodeInput" placeholder="Room Code (e.g. ARC942)" maxlength="8" style="flex: 1 1 0; min-width: 0; width: 0; background: #000; border: 1px solid var(--arc-border); color: #fff; padding: 10px 12px; border-radius: 8px; font-family: monospace; font-size: 1rem; text-transform: uppercase; outline: none; box-sizing: border-box;">
+                            <button type="button" class="arc-btn arc-btn-accent" id="mpJoinRoomBtn" style="flex-shrink: 0; white-space: nowrap; padding: 10px 16px;">
+                                <i class="fas fa-sign-in-alt"></i> Join
                             </button>
                         </div>
                     </div>
 
-                    <button type="button" class="arc-btn" id="mpCancelMatchBtn" style="color: var(--arc-danger); border-color: rgba(239, 68, 68, 0.4);">
-                        Cancel Search
-                    </button>
-                </div>
-            </div>
-
-            <!-- Active Match & Live Chat Pane (Shown when playing) -->
-            <div id="mpActiveMatchPane" style="display: none;">
-                <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); border: 1px solid var(--arc-border); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <img id="mpP1Avatar" src="/images/default-avatar.png" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid var(--arc-accent);">
-                        <div>
-                            <strong id="mpP1Name" style="font-size: 0.88rem; display: block; color: var(--arc-accent);">Player 1</strong>
-                            <span id="mpP1Country" style="font-size: 0.75rem; color: var(--arc-text-muted);">Global</span>
+                    <!-- Waiting Lobby Status (Hidden until code generated or matching) -->
+                    <div id="mpWaitingLobby" style="display: none; background: rgba(255, 215, 0, 0.08); border: 1px solid var(--arc-accent); border-radius: 12px; padding: 20px; text-align: center; box-sizing: border-box;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2.2rem; color: var(--arc-accent); margin-bottom: 12px; display: block;"></i>
+                        <h4 id="mpWaitingTitle" style="color: var(--arc-text-main); margin-bottom: 6px;">Searching for Opponent...</h4>
+                        <p id="mpWaitingSub" style="font-size: 0.85rem; color: var(--arc-text-muted); margin-bottom: 15px;">Waiting for a challenger to join your room.</p>
+                        
+                        <div id="mpRoomCodeBox" style="display: none; margin-bottom: 15px;">
+                            <div style="font-size: 0.78rem; color: var(--arc-text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Invite Code</div>
+                            <div style="display: inline-flex; align-items: center; gap: 10px; background: #000; border: 1px dashed var(--arc-accent); padding: 8px 16px; border-radius: 8px; max-width: 100%; box-sizing: border-box; flex-wrap: wrap; justify-content: center;">
+                                <strong id="mpDisplayCode" style="font-size: 1.5rem; letter-spacing: 3px; color: var(--arc-accent); font-family: monospace;">------</strong>
+                                <button type="button" class="arc-btn" id="mpCopyCodeBtn" style="padding: 6px 12px; font-size: 0.8rem;">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <span style="font-weight: 800; color: var(--arc-text-muted); font-size: 0.9rem;">VS</span>
-                    <div style="display: flex; align-items: center; gap: 8px; text-align: right;">
-                        <div>
-                            <strong id="mpP2Name" style="font-size: 0.88rem; display: block; color: #60a5fa;">Player 2</strong>
-                            <span id="mpP2Country" style="font-size: 0.75rem; color: var(--arc-text-muted);">Global</span>
-                        </div>
-                        <img id="mpP2Avatar" src="/images/default-avatar.png" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #60a5fa;">
-                    </div>
-                </div>
 
-                <!-- Turn indicator -->
-                <div id="mpTurnNotice" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 8px; text-align: center; color: #34d399; font-weight: 700; font-size: 0.88rem; margin-bottom: 16px;">
-                    Match Live &bull; Playing Turn
-                </div>
-
-                <!-- In-Room Live Chat -->
-                <div style="border: 1px solid var(--arc-border); border-radius: 12px; overflow: hidden; background: #000;">
-                    <div style="padding: 8px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--arc-border); font-size: 0.8rem; font-weight: 700; color: var(--arc-text-muted); display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fas fa-comment-dots" style="color: var(--arc-accent); margin-right: 6px;"></i> Live In-Room Chat</span>
-                        <span id="mpRoomCodeTag" style="font-family: monospace; color: var(--arc-accent);"></span>
-                    </div>
-                    <div id="roomChatMessages" style="height: 130px; overflow-y: auto; padding: 10px; display: flex; flex-direction: column;"></div>
-
-                    <!-- Quick Emoji Bar -->
-                    <div style="display: flex; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--arc-border); background: rgba(255,255,255,0.02); overflow-x: auto;">
-                        <button type="button" class="quick-emoji-btn" data-emoji="🔥" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">🔥</button>
-                        <button type="button" class="quick-emoji-btn" data-emoji="👏" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">👏</button>
-                        <button type="button" class="quick-emoji-btn" data-emoji="🏆" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">🏆</button>
-                        <button type="button" class="quick-emoji-btn" data-emoji="😎" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">😎</button>
-                        <button type="button" class="quick-emoji-btn" data-emoji="😂" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">😂</button>
-                        <button type="button" class="quick-emoji-btn" data-emoji="⚡" style="background: none; border: none; cursor: pointer; font-size: 1.15rem;">⚡</button>
-                        <button type="button" class="quick-msg-chip" data-text="Good Luck!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.74rem; cursor: pointer;">Good Luck!</button>
-                        <button type="button" class="quick-msg-chip" data-text="Nice Move!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.74rem; cursor: pointer;">Nice Move!</button>
-                        <button type="button" class="quick-msg-chip" data-text="Rematch?" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.74rem; cursor: pointer;">Rematch?</button>
-                        <button type="button" class="quick-msg-chip" data-text="GG!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 0.74rem; cursor: pointer;">GG!</button>
-                    </div>
-
-                    <!-- Custom Chat Input -->
-                    <div style="display: flex; padding: 6px 10px; border-top: 1px solid var(--arc-border); gap: 6px;">
-                        <input type="text" id="mpCustomChatInput" placeholder="Type a message..." maxlength="80" style="flex: 1; background: transparent; border: none; color: #fff; font-size: 0.85rem; outline: none;">
-                        <button type="button" class="arc-btn arc-btn-accent" id="mpSendChatBtn" style="padding: 4px 12px; font-size: 0.8rem;">
-                            <i class="fas fa-paper-plane"></i>
+                        <button type="button" class="arc-btn" id="mpCancelMatchBtn" style="color: var(--arc-danger); border-color: rgba(239, 68, 68, 0.4); margin: 0 auto;">
+                            Cancel Search
                         </button>
                     </div>
                 </div>
-            </div>
+
+                <!-- Active Match & Live Chat Pane (Shown when playing) -->
+                <div id="mpActiveMatchPane" style="display: none;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); border: 1px solid var(--arc-border); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;">
+                        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                            <img id="mpP1Avatar" src="/images/default-avatar.png" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--arc-accent); flex-shrink: 0;">
+                            <div style="min-width: 0;">
+                                <strong id="mpP1Name" style="font-size: 0.84rem; display: block; color: var(--arc-accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Player 1</strong>
+                                <span id="mpP1Country" style="font-size: 0.72rem; color: var(--arc-text-muted);">Global</span>
+                            </div>
+                        </div>
+                        <span style="font-weight: 800; color: var(--arc-text-muted); font-size: 0.85rem; padding: 0 8px;">VS</span>
+                        <div style="display: flex; align-items: center; gap: 8px; text-align: right; min-width: 0;">
+                            <div style="min-width: 0;">
+                                <strong id="mpP2Name" style="font-size: 0.84rem; display: block; color: #60a5fa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Player 2</strong>
+                                <span id="mpP2Country" style="font-size: 0.72rem; color: var(--arc-text-muted);">Global</span>
+                            </div>
+                            <img id="mpP2Avatar" src="/images/default-avatar.png" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid #60a5fa; flex-shrink: 0;">
+                        </div>
+                    </div>
+
+                    <!-- Turn indicator -->
+                    <div id="mpTurnNotice" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; border-radius: 8px; padding: 7px; text-align: center; color: #34d399; font-weight: 700; font-size: 0.84rem; margin-bottom: 14px;">
+                        Match Live &bull; Playing Turn
+                    </div>
+
+                    <!-- In-Room Live Chat -->
+                    <div style="border: 1px solid var(--arc-border); border-radius: 12px; overflow: hidden; background: #000;">
+                        <div style="padding: 7px 12px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--arc-border); font-size: 0.78rem; font-weight: 700; color: var(--arc-text-muted); display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fas fa-comment-dots" style="color: var(--arc-accent); margin-right: 6px;"></i> Live In-Room Chat</span>
+                            <span id="mpRoomCodeTag" style="font-family: monospace; color: var(--arc-accent);"></span>
+                        </div>
+                        <div id="roomChatMessages" style="height: 110px; overflow-y: auto; padding: 8px; display: flex; flex-direction: column;"></div>
+
+                        <!-- Quick Emoji Bar -->
+                        <div style="display: flex; gap: 6px; padding: 5px 8px; border-top: 1px solid var(--arc-border); background: rgba(255,255,255,0.02); overflow-x: auto;">
+                            <button type="button" class="quick-emoji-btn" data-emoji="🔥" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">🔥</button>
+                            <button type="button" class="quick-emoji-btn" data-emoji="👏" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">👏</button>
+                            <button type="button" class="quick-emoji-btn" data-emoji="🏆" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">🏆</button>
+                            <button type="button" class="quick-emoji-btn" data-emoji="😎" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">😎</button>
+                            <button type="button" class="quick-emoji-btn" data-emoji="😂" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">😂</button>
+                            <button type="button" class="quick-emoji-btn" data-emoji="⚡" style="background: none; border: none; cursor: pointer; font-size: 1.1rem;">⚡</button>
+                            <button type="button" class="quick-msg-chip" data-text="Good Luck!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">Good Luck!</button>
+                            <button type="button" class="quick-msg-chip" data-text="Nice Move!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">Nice Move!</button>
+                            <button type="button" class="quick-msg-chip" data-text="Rematch?" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">Rematch?</button>
+                            <button type="button" class="quick-msg-chip" data-text="GG!" style="background: rgba(255,255,255,0.08); border: 1px solid var(--arc-border); color: #fff; padding: 2px 7px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; white-space: nowrap;">GG!</button>
+                        </div>
+
+                        <!-- Custom Chat Input -->
+                        <div style="display: flex; padding: 5px 8px; border-top: 1px solid var(--arc-border); gap: 6px; align-items: center;">
+                            <input type="text" id="mpCustomChatInput" placeholder="Type a message..." maxlength="80" style="flex: 1 1 0; min-width: 0; background: transparent; border: none; color: #fff; font-size: 0.82rem; outline: none;">
+                            <button type="button" class="arc-btn arc-btn-accent" id="mpSendChatBtn" style="padding: 4px 10px; font-size: 0.78rem; flex-shrink: 0;">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
         </div>
         <div class="arc-modal-footer">
             <button type="button" class="arc-btn" onclick="document.getElementById('multiplayerRoomOverlay').classList.remove('open')">
@@ -119,7 +144,6 @@
 
 <script>
     (function() {
-        const overlay = document.getElementById('multiplayerRoomOverlay');
         const setupPane = document.getElementById('mpSetupPane');
         const waitingLobby = document.getElementById('mpWaitingLobby');
         const activeMatchPane = document.getElementById('mpActiveMatchPane');
@@ -132,70 +156,68 @@
 
         // Quick Match
         document.getElementById('mpQuickMatchBtn')?.addEventListener('click', () => {
-            waitingLobby.style.display = 'block';
-            roomCodeBox.style.display = 'none';
-            waitingTitle.textContent = 'Searching for Opponent...';
-            waitingSub.textContent = 'Matching with another active player worldwide.';
+            if (waitingLobby) waitingLobby.style.display = 'block';
+            if (roomCodeBox) roomCodeBox.style.display = 'none';
+            if (waitingTitle) waitingTitle.textContent = 'Searching for Opponent...';
+            if (waitingSub) waitingSub.textContent = 'Matching with another active player worldwide.';
             window.ArcadeMP?.quickMatch(currentGameId);
         });
 
         // Create Private Room
         document.getElementById('mpCreateRoomBtn')?.addEventListener('click', () => {
+            if (waitingLobby) waitingLobby.style.display = 'block';
+            if (roomCodeBox) roomCodeBox.style.display = 'none';
+            if (waitingTitle) waitingTitle.textContent = 'Generating Room Code...';
+            if (waitingSub) waitingSub.textContent = 'Creating your private room...';
             window.ArcadeMP?.createPrivateRoom(currentGameId);
         });
 
-        // Socket response for created room
-        if (window.ArcadeMP?.socket) {
-            window.ArcadeMP.socket.on('arcade_private_room_created', (data) => {
-                waitingLobby.style.display = 'block';
-                roomCodeBox.style.display = 'block';
-                displayCode.textContent = data.roomCode;
-                waitingTitle.textContent = 'Room Created!';
-                waitingSub.textContent = 'Share this code with your friend or Club members.';
-            });
+        function showPrivateRoomDetails(data) {
+            if (waitingLobby) waitingLobby.style.display = 'block';
+            if (roomCodeBox) roomCodeBox.style.display = 'block';
+            if (displayCode) displayCode.textContent = data.roomCode;
+            if (waitingTitle) waitingTitle.textContent = 'Private Room Created!';
+            if (waitingSub) waitingSub.textContent = 'Share this code with your friend to play together.';
         }
 
-        // Join Room
-        document.getElementById('mpJoinRoomBtn')?.addEventListener('click', () => {
-            const code = document.getElementById('mpJoinCodeInput').value.trim();
-            if (!code) {
-                if (window.ArcadeToast) window.ArcadeToast.show('Please enter a room code.', 'warning');
-                else alert('Please enter a room code.');
+        // Attach listeners when ArcadeMP is initialized
+        function bindArcadeMP() {
+            if (!window.ArcadeMP) {
+                setTimeout(bindArcadeMP, 60);
                 return;
             }
-            window.ArcadeMP?.joinPrivateRoom(code);
-        });
 
-        // Copy Code
-        document.getElementById('mpCopyCodeBtn')?.addEventListener('click', () => {
-            const code = displayCode.textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                if (window.ArcadeToast) window.ArcadeToast.show(`Room code "${code}" copied to clipboard!`, 'success');
-                else alert(`Room code "${code}" copied to clipboard!`);
-            });
-        });
+            window.ArcadeMP.callbacks.onPrivateRoomCreated = function(data) {
+                showPrivateRoomDetails(data);
+            };
 
-        // Cancel
-        document.getElementById('mpCancelMatchBtn')?.addEventListener('click', () => {
-            waitingLobby.style.display = 'none';
-        });
+            window.ArcadeMP.callbacks.onRoomWaiting = function(data) {
+                if (waitingLobby) waitingLobby.style.display = 'block';
+                if (roomCodeBox) roomCodeBox.style.display = 'none';
+                if (waitingTitle) waitingTitle.textContent = 'Searching for Opponent...';
+                if (waitingSub) waitingSub.textContent = 'Matching with another active player worldwide.';
+            };
 
-        // Match found callback
-        if (window.ArcadeMP) {
             window.ArcadeMP.callbacks.onMatchFound = function(data) {
-                setupPane.style.display = 'none';
-                activeMatchPane.style.display = 'block';
-                document.getElementById('mpRoomCodeTag').textContent = `Room #${data.roomCode}`;
+                if (setupPane) setupPane.style.display = 'none';
+                if (activeMatchPane) activeMatchPane.style.display = 'block';
+                const tag = document.getElementById('mpRoomCodeTag');
+                if (tag) tag.textContent = `Room #${data.roomCode}`;
 
-                document.getElementById('mpP1Name').textContent = data.host.username;
-                document.getElementById('mpP1Country').textContent = data.host.country || 'Global';
-                document.getElementById('mpP1Avatar').src = data.host.avatar || '/images/default-avatar.png';
+                const p1Name = document.getElementById('mpP1Name');
+                if (p1Name) p1Name.textContent = data.host.username;
+                const p1Country = document.getElementById('mpP1Country');
+                if (p1Country) p1Country.textContent = data.host.country || 'Global';
+                const p1Avatar = document.getElementById('mpP1Avatar');
+                if (p1Avatar) p1Avatar.src = data.host.avatar || '/images/default-avatar.png';
 
-                document.getElementById('mpP2Name').textContent = data.guest.username;
-                document.getElementById('mpP2Country').textContent = data.guest.country || 'Global';
-                document.getElementById('mpP2Avatar').src = data.guest.avatar || '/images/default-avatar.png';
+                const p2Name = document.getElementById('mpP2Name');
+                if (p2Name) p2Name.textContent = data.guest.username;
+                const p2Country = document.getElementById('mpP2Country');
+                if (p2Country) p2Country.textContent = data.guest.country || 'Global';
+                const p2Avatar = document.getElementById('mpP2Avatar');
+                if (p2Avatar) p2Avatar.src = data.guest.avatar || '/images/default-avatar.png';
 
-                // Forward event to embedded game iframe if present
                 const iframe = document.getElementById('gameIframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({
@@ -212,11 +234,40 @@
                 const msg = data?.message || 'Opponent disconnected.';
                 if (window.ArcadeToast) window.ArcadeToast.show(msg, 'warning');
                 else alert(msg);
-                setupPane.style.display = 'block';
-                waitingLobby.style.display = 'none';
-                activeMatchPane.style.display = 'none';
+                if (setupPane) setupPane.style.display = 'block';
+                if (waitingLobby) waitingLobby.style.display = 'none';
+                if (activeMatchPane) activeMatchPane.style.display = 'none';
             };
         }
+        bindArcadeMP();
+
+        // Join Room
+        document.getElementById('mpJoinRoomBtn')?.addEventListener('click', () => {
+            const input = document.getElementById('mpJoinCodeInput');
+            const code = (input ? input.value : '').trim();
+            if (!code) {
+                if (window.ArcadeToast) window.ArcadeToast.show('Please enter a room code.', 'warning');
+                else alert('Please enter a room code.');
+                return;
+            }
+            window.ArcadeMP?.joinPrivateRoom(code);
+        });
+
+        // Copy Code
+        document.getElementById('mpCopyCodeBtn')?.addEventListener('click', () => {
+            const code = displayCode ? displayCode.textContent : '';
+            if (code && code !== '------') {
+                navigator.clipboard.writeText(code).then(() => {
+                    if (window.ArcadeToast) window.ArcadeToast.show(`Room code "${code}" copied!`, 'success');
+                    else alert(`Room code "${code}" copied!`);
+                });
+            }
+        });
+
+        // Cancel
+        document.getElementById('mpCancelMatchBtn')?.addEventListener('click', () => {
+            if (waitingLobby) waitingLobby.style.display = 'none';
+        });
 
         // Quick chat message
         document.querySelectorAll('.quick-msg-chip').forEach(chip => {
@@ -236,10 +287,10 @@
         const customInput = document.getElementById('mpCustomChatInput');
         const sendBtn = document.getElementById('mpSendChatBtn');
         function sendCustom() {
-            const txt = (customInput.value || '').trim();
+            const txt = (customInput ? customInput.value : '').trim();
             if (!txt) return;
             window.ArcadeMP?.sendChatMessage(txt, '');
-            customInput.value = '';
+            if (customInput) customInput.value = '';
         }
         sendBtn?.addEventListener('click', sendCustom);
         customInput?.addEventListener('keydown', (e) => {

@@ -34,9 +34,9 @@
             transition: opacity 0.5s ease;
         }
 
-        .video-box {
+        .video-box, .static-logo-box {
             width: 100%;
-            max-width: 320px;
+            max-width: 300px;
             aspect-ratio: 1 / 1;
             border-radius: 24px;
             overflow: hidden;
@@ -44,11 +44,14 @@
             border: 2.5px solid var(--arc-accent);
             background: #000;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @media (max-width: 480px) {
-            .video-box {
-                max-width: 270px;
+            .video-box, .static-logo-box {
+                max-width: 250px;
             }
         }
 
@@ -57,6 +60,13 @@
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+
+        .static-logo-box img {
+            width: 78%;
+            height: 78%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
         }
 
         .progress-box {
@@ -81,7 +91,7 @@
             height: 100%;
             background: linear-gradient(90deg, #ff9800, var(--arc-accent), #34d399);
             border-radius: 8px;
-            transition: width 0.08s linear;
+            transition: width 0.06s linear;
             box-shadow: 0 0 12px var(--arc-accent-glow);
         }
 
@@ -164,11 +174,16 @@
 <body class="arcade-body" data-theme="classic">
 
     <div class="splash-stage" id="splashScreen">
-        <!-- 1:1 Video Animation of Developer Intro Logo -->
-        <div class="video-box">
-            <video id="splashVideo" playsinline preload="metadata" poster="/games/pocketclassics/assets/logo.png">
+        <!-- 1:1 Video Animation (Shown only on first visit, unskippable) -->
+        <div class="video-box" id="splashVideoBox" style="display: none;">
+            <video id="splashVideo" playsinline preload="auto">
                 <source src="/games/pocketclassics/assets/logo.mp4" type="video/mp4">
             </video>
+        </div>
+
+        <!-- Static Logo Screen (Shown on 2nd and subsequent visits) -->
+        <div class="static-logo-box" id="splashStaticBox" style="display: none;">
+            <img src="/games/pocketclassics/assets/logo.png" alt="Pocket Classics" class="protect-asset">
         </div>
 
         <div class="progress-box">
@@ -179,7 +194,7 @@
                 <i class="fas fa-gamepad" style="color: var(--arc-accent); margin-right: 6px;"></i> Loading Pocket Classics...
             </div>
 
-            <!-- Developer Branding Reveal at 8.0s mark -->
+            <!-- Developer Branding Reveal -->
             <div class="dev-branding-reveal" id="devBranding">
                 <div class="dev-brand-title">
                     <span class="brand-gaming">Gaming</span>
@@ -193,11 +208,8 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 12px; justify-content: center;">
-                <button type="button" class="arc-btn arc-btn-accent" id="enterArcadeBtn" style="padding: 10px 24px;">
-                    <span>Enter Arcade</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
+            <!-- Optional sound toggle during video -->
+            <div id="videoControlsRow" style="display: none; justify-content: center; margin-top: 10px;">
                 <button type="button" class="arc-btn" id="muteSplashBtn" title="Toggle Sound">
                     <i class="fas fa-volume-up" id="muteIcon"></i>
                 </button>
@@ -212,91 +224,139 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const videoBox = document.getElementById('splashVideoBox');
+            const staticBox = document.getElementById('splashStaticBox');
             const video = document.getElementById('splashVideo');
             const pBar = document.getElementById('splashProgressBar');
             const statusTxt = document.getElementById('splashStatusText');
-            const enterBtn = document.getElementById('enterArcadeBtn');
             const muteBtn = document.getElementById('muteSplashBtn');
             const muteIcon = document.getElementById('muteIcon');
             const devBranding = document.getElementById('devBranding');
+            const videoControlsRow = document.getElementById('videoControlsRow');
 
-            let brandingShown = false;
+            const hasSeenIntro = localStorage.getItem('arc_intro_seen') === 'true';
+
             function showDeveloperBranding() {
-                if (brandingShown) return;
-                brandingShown = true;
                 if (devBranding) {
                     devBranding.classList.add('visible');
                 }
             }
 
-            // Attempt video playback with sound effects
-            if (video) {
-                video.muted = false;
-                video.volume = 1.0;
-                const playPromise = video.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(() => {
-                        // Browser autoplay policy restricted unmuted playback until interaction
-                        video.muted = true;
-                        video.play().catch(() => {});
-                        if (muteIcon) muteIcon.className = 'fas fa-volume-mute';
+            if (!hasSeenIntro) {
+                // ============================================================
+                // 1ST VISIT: UN-SKIPPABLE INTRO ANIMATION VIDEO
+                // No main menu music plays until video intro ends!
+                // ============================================================
+                videoBox.style.display = 'block';
+                videoControlsRow.style.display = 'flex';
 
-                        const unlockAudio = () => {
-                            video.muted = false;
-                            video.volume = 1.0;
-                            if (muteIcon) muteIcon.className = 'fas fa-volume-up';
-                            window.removeEventListener('pointerdown', unlockAudio);
-                            window.removeEventListener('keydown', unlockAudio);
-                        };
-                        window.addEventListener('pointerdown', unlockAudio, { once: true });
-                        window.addEventListener('keydown', unlockAudio, { once: true });
+                if (window.ArcadeAudio) {
+                    window.ArcadeAudio.pauseMusic();
+                }
+
+                if (video) {
+                    video.muted = false;
+                    video.volume = 1.0;
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                            video.muted = true;
+                            video.play().catch(() => {});
+                            if (muteIcon) muteIcon.className = 'fas fa-volume-mute';
+
+                            const unlockAudio = () => {
+                                video.muted = false;
+                                video.volume = 1.0;
+                                if (muteIcon) muteIcon.className = 'fas fa-volume-up';
+                                window.removeEventListener('pointerdown', unlockAudio);
+                                window.removeEventListener('keydown', unlockAudio);
+                            };
+                            window.addEventListener('pointerdown', unlockAudio, { once: true });
+                            window.addEventListener('keydown', unlockAudio, { once: true });
+                        });
+                    }
+
+                    video.addEventListener('timeupdate', () => {
+                        if (video.currentTime >= 8.0) {
+                            showDeveloperBranding();
+                        }
                     });
                 }
 
-                video.addEventListener('timeupdate', () => {
-                    if (video.currentTime >= 8.0) {
+                // 10-Second Loading Timer for 1st visit
+                const TOTAL_DURATION_MS = 10000;
+                const startTime = Date.now();
+                const progressInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(100, Math.floor((elapsed / TOTAL_DURATION_MS) * 100));
+                    if (pBar) pBar.style.width = progress + '%';
+
+                    if (elapsed >= 8000) {
                         showDeveloperBranding();
                     }
-                });
-            }
 
-            // 10-Second Loading Screen Timer
-            const TOTAL_DURATION_MS = 10000;
-            const startTime = Date.now();
-            const progressInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(100, Math.floor((elapsed / TOTAL_DURATION_MS) * 100));
-                if (pBar) pBar.style.width = progress + '%';
-
-                if (elapsed >= 8000) {
-                    showDeveloperBranding();
-                }
-
-                if (elapsed >= TOTAL_DURATION_MS) {
-                    clearInterval(progressInterval);
-                    if (pBar) pBar.style.width = '100%';
-                    if (statusTxt) {
-                        statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Welcome to Pocket Classics!</span>';
+                    if (elapsed >= TOTAL_DURATION_MS) {
+                        clearInterval(progressInterval);
+                        localStorage.setItem('arc_intro_seen', 'true');
+                        if (pBar) pBar.style.width = '100%';
+                        if (statusTxt) {
+                            statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Welcome to Pocket Classics!</span>';
+                        }
+                        setTimeout(() => {
+                            window.location.href = '/games/hub';
+                        }, 400);
                     }
+                }, 60);
+
+                video?.addEventListener('ended', () => {
+                    clearInterval(progressInterval);
+                    localStorage.setItem('arc_intro_seen', 'true');
+                    if (pBar) pBar.style.width = '100%';
                     setTimeout(() => {
                         window.location.href = '/games/hub';
-                    }, 500);
-                }
-            }, 60);
+                    }, 300);
+                });
 
-            // Enter button
-            enterBtn?.addEventListener('click', () => {
-                clearInterval(progressInterval);
-                window.location.href = '/games/hub';
-            });
+                muteBtn?.addEventListener('click', () => {
+                    if (video) {
+                        video.muted = !video.muted;
+                        muteIcon.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+                    }
+                });
 
-            // Mute / Unmute button
-            muteBtn?.addEventListener('click', () => {
-                if (video) {
-                    video.muted = !video.muted;
-                    muteIcon.className = video.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+            } else {
+                // ============================================================
+                // 2ND+ VISIT: STATIC SCREEN WITH LOGO & MAIN MENU THEME MUSIC
+                // Fast 1.8s progress bar, no video intro, music loops
+                // ============================================================
+                staticBox.style.display = 'flex';
+                showDeveloperBranding();
+
+                if (statusTxt) {
+                    statusTxt.innerHTML = '<i class="fas fa-gamepad" style="color: var(--arc-accent); margin-right: 6px;"></i> Launching Pocket Classics...';
                 }
-            });
+
+                // Play assigned theme music during 2nd loading screen
+                if (window.ArcadeAudio) {
+                    window.ArcadeAudio.playMusic();
+                }
+
+                const STATIC_DURATION_MS = 1800;
+                const startTime = Date.now();
+                const staticInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(100, Math.floor((elapsed / STATIC_DURATION_MS) * 100));
+                    if (pBar) pBar.style.width = progress + '%';
+
+                    if (elapsed >= STATIC_DURATION_MS) {
+                        clearInterval(staticInterval);
+                        if (pBar) pBar.style.width = '100%';
+                        setTimeout(() => {
+                            window.location.href = '/games/hub';
+                        }, 250);
+                    }
+                }, 40);
+            }
         });
     </script>
 </body>

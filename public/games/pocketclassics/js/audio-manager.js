@@ -1,24 +1,24 @@
 /**
  * ============================================================================
  * POCKET CLASSICS - AUDIO MANAGER
- * Handles autoplay policies, rotating music tracks, SFX, and persistence
+ * Handles theme-synced background soundtrack, autoplay unlocking, SFX & persistence
  * ============================================================================
  */
 (function() {
-    const MUSIC_PLAYLIST = [
-        '/games/pocketclassics/assets/bg1.mp3',
-        '/games/pocketclassics/assets/bg2.mp3'
-    ];
+    const THEME_TRACKS = {
+        classic: '/games/pocketclassics/assets/bg1.mp3',
+        cyber: '/games/pocketclassics/assets/bg2.mp3',
+        india: '/games/pocketclassics/assets/bg3.mp3'
+    };
     const CLICK_SFX_URL = '/games/pocketclassics/assets/click.mp3';
 
     class AudioManager {
         constructor() {
             this.musicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
             this.sfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
-            this.currentTrackIndex = Math.floor(Math.random() * MUSIC_PLAYLIST.length);
             
             this.bgAudio = new Audio();
-            this.bgAudio.loop = false;
+            this.bgAudio.loop = true; // Loop the assigned theme track continuously
             this.bgAudio.volume = 0.4;
 
             this.sfxAudio = new Audio(CLICK_SFX_URL);
@@ -26,27 +26,37 @@
 
             this.hasInteracted = false;
             
-            // Check if we are inside a game container
-            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
-            if (isInGamePage) {
+            // Initial sync with active visual theme
+            const currentTheme = localStorage.getItem('arc_theme') || 'classic';
+            this.setThemeTrack(currentTheme, false);
+
+            // If we are inside a game container, Hub music must NEVER play
+            if (this.isInGamePage()) {
                 this.pauseMusic();
             }
             
             this.setupListeners();
         }
 
-        setupListeners() {
-            // Next track when current ends
-            this.bgAudio.addEventListener('ended', () => {
-                this.nextTrack();
-            });
+        isInGamePage() {
+            return Boolean(window.__GAME_ID__) || 
+                   Boolean(document.getElementById('gameIframe')) || 
+                   (window.location.pathname.startsWith('/games/') && window.location.pathname !== '/games/hub');
+        }
 
+        isFirstLoadSplash() {
+            const isSplash = window.location.pathname === '/games' || window.location.pathname === '/games/';
+            const hasSeenIntro = localStorage.getItem('arc_intro_seen') === 'true';
+            return isSplash && !hasSeenIntro;
+        }
+
+        setupListeners() {
             // Browser unlock on first interaction
             const unlockAudio = () => {
                 if (!this.hasInteracted) {
                     this.hasInteracted = true;
-                    const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
-                    if (this.musicEnabled && !isInGamePage) {
+                    // Don't auto-start music if on game container page or first load intro video
+                    if (this.musicEnabled && !this.isInGamePage() && !this.isFirstLoadSplash()) {
                         this.playMusic();
                     }
                     window.removeEventListener('pointerdown', unlockAudio);
@@ -56,27 +66,49 @@
             window.addEventListener('pointerdown', unlockAudio, { once: true });
             window.addEventListener('keydown', unlockAudio, { once: true });
 
-            // Global click sound on buttons
+            // Global click sound on buttons (except muted or in-game elements if disabled)
             document.addEventListener('click', (e) => {
-                if (e.target.closest('button, .arc-btn, .game-card, .filter-btn')) {
+                if (e.target.closest('button, .arc-btn, .arcade-game-card, .filter-btn, .theme-option-btn')) {
                     this.playClick();
                 }
             });
         }
 
+        setThemeTrack(themeName, autoPlay = true) {
+            const trackUrl = THEME_TRACKS[themeName] || THEME_TRACKS.classic;
+            const fullTrackUrl = window.location.origin + trackUrl;
+            
+            const isDifferent = this.bgAudio.src !== fullTrackUrl && this.bgAudio.src !== trackUrl;
+            if (isDifferent) {
+                const wasPlaying = !this.bgAudio.paused;
+                this.bgAudio.src = trackUrl;
+                this.bgAudio.loop = true;
+                if ((autoPlay || wasPlaying) && this.musicEnabled && !this.isInGamePage() && !this.isFirstLoadSplash()) {
+                    this.playMusic();
+                }
+            }
+        }
+
         playMusic(specificUrl) {
-            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
-            if (isInGamePage) {
+            // Crucial: Never play Hub music inside game containers or during first video intro
+            if (this.isInGamePage() || this.isFirstLoadSplash()) {
                 this.pauseMusic();
                 return;
             }
             if (!this.musicEnabled) return;
-            const src = specificUrl || MUSIC_PLAYLIST[this.currentTrackIndex];
-            if (this.bgAudio.src !== window.location.origin + src && this.bgAudio.src !== src) {
-                this.bgAudio.src = src;
+
+            if (specificUrl) {
+                if (this.bgAudio.src !== window.location.origin + specificUrl && this.bgAudio.src !== specificUrl) {
+                    this.bgAudio.src = specificUrl;
+                }
+            } else if (!this.bgAudio.src) {
+                const currentTheme = localStorage.getItem('arc_theme') || 'classic';
+                this.bgAudio.src = THEME_TRACKS[currentTheme] || THEME_TRACKS.classic;
             }
+
+            this.bgAudio.loop = true;
             this.bgAudio.play().catch(() => {
-                // Autoplay blocked until user interaction
+                // Autoplay policy restriction until user interaction
             });
         }
 
@@ -91,11 +123,6 @@
             } catch (e) {}
         }
 
-        nextTrack() {
-            this.currentTrackIndex = (this.currentTrackIndex + 1) % MUSIC_PLAYLIST.length;
-            this.playMusic();
-        }
-
         playClick() {
             if (!this.sfxEnabled) return;
             try {
@@ -107,12 +134,13 @@
         toggleMusic(state) {
             this.musicEnabled = typeof state === 'boolean' ? state : !this.musicEnabled;
             localStorage.setItem('arc_music_enabled', this.musicEnabled ? 'true' : 'false');
-            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
-            if (this.musicEnabled && !isInGamePage) {
+            
+            if (this.musicEnabled && !this.isInGamePage() && !this.isFirstLoadSplash()) {
                 this.playMusic();
             } else {
                 this.pauseMusic();
             }
+            
             try {
                 const iframe = document.getElementById('gameIframe');
                 if (iframe && iframe.contentWindow) {

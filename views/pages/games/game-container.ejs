@@ -34,33 +34,33 @@
         <!-- Top Game Header Bar -->
         <div class="game-viewport-card">
             <div class="game-viewport-header">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <a href="/games/hub<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>" class="arc-btn" title="Back to Arcade Hub">
+                <div class="game-viewport-header-left">
+                    <a href="/games/hub<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>" class="arc-btn" title="Back to Arcade Hub" style="padding: 6px 12px;">
                         <i class="fas fa-arrow-left"></i>
-                        <span>Arcade Hub</span>
+                        <span>Hub</span>
                     </a>
 
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <img src="<%= game.icon %>" alt="<%= game.name %>" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover;" class="protect-asset">
-                        <div>
-                            <strong style="font-size: 1.05rem; display: block; color: var(--arc-text-main); line-height: 1.1;"><%= game.name %></strong>
-                            <span style="font-size: 0.75rem; color: var(--arc-accent); font-weight: 600;"><%= game.typeLabel %></span>
+                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                        <img src="<%= game.icon %>" alt="<%= game.name %>" style="width: 30px; height: 30px; border-radius: 8px; object-fit: cover; flex-shrink: 0;" class="protect-asset">
+                        <div style="min-width: 0;">
+                            <strong style="font-size: 0.96rem; display: block; color: var(--arc-text-main); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= game.name %></strong>
+                            <span style="font-size: 0.72rem; color: var(--arc-accent); font-weight: 600;"><%= game.typeLabel %></span>
                         </div>
                     </div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <!-- Rules Modal Button (Requirement 7) -->
+                <div class="game-viewport-header-actions">
+                    <!-- Rules Modal Button -->
                     <button type="button" class="arc-btn" id="openRulesBtn" title="How to Play / Game Rules">
                         <i class="fas fa-book-open" style="color: var(--arc-accent);"></i>
-                        <span>Rules</span>
+                        <span class="btn-text-full">Rules</span>
                     </button>
 
-                    <!-- Multiplayer Button (Requirement 9) -->
+                    <!-- Multiplayer Button -->
                     <% if (game.category === '2P') { %>
                         <button type="button" class="arc-btn arc-btn-accent" id="openMultiplayerBtn" title="Multiplayer Rooms & Chat">
                             <i class="fas fa-users"></i>
-                            <span>Multiplayer</span>
+                            <span class="btn-text-full">Multiplayer</span>
                         </button>
                     <% } %>
 
@@ -127,15 +127,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             let sessionStartTime = Date.now();
 
+            function ensureHubAudioMuted() {
+                if (window.ArcadeAudio) {
+                    window.ArcadeAudio.pauseMusic();
+                }
+            }
+            ensureHubAudioMuted();
+
             // 1. Rules Modal
             const rulesModal = document.getElementById('rulesModalOverlay');
             document.getElementById('openRulesBtn')?.addEventListener('click', () => {
+                ensureHubAudioMuted();
                 rulesModal.classList.add('open');
             });
 
             // 2. Multiplayer Modal
             const mpModal = document.getElementById('multiplayerRoomOverlay');
             document.getElementById('openMultiplayerBtn')?.addEventListener('click', () => {
+                ensureHubAudioMuted();
                 mpModal.classList.add('open');
             });
 
@@ -143,7 +152,8 @@
             if (window.__GAME_ROOM__ && window.ArcadeMP) {
                 setTimeout(() => {
                     mpModal.classList.add('open');
-                    document.getElementById('mpJoinCodeInput').value = window.__GAME_ROOM__;
+                    const joinInput = document.getElementById('mpJoinCodeInput');
+                    if (joinInput) joinInput.value = window.__GAME_ROOM__;
                     window.ArcadeMP.joinPrivateRoom(window.__GAME_ROOM__);
                 }, 800);
             }
@@ -151,7 +161,13 @@
             // 3. Settings Modal
             const settingsModal = document.getElementById('settingsModalOverlay');
             document.getElementById('openSettingsBtn')?.addEventListener('click', () => {
+                ensureHubAudioMuted();
                 settingsModal.classList.add('open');
+            });
+
+            // Leaderboard button also ensures Hub music is muted
+            document.getElementById('openLeaderboardBtn')?.addEventListener('click', () => {
+                ensureHubAudioMuted();
             });
 
             // 4. In-Game Music Management
@@ -159,16 +175,19 @@
             const iframe = document.getElementById('gameIframe');
             let isGameMusicOn = localStorage.getItem('arc_music_enabled') !== 'false';
 
-            // Always pause Hub/Main Menu music while playing a game
-            if (window.ArcadeAudio) {
-                window.ArcadeAudio.pauseMusic();
-            }
+            ensureHubAudioMuted();
 
             function syncIframeMusic(enable) {
+                ensureHubAudioMuted();
                 try {
                     const idoc = iframe?.contentDocument || iframe?.contentWindow?.document;
                     if (idoc) {
                         idoc.querySelectorAll('audio').forEach(a => {
+                            // Do not accidentally trigger main menu music tracks inside iframe
+                            if (a.id === 'music-menu' || a.id.includes('menu')) {
+                                a.pause();
+                                return;
+                            }
                             if (a.hasAttribute('loop') || a.id.includes('music') || a.id.includes('bg')) {
                                 a.muted = !enable;
                                 if (enable && a.paused) {
@@ -189,26 +208,51 @@
             musicBtn?.addEventListener('click', () => {
                 isGameMusicOn = !isGameMusicOn;
                 localStorage.setItem('arc_music_enabled', isGameMusicOn ? 'true' : 'false');
-                if (window.ArcadeAudio) window.ArcadeAudio.pauseMusic();
+                ensureHubAudioMuted();
                 syncIframeMusic(isGameMusicOn);
             });
 
-            // 5. Fullscreen Toggle & Iframe Audio Sync
+            // 5. Fullscreen Toggle on Every Game
             const fsBtn = document.getElementById('fullscreenToggleBtn');
+            const fsIcon = fsBtn?.querySelector('i');
+            const gameCard = document.querySelector('.game-viewport-card');
+
+            function updateFsIcon() {
+                const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+                if (fsIcon) {
+                    fsIcon.className = isFs ? 'fas fa-compress' : 'fas fa-expand';
+                }
+            }
+            document.addEventListener('fullscreenchange', updateFsIcon);
+            document.addEventListener('webkitfullscreenchange', updateFsIcon);
+
             if (iframe) {
                 iframe.addEventListener('load', () => {
-                    if (window.ArcadeAudio) window.ArcadeAudio.pauseMusic();
+                    ensureHubAudioMuted();
                     setTimeout(() => {
                         syncIframeMusic(isGameMusicOn);
                     }, 400);
                 });
             }
+
             fsBtn?.addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    if (iframe.requestFullscreen) iframe.requestFullscreen();
-                    else if (iframe.webkitRequestFullscreen) iframe.webkitRequestFullscreen();
+                const target = gameCard || iframe || document.documentElement;
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    if (target.requestFullscreen) {
+                        target.requestFullscreen().catch(() => {
+                            if (iframe.requestFullscreen) iframe.requestFullscreen().catch(() => {});
+                        });
+                    } else if (target.webkitRequestFullscreen) {
+                        target.webkitRequestFullscreen();
+                    } else if (iframe.webkitRequestFullscreen) {
+                        iframe.webkitRequestFullscreen();
+                    }
                 } else {
-                    if (document.exitFullscreen) document.exitFullscreen();
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
                 }
             });
 
