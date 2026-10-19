@@ -2072,6 +2072,11 @@
                 <!-- ======== VARIANTS SELECTOR ======== -->
                 <% if (typeof masterFile !=='undefined' && masterFile.variants && masterFile.variants.filter(v=>
                     v.status === 'live').length > 0) { %>
+                    <% 
+                        const masterSlug = masterFile.slug || (typeof slugify === 'function' ? slugify(masterFile.name) : masterFile._id); 
+                        const isMasterActive = !isViewingVariant;
+                        const liveVariants = masterFile.variants.filter(v => v.status === 'live');
+                    %>
                     <div class="variants-panel"
                         style="background: rgba(18, 20, 28, 0.85); border: 1px solid #2a2f42; border-radius: 14px; padding: 18px 20px; margin-bottom: 25px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
@@ -2080,16 +2085,69 @@
                                 <span>Available Mod Editions &amp; Variants</span>
                             </div>
                             <span style="font-size: 0.78em; color: #a0a6b8; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px;">
-                                <%= masterFile.variants.filter(v => v.status === 'live').length + 1 %> versions available
+                                <%= liveVariants.length + 1 %> versions available
                             </span>
                         </div>
 
+                        <!-- Dropdown UI for Variant Selection -->
+                        <div class="variant-dropdown-box" style="margin-bottom: 14px; position: relative;">
+                            <label for="variantSelectMenu" style="display: block; font-size: 0.82rem; font-weight: 600; color: #c084fc; margin-bottom: 6px;">
+                                <i class="fas fa-code-branch"></i> Quick Select Mod Edition / Variant:
+                            </label>
+                            <div class="custom-variant-dropdown" id="variantDropdownWrapper" style="position: relative;">
+                                <button type="button" id="variantDropdownTrigger" 
+                                    style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #12131f; border: 1px solid <%= isMasterActive ? '#ffd700' : '#a855f7' %>; border-radius: 10px; color: #fff; cursor: pointer; font-size: 0.92rem; font-weight: 600; box-shadow: 0 4px 15px <%= isMasterActive ? 'rgba(255,215,0,0.15)' : 'rgba(168,85,247,0.2)' %>; transition: all 0.2s ease;">
+                                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        <% if (isMasterActive) { %>
+                                            <i class="fas fa-crown" style="color: var(--gold); font-size: 1.1em;"></i>
+                                            <span><strong>[Official Master]</strong> <%= masterFile.name %> (v<%= masterFile.version %>) by @<%= masterFile.uploader %></span>
+                                        <% } else { %>
+                                            <i class="fas fa-code-branch" style="color: #c084fc; font-size: 1.1em;"></i>
+                                            <span><strong>[Variant]</strong> <%= file.name %> by @<%= file.uploader %></span>
+                                        <% } %>
+                                    </div>
+                                    <i class="fas fa-chevron-down" id="variantDropdownChevron" style="color: var(--silver); transition: transform 0.2s ease; margin-left: 10px;"></i>
+                                </button>
+                                
+                                <div id="variantDropdownMenu" 
+                                    style="display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: #0e1017; border: 1px solid #3b4252; border-radius: 10px; padding: 6px; z-index: 200; box-shadow: 0 12px 35px rgba(0,0,0,0.85); max-height: 280px; overflow-y: auto;">
+                                    <!-- Option: Master -->
+                                    <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>" 
+                                        style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; text-decoration: none; color: <%= isMasterActive ? 'var(--gold)' : '#e2e8f0' %>; background: <%= isMasterActive ? 'rgba(255,215,0,0.15)' : 'transparent' %>; font-size: 0.88rem; transition: background 0.15s ease;"
+                                        onmouseover="this.style.background='rgba(255,215,0,0.12)'" 
+                                        onmouseout="this.style.background='<%= isMasterActive ? 'rgba(255,215,0,0.15)' : 'transparent' %>'">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-crown" style="color: var(--gold);"></i>
+                                            <span><strong>Master Mod</strong> (v<%= masterFile.version %>) by @<%= masterFile.uploader %></span>
+                                        </div>
+                                        <% if (isMasterActive) { %>
+                                            <span style="font-size: 0.72rem; background: var(--gold); color: #000; padding: 2px 7px; border-radius: 10px; font-weight: 700;">ACTIVE</span>
+                                        <% } %>
+                                    </a>
+
+                                    <!-- Option: Each Live Variant -->
+                                    <% liveVariants.forEach(variant => { %>
+                                        <% const isThisActive = (file._id.toString() === variant._id.toString()); %>
+                                        <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>/<%= variant._id %>" 
+                                            style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; text-decoration: none; color: <%= isThisActive ? '#c084fc' : '#e2e8f0' %>; background: <%= isThisActive ? 'rgba(168,85,247,0.18)' : 'transparent' %>; font-size: 0.88rem; transition: background 0.15s ease;"
+                                            onmouseover="this.style.background='rgba(168,85,247,0.15)'" 
+                                            onmouseout="this.style.background='<%= isThisActive ? 'rgba(168,85,247,0.18)' : 'transparent' %>'">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <i class="fas fa-code-branch" style="color: #c084fc;"></i>
+                                                <span><strong>Variant</strong> by @<%= variant.uploader %> <%= variant.architectures && variant.architectures.length > 0 ? `(${variant.architectures[0]})` : '' %></span>
+                                            </div>
+                                            <% if (isThisActive) { %>
+                                                <span style="font-size: 0.72rem; background: #a855f7; color: #fff; padding: 2px 7px; border-radius: 10px; font-weight: 700;">ACTIVE</span>
+                                            <% } %>
+                                        </a>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Selection Chips Grid -->
                         <div class="variants-chips-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
                             <!-- Button for the Main (Master) Mod -->
-                            <% 
-                                const masterSlug = masterFile.slug || (typeof slugify === 'function' ? slugify(masterFile.name) : masterFile._id); 
-                                const isMasterActive = !isViewingVariant;
-                            %>
                             <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>"
                                 class="variant-chip master-chip <%= isMasterActive ? 'active' : '' %>"
                                 style="text-decoration: none; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9em; transition: all 0.25s ease; <%= isMasterActive ? 'background: linear-gradient(135deg, #ffd700, #ffb300); color: #090a0f !important; border: 1px solid #ffd700; box-shadow: 0 4px 15px rgba(255,215,0,0.35);' : 'background: rgba(255, 215, 0, 0.08); color: #ffffff !important; border: 1px solid rgba(255, 215, 0, 0.35);' %>">
@@ -2104,30 +2162,51 @@
                             </a>
 
                             <!-- Buttons for each Live Variant -->
-                            <% masterFile.variants.forEach(variant=> { %>
-                                <% if (variant.status==='live' ) { %>
-                                    <% const isThisVariantActive = (file._id.toString() === variant._id.toString()); %>
-                                    <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>/<%= variant._id %>"
-                                        class="variant-chip custom-variant-chip <%= isThisVariantActive ? 'active' : '' %>"
-                                        style="text-decoration: none; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9em; transition: all 0.25s ease; <%= isThisVariantActive ? 'background: linear-gradient(135deg, #7c3aed, #9333ea); color: #ffffff !important; border: 1px solid #a855f7; box-shadow: 0 4px 15px rgba(168,85,247,0.35);' : 'background: rgba(168, 85, 247, 0.08); color: #ffffff !important; border: 1px solid rgba(168, 85, 247, 0.35);' %>">
-                                        <i class="fas fa-code-branch" style="font-size: 1.1em; color: <%= isThisVariantActive ? '#ffffff' : '#c084fc' %>;"></i>
-                                        <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
-                                            <span style="font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.5px; color: <%= isThisVariantActive ? '#e9d5ff' : '#c084fc' %>; font-weight: 700;">Community Variant</span>
-                                            <span><%= variant.uploader %>'s Variant</span>
-                                        </div>
-                                        <% if (variant.architectures && variant.architectures.length > 0) { %>
-                                            <span style="font-size: 0.72em; background: <%= isThisVariantActive ? 'rgba(255,255,255,0.2)' : 'rgba(168,85,247,0.2)' %>; color: <%= isThisVariantActive ? '#fff' : '#e9d5ff' %>; padding: 2px 7px; border-radius: 6px; font-family: monospace;">
-                                                <%= variant.architectures[0] %>
-                                            </span>
-                                        <% } %>
-                                        <% if (isThisVariantActive) { %>
-                                            <span style="margin-left: 4px; font-size: 0.72em; background: rgba(0,0,0,0.2); padding: 2px 7px; border-radius: 12px; font-weight: 700;">ACTIVE</span>
-                                        <% } %>
-                                    </a>
-                                <% } %>
+                            <% liveVariants.forEach(variant=> { %>
+                                <% const isThisVariantActive = (file._id.toString() === variant._id.toString()); %>
+                                <a href="/mods/<%= masterFile.category %>/<%= masterSlug %>/<%= variant._id %>"
+                                    class="variant-chip custom-variant-chip <%= isThisVariantActive ? 'active' : '' %>"
+                                    style="text-decoration: none; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; font-size: 0.9em; transition: all 0.25s ease; <%= isThisVariantActive ? 'background: linear-gradient(135deg, #7c3aed, #9333ea); color: #ffffff !important; border: 1px solid #a855f7; box-shadow: 0 4px 15px rgba(168,85,247,0.35);' : 'background: rgba(168, 85, 247, 0.08); color: #ffffff !important; border: 1px solid rgba(168, 85, 247, 0.35);' %>">
+                                    <i class="fas fa-code-branch" style="font-size: 1.1em; color: <%= isThisVariantActive ? '#ffffff' : '#c084fc' %>;"></i>
+                                    <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+                                        <span style="font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.5px; color: <%= isThisVariantActive ? '#e9d5ff' : '#c084fc' %>; font-weight: 700;">Community Variant</span>
+                                        <span><%= variant.uploader %>'s Variant</span>
+                                    </div>
+                                    <% if (variant.architectures && variant.architectures.length > 0) { %>
+                                        <span style="font-size: 0.72em; background: <%= isThisVariantActive ? 'rgba(255,255,255,0.2)' : 'rgba(168,85,247,0.2)' %>; color: <%= isThisVariantActive ? '#fff' : '#e9d5ff' %>; padding: 2px 7px; border-radius: 6px; font-family: monospace;">
+                                            <%= variant.architectures[0] %>
+                                        </span>
+                                    <% } %>
+                                    <% if (isThisVariantActive) { %>
+                                        <span style="margin-left: 4px; font-size: 0.72em; background: rgba(0,0,0,0.2); padding: 2px 7px; border-radius: 12px; font-weight: 700;">ACTIVE</span>
+                                    <% } %>
+                                </a>
                             <% }) %>
                         </div>
                     </div>
+
+                    <script>
+                        (function() {
+                            const trigger = document.getElementById('variantDropdownTrigger');
+                            const menu = document.getElementById('variantDropdownMenu');
+                            const chevron = document.getElementById('variantDropdownChevron');
+                            if (!trigger || !menu) return;
+
+                            trigger.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const isOpen = menu.style.display === 'block';
+                                menu.style.display = isOpen ? 'none' : 'block';
+                                if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                            });
+
+                            document.addEventListener('click', function(e) {
+                                if (!e.target.closest('#variantDropdownWrapper')) {
+                                    menu.style.display = 'none';
+                                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                                }
+                            });
+                        })();
+                    </script>
                 <% } %>
                         <!-- ======================================== -->
                         <div class="tabs-nav">

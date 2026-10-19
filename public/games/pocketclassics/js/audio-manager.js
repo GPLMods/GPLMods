@@ -7,8 +7,7 @@
 (function() {
     const MUSIC_PLAYLIST = [
         '/games/pocketclassics/assets/bg1.mp3',
-        '/games/pocketclassics/assets/bg2.mp3',
-        '/games/pocketclassics/assets/bg3.mp3'
+        '/games/pocketclassics/assets/bg2.mp3'
     ];
     const CLICK_SFX_URL = '/games/pocketclassics/assets/click.mp3';
 

@@ -913,13 +913,79 @@ function extractCoreModName(rawName) {
     const dividerMatch = name.split(/\s*[-:|–—]\s*/);
 
     // Strip common mod tag words
-    const stripped = name.replace(/\b(mod\s*menu|mega\s*mod|mod|apk|premium|pro|unlocked|unlimited\s*(money|gems|coins|robux)?|vip|crack|plus|\+\+|hack|cheat|edition|free)\b/gi, '').replace(/\s+/g, ' ').trim();
+    const stripped = name.replace(/\b(mod\s*menu|mega\s*mod|mod|apk|premium|pro|unlocked|unlimited\s*(money|gems|coins|robux)?|vip|crack|plus|\+\+|hack|cheat|edition|free|adfree|ad-free|no\s*ads?|revanced|vanced|extended|patched|repack|clean|portable|multilingual|multi-language|full|latest)\b/gi, '').replace(/\s+/g, ' ').trim();
 
     return {
         original: name,
         cleaned: stripped || name,
         segments: dividerMatch.map(s => s.trim()).filter(Boolean)
     };
+}
+
+// Check if two app titles are genuine variants of the same core software
+// Prevents distinct apps (e.g., "YouTube Music" vs "YouTube", "Spotify Lite" vs "Spotify") from falsely matching as variants
+function areAppsCompatibleVariants(inputName, candidateDocName) {
+    if (!inputName || !candidateDocName) return false;
+
+    const normInput = extractCoreModName(inputName);
+    const normCandidate = extractCoreModName(candidateDocName);
+
+    const inputClean = normInput.cleaned.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    const candClean = normCandidate.cleaned.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // 1. Exact match on cleaned names
+    if (inputClean === candClean && inputClean.length >= 2) return true;
+
+    // 2. Token set comparison
+    const inputTokens = inputClean.split(' ').filter(Boolean);
+    const candTokens = candClean.split(' ').filter(Boolean);
+
+    // Distinct apps that share brand names but are fundamentally separate packages/apps
+    const DISTINGUISHING_TOKENS = new Set([
+        'music', 'kids', 'studio', 'go', 'lite', 'tv', 'vr', 'wear', 'shorts', 'creator',
+        'business', 'messenger', 'dungeons', 'earth', 'drive', 'photos', 'keep', 'sheets',
+        'docs', 'slides', 'classroom', 'meet', 'duo', 'maps', 'translate', 'lens',
+        'authenticator', 'analytics', 'ads', 'news', 'podcast', 'podcasts', 'games', 'play',
+        'arcade', 'auto', 'city', 'san andreas', 'vice city', 'warzone', 'mobile', 'legends',
+        'arena', 'strike', 'origins', 'revelations', 'infinity', 'chronicles',
+        'tactics', 'revolution'
+    ]);
+
+    // Check if one has a distinguishing token that the other lacks
+    for (const token of DISTINGUISHING_TOKENS) {
+        const inInput = inputTokens.includes(token);
+        const inCand = candTokens.includes(token);
+        if (inInput !== inCand) {
+            // Asymmetric distinguishing token: e.g. "YouTube Music" vs "YouTube"
+            return false;
+        }
+    }
+
+    // 3. Segment matching: e.g. "InShot - Video Editor" vs "InShot"
+    for (const seg of normInput.segments) {
+        const cleanSeg = extractCoreModName(seg).cleaned.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (cleanSeg === candClean && cleanSeg.length >= 3) {
+            return true;
+        }
+    }
+
+    for (const seg of normCandidate.segments) {
+        const cleanSeg = extractCoreModName(seg).cleaned.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (cleanSeg === inputClean && cleanSeg.length >= 3) {
+            return true;
+        }
+    }
+
+    // 4. Token set equality without generic descriptors
+    const GENERIC_WORDS = new Set(['editor', 'video', 'maker', 'photo', 'player', 'free', 'tool', 'tools', 'app', 'apps', 'game', 'games']);
+    const nonGenericInput = inputTokens.filter(t => !GENERIC_WORDS.has(t));
+    const nonGenericCand = candTokens.filter(t => !GENERIC_WORDS.has(t));
+
+    if (nonGenericInput.length > 0 && nonGenericInput.join(' ') === nonGenericCand.join(' ')) {
+        return true;
+    }
+
+    return false;
 }
 
 function getFileUploadInfo(fileDoc) {
@@ -975,14 +1041,16 @@ async function findExistingMod(rawName, platform, currentId) {
         if (platform) {
             // 1. Same platform, prioritize non-variant master files
             let doc = await File.findOne({ ...baseFilter, ...filter, category: platform, isVariant: { $ne: true } }).sort({ createdAt: 1 }).lean();
-            if (doc) return doc;
+            if (doc && areAppsCompatibleVariants(rawName, doc.name)) return doc;
             doc = await File.findOne({ ...baseFilter, ...filter, category: platform }).sort({ createdAt: 1 }).lean();
-            if (doc) return doc;
+            if (doc && areAppsCompatibleVariants(rawName, doc.name)) return doc;
         }
         // 2. Global across all platforms
         let doc = await File.findOne({ ...baseFilter, ...filter, isVariant: { $ne: true } }).sort({ createdAt: 1 }).lean();
-        if (doc) return doc;
-        return await File.findOne({ ...baseFilter, ...filter }).sort({ createdAt: 1 }).lean();
+        if (doc && areAppsCompatibleVariants(rawName, doc.name)) return doc;
+        doc = await File.findOne({ ...baseFilter, ...filter }).sort({ createdAt: 1 }).lean();
+        if (doc && areAppsCompatibleVariants(rawName, doc.name)) return doc;
+        return null;
     }
 
     // Step 1: Exact Name or Slug
@@ -1018,35 +1086,6 @@ async function findExistingMod(rawName, platform, currentId) {
             });
             if (matched) return matched;
         }
-    }
-
-    // Step 4: Prefix match (DB starts with user input or cleaned input)
-    const prefixTarget = cleaned.length >= 3 ? escapedClean : escapedOrig;
-    matched = await runQuery({
-        name: { $regex: new RegExp(`^${prefixTarget}\\b`, 'i') }
-    });
-    if (matched) return matched;
-
-    // Step 5: Substring / Word-boundary match for distinctive brand words (>= 4 chars)
-    const candidateWords = (cleaned || original)
-        .split(/[\s\-_\.:|]+/)
-        .map(w => w.trim())
-        .filter(w => w.length >= 4 && !/^(game|editor|video|maker|photo|play|free|full|down|load|auto|tool|apps?)$/i.test(w));
-
-    for (const word of candidateWords) {
-        const escapedW = escapeRegex(word);
-        matched = await runQuery({
-            name: { $regex: new RegExp(`\\b${escapedW}\\b`, 'i') }
-        });
-        if (matched) return matched;
-    }
-
-    // Step 6: Fallback broad prefix (starts with first 3+ chars)
-    if (cleaned.length >= 3) {
-        matched = await runQuery({
-            name: { $regex: new RegExp(`^${escapeRegex(cleaned.slice(0, Math.min(cleaned.length, 8)))}`, 'i') }
-        });
-        if (matched) return matched;
     }
 
     return null;
@@ -6879,18 +6918,15 @@ app.post('/mods/:id/add-version', ensureAuthenticated, upload.single('modFile'),
             directDownloadUrl: normalizeSingleValue(formData.directDownloadUrl) || '',
             manualFileScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualFileScanUrl) || '') : '',
             manualSiteScanUrl: !isMultiPart ? (normalizeSingleValue(formData.manualSiteScanUrl) || '') : '',
-            isLatestVersion: true,
+            isLatestVersion: false,
             parentFile: parentFileId,
-            status: 'live',
+            status: 'pending',
             isVariant: Boolean(previousVersion.isVariant),
             masterFile: previousVersion.masterFile || null,
             olderVersions: combinedOlderVersions
         });
 
         await newVersion.save();
-        await File.findByIdAndUpdate(parentFileId, {
-            isLatestVersion: false
-        });
 
         // If the updated mod is a variant, update master's variants array to reference the new active version
         if (previousVersion.isVariant && previousVersion.masterFile) {
@@ -11510,10 +11546,8 @@ app.post('/upload-finalize/:fileId', ensureAuthenticated, upload.fields([
         const cleanWhatsNew = safeClean(formData.whatsNew);
         const cleanOfficialDescription = safeClean(formData.officialDescription);
         const cleanImportantNote = safeClean(formData.importantNote);
-        // Variants always require admin approval before going live!
-        const finalStatus = isVariant
-            ? (actionType === 'draft' ? 'draft' : 'pending')
-            : (actionType === 'draft' ? 'draft' : ((req.user.role === 'admin' || req.user.role === 'owner') ? 'live' : 'pending'));
+        // All mod submissions (both main files and variants) require admin approval before going live!
+        const finalStatus = actionType === 'draft' ? 'draft' : 'pending';
 
         let requiresRoot = false;
         let requiresDevMode = false;

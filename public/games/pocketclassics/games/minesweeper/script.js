@@ -1,13 +1,26 @@
 document.addEventListener('DOMContentLoaded', () => {
     const screens = document.querySelectorAll('.screen'), docEl = document.documentElement;
     let isMusicEnabled = true, isSfxEnabled = true, audioInitialized = false;
+    if (window.parent && window.parent !== window) {
+        isMusicEnabled = false;
+    }
     
     const audio = { music: new Audio('./sounds/music-background.mp3'), click: new Audio('./sounds/sfx-click.wav'), flag: new Audio('./sounds/sfx-flag.wav'), reveal: new Audio('./sounds/sfx-reveal.wav'), explode: new Audio('./sounds/sfx-explode.wav'), win: new Audio('./sounds/sfx-win.mp3'), lose: new Audio('./sounds/sfx-lose.mp3'), };
     audio.music.loop = true;
+    if (window.parent && window.parent !== window) {
+        audio.music.muted = true;
+        audio.music.volume = 0;
+    }
     
     function playSound(soundName) { if (!isSfxEnabled || !audio[soundName]) return; audio[soundName].currentTime = 0; audio[soundName].play().catch(e => {}); }
     function playOverlappingSound(soundName) { if (!isSfxEnabled) return; const clone = audio[soundName].cloneNode(); clone.play().catch(e => {}); }
-    function toggleMusic() { isMusicEnabled ? audio.music.play().catch(e => {}) : audio.music.pause(); }
+    function toggleMusic() {
+        if (window.parent && window.parent !== window) {
+            audio.music.pause();
+            return;
+        }
+        isMusicEnabled ? audio.music.play().catch(e => {}) : audio.music.pause();
+    }
     function triggerVibration(pattern) { if (navigator.vibrate && isSfxEnabled) navigator.vibrate(pattern); }
     function showScreen(screenId) { screens.forEach(s => { if(s.id !== 'pause-menu') s.classList.remove('active'); }); document.getElementById(screenId).classList.add('active'); }
     
@@ -21,20 +34,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.addEventListener('click', handleFirstInteraction, { once: true });
     
-    playButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('difficulty-view'), 50); });
-    settingsButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('settings-view'), 50); });
-    backToMainButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
-    settingsBackButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
-    homeButton.addEventListener('click', () => { 
-        playSound('click'); 
-        setTimeout(() => { 
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-            } else {
-                window.location.href = '/games/hub'; 
-            }
-        }, 150); 
-    });
+    if (playButton) playButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('difficulty-view'), 50); });
+    if (settingsButton) settingsButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('settings-view'), 50); });
+    if (backToMainButton) backToMainButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
+    if (settingsBackButton) settingsBackButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
+    if (homeButton) {
+        homeButton.addEventListener('click', () => { 
+            playSound('click'); 
+            setTimeout(() => { 
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
+                } else {
+                    window.location.href = '/games/hub'; 
+                }
+            }, 150); 
+        });
+    }
     
     difficultyButtons.forEach(button => {
         button.addEventListener('click', () => {

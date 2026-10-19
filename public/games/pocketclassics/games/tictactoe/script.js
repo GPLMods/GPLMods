@@ -39,22 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const musicSetting = localStorage.getItem('ticTacToeMusic'), sfxSetting = localStorage.getItem('ticTacToeSfx');
         isMusicOn = musicSetting === null ? true : JSON.parse(musicSetting);
         isSfxOn = sfxSetting === null ? true : JSON.parse(sfxSetting);
-        musicToggle.checked = isMusicOn; sfxToggle.checked = isSfxOn; updateMusicState();
+        if (musicToggle) musicToggle.checked = isMusicOn; 
+        if (sfxToggle) sfxToggle.checked = isSfxOn; 
+        updateMusicState();
     }
-    function updateMusicState() { if (isMusicOn) { backgroundMusic.play().catch(e => {}); } else { backgroundMusic.pause(); } }
+    function updateMusicState() { 
+        if (isMusicOn && window.parent === window && backgroundMusic) { 
+            backgroundMusic.play().catch(e => {}); 
+        } else if (backgroundMusic) { 
+            backgroundMusic.pause(); 
+        } 
+    }
     function playSound(sound) { if (isSfxOn) { sound.currentTime = 0; sound.play(); } }
 
     // --- Screen Navigation & Main Menu Buttons ---
     function showScreen(screenToShow) {
-        [mainMenu, settingsScreen, gameContainer, winPopup].forEach(screen => { screen.classList.add('hidden'); screen.classList.remove('active'); });
-        screenToShow.classList.remove('hidden');
-        if (screenToShow === mainMenu || screenToShow === settingsScreen) { screenToShow.classList.add('active'); }
+        [mainMenu, settingsScreen, gameContainer, winPopup].forEach(screen => { if (screen) { screen.classList.add('hidden'); screen.classList.remove('active'); } });
+        if (screenToShow) {
+            screenToShow.classList.remove('hidden');
+            if (screenToShow === mainMenu || screenToShow === settingsScreen) { screenToShow.classList.add('active'); }
+        }
     }
 
-    vsPlayerBtn.addEventListener('click', () => { playSound(clickSound); gameMode = 'pvp'; startGame(); });
-    vsAiBtn.addEventListener('click', () => { playSound(clickSound); aiDifficultySelection.classList.remove('hidden'); });
-    settingsBtn.addEventListener('click', () => { playSound(clickSound); showScreen(settingsScreen); });
-    backToMenuBtn.addEventListener('click', () => { playSound(clickSound); showScreen(mainMenu); });
+    vsPlayerBtn?.addEventListener('click', () => { playSound(clickSound); gameMode = 'pvp'; startGame(); });
+    vsAiBtn?.addEventListener('click', () => { playSound(clickSound); aiDifficultySelection.classList.remove('hidden'); });
+    settingsBtn?.addEventListener('click', () => { playSound(clickSound); showScreen(settingsScreen); });
+    backToMenuBtn?.addEventListener('click', () => { playSound(clickSound); showScreen(mainMenu); });
     
     let isMultiplayer = false;
     let mySymbol = 'X';
@@ -85,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    homeBtn.addEventListener('click', () => {
+    homeBtn?.addEventListener('click', () => {
         playSound(clickSound);
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');

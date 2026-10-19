@@ -39,6 +39,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSfxEnabled = true;
     let gameOverSoundPlayed = false;
 
+    if (window.parent && window.parent !== window) {
+        isMusicEnabled = false;
+        if (sounds.menuMusic) { sounds.menuMusic.muted = true; sounds.menuMusic.volume = 0; }
+        if (sounds.gameMusic) { sounds.gameMusic.muted = true; sounds.gameMusic.volume = 0; }
+    }
+
     // --- INITIALIZATION & MENU ---
     function showMainMenu() { gameContainer.classList.add('hidden'); mainMenu.classList.remove('hidden'); aiDifficultySelector.classList.add('hidden'); stopAllMusic(); playMusic('menuMusic'); }
     function initializeGame(mode) {
@@ -54,8 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SOUND SYSTEM ---
     function playSound(soundKey) { if (!isSfxEnabled) return; const sound = sounds[soundKey]; if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); } }
-    function playMusic(musicKey) { if (!isMusicEnabled) return; const music = sounds[musicKey]; if (music) { music.currentTime = 0; music.play().catch(e => {}); } }
-    function stopAllMusic() { sounds.menuMusic.pause(); sounds.gameMusic.pause(); }
+    function playMusic(musicKey) {
+        if (!isMusicEnabled || (window.parent && window.parent !== window)) return;
+        const music = sounds[musicKey];
+        if (music) { music.currentTime = 0; music.play().catch(e => {}); }
+    }
+    function stopAllMusic() { if (sounds.menuMusic) sounds.menuMusic.pause(); if (sounds.gameMusic) sounds.gameMusic.pause(); }
 
     // --- EVENT HANDLERS ---
     let isMultiplayer = false;
@@ -76,23 +86,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    playPlayerBtn.addEventListener('click', () => { playSound('uiClick'); initializeGame('pvp'); });
-    playAiBtn.addEventListener('click', () => { playSound('uiClick'); aiDifficultySelector.classList.toggle('hidden'); });
-    startAiGameBtn.addEventListener('click', () => { playSound('uiClick'); initializeGame('pvai'); });
-    backToMenuBtn.addEventListener('click', () => { playSound('uiClick'); showMainMenu(); });
-    homeBtn.addEventListener('click', () => { 
-        playSound('uiClick'); 
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-        } else {
-            window.location.href = '/games/hub'; 
-        }
-    });
-    settingsBtn.addEventListener('click', () => { playSound('uiClick'); settingsDialog.classList.remove('hidden'); });
-    closeSettingsBtn.addEventListener('click', () => { playSound('uiClick'); settingsDialog.classList.add('hidden'); });
-    settingsDialog.addEventListener('click', (event) => { if (event.target === settingsDialog) { playSound('uiClick'); settingsDialog.classList.add('hidden'); } });
-    musicToggle.addEventListener('change', () => { isMusicEnabled = musicToggle.checked; playSound('uiClick'); if (isMusicEnabled) { if (!gameContainer.classList.contains('hidden')) { playMusic('gameMusic'); } else { playMusic('menuMusic'); } } else { stopAllMusic(); } });
-    sfxToggle.addEventListener('change', () => { isSfxEnabled = sfxToggle.checked; playSound('uiClick'); });
+    if (playPlayerBtn) playPlayerBtn.addEventListener('click', () => { playSound('uiClick'); initializeGame('pvp'); });
+    if (playAiBtn) playAiBtn.addEventListener('click', () => { playSound('uiClick'); aiDifficultySelector.classList.toggle('hidden'); });
+    if (startAiGameBtn) startAiGameBtn.addEventListener('click', () => { playSound('uiClick'); initializeGame('pvai'); });
+    if (backToMenuBtn) backToMenuBtn.addEventListener('click', () => { playSound('uiClick'); showMainMenu(); });
+    if (homeBtn) {
+        homeBtn.addEventListener('click', () => { 
+            playSound('uiClick'); 
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
+            } else {
+                window.location.href = '/games/hub'; 
+            }
+        });
+    }
+    if (settingsBtn) settingsBtn.addEventListener('click', () => { playSound('uiClick'); settingsDialog.classList.remove('hidden'); });
+    if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', () => { playSound('uiClick'); settingsDialog.classList.add('hidden'); });
+    if (settingsDialog) {
+        settingsDialog.addEventListener('click', (event) => { if (event.target === settingsDialog) { playSound('uiClick'); settingsDialog.classList.add('hidden'); } });
+    }
+    if (musicToggle) {
+        musicToggle.addEventListener('change', () => {
+            isMusicEnabled = musicToggle.checked;
+            playSound('uiClick');
+            if (isMusicEnabled && (!window.parent || window.parent === window)) {
+                if (!gameContainer.classList.contains('hidden')) {
+                    playMusic('gameMusic');
+                } else {
+                    playMusic('menuMusic');
+                }
+            } else {
+                stopAllMusic();
+            }
+        });
+    }
+    if (sfxToggle) {
+        sfxToggle.addEventListener('change', () => { isSfxEnabled = sfxToggle.checked; playSound('uiClick'); });
+    }
 
     // --- RENDERING & INTERACTION ---
     function renderBoard() {

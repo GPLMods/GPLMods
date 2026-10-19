@@ -27,13 +27,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let board = [], currentPlayer, gameMode, aiDifficulty, gameOver;
     let particles = [];
     let isMusicOn = true, isSfxOn = true;
+    if (window.parent && window.parent !== window) {
+        isMusicOn = false;
+        if (bgMusic) { bgMusic.muted = true; bgMusic.volume = 0; bgMusic.pause(); }
+    }
 
     // --- UPDATED, ROBUST AUDIO LOGIC ---
     let audioContextUnlocked = false;
 
     function unlockAllAudio() {
         if (audioContextUnlocked) return;
-        bgMusic.play().catch(() => {}); bgMusic.pause();
+        if (isMusicOn && bgMusic) { bgMusic.play().catch(() => {}); bgMusic.pause(); }
         sfxSound.play().catch(() => {}); sfxSound.pause();
         winSound.play().catch(() => {}); winSound.pause();
         uiClickSound.play().catch(() => {}); uiClickSound.pause(); // NEW: Unlock the UI sound
@@ -57,24 +61,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSfxOn && winSound.src) { winSound.currentTime = 0; winSound.play().catch(e => {}); }
     }
 
-    musicToggle.addEventListener('change', (e) => {
-        isMusicOn = e.target.checked;
-        if (isMusicOn) { unlockAllAudio(); bgMusic.play().catch(e => console.error("Error playing background music:", e)); } 
-        else { bgMusic.pause(); }
-    });
+    if (musicToggle) {
+        musicToggle.addEventListener('change', (e) => {
+            isMusicOn = e.target.checked;
+            if (isMusicOn) { unlockAllAudio(); bgMusic.play().catch(e => console.error("Error playing background music:", e)); } 
+            else { bgMusic.pause(); }
+        });
+    }
 
-    sfxToggle.addEventListener('change', (e) => isSfxOn = e.target.checked);
+    if (sfxToggle) {
+        sfxToggle.addEventListener('change', (e) => isSfxOn = e.target.checked);
+    }
     
     // UPDATED: This listener now calls the new UI click sound function
     document.addEventListener('click', (e) => {
         if (e.target.matches('button')) playUiClickSound();
     });
     
-    // --- Menu & Navigation Logic (unchanged from your version) ---
-    const setupButton = (id, callback) => document.getElementById(id).addEventListener('click', callback);
+    // --- Menu & Navigation Logic ---
+    const setupButton = (id, callback) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', callback);
+    };
     setupButton('pvp-btn', () => { gameMode = 'pvp'; startGame(); });
     setupButton('pvai-btn', () => { mainMenu.classList.add('hidden'); aiDifficultyMenu.classList.remove('hidden'); });
-    aiDifficultyMenu.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.difficulty) { gameMode = 'pvai'; aiDifficulty = e.target.dataset.difficulty; startGame(); } });
+    if (aiDifficultyMenu) {
+        aiDifficultyMenu.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.difficulty) { gameMode = 'pvai'; aiDifficulty = e.target.dataset.difficulty; startGame(); } });
+    }
     setupButton('back-to-main-btn', () => { aiDifficultyMenu.classList.add('hidden'); mainMenu.classList.remove('hidden'); });
     setupButton('open-settings-btn', () => { menuOverlay.classList.add('invisible'); settingsMenu.classList.remove('invisible'); });
     setupButton('close-settings-btn', () => { settingsMenu.classList.add('invisible'); menuOverlay.classList.remove('invisible'); });

@@ -162,9 +162,25 @@
                 if (icon) icon.className = state ? 'fas fa-music' : 'fas fa-volume-mute';
             });
 
-            // 5. Fullscreen Toggle
+            // 5. Fullscreen Toggle & Iframe Audio Conflict Prevention
             const fsBtn = document.getElementById('fullscreenToggleBtn');
             const iframe = document.getElementById('gameIframe');
+            if (iframe) {
+                iframe.addEventListener('load', () => {
+                    try {
+                        const idoc = iframe.contentDocument || iframe.contentWindow?.document;
+                        if (idoc) {
+                            idoc.querySelectorAll('audio').forEach(a => {
+                                if (a.hasAttribute('loop') || a.id.includes('music') || a.id.includes('bg')) {
+                                    a.muted = true;
+                                    a.volume = 0;
+                                    a.pause();
+                                }
+                            });
+                        }
+                    } catch (e) {}
+                });
+            }
             fsBtn?.addEventListener('click', () => {
                 if (!document.fullscreenElement) {
                     if (iframe.requestFullscreen) iframe.requestFullscreen();

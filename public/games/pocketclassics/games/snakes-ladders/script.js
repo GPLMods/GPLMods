@@ -33,26 +33,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateMusicPlayback() {
         const isMainMenuVisible = !dom.mainMenu.classList.contains('hidden');
         const isGameVisible = !dom.gameContainer.classList.contains('hidden');
-        if (state.isMusicOn && (isMainMenuVisible || isGameVisible)) {
+        if (state.isMusicOn && window.parent === window && (isMainMenuVisible || isGameVisible) && audio.bgMusic) {
             audio.bgMusic.play().catch(e => {});
-        } else {
+        } else if (audio.bgMusic) {
             audio.bgMusic.pause();
         }
     }
-    function loadSettings() { state.isMusicOn = localStorage.getItem('snakeLadderMusic') !== 'false'; state.isSfxOn = localStorage.getItem('snakeLadderSfx') !== 'false'; dom.musicToggle.checked = state.isMusicOn; dom.sfxToggle.checked = state.isSfxOn; }
+    function loadSettings() { 
+        state.isMusicOn = localStorage.getItem('snakeLadderMusic') !== 'false'; 
+        state.isSfxOn = localStorage.getItem('snakeLadderSfx') !== 'false'; 
+        if (dom.musicToggle) dom.musicToggle.checked = state.isMusicOn; 
+        if (dom.sfxToggle) dom.sfxToggle.checked = state.isSfxOn; 
+    }
 
     // --- EVENT LISTENERS ---
     function goToMainMenu() { playSoundEffect(audio.click); dom.gameContainer.classList.add('hidden'); dom.winPopup.classList.add('hidden'); dom.mainMenu.classList.remove('hidden'); updateMusicPlayback(); if (state.confettiAnimationId) stopConfetti(); }
-    dom.openSettingsBtn.addEventListener('click', () => { playSoundEffect(audio.click); dom.settingsModal.classList.remove('hidden'); });
-    dom.closeSettingsBtn.addEventListener('click', () => { playSoundEffect(audio.click); dom.settingsModal.classList.add('hidden'); });
-    dom.settingsModal.addEventListener('click', (e) => { if (e.target === dom.settingsModal) dom.settingsModal.classList.add('hidden'); });
-    dom.musicToggle.addEventListener('change', () => { state.isMusicOn = dom.musicToggle.checked; localStorage.setItem('snakeLadderMusic', state.isMusicOn); updateMusicPlayback(); });
-    dom.sfxToggle.addEventListener('change', () => { state.isSfxOn = dom.sfxToggle.checked; localStorage.setItem('snakeLadderSfx', state.isSfxOn); });
+    dom.openSettingsBtn?.addEventListener('click', () => { playSoundEffect(audio.click); dom.settingsModal.classList.remove('hidden'); });
+    dom.closeSettingsBtn?.addEventListener('click', () => { playSoundEffect(audio.click); dom.settingsModal.classList.add('hidden'); });
+    dom.settingsModal?.addEventListener('click', (e) => { if (e.target === dom.settingsModal) dom.settingsModal.classList.add('hidden'); });
+    dom.musicToggle?.addEventListener('change', () => { state.isMusicOn = dom.musicToggle.checked; localStorage.setItem('snakeLadderMusic', state.isMusicOn); updateMusicPlayback(); });
+    dom.sfxToggle?.addEventListener('change', () => { state.isSfxOn = dom.sfxToggle.checked; localStorage.setItem('snakeLadderSfx', state.isSfxOn); });
     function updateActiveButton(buttonGroup, clickedButton) { Array.from(buttonGroup.children).forEach(button => button.classList.remove('active')); clickedButton.classList.add('active'); }
-    dom.gameModeBtns.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { playSoundEffect(audio.click); state.gameMode = e.target.dataset.mode; updateActiveButton(dom.gameModeBtns, e.target); } });
-    dom.playerCountBtns.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { playSoundEffect(audio.click); state.numPlayers = parseInt(e.target.dataset.count, 10); updateActiveButton(dom.playerCountBtns, e.target); } });
-    dom.startGameBtn.addEventListener('click', () => { playSoundEffect(audio.click); startGame(); });
-    dom.homeBtn.addEventListener('click', () => { 
+    dom.gameModeBtns?.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { playSoundEffect(audio.click); state.gameMode = e.target.dataset.mode; updateActiveButton(dom.gameModeBtns, e.target); } });
+    dom.playerCountBtns?.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON') { playSoundEffect(audio.click); state.numPlayers = parseInt(e.target.dataset.count, 10); updateActiveButton(dom.playerCountBtns, e.target); } });
+    dom.startGameBtn?.addEventListener('click', () => { playSoundEffect(audio.click); startGame(); });
+    dom.homeBtn?.addEventListener('click', () => { 
         playSoundEffect(audio.click); 
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');

@@ -50,8 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- Sound & UI Functions ---
     const playSound = (sound) => { if (gameSettings.sfx) { sound.currentTime = 0; sound.play(); } };
-    const toggleMusic = () => { if (gameSettings.music) { sounds.music.volume = 0.3; sounds.music.play().catch(e => {}); } else { sounds.music.pause(); } };
-    const showScreen = (screenName) => { Object.values(screens).forEach(screen => screen.classList.remove('active')); if (screens[screenName]) { screens[screenName].classList.add('active'); } };
+    const toggleMusic = () => { if (gameSettings.music && window.parent === window && sounds.music) { sounds.music.volume = 0.3; sounds.music.play().catch(e => {}); } else if (sounds.music) { sounds.music.pause(); } };
+    const showScreen = (screenName) => { Object.values(screens).forEach(screen => { if (screen) screen.classList.remove('active'); }); if (screens[screenName]) { screens[screenName].classList.add('active'); } };
     const resetToMainMenu = () => { clearInterval(gameInterval); gameUi.style.opacity = 0; showScreen('mainMenu'); toggleMusic(); };
 
     // --- Game Logic ---
@@ -91,17 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !isPaused && gameInterval) togglePause(); const keyMap = { ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down', ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right' }; changeDirection(keyMap[e.key]); });
     canvas.addEventListener('touchstart', (e) => { e.preventDefault(); touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: false });
     canvas.addEventListener('touchend', (e) => { e.preventDefault(); if (!touchStartX || !touchStartY) return; const touchEndX = e.changedTouches[0].clientX; const touchEndY = e.changedTouches[0].clientY; const diffX = touchEndX - touchStartX, diffY = touchEndY - touchStartY; if (Math.abs(diffX) > Math.abs(diffY)) { changeDirection(diffX > 0 ? 'right' : 'left'); } else { changeDirection(diffY > 0 ? 'down' : 'up'); } touchStartX = 0; touchStartY = 0; }, { passive: false });
-    playBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('difficulty'); });
-    settingsBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('settings'); });
-    backFromSettingsBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('mainMenu'); });
-    backFromDifficultyBtn.addEventListener('click', () => { playSound(sounds.click); showScreen('mainMenu'); });
-    startGameBtn.addEventListener('click', () => { playSound(sounds.click); initGame(); });
-    pauseBtn.addEventListener('click', () => { playSound(sounds.click); togglePause(); });
-    resumeBtn.addEventListener('click', () => { playSound(sounds.click); togglePause(); });
-    menuFromPauseBtn.addEventListener('click', () => { playSound(sounds.click); resetToMainMenu(); });
-    restartBtn.addEventListener('click', () => { playSound(sounds.click); initGame(); });
-    menuFromGameoverBtn.addEventListener('click', () => { playSound(sounds.click); resetToMainMenu(); });
-    homeBtn.addEventListener('click', () => { 
+    playBtn?.addEventListener('click', () => { playSound(sounds.click); showScreen('difficulty'); });
+    settingsBtn?.addEventListener('click', () => { playSound(sounds.click); showScreen('settings'); });
+    backFromSettingsBtn?.addEventListener('click', () => { playSound(sounds.click); showScreen('mainMenu'); });
+    backFromDifficultyBtn?.addEventListener('click', () => { playSound(sounds.click); showScreen('mainMenu'); });
+    startGameBtn?.addEventListener('click', () => { playSound(sounds.click); initGame(); });
+    pauseBtn?.addEventListener('click', () => { playSound(sounds.click); togglePause(); });
+    resumeBtn?.addEventListener('click', () => { playSound(sounds.click); togglePause(); });
+    menuFromPauseBtn?.addEventListener('click', () => { playSound(sounds.click); resetToMainMenu(); });
+    restartBtn?.addEventListener('click', () => { playSound(sounds.click); initGame(); });
+    menuFromGameoverBtn?.addEventListener('click', () => { playSound(sounds.click); resetToMainMenu(); });
+    homeBtn?.addEventListener('click', () => { 
         playSound(sounds.click); 
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');

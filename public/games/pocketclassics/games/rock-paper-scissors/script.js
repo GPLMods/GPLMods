@@ -92,19 +92,19 @@ playBtn.addEventListener('click', () => {
         toggleMusic();
     }
 });
-settingsBtn.addEventListener('click', () => {
+settingsBtn?.addEventListener('click', () => {
     playSfx(clickSound);
     showScreen(settingsScreen);
 });
-backToMenuBtn.addEventListener('click', () => {
+backToMenuBtn?.addEventListener('click', () => {
     playSfx(clickSound);
     showScreen(mainMenu);
 });
-backFromSettingsBtn.addEventListener('click', () => {
+backFromSettingsBtn?.addEventListener('click', () => {
     playSfx(clickSound);
     showScreen(mainMenu);
 });
-homeBtn.addEventListener('click', () => {
+homeBtn?.addEventListener('click', () => {
     playSfx(clickSound);
     if (window.parent && window.parent !== window) {
         window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');

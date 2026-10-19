@@ -60,3 +60,79 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        function initSettingsModal() {
+            const musicToggle = document.getElementById('settingsMusicToggle');
+            const sfxToggle = document.getElementById('settingsSfxToggle');
+            const overlay = document.getElementById('settingsModalOverlay');
+
+            function syncSettingsUI() {
+                if (window.ArcadeAudio) {
+                    if (musicToggle) musicToggle.checked = window.ArcadeAudio.musicEnabled !== false;
+                    if (sfxToggle) sfxToggle.checked = window.ArcadeAudio.sfxEnabled !== false;
+                }
+                const currentTheme = document.body.getAttribute('data-theme') || localStorage.getItem('arc_theme') || 'classic';
+                document.querySelectorAll('.theme-option-btn').forEach(btn => {
+                    if (btn.dataset.theme === currentTheme) {
+                        btn.style.borderColor = 'var(--arc-accent)';
+                        btn.style.boxShadow = '0 0 12px rgba(255, 215, 0, 0.4)';
+                    } else {
+                        btn.style.borderColor = 'var(--arc-border)';
+                        btn.style.boxShadow = 'none';
+                    }
+                });
+            }
+
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        if (overlay && overlay.classList.contains('open')) {
+                            syncSettingsUI();
+                        }
+                    }
+                });
+            });
+            if (overlay) observer.observe(overlay, { attributes: true });
+
+            if (musicToggle) {
+                musicToggle.addEventListener('change', (e) => {
+                    const newState = e.target.checked;
+                    if (window.ArcadeAudio) {
+                        window.ArcadeAudio.toggleMusic(newState);
+                    }
+                    const musicHeaderIcon = document.querySelector('#musicToggleBtn i, #gameMusicToggleBtn i');
+                    if (musicHeaderIcon) musicHeaderIcon.className = newState ? 'fas fa-music' : 'fas fa-volume-mute';
+                });
+            }
+
+            if (sfxToggle) {
+                sfxToggle.addEventListener('change', (e) => {
+                    const newState = e.target.checked;
+                    if (window.ArcadeAudio) {
+                        window.ArcadeAudio.toggleSfx(newState);
+                    }
+                });
+            }
+
+            document.querySelectorAll('.theme-option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const theme = this.dataset.theme;
+                    if (window.ArcadeTheme) {
+                        window.ArcadeTheme.setTheme(theme);
+                    }
+                    syncSettingsUI();
+                });
+            });
+
+            syncSettingsUI();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSettingsModal);
+        } else {
+            initSettingsModal();
+        }
+    })();
+</script>

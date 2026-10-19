@@ -3,48 +3,25 @@
 <% if (!(typeof hideAdultContent !== 'undefined' && hideAdultContent && file.ageRating === '18+')) { %>
     <% 
         const isModVariant = Boolean(file.isVariant);
-        const isModMaster = !isModVariant && Boolean(file.variants && file.variants.length > 0);
-        let cardColorClass = '';
-        if (isModVariant) cardColorClass = 'mod-card-variant';
-        else if (isModMaster) cardColorClass = 'mod-card-master';
+        const hasLiveVariants = (file.liveVariantsCount !== undefined && file.liveVariantsCount > 0) || 
+            Boolean(file.hasLiveVariants) ||
+            (Array.isArray(file.variants) && file.variants.length > 0 && file.variants.some(v => typeof v === 'object' && v !== null && v.status === 'live'));
+        const isModMaster = !isModVariant && hasLiveVariants;
     %>
     <!-- The Card is a DIV, not an 'A' tag -->
-    <div class="mod-card <%= cardColorClass %>" data-card-type="<%= isModVariant ? 'variant' : (isModMaster ? 'master' : 'standard') %>">
+    <div class="mod-card">
         
-        <!-- Top Badges Row: Cleanly separates left status pills and right version tag -->
+        <!-- Top Badges Row: Original design with Certification on left and Version on right -->
         <div class="card-top-badges">
-            <div class="badges-left">
-                <% if (isModVariant) { %>
-                    <div class="mod-edition-pill variant-pill" title="Variant by @<%= file.uploader %>">
-                        <i class="fas fa-code-branch"></i>
-                        <span class="pill-label">Variant</span>
-                    </div>
-                <% } else if (isModMaster) { %>
-                    <div class="mod-edition-pill master-pill" title="Master Edition with <%= file.variants.length %> alternative variant<%= file.variants.length > 1 ? 's' : '' %>">
-                        <i class="fas fa-crown"></i>
-                        <span class="pill-label">Master</span>
-                        <span class="pill-count">(<%= file.variants.length %>)</span>
-                    </div>
-                <% } %>
-
-                <% if (file.certification === 'certified') { %>
-                    <div class="app-feature-tag certified" title="Certified Mod">
-                        <i class="fas fa-check-circle"></i>
-                        <span class="tag-label">Certified</span>
-                    </div>
-                <% } else if (file.certification === 'community-tested') { %>
-                    <div class="app-feature-tag community-tested" title="Community Tested">
-                        <i class="fas fa-users-cog"></i>
-                        <span class="tag-label">Tested</span>
-                    </div>
-                <% } %>
-            </div>
-
-            <div class="badges-right">
-                <% if (file.version) { %>
-                    <div class="mod-type-tag" title="Version <%= file.version %>"><%= file.version %></div>
-                <% } %>
-            </div>
+            <% if (file.certification === 'certified') { %>
+                <div class="app-feature-tag"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
+            <% } else if (file.certification === 'community-tested') { %>
+                <div class="app-feature-tag" style="background-color: var(--silver); color: var(--black);">Community Tested</div>
+            <% } %>
+            
+            <% if (file.version) { %>
+                <div class="mod-type-tag"><%= file.version %></div>
+            <% } %>
         </div>
         
         <!-- Image Container Logic (Prevents Cropping & Layout Shifts) -->

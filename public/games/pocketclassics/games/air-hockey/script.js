@@ -33,8 +33,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const winSound = new Audio('sounds/win.wav');
     const clickSound = new Audio('sounds/click.wav');
     let isMusicEnabled = true, areSfxEnabled = true;
+
+    if (window.parent && window.parent !== window) {
+        isMusicEnabled = false;
+        bgMusic.muted = true;
+        bgMusic.volume = 0;
+    }
+
     function playSound(sound) { if (areSfxEnabled) { sound.currentTime = 0; sound.play().catch(e => {}); } }
-    function playMusic() { if (isMusicEnabled && bgMusic.paused) { bgMusic.loop = true; bgMusic.volume = 0.5; bgMusic.play().catch(e => {}); } }
+    function playMusic() {
+        if (!isMusicEnabled || (window.parent && window.parent !== window)) return;
+        if (bgMusic.paused) { bgMusic.loop = true; bgMusic.volume = 0.5; bgMusic.play().catch(e => {}); }
+    }
     function stopMusic() { bgMusic.pause(); bgMusic.currentTime = 0; }
     
     // --- Game State & Physics Constants ---
@@ -56,19 +66,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (screen === 'settings') settingsMenu.classList.add('active');
         if (screen === 'game') gameContainer.style.display = 'block';
     }
-    pvpButton.addEventListener('click', () => { playSound(clickSound); gameMode = 'pvp'; startGame(); });
-    pvaButton.addEventListener('click', () => { playSound(clickSound); gameMode = 'pva'; showScreen('difficulty'); });
-    homeButton.addEventListener('click', () => { 
-        playSound(clickSound); 
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-        } else {
-            window.location.href = '/games/hub'; 
-        }
-    });
-    difficultyMenu.querySelectorAll('button[data-difficulty]').forEach(button => { button.addEventListener('click', () => { playSound(clickSound); difficulty = button.dataset.difficulty; startGame(); }); });
-    difficultyBackButton.addEventListener('click', () => { playSound(clickSound); showScreen('main'); });
-    settingsBackButton.addEventListener('click', () => { playSound(clickSound); showScreen('main'); });
+    if (pvpButton) pvpButton.addEventListener('click', () => { playSound(clickSound); gameMode = 'pvp'; startGame(); });
+    if (pvaButton) pvaButton.addEventListener('click', () => { playSound(clickSound); gameMode = 'pva'; showScreen('difficulty'); });
+    if (settingsButton) settingsButton.addEventListener('click', () => { playSound(clickSound); showScreen('settings'); });
+    if (homeButton) {
+        homeButton.addEventListener('click', () => { 
+            playSound(clickSound); 
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
+            } else {
+                window.location.href = '/games/hub'; 
+            }
+        });
+    }
+    if (difficultyMenu) {
+        difficultyMenu.querySelectorAll('button[data-difficulty]').forEach(button => { button.addEventListener('click', () => { playSound(clickSound); difficulty = button.dataset.difficulty; startGame(); }); });
+    }
+    if (difficultyBackButton) difficultyBackButton.addEventListener('click', () => { playSound(clickSound); showScreen('main'); });
+    if (settingsBackButton) settingsBackButton.addEventListener('click', () => { playSound(clickSound); showScreen('main'); });
     playAgainButton.addEventListener('click', () => { playSound(clickSound); winPopup.style.display = 'none'; stopParticleAnimation(); showScreen('main'); });
     backToMenuIngameButton.addEventListener('click', () => { playSound(clickSound); if(animationId) cancelAnimationFrame(animationId); animationId = null; showScreen('main'); });
     musicToggle.addEventListener('change', (e) => { isMusicEnabled = e.target.checked; localStorage.setItem('musicEnabled', isMusicEnabled); isMusicEnabled ? playMusic() : stopMusic(); });

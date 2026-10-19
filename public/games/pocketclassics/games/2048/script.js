@@ -39,27 +39,45 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSfxOn = false;
     let userHasInteracted = false;
 
+    if (window.parent && window.parent !== window) {
+        if (bgMusic) { bgMusic.muted = true; bgMusic.volume = 0; bgMusic.pause(); }
+    }
+
     // --- Settings & Sound Logic ---
-    function loadSettings() { isMusicOn = localStorage.getItem('isMusicOn') !== 'false'; isSfxOn = localStorage.getItem('isSfxOn') !== 'false'; musicToggle.checked = isMusicOn; sfxToggle.checked = isSfxOn; }
+    function loadSettings() {
+        if (window.parent && window.parent !== window) {
+            isMusicOn = false;
+        } else {
+            isMusicOn = localStorage.getItem('isMusicOn') !== 'false';
+        }
+        isSfxOn = localStorage.getItem('isSfxOn') !== 'false';
+        if (musicToggle) musicToggle.checked = isMusicOn;
+        if (sfxToggle) sfxToggle.checked = isSfxOn;
+    }
     function saveSettings() { localStorage.setItem('isMusicOn', isMusicOn); localStorage.setItem('isSfxOn', isSfxOn); }
-    function playBgMusic() { if (isMusicOn && userHasInteracted) bgMusic.play().catch(e => {}); }
-    function pauseBgMusic() { bgMusic.pause(); }
-    function playSfx(sound) { if (isSfxOn) { sound.currentTime = 0; sound.play(); } }
+    function playBgMusic() {
+        if (window.parent && window.parent !== window) return;
+        if (isMusicOn && userHasInteracted && bgMusic) bgMusic.play().catch(e => {});
+    }
+    function pauseBgMusic() { if (bgMusic) bgMusic.pause(); }
+    function playSfx(sound) { if (isSfxOn && sound) { sound.currentTime = 0; sound.play().catch(e => {}); } }
     function playUiClick() { playSfx(uiClickSound); }
     function handleFirstInteraction() { if (!userHasInteracted) { userHasInteracted = true; playBgMusic(); } }
 
     // --- Menu Navigation ---
-    playBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); mainMenu.classList.add('hidden'); difficultyMenu.classList.remove('hidden'); });
-    settingsBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); settingsModal.classList.remove('hidden'); });
-    homeBtn.addEventListener('click', () => { 
-        handleFirstInteraction(); 
-        playUiClick(); 
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-        } else {
-            window.location.href = '/games/hub'; 
-        }
-    });
+    if (playBtn) playBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); mainMenu.classList.add('hidden'); difficultyMenu.classList.remove('hidden'); });
+    if (settingsBtn) settingsBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); settingsModal.classList.remove('hidden'); });
+    if (homeBtn) {
+        homeBtn.addEventListener('click', () => { 
+            handleFirstInteraction(); 
+            playUiClick(); 
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
+            } else {
+                window.location.href = '/games/hub'; 
+            }
+        });
+    }
     backToMainBtn.addEventListener('click', () => { playUiClick(); difficultyMenu.classList.add('hidden'); mainMenu.classList.remove('hidden'); });
     closeSettingsBtn.addEventListener('click', () => { playUiClick(); settingsModal.classList.add('hidden'); });
     musicToggle.addEventListener('change', (e) => { isMusicOn = e.target.checked; isMusicOn ? playBgMusic() : pauseBgMusic(); saveSettings(); });
