@@ -47,6 +47,27 @@
                             <span style="font-size: 0.72rem; color: var(--arc-accent); font-weight: 600;"><%= game.typeLabel %></span>
                         </div>
                     </div>
+
+                    <!-- Game Switcher Dropdown (Requirement: Game filter dropdown in each game) -->
+                    <div class="game-select-dropdown-wrap" style="margin-left: 4px;">
+                        <select id="gameSwitchSelect" class="arc-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--arc-border); border-radius: 8px; color: var(--arc-text-main); font-size: 0.8rem; padding: 5px 8px; font-weight: 600; cursor: pointer; outline: none;" onchange="if(this.value) window.location.href='/games/' + this.value + '<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>'">
+                            <% if (typeof catalog !== 'undefined' && catalog) { %>
+                                <% Object.values(catalog).forEach(g => { %>
+                                    <option value="<%= g.id %>" <%= g.id === game.id ? 'selected' : '' %>>
+                                        <%= g.name %> (<%= g.typeLabel %>)
+                                    </option>
+                                <% }); %>
+                            <% } else { %>
+                                <option value="<%= game.id %>"><%= game.name %></option>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <!-- PC Mode Indicator (Hidden on Touch/Mobile) -->
+                    <div id="pcControlsBadge" class="pc-controls-badge" style="display: none; align-items: center; gap: 5px; font-size: 0.74rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 8px;" title="PC Mode Optimized: WASD & Arrow Keys Enabled">
+                        <i class="fas fa-keyboard"></i>
+                        <span class="btn-text-full">PC Keyboard</span>
+                    </div>
                 </div>
 
                 <div class="game-viewport-header-actions">
@@ -294,6 +315,54 @@
                         }, '*');
                     }
                 };
+            }
+
+            // 8. PC Optimization & Mobile Controls Hiding (Requirement: Optimise each game for PC & hide mobile controls on PC)
+            const isPc = !('ontouchstart' in window || navigator.maxTouchPoints > 0) || window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+            if (isPc) {
+                document.body.classList.add('is-pc');
+                const pcBadge = document.getElementById('pcControlsBadge');
+                if (pcBadge) pcBadge.style.display = 'inline-flex';
+
+                // Prevent arrow keys and spacebar from scrolling browser window during gameplay
+                window.addEventListener('keydown', (e) => {
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                        const targetTag = e.target?.tagName;
+                        if (targetTag && ['INPUT', 'TEXTAREA', 'SELECT'].includes(targetTag)) return;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+
+                // Inject CSS into game iframe to hide on-screen mobile/touch controls on PC
+                function hideMobileControlsInIframe() {
+                    try {
+                        const idoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+                        if (idoc && !idoc.getElementById('pc-optimization-css')) {
+                            const styleEl = idoc.createElement('style');
+                            styleEl.id = 'pc-optimization-css';
+                            styleEl.textContent = `
+                                /* PC Optimization: Hide on-screen mobile / touch buttons and d-pads on desktop */
+                                .mobile-controls, .touch-controls, .virtual-dpad, #touch-controls,
+                                .touch-only, .mobile-only, .mobile-touch-bar, .dpad-container,
+                                .virtual-controls, [data-mobile-control="true"], .on-screen-controls {
+                                    display: none !important;
+                                    visibility: hidden !important;
+                                    pointer-events: none !important;
+                                }
+                                canvas, #gameCanvas, .game-board {
+                                    image-rendering: -webkit-optimize-contrast;
+                                    image-rendering: crisp-edges;
+                                }
+                            `;
+                            idoc.head.appendChild(styleEl);
+                        }
+                    } catch (_) {}
+                }
+
+                if (iframe) {
+                    iframe.addEventListener('load', hideMobileControlsInIframe);
+                    setTimeout(hideMobileControlsInIframe, 600);
+                }
             }
         });
     </script>

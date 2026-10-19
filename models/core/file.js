@@ -252,6 +252,15 @@ const FileSchema = new Schema({
         type: String,
         enum: ['standard', 'featured', 'spotlight'],
         default: 'standard'
+    },
+    googleIndexedAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
+    googleIndexStatus: {
+        type: String,
+        default: null
     }
 }, {
     timestamps: true

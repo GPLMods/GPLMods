@@ -199,6 +199,22 @@ router.get('/', (req, res) => {
     });
 });
 
+// Purge any legacy guest data from the scoreboard upon module load
+GameScore.deleteMany({
+    $or: [
+        { user: null },
+        { user: { $exists: false } },
+        { username: /^guest/i },
+        { username: 'Guest' }
+    ]
+}).then(r => {
+    if (r && r.deletedCount > 0) {
+        console.log(`[Arcade DB] Cleared ${r.deletedCount} guest records from scoreboards.`);
+    }
+}).catch(err => {
+    console.warn('[Arcade DB] Guest cleanup notice:', err.message);
+});
+
 // 2. Arcade Hub (Main Menu)
 router.get('/hub', async (req, res) => {
     try {
@@ -209,8 +225,11 @@ router.get('/hub', async (req, res) => {
             clubData = await Club.findById(clubId).select('name icon isVerified vanityUrl');
         }
 
-        // Fetch top global leaderboard snapshot
-        const topScores = await GameScore.find({})
+        // Fetch top global leaderboard snapshot (strictly registered users, zero guest data)
+        const topScores = await GameScore.find({
+            user: { $ne: null },
+            username: { $not: /^guest/i }
+        })
             .sort({ score: -1 })
             .limit(10)
             .lean();
@@ -236,7 +255,13 @@ router.get('/hub', async (req, res) => {
 router.get('/api/leaderboard', async (req, res) => {
     try {
         const { gameId, metric, filter, country } = req.query;
-        const query = {};
+
+        // Strictly exclude guest data from scoreboards
+        const query = {
+            user: { $ne: null },
+            username: { $not: /^guest/i }
+        };
+
         if (gameId && gameId !== 'all') {
             query.gameId = gameId;
         }
@@ -257,7 +282,8 @@ router.get('/api/leaderboard', async (req, res) => {
             success: true,
             leaderboard,
             metric: metric || 'score',
-            filter: filter || 'global'
+            filter: filter || 'global',
+            gameId: gameId || 'all'
         });
     } catch (err) {
         console.error('[Games] Leaderboard error:', err);
@@ -274,11 +300,18 @@ router.post('/api/record-session', async (req, res) => {
         }
 
         const user = req.user || null;
-        const username = user ? user.username : (req.body.username || 'Guest');
-        const country = user ? (user.country || 'Global') : (req.body.country || 'Global');
-        const avatar = user ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage || '/images/default-avatar.png') : '/images/default-avatar.png';
 
-        const filterQuery = user ? { user: user._id, gameId } : { username, gameId, user: null };
+        // REQUIREMENT: We do NOT store any guest data in the database
+        if (!user) {
+            return res.json({ success: true, message: 'Guest session ignored (guest data is not stored).' });
+        }
+
+        const username = user.username;
+        const country = user.country || 'Global';
+        const avatar = user.cardAvatarUrl || user.avatarUrl || user.profileImage || '/images/default-avatar.png';
+
+        // Playtime is tracked strictly per-game ({ user: user._id, gameId }), never combined across games
+        const filterQuery = { user: user._id, gameId };
 
         const updateData = {
             $set: {

@@ -237,7 +237,29 @@ function generateDynamicSeoTags(mod, baseUrl = 'https://gplmods.webredirect.org'
         baseKeywords.push(...mod.tags);
     }
 
-    const keywords = Array.from(new Set(baseKeywords.filter(Boolean))).join(', ');
+    // Expand tags and terms with uppercase, lowercase, spaces, and no-space variations
+    let expandTagVariations = null;
+    let FULL_FORM_GPL_MODS = [];
+    try {
+        const dk = require('./dynamicKeywords');
+        expandTagVariations = dk.expandTagVariations;
+        FULL_FORM_GPL_MODS = dk.FULL_FORM_GPL_MODS || [];
+    } catch (_) {}
+
+    const expandedKeywords = new Set();
+    baseKeywords.forEach(k => {
+        if (expandTagVariations) {
+            expandTagVariations(k).forEach(v => expandedKeywords.add(v));
+        } else {
+            expandedKeywords.add(k);
+        }
+    });
+
+    if (FULL_FORM_GPL_MODS && Array.isArray(FULL_FORM_GPL_MODS)) {
+        FULL_FORM_GPL_MODS.forEach(b => expandedKeywords.add(b));
+    }
+
+    const keywords = Array.from(expandedKeywords).slice(0, 50).join(', ');
     const modSlug = mod.slug || mod._id;
     const canonicalUrl = `${baseUrl}/mods/${encodeURIComponent(mod.category || 'general')}/${encodeURIComponent(modSlug)}`;
 
@@ -278,6 +300,10 @@ function generateDynamicSeoTags(mod, baseUrl = 'https://gplmods.webredirect.org'
     };
 }
 
+// In-memory cache for submitted static page URLs with 7-day TTL to preserve quota
+const submittedUrlsCache = new Map();
+const GOOGLE_URL_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * Pushes new or updated URLs to Google's Indexing API for rapid crawling
  * 
@@ -311,7 +337,7 @@ async function submitToGoogleIndex(url, type = 'URL_UPDATED') {
 
 /**
  * Automatically synchronizes all public pages and live mod URLs across:
- * 1. Google Indexing API
+ * 1. Google Indexing API (strictly quota-conserved: only submits unindexed or updated mods)
  * 2. IndexNow API (Bing, Yandex, Seznam, Naver)
  * 3. Search Engine Sitemap Pings (Google, Bing)
  * 
@@ -321,6 +347,7 @@ async function submitToGoogleIndex(url, type = 'URL_UPDATED') {
  */
 async function syncAllPublicUrlsForIndexing(baseUrl = 'https://gplmods.webredirect.org', FileModel = null, options = {}) {
     const googleLimit = options.googleLimit || 40;
+    const now = Date.now();
     const corePages = [
         '/',
         '/about',
@@ -340,41 +367,68 @@ async function syncAllPublicUrlsForIndexing(baseUrl = 'https://gplmods.webredire
         '/why-choose-us'
     ];
 
-    const allUrls = corePages.map(p => `${baseUrl}${p}`);
+    const allUrlsForIndexNow = corePages.map(p => `${baseUrl}${p}`);
+    const googleEligibleUrls = [];
+
+    // Check core pages against 7-day cache
+    corePages.forEach(p => {
+        const u = `${baseUrl}${p}`;
+        const lastSubmitted = submittedUrlsCache.get(u);
+        if (!lastSubmitted || (now - lastSubmitted) >= GOOGLE_URL_CACHE_TTL_MS) {
+            googleEligibleUrls.push({ url: u, modId: null });
+        }
+    });
 
     // Collect live mods from database
     if (FileModel && typeof FileModel.find === 'function') {
         try {
             const liveMods = await FileModel.find({ status: 'live' })
-                .select('slug category _id updatedAt')
+                .select('slug category _id updatedAt googleIndexedAt')
                 .sort({ updatedAt: -1 })
                 .limit(200)
                 .lean();
 
             liveMods.forEach(m => {
                 const modUrl = `${baseUrl}/mods/${encodeURIComponent(m.category)}/${encodeURIComponent(m.slug || m._id.toString())}`;
-                allUrls.push(modUrl);
+                allUrlsForIndexNow.push(modUrl);
+
+                // QUOTA PROTECTION: Only submit if never indexed or updated after last Google submission
+                const neverSubmitted = !m.googleIndexedAt;
+                const wasUpdated = m.googleIndexedAt && m.updatedAt && (new Date(m.updatedAt).getTime() > new Date(m.googleIndexedAt).getTime());
+                if (neverSubmitted || wasUpdated) {
+                    googleEligibleUrls.push({ url: modUrl, modId: m._id });
+                }
             });
         } catch (dbErr) {
             console.warn('[Sync Indexing] Error reading live mods:', dbErr.message);
         }
     }
 
-    const uniqueUrls = Array.from(new Set(allUrls));
-
-    // 1. Submit top prioritized URLs to Google Indexing API (with delay pacing)
+    // 1. Submit ONLY unindexed or updated URLs to Google Indexing API (Quota Saver)
     let googleSubmitted = 0;
     const auth = getGoogleAuthClient();
-    if (auth) {
-        const targetGoogleUrls = uniqueUrls.slice(0, googleLimit);
-        for (const u of targetGoogleUrls) {
+    if (auth && googleEligibleUrls.length > 0) {
+        const targetGoogleBatch = googleEligibleUrls.slice(0, googleLimit);
+        for (const item of targetGoogleBatch) {
             try {
-                const ok = await submitToGoogleIndex(u, 'URL_UPDATED');
-                if (ok) googleSubmitted++;
+                const ok = await submitToGoogleIndex(item.url, 'URL_UPDATED');
+                if (ok) {
+                    googleSubmitted++;
+                    submittedUrlsCache.set(item.url, Date.now());
+                    if (item.modId && FileModel) {
+                        FileModel.findByIdAndUpdate(item.modId, {
+                            googleIndexedAt: new Date(),
+                            googleIndexStatus: 'INDEXED'
+                        }).catch(() => {});
+                    }
+                }
                 // 120ms rate pacing between Google API calls
                 await new Promise(r => setTimeout(r, 120));
             } catch (_) {}
         }
+        console.log(`[Google Indexing API] Quota-saver sync completed: submitted ${googleSubmitted} new/updated URLs (preserved quota for ${allUrlsForIndexNow.length - targetGoogleBatch.length} already-indexed URLs).`);
+    } else {
+        console.log('[Google Indexing API] All existing URLs already indexed and up-to-date. 0 quota consumed.');
     }
 
     // 2. Broadcast entire batch to IndexNow API (Bing, Yandex, Seznam, Naver)

@@ -9,16 +9,35 @@
         <div class="arc-modal-body">
             <!-- Filter Bar -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <div style="display: flex; gap: 6px;">
-                    <button type="button" class="arc-btn arc-btn-accent lb-metric-btn active" data-metric="score">
-                        <i class="fas fa-star"></i> High Score
-                    </button>
-                    <button type="button" class="arc-btn lb-metric-btn" data-metric="wins">
-                        <i class="fas fa-crown"></i> Most Wins
-                    </button>
-                    <button type="button" class="arc-btn lb-metric-btn" data-metric="playtime">
-                        <i class="fas fa-clock"></i> Playtime
-                    </button>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <!-- Game Filter Dropdown (Requirement: Game filter dropdown in each game & distinct playtime) -->
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <select id="lbGameSelect" class="arc-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--arc-border); border-radius: 8px; color: var(--arc-text-main); padding: 7px 12px; font-weight: 600; cursor: pointer; outline: none;">
+                            <option value="all">🎮 All Games (Distinct)</option>
+                            <option value="2048">2048 Classic</option>
+                            <option value="air-hockey">Air Hockey Showdown</option>
+                            <option value="checkers">Checkers (Draughts)</option>
+                            <option value="chess">Classic Chess Master</option>
+                            <option value="minesweeper">Minesweeper Retro</option>
+                            <option value="othello">Othello (Reversi)</option>
+                            <option value="rock-paper-scissors">Rock Paper Scissors</option>
+                            <option value="snake">Snake Classic Arcade</option>
+                            <option value="snakes-ladders">Snakes & Ladders</option>
+                            <option value="tictactoe">Tic Tac Toe</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 4px;">
+                        <button type="button" class="arc-btn arc-btn-accent lb-metric-btn active" data-metric="score">
+                            <i class="fas fa-star"></i> High Score
+                        </button>
+                        <button type="button" class="arc-btn lb-metric-btn" data-metric="wins">
+                            <i class="fas fa-crown"></i> Most Wins
+                        </button>
+                        <button type="button" class="arc-btn lb-metric-btn" data-metric="playtime">
+                            <i class="fas fa-clock"></i> Playtime
+                        </button>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 6px;">
@@ -40,7 +59,7 @@
         </div>
         <div class="arc-modal-footer">
             <span style="font-size: 0.8rem; color: var(--arc-text-muted); margin-right: auto;">
-                <i class="fas fa-info-circle"></i> Stats sync live after every game completion.
+                <i class="fas fa-shield-alt" style="color: var(--arc-accent);"></i> Registered players only. Guest data is not stored.
             </span>
             <button type="button" class="arc-btn arc-btn-accent" onclick="document.getElementById('leaderboardModalOverlay').classList.remove('open')">
                 Close
@@ -54,6 +73,15 @@
         let activeMetric = 'score';
         let activeFilter = 'global';
         const userCountry = window.__ARCADE_USER__?.country || 'India';
+        const gameSelect = document.getElementById('lbGameSelect');
+
+        // Automatically preselect current game if inside an individual game room
+        if (window.__GAME_ID__ && gameSelect) {
+            const hasOption = Array.from(gameSelect.options).some(o => o.value === window.__GAME_ID__);
+            if (hasOption) {
+                gameSelect.value = window.__GAME_ID__;
+            }
+        }
 
         async function fetchLeaderboard() {
             const container = document.getElementById('leaderboardListContainer');
@@ -61,12 +89,13 @@
             container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--arc-text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
 
             try {
-                const url = `/games/api/leaderboard?metric=${activeMetric}&filter=${activeFilter}&country=${encodeURIComponent(userCountry)}`;
+                const selectedGame = gameSelect ? gameSelect.value : (window.__GAME_ID__ || 'all');
+                const url = `/games/api/leaderboard?gameId=${encodeURIComponent(selectedGame)}&metric=${activeMetric}&filter=${activeFilter}&country=${encodeURIComponent(userCountry)}`;
                 const res = await fetch(url);
                 const data = await res.json();
 
                 if (!data.leaderboard || data.leaderboard.length === 0) {
-                    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--arc-text-muted);"><i class="fas fa-trophy" style="font-size: 2rem; color: #555; display: block; margin-bottom: 10px;"></i>No recorded games in this bracket yet. Be the first to play and claim #1!</div>';
+                    container.innerHTML = '<div style="padding: 30px; text-align: center; color: var(--arc-text-muted);"><i class="fas fa-trophy" style="font-size: 2rem; color: #555; display: block; margin-bottom: 10px;"></i>No recorded games in this bracket yet. Play now to claim #1!</div>';
                     return;
                 }
 
@@ -79,9 +108,19 @@
                     let valueDisplay = `${(item.score || 0).toLocaleString()} pts`;
                     if (activeMetric === 'wins') valueDisplay = `${item.wins || 0} Wins`;
                     else if (activeMetric === 'playtime') {
-                        const mins = Math.floor((item.playtime || 0) / 60);
-                        valueDisplay = `${mins}m ${(item.playtime || 0) % 60}s`;
+                        // Playtime shown distinctly for this specific game
+                        const totalSecs = item.playtime || 0;
+                        const hours = Math.floor(totalSecs / 3600);
+                        const mins = Math.floor((totalSecs % 3600) / 60);
+                        const secs = totalSecs % 60;
+                        if (hours > 0) {
+                            valueDisplay = `${hours}h ${mins}m`;
+                        } else {
+                            valueDisplay = `${mins}m ${secs}s`;
+                        }
                     }
+
+                    const gameLabel = (item.gameId || 'game').replace(/-/g, ' ');
 
                     return `
                         <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 10px; gap: 10px;">
@@ -90,7 +129,7 @@
                                 <img src="${item.avatar || '/images/default-avatar.png'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--arc-border);" onerror="this.src='/images/default-avatar.png'">
                                 <div style="min-width: 0;">
                                     <strong style="display: block; font-size: 0.92rem; color: var(--arc-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.username}</strong>
-                                    <span style="font-size: 0.75rem; color: var(--arc-text-muted);"><i class="fas fa-globe-americas"></i> ${item.country || 'Global'} &bull; <span style="text-transform: capitalize;">${item.gameId || 'Arcade'}</span></span>
+                                    <span style="font-size: 0.75rem; color: var(--arc-text-muted);"><i class="fas fa-globe-americas"></i> ${item.country || 'Global'} &bull; <span style="text-transform: capitalize; color: var(--arc-accent);">${gameLabel}</span></span>
                                 </div>
                             </div>
                             <div style="text-align: right; flex-shrink: 0;">
@@ -102,6 +141,10 @@
             } catch (err) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--arc-danger);">Failed to load leaderboard data.</div>';
             }
+        }
+
+        if (gameSelect) {
+            gameSelect.addEventListener('change', fetchLeaderboard);
         }
 
         document.querySelectorAll('.lb-metric-btn').forEach(btn => {
@@ -123,6 +166,9 @@
         });
 
         window.openLeaderboard = function() {
+            if (window.__GAME_ID__ && gameSelect) {
+                gameSelect.value = window.__GAME_ID__;
+            }
             document.getElementById('leaderboardModalOverlay').classList.add('open');
             fetchLeaderboard();
         };

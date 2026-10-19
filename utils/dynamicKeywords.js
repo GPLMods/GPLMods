@@ -27,7 +27,92 @@ let lastHarvestTimestamp = 0;
 let isHarvesting = false;
 
 // Global Unspaced Brand Variants (Guarantees unspaced queries index #1)
+// Full Form Variants of GPL Mods (General Public License Modify / Modifications / Mods)
+const FULL_FORM_GPL_MODS = [
+    'General Public License Modify',
+    'general public license modify',
+    'GENERAL PUBLIC LICENSE MODIFY',
+    'GeneralPublicLicenseModify',
+    'generalpubliclicensemodify',
+    'GENERALPUBLICLICENSEMODIFY',
+    'General Public License Modifications',
+    'general public license modifications',
+    'GENERAL PUBLIC LICENSE MODIFICATIONS',
+    'GeneralPublicLicenseModifications',
+    'generalpubliclicensemodifications',
+    'General Public License Mods',
+    'general public license mods',
+    'GENERAL PUBLIC LICENSE MODS',
+    'GeneralPublicLicenseMods',
+    'generalpubliclicensemods',
+    'General Public License Mod',
+    'general public license mod',
+    'GeneralPublicLicenseMod',
+    'generalpubliclicensemod',
+    'General Public License',
+    'general public license',
+    'GENERAL PUBLIC LICENSE',
+    'GeneralPublicLicense',
+    'generalpubliclicense',
+    'General Public Licence Modify',
+    'general public licence modify',
+    'GeneralPublicLicenceModify',
+    'general public lisance modify',
+    'generalpubliclisancemodify',
+    'GPL Mods',
+    'gpl mods',
+    'GPL MODS',
+    'GPLMods',
+    'gplmods',
+    'GPLMODS',
+    'gpl-mods',
+    'GPL-Mods'
+];
+
+/**
+ * Expands any tag into space, no-space, uppercase, lowercase, and title-case variants.
+ */
+function expandTagVariations(tag) {
+    if (!tag || typeof tag !== 'string') return [];
+    const trimmed = tag.trim();
+    if (!trimmed) return [];
+
+    const variations = new Set();
+    variations.add(trimmed);
+    variations.add(trimmed.toLowerCase());
+    variations.add(trimmed.toUpperCase());
+    variations.add(trimmed.replace(/\b\w/g, c => c.toUpperCase()));
+
+    // No space
+    const noSpace = trimmed.replace(/\s+/g, '');
+    if (noSpace !== trimmed) {
+        variations.add(noSpace);
+        variations.add(noSpace.toLowerCase());
+        variations.add(noSpace.toUpperCase());
+    }
+
+    // Spaced if hyphenated or underscored
+    if (trimmed.includes('-') || trimmed.includes('_')) {
+        const spaced = trimmed.replace(/[-_]+/g, ' ');
+        variations.add(spaced);
+        variations.add(spaced.toLowerCase());
+        variations.add(spaced.toUpperCase());
+    }
+
+    // CamelCase spaced
+    const camelSpaced = trimmed.replace(/([a-z])([A-Z])/g, '$1 $2');
+    if (camelSpaced !== trimmed) {
+        variations.add(camelSpaced);
+        variations.add(camelSpaced.toLowerCase());
+        variations.add(camelSpaced.toUpperCase());
+    }
+
+    return Array.from(variations);
+}
+
+// Global Unspaced Brand Variants & Full Forms (Guarantees indexing for all permutations)
 const UNSPACED_BRAND_KEYWORDS = [
+    ...FULL_FORM_GPL_MODS,
     'gplmods',
     'gplmods apk',
     'gplmods mod apk',
@@ -203,15 +288,20 @@ function generateKeywordsForMod(mod) {
     const lowerName = name.toLowerCase();
     const cat = (mod.category || 'android').toLowerCase();
 
+    const nameVariations = expandTagVariations(name);
     const keywords = [
-        // Unspaced brand + mod name queries
+        // Brand + mod queries with full form
         `gplmods ${lowerName}`,
+        `gpl mods ${lowerName}`,
+        `General Public License Modify ${name}`,
+        `general public license modify ${lowerName}`,
         `${lowerName} gplmods`,
+        `${lowerName} gpl mods`,
         `gplmods ${lowerName} download`,
         `gplmods ${lowerName} mod apk`,
         `gplmods ${lowerName} free`,
 
-        // Core high-volume search queries
+        // Core search queries
         `${lowerName} mod apk`,
         `${lowerName} mod apk download`,
         `${lowerName} mod apk latest version`,
@@ -222,6 +312,13 @@ function generateKeywordsForMod(mod) {
         `${lowerName} virustotal clean`,
         `${lowerName} free download`
     ];
+
+    // Add name variations (uppercase, lowercase, unspaced, spaced)
+    nameVariations.forEach(v => {
+        keywords.push(v);
+        keywords.push(`${v} mod`);
+        keywords.push(`${v} download`);
+    });
 
     if (mod.version) {
         keywords.push(`${lowerName} v${mod.version} mod apk`);
@@ -248,12 +345,16 @@ function generateKeywordsForMod(mod) {
     if (Array.isArray(mod.tags)) {
         mod.tags.forEach(t => {
             if (t && typeof t === 'string') {
-                keywords.push(`${lowerName} ${t.toLowerCase()}`);
+                const tagVars = expandTagVariations(t);
+                tagVars.forEach(tv => {
+                    keywords.push(tv);
+                    keywords.push(`${lowerName} ${tv.toLowerCase()}`);
+                });
             }
         });
     }
 
-    return keywords.map(cleanKeyword).filter(Boolean);
+    return Array.from(new Set(keywords.map(cleanKeyword).filter(Boolean)));
 }
 
 // 7 Days Cache TTL
@@ -670,6 +771,8 @@ function getKeywordState() {
 module.exports = {
     UNSPACED_BRAND_KEYWORDS,
     GLOBAL_REGIONAL_KEYWORDS,
+    FULL_FORM_GPL_MODS,
+    expandTagVariations,
     fetchGoogleSuggest,
     fetchDuckDuckGoSuggest,
     generateKeywordsForMod,

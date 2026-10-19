@@ -11,7 +11,67 @@
         let rawMetaTitle = s.title || (typeof pageTitle !== 'undefined' ? (pageTitle.includes(siteName) ? pageTitle : `${pageTitle} | ${siteName}`) : "GPL Mods - 100% Safe Mods, APKs & IPAs");
         const metaTitle = rawMetaTitle.length > 60 ? (rawMetaTitle.substring(0, 57).trim() + '...') : rawMetaTitle;
         const metaDesc = s.description || (typeof pageDescription !== 'undefined' ? pageDescription : "Download 100% safe, working Mod APKs, iOS IPAs, Windows software, and WordPress GPL themes. GPL Mods offers virus-scanned, premium unlocked apps for free.");
-        const metaKeywords = s.keywords || (typeof pageKeywords !== 'undefined' ? pageKeywords : "gpl mods, GPL Mods, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked, CapCut Pro, LightRoom Pro, Minecraft PE, Roblox Delta Executor, Spotify Premium");
+        const rawKeywords = s.keywords || (typeof pageKeywords !== 'undefined' ? pageKeywords : "gpl mods, GPL Mods, General Public License Modify, general public license modify, General Public License Modifications, GeneralPublicLicenseModify, generalpubliclicensemodify, mod apk, apk mod, how to mod apk, mod ipa, windows software unlocked, wordpress gpl free, roblox mod apk 2026, trusted mod apk sites, ios sideloading, premium unlocked, CapCut Pro, LightRoom Pro, Minecraft PE, Roblox Delta Executor, Spotify Premium");
+
+        // Helper to expand tags with space, no-space, uppercase, lowercase, and title case variations
+        function expandKeywordsWithVariations(kwStr) {
+            if (!kwStr) return '';
+            const tokens = kwStr.split(',').map(t => t.trim()).filter(Boolean);
+            const enriched = new Set();
+
+            tokens.forEach(t => {
+                enriched.add(t);
+                enriched.add(t.toLowerCase());
+                enriched.add(t.toUpperCase());
+                enriched.add(t.replace(/\b\w/g, c => c.toUpperCase()));
+
+                // Without space
+                const noSpace = t.replace(/\s+/g, '');
+                if (noSpace !== t) {
+                    enriched.add(noSpace);
+                    enriched.add(noSpace.toLowerCase());
+                    enriched.add(noSpace.toUpperCase());
+                }
+
+                // With space if hyphenated
+                if (t.includes('-') || t.includes('_')) {
+                    const spaced = t.replace(/[-_]+/g, ' ');
+                    enriched.add(spaced);
+                    enriched.add(spaced.toLowerCase());
+                    enriched.add(spaced.toUpperCase());
+                }
+
+                // CamelCase split
+                const camelSpaced = t.replace(/([a-z])([A-Z])/g, '$1 $2');
+                if (camelSpaced !== t) {
+                    enriched.add(camelSpaced);
+                    enriched.add(camelSpaced.toLowerCase());
+                    enriched.add(camelSpaced.toUpperCase());
+                }
+            });
+
+            // Always ensure full form of GPL Mods is indexed across every single page
+            const gplFullFormVariants = [
+                "General Public License Modify", "general public license modify", "GENERAL PUBLIC LICENSE MODIFY",
+                "GeneralPublicLicenseModify", "generalpubliclicensemodify", "GENERALPUBLICLICENSEMODIFY",
+                "General Public License Modifications", "general public license modifications", "GENERAL PUBLIC LICENSE MODIFICATIONS",
+                "GeneralPublicLicenseModifications", "generalpubliclicensemodifications",
+                "General Public License Mods", "general public license mods", "GENERAL PUBLIC LICENSE MODS",
+                "GeneralPublicLicenseMods", "generalpubliclicensemods",
+                "General Public License", "general public license", "GENERAL PUBLIC LICENSE",
+                "GeneralPublicLicense", "generalpubliclicense",
+                "General Public Licence Modify", "general public licence modify",
+                "general public lisance modify", "generalpubliclisancemodify",
+                "GPL Mods", "gpl mods", "GPL MODS",
+                "GPLMods", "gplmods", "GPLMODS",
+                "GPL-Mods", "gpl-mods"
+            ];
+            gplFullFormVariants.forEach(b => enriched.add(b));
+
+            return Array.from(enriched).join(', ');
+        }
+
+        const metaKeywords = expandKeywordsWithVariations(rawKeywords);
         const metaCanonical = s.canonicalUrl || (typeof pageUrl !== 'undefined' ? pageUrl : "https://gplmods.webredirect.org");
         const metaRobots = s.robots || ((typeof isNoIndex !== 'undefined' && isNoIndex) ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
         const metaGooglebot = s.googlebot || metaRobots;
@@ -36,6 +96,41 @@
         const twSite = (s.twitter && s.twitter.site) || "@GPLMods";
 
         // Structured JSON-LD Data Graph
+        const brandNamesList = [
+            "gplmods",
+            "GPLMods",
+            "GPLMODS",
+            "gpl mods",
+            "GPL Mods",
+            "GPL MODS",
+            "gpl-mods",
+            "GPL-Mods",
+            "General Public License Modify",
+            "general public license modify",
+            "GENERAL PUBLIC LICENSE MODIFY",
+            "GeneralPublicLicenseModify",
+            "generalpubliclicensemodify",
+            "General Public License Modifications",
+            "general public license modifications",
+            "General Public License Mods",
+            "general public license mods",
+            "GeneralPublicLicenseMods",
+            "generalpubliclicensemods",
+            "General Public License",
+            "general public license",
+            "GeneralPublicLicense",
+            "generalpubliclicense",
+            "General Public Licence Modify",
+            "general public licence modify",
+            "general public lisance modify",
+            "generalpubliclisancemodify",
+            "gplmods.webredirect.org",
+            "gplmods apk",
+            "gplmods site",
+            "gplmods official",
+            "gplmods free mods"
+        ];
+
         const jsonLdData = s.jsonLd || {
             "@context": "https://schema.org",
             "@graph": [
@@ -43,17 +138,7 @@
                     "@type": "Organization",
                     "@id": "https://gplmods.webredirect.org/#organization",
                     "name": "GPL Mods",
-                    "alternateName": [
-                        "gplmods",
-                        "GPLMods",
-                        "gpl mods",
-                        "gpl-mods",
-                        "gplmods.webredirect.org",
-                        "gplmods apk",
-                        "gplmods site",
-                        "gplmods official",
-                        "gplmods free mods"
-                    ],
+                    "alternateName": brandNamesList,
                     "url": "https://gplmods.webredirect.org",
                     "logo": {
                         "@type": "ImageObject",
@@ -69,15 +154,7 @@
                     "@id": "https://gplmods.webredirect.org/#website",
                     "url": "https://gplmods.webredirect.org",
                     "name": "GPL Mods",
-                    "alternateName": [
-                        "gplmods",
-                        "GPLMods",
-                        "gpl mods",
-                        "gpl-mods",
-                        "gplmods apk",
-                        "gplmods site",
-                        "gplmods.webredirect.org"
-                    ],
+                    "alternateName": brandNamesList,
                     "inLanguage": [
                         "en-US", "en-GB", "en-IN", "es", "pt-BR", "ru", "id", "de", "fr", "ja", "ko", "ar", "hi", "tr", "vi"
                     ],

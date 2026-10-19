@@ -1284,17 +1284,42 @@ try {
 }
 
 /**
- * Pings Google Indexing API to update or remove a URL
+ * Pings Google Indexing API to update or remove a URL with quota protection.
+ * Only submits if URL has not been indexed yet or has been updated since last submission.
  * @param {string} url - The URL to index
  * @param {string} type - 'URL_UPDATED' or 'URL_DELETED'
+ * @param {object} [fileDoc=null] - Optional File document for immediate quota check
  */
-async function notifyGoogle(url, type = 'URL_UPDATED') {
+async function notifyGoogle(url, type = 'URL_UPDATED', fileDoc = null) {
     if (!jwtClient) {
         console.error(`[Google Error] Skipped ${url}: Missing credentials.`);
         return;
     }
 
     try {
+        let targetDoc = fileDoc;
+        if (!targetDoc && url.includes('/mods/')) {
+            try {
+                const parts = url.split('/mods/')[1]?.split('/');
+                if (parts && parts.length >= 2) {
+                    const slugOrId = decodeURIComponent(parts[1]);
+                    targetDoc = await File.findOne({
+                        $or: [{ slug: slugOrId }, { _id: mongoose.isValidObjectId(slugOrId) ? slugOrId : null }]
+                    }).select('_id updatedAt googleIndexedAt');
+                }
+            } catch (_) {}
+        }
+
+        // Quota check: Skip if already indexed and mod was NOT updated since then
+        if (type === 'URL_UPDATED' && targetDoc && targetDoc.googleIndexedAt && targetDoc.updatedAt) {
+            const updatedTime = new Date(targetDoc.updatedAt).getTime();
+            const indexedTime = new Date(targetDoc.googleIndexedAt).getTime();
+            if (updatedTime <= indexedTime) {
+                console.log(`[Google Indexing API] Skipped ${url}: Already indexed on ${targetDoc.googleIndexedAt} and not updated. Daily quota saved.`);
+                return;
+            }
+        }
+
         try {
             await jwtClient.authorize();
         } catch (authErr) {
@@ -1311,6 +1336,13 @@ async function notifyGoogle(url, type = 'URL_UPDATED') {
             }
         });
         console.log(`[Google] Successfully pinged: ${url}`);
+
+        if (targetDoc && targetDoc._id) {
+            await File.findByIdAndUpdate(targetDoc._id, {
+                googleIndexedAt: new Date(),
+                googleIndexStatus: type === 'URL_DELETED' ? 'DELETED' : 'INDEXED'
+            }).catch(() => {});
+        }
     } catch (error) {
         // If Google rejects it (e.g., quota exceeded, domain not verified in Search Console)
         console.error(`[Google Error] Failed for ${url}:`, error.response ? error.response.data : error.message);
