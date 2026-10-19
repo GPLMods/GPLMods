@@ -39,24 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSfxOn = false;
     let userHasInteracted = false;
 
-    if (window.parent && window.parent !== window) {
-        if (bgMusic) { bgMusic.muted = true; bgMusic.volume = 0; bgMusic.pause(); }
-    }
-
     // --- Settings & Sound Logic ---
-    function loadSettings() {
-        if (window.parent && window.parent !== window) {
-            isMusicOn = false;
-        } else {
-            isMusicOn = localStorage.getItem('isMusicOn') !== 'false';
+    window.addEventListener('message', (e) => {
+        if (!e.data) return;
+        if (e.data.type === 'ARCADE_TOGGLE_MUSIC') {
+            isMusicOn = !!e.data.enabled;
+            if (musicToggle) musicToggle.checked = isMusicOn;
+            if (isMusicOn) {
+                userHasInteracted = true;
+                playBgMusic();
+            } else {
+                pauseBgMusic();
+            }
+        } else if (e.data.type === 'ARCADE_TOGGLE_SFX') {
+            isSfxOn = !!e.data.enabled;
+            if (sfxToggle) sfxToggle.checked = isSfxOn;
         }
+    });
+
+    function loadSettings() {
+        isMusicOn = localStorage.getItem('isMusicOn') !== 'false';
         isSfxOn = localStorage.getItem('isSfxOn') !== 'false';
         if (musicToggle) musicToggle.checked = isMusicOn;
         if (sfxToggle) sfxToggle.checked = isSfxOn;
     }
     function saveSettings() { localStorage.setItem('isMusicOn', isMusicOn); localStorage.setItem('isSfxOn', isSfxOn); }
     function playBgMusic() {
-        if (window.parent && window.parent !== window) return;
         if (isMusicOn && userHasInteracted && bgMusic) bgMusic.play().catch(e => {});
     }
     function pauseBgMusic() { if (bgMusic) bgMusic.pause(); }

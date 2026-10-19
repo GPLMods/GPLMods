@@ -1,25 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     const screens = document.querySelectorAll('.screen'), docEl = document.documentElement;
-    let isMusicEnabled = true, isSfxEnabled = true, audioInitialized = false;
-    if (window.parent && window.parent !== window) {
-        isMusicEnabled = false;
-    }
+    let isMusicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
+    let isSfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
+    let audioInitialized = false;
     
     const audio = { music: new Audio('./sounds/music-background.mp3'), click: new Audio('./sounds/sfx-click.wav'), flag: new Audio('./sounds/sfx-flag.wav'), reveal: new Audio('./sounds/sfx-reveal.wav'), explode: new Audio('./sounds/sfx-explode.wav'), win: new Audio('./sounds/sfx-win.mp3'), lose: new Audio('./sounds/sfx-lose.mp3'), };
     audio.music.loop = true;
-    if (window.parent && window.parent !== window) {
-        audio.music.muted = true;
-        audio.music.volume = 0;
-    }
     
     function playSound(soundName) { if (!isSfxEnabled || !audio[soundName]) return; audio[soundName].currentTime = 0; audio[soundName].play().catch(e => {}); }
     function playOverlappingSound(soundName) { if (!isSfxEnabled) return; const clone = audio[soundName].cloneNode(); clone.play().catch(e => {}); }
     function toggleMusic() {
-        if (window.parent && window.parent !== window) {
+        if (isMusicEnabled) {
+            audio.music.play().catch(e => {});
+        } else {
             audio.music.pause();
-            return;
         }
-        isMusicEnabled ? audio.music.play().catch(e => {}) : audio.music.pause();
     }
     function triggerVibration(pattern) { if (navigator.vibrate && isSfxEnabled) navigator.vibrate(pattern); }
     function showScreen(screenId) { screens.forEach(s => { if(s.id !== 'pause-menu') s.classList.remove('active'); }); document.getElementById(screenId).classList.add('active'); }

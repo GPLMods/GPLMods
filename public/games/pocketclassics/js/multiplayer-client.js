@@ -75,7 +75,9 @@
             });
 
             this.socket.on('arcade_error', (data) => {
-                alert(data?.message || 'Multiplayer Error');
+                const msg = data?.message || 'Multiplayer Error';
+                if (window.ArcadeToast) window.ArcadeToast.show(msg, 'error');
+                else alert(msg);
             });
         }
 

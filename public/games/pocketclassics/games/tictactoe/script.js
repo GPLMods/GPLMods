@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMusicState();
     }
     function updateMusicState() { 
-        if (isMusicOn && window.parent === window && backgroundMusic) { 
+        if (isMusicOn && backgroundMusic) { 
             backgroundMusic.play().catch(e => {}); 
         } else if (backgroundMusic) { 
             backgroundMusic.pause(); 

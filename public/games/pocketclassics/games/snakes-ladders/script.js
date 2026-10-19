@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateMusicPlayback() {
         const isMainMenuVisible = !dom.mainMenu.classList.contains('hidden');
         const isGameVisible = !dom.gameContainer.classList.contains('hidden');
-        if (state.isMusicOn && window.parent === window && (isMainMenuVisible || isGameVisible) && audio.bgMusic) {
+        if (state.isMusicOn && (isMainMenuVisible || isGameVisible) && audio.bgMusic) {
             audio.bgMusic.play().catch(e => {});
         } else if (audio.bgMusic) {
             audio.bgMusic.pause();

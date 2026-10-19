@@ -32,17 +32,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const scoreSound = new Audio('sounds/score.wav');
     const winSound = new Audio('sounds/win.wav');
     const clickSound = new Audio('sounds/click.wav');
-    let isMusicEnabled = true, areSfxEnabled = true;
+    isMusicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
+    areSfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
 
-    if (window.parent && window.parent !== window) {
-        isMusicEnabled = false;
-        bgMusic.muted = true;
-        bgMusic.volume = 0;
-    }
+    window.addEventListener('message', (e) => {
+        if (e.data?.type === 'ARCADE_TOGGLE_MUSIC') {
+            isMusicEnabled = Boolean(e.data.enabled);
+            if (isMusicEnabled) playMusic();
+            else stopMusic();
+        } else if (e.data?.type === 'ARCADE_TOGGLE_SFX') {
+            areSfxEnabled = Boolean(e.data.enabled);
+        }
+    });
 
     function playSound(sound) { if (areSfxEnabled) { sound.currentTime = 0; sound.play().catch(e => {}); } }
     function playMusic() {
-        if (!isMusicEnabled || (window.parent && window.parent !== window)) return;
+        if (!isMusicEnabled) return;
         if (bgMusic.paused) { bgMusic.loop = true; bgMusic.volume = 0.5; bgMusic.play().catch(e => {}); }
     }
     function stopMusic() { bgMusic.pause(); bgMusic.currentTime = 0; }

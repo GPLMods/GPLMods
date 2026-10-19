@@ -27,10 +27,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let board = [], currentPlayer, gameMode, aiDifficulty, gameOver;
     let particles = [];
     let isMusicOn = true, isSfxOn = true;
-    if (window.parent && window.parent !== window) {
-        isMusicOn = false;
-        if (bgMusic) { bgMusic.muted = true; bgMusic.volume = 0; bgMusic.pause(); }
-    }
+    window.addEventListener('message', (e) => {
+        if (!e.data) return;
+        if (e.data.type === 'ARCADE_TOGGLE_MUSIC') {
+            isMusicOn = !!e.data.enabled;
+            if (musicToggle) musicToggle.checked = isMusicOn;
+            if (isMusicOn) {
+                if (bgMusic && bgMusic.src) bgMusic.play().catch(() => {});
+            } else {
+                if (bgMusic) bgMusic.pause();
+            }
+        } else if (e.data.type === 'ARCADE_TOGGLE_SFX') {
+            isSfxOn = !!e.data.enabled;
+            if (sfxToggle) sfxToggle.checked = isSfxOn;
+        }
+    });
 
     // --- UPDATED, ROBUST AUDIO LOGIC ---
     let audioContextUnlocked = false;

@@ -51,6 +51,17 @@ window.addEventListener('message', (event) => {
             resolveMultiplayerRound(pendingPlayerChoice, oppChoice);
             pendingPlayerChoice = null;
         }
+    } else if (event.data.type === 'ARCADE_TOGGLE_MUSIC') {
+        musicOn = !!event.data.enabled;
+        if (musicToggle) musicToggle.checked = musicOn;
+        if (musicOn) {
+            bgMusic.play().then(() => { musicHasStarted = true; }).catch(() => {});
+        } else {
+            bgMusic.pause();
+        }
+    } else if (event.data.type === 'ARCADE_TOGGLE_SFX') {
+        sfxOn = !!event.data.enabled;
+        if (sfxToggle) sfxToggle.checked = sfxOn;
     }
 });
 

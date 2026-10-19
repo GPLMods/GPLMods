@@ -1,22 +1,31 @@
-<div class="pwa-banner-bar" id="arcadePwaBanner" style="display: none;">
-    <div class="pwa-banner-text">
-        <i class="fas fa-mobile-alt pwa-banner-icon"></i>
-        <div>
-            <strong style="display: block; font-size: 0.95rem; color: var(--arc-text-main);">Install Pocket Classics App</strong>
-            <span style="font-size: 0.8rem; color: var(--arc-text-muted);">Play games offline & full-screen straight from your home screen</span>
+<!-- Floating Pocket Classics PWA Install Sheet / Card -->
+<div class="arcade-pwa-floating-card" id="arcadePwaBanner" style="display: none;">
+    <div class="pwa-floating-header">
+        <div class="pwa-floating-info">
+            <img src="/games/pocketclassics/assets/logo-192.png" alt="Pocket Classics Icon" class="pwa-floating-icon protect-asset">
+            <div>
+                <div class="pwa-floating-title">
+                    <span>Pocket Classics</span>
+                    <i class="fas fa-check-circle" style="color: var(--arc-accent); font-size: 0.85rem;" title="Official Arcade"></i>
+                </div>
+                <div class="pwa-floating-sub">
+                    Play offline, full-screen & ad-free directly from your home screen.
+                </div>
+            </div>
         </div>
+        <button type="button" class="arcade-toast-close" id="pwaDismissBtn" title="Dismiss" style="padding: 6px; font-size: 1.1rem; align-self: flex-start;">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
-    <div style="display: flex; gap: 8px; align-items: center;">
+
+    <div class="pwa-floating-actions">
         <button type="button" class="arc-btn arc-btn-accent" id="pwaInstallActionBtn">
             <i class="fas fa-download"></i>
-            <span>Install</span>
+            <span>Install App</span>
         </button>
         <button type="button" class="arc-btn" id="pwaCopyLinkBtn" title="Copy Arcade Share Link">
             <i class="fas fa-share-alt"></i>
             <span>Share</span>
-        </button>
-        <button type="button" class="arc-btn arc-btn-icon" id="pwaDismissBtn" title="Dismiss" style="width: 32px; height: 32px;">
-            <i class="fas fa-times"></i>
         </button>
     </div>
 </div>
@@ -37,10 +46,14 @@
             if (banner) banner.style.display = 'flex';
         });
 
-        // Always show on mobile if not standalone and not dismissed
+        // Always show floating card on mobile devices if not running in standalone display mode
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        if (!isStandalone && banner && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-            banner.style.display = 'flex';
+        if (!isStandalone && banner && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            setTimeout(() => {
+                if (sessionStorage.getItem('arc_pwa_dismissed') !== 'true') {
+                    banner.style.display = 'flex';
+                }
+            }, 1200);
         }
 
         if (installBtn) {
@@ -48,29 +61,54 @@
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted' && banner) banner.style.display = 'none';
+                    if (outcome === 'accepted' && banner) {
+                        banner.style.display = 'none';
+                        if (window.ArcadeToast) {
+                            window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
+                        }
+                    }
                     deferredPrompt = null;
                 } else {
-                    alert('To install: Tap the browser share/menu button (⋮) and choose "Add to Home Screen" or "Install App".');
+                    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    const msg = isIOS
+                        ? 'To Install on iOS: Tap Share (<i class="fas fa-share-square"></i>) and choose "Add to Home Screen".'
+                        : 'To Install: Tap browser menu (<i class="fas fa-ellipsis-v"></i>) and choose "Install App" or "Add to Home Screen".';
+                    if (window.ArcadeToast) {
+                        window.ArcadeToast.show(msg, 'pwa', 6500);
+                    }
                 }
             });
         }
 
         if (copyBtn) {
             copyBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(window.location.origin + '/games/hub').then(() => {
-                    const origHtml = copyBtn.innerHTML;
-                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    setTimeout(() => { copyBtn.innerHTML = origHtml; }, 2000);
-                }).catch(() => {
-                    alert('Arcade link: ' + window.location.origin + '/games/hub');
-                });
+                const url = window.location.origin + '/games/hub';
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(() => {
+                        if (window.ArcadeToast) {
+                            window.ArcadeToast.show('Arcade link copied to clipboard!', 'success');
+                        }
+                    }).catch(() => {
+                        if (window.ArcadeToast) {
+                            window.ArcadeToast.show('Arcade URL: ' + url, 'info', 6000);
+                        }
+                    });
+                } else {
+                    if (window.ArcadeToast) {
+                        window.ArcadeToast.show('Arcade URL: ' + url, 'info', 6000);
+                    }
+                }
             });
         }
 
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => {
-                if (banner) banner.style.display = 'none';
+                if (banner) {
+                    banner.style.animation = 'pwa-float-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) reverse forwards';
+                    setTimeout(() => {
+                        banner.style.display = 'none';
+                    }, 250);
+                }
                 sessionStorage.setItem('arc_pwa_dismissed', 'true');
             });
         }

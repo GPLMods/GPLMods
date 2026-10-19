@@ -39,11 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSfxEnabled = true;
     let gameOverSoundPlayed = false;
 
-    if (window.parent && window.parent !== window) {
-        isMusicEnabled = false;
-        if (sounds.menuMusic) { sounds.menuMusic.muted = true; sounds.menuMusic.volume = 0; }
-        if (sounds.gameMusic) { sounds.gameMusic.muted = true; sounds.gameMusic.volume = 0; }
-    }
+    isMusicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
+    isSfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
 
     // --- INITIALIZATION & MENU ---
     function showMainMenu() { gameContainer.classList.add('hidden'); mainMenu.classList.remove('hidden'); aiDifficultySelector.classList.add('hidden'); stopAllMusic(); playMusic('menuMusic'); }
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SOUND SYSTEM ---
     function playSound(soundKey) { if (!isSfxEnabled) return; const sound = sounds[soundKey]; if (sound) { sound.currentTime = 0; sound.play().catch(e => {}); } }
     function playMusic(musicKey) {
-        if (!isMusicEnabled || (window.parent && window.parent !== window)) return;
+        if (!isMusicEnabled) return;
         const music = sounds[musicKey];
         if (music) { music.currentTime = 0; music.play().catch(e => {}); }
     }
@@ -109,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         musicToggle.addEventListener('change', () => {
             isMusicEnabled = musicToggle.checked;
             playSound('uiClick');
-            if (isMusicEnabled && (!window.parent || window.parent === window)) {
+            if (isMusicEnabled) {
                 if (!gameContainer.classList.contains('hidden')) {
                     playMusic('gameMusic');
                 } else {

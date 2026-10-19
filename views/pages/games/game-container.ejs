@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title><%= title %></title>
     
     <!-- SEO Meta Tags (Requirement 5) -->
@@ -154,31 +154,53 @@
                 settingsModal.classList.add('open');
             });
 
-            // 4. Music Toggle
+            // 4. In-Game Music Management
             const musicBtn = document.getElementById('gameMusicToggleBtn');
-            musicBtn?.addEventListener('click', () => {
-                const state = window.ArcadeAudio?.toggleMusic();
-                const icon = musicBtn.querySelector('i');
-                if (icon) icon.className = state ? 'fas fa-music' : 'fas fa-volume-mute';
-            });
-
-            // 5. Fullscreen Toggle & Iframe Audio Conflict Prevention
-            const fsBtn = document.getElementById('fullscreenToggleBtn');
             const iframe = document.getElementById('gameIframe');
-            if (iframe) {
-                iframe.addEventListener('load', () => {
-                    try {
-                        const idoc = iframe.contentDocument || iframe.contentWindow?.document;
-                        if (idoc) {
-                            idoc.querySelectorAll('audio').forEach(a => {
-                                if (a.hasAttribute('loop') || a.id.includes('music') || a.id.includes('bg')) {
-                                    a.muted = true;
-                                    a.volume = 0;
+            let isGameMusicOn = localStorage.getItem('arc_music_enabled') !== 'false';
+
+            // Always pause Hub/Main Menu music while playing a game
+            if (window.ArcadeAudio) {
+                window.ArcadeAudio.pauseMusic();
+            }
+
+            function syncIframeMusic(enable) {
+                try {
+                    const idoc = iframe?.contentDocument || iframe?.contentWindow?.document;
+                    if (idoc) {
+                        idoc.querySelectorAll('audio').forEach(a => {
+                            if (a.hasAttribute('loop') || a.id.includes('music') || a.id.includes('bg')) {
+                                a.muted = !enable;
+                                if (enable && a.paused) {
+                                    a.play().catch(() => {});
+                                } else if (!enable && !a.paused) {
                                     a.pause();
                                 }
-                            });
-                        }
-                    } catch (e) {}
+                            }
+                        });
+                    }
+                    iframe?.contentWindow?.postMessage({ type: 'ARCADE_TOGGLE_MUSIC', enabled: enable }, '*');
+                } catch (e) {}
+
+                const icon = musicBtn?.querySelector('i');
+                if (icon) icon.className = enable ? 'fas fa-music' : 'fas fa-volume-mute';
+            }
+
+            musicBtn?.addEventListener('click', () => {
+                isGameMusicOn = !isGameMusicOn;
+                localStorage.setItem('arc_music_enabled', isGameMusicOn ? 'true' : 'false');
+                if (window.ArcadeAudio) window.ArcadeAudio.pauseMusic();
+                syncIframeMusic(isGameMusicOn);
+            });
+
+            // 5. Fullscreen Toggle & Iframe Audio Sync
+            const fsBtn = document.getElementById('fullscreenToggleBtn');
+            if (iframe) {
+                iframe.addEventListener('load', () => {
+                    if (window.ArcadeAudio) window.ArcadeAudio.pauseMusic();
+                    setTimeout(() => {
+                        syncIframeMusic(isGameMusicOn);
+                    }, 400);
                 });
             }
             fsBtn?.addEventListener('click', () => {

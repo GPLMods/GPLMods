@@ -25,6 +25,13 @@
             this.sfxAudio.volume = 0.6;
 
             this.hasInteracted = false;
+            
+            // Check if we are inside a game container
+            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
+            if (isInGamePage) {
+                this.pauseMusic();
+            }
+            
             this.setupListeners();
         }
 
@@ -38,7 +45,8 @@
             const unlockAudio = () => {
                 if (!this.hasInteracted) {
                     this.hasInteracted = true;
-                    if (this.musicEnabled) {
+                    const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
+                    if (this.musicEnabled && !isInGamePage) {
                         this.playMusic();
                     }
                     window.removeEventListener('pointerdown', unlockAudio);
@@ -57,6 +65,11 @@
         }
 
         playMusic(specificUrl) {
+            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
+            if (isInGamePage) {
+                this.pauseMusic();
+                return;
+            }
             if (!this.musicEnabled) return;
             const src = specificUrl || MUSIC_PLAYLIST[this.currentTrackIndex];
             if (this.bgAudio.src !== window.location.origin + src && this.bgAudio.src !== src) {
@@ -68,7 +81,14 @@
         }
 
         pauseMusic() {
-            this.bgAudio.pause();
+            try { this.bgAudio.pause(); } catch (e) {}
+        }
+
+        stopMusic() {
+            try {
+                this.bgAudio.pause();
+                this.bgAudio.currentTime = 0;
+            } catch (e) {}
         }
 
         nextTrack() {
@@ -87,17 +107,30 @@
         toggleMusic(state) {
             this.musicEnabled = typeof state === 'boolean' ? state : !this.musicEnabled;
             localStorage.setItem('arc_music_enabled', this.musicEnabled ? 'true' : 'false');
-            if (this.musicEnabled) {
+            const isInGamePage = window.location.pathname.includes('/games/play') || Boolean(document.getElementById('gameIframe'));
+            if (this.musicEnabled && !isInGamePage) {
                 this.playMusic();
             } else {
                 this.pauseMusic();
             }
+            try {
+                const iframe = document.getElementById('gameIframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'ARCADE_TOGGLE_MUSIC', enabled: this.musicEnabled }, '*');
+                }
+            } catch (e) {}
             return this.musicEnabled;
         }
 
         toggleSfx(state) {
             this.sfxEnabled = typeof state === 'boolean' ? state : !this.sfxEnabled;
             localStorage.setItem('arc_sfx_enabled', this.sfxEnabled ? 'true' : 'false');
+            try {
+                const iframe = document.getElementById('gameIframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'ARCADE_TOGGLE_SFX', enabled: this.sfxEnabled }, '*');
+                }
+            } catch (e) {}
             return this.sfxEnabled;
         }
     }

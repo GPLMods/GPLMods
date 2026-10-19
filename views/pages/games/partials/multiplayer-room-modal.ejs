@@ -158,7 +158,11 @@
         // Join Room
         document.getElementById('mpJoinRoomBtn')?.addEventListener('click', () => {
             const code = document.getElementById('mpJoinCodeInput').value.trim();
-            if (!code) return alert('Please enter a room code.');
+            if (!code) {
+                if (window.ArcadeToast) window.ArcadeToast.show('Please enter a room code.', 'warning');
+                else alert('Please enter a room code.');
+                return;
+            }
             window.ArcadeMP?.joinPrivateRoom(code);
         });
 
@@ -166,7 +170,8 @@
         document.getElementById('mpCopyCodeBtn')?.addEventListener('click', () => {
             const code = displayCode.textContent;
             navigator.clipboard.writeText(code).then(() => {
-                alert(`Room code "${code}" copied to clipboard!`);
+                if (window.ArcadeToast) window.ArcadeToast.show(`Room code "${code}" copied to clipboard!`, 'success');
+                else alert(`Room code "${code}" copied to clipboard!`);
             });
         });
 
@@ -204,7 +209,9 @@
             };
 
             window.ArcadeMP.callbacks.onOpponentLeft = function(data) {
-                alert(data?.message || 'Opponent disconnected.');
+                const msg = data?.message || 'Opponent disconnected.';
+                if (window.ArcadeToast) window.ArcadeToast.show(msg, 'warning');
+                else alert(msg);
                 setupPane.style.display = 'block';
                 waitingLobby.style.display = 'none';
                 activeMatchPane.style.display = 'none';

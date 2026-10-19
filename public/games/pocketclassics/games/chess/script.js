@@ -44,11 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSfxEnabled = true;
     let gameOverSoundPlayed = false;
 
-    if (window.parent && window.parent !== window) {
-        isMusicEnabled = false;
-        if (sounds.menuMusic) { sounds.menuMusic.muted = true; sounds.menuMusic.volume = 0; }
-        if (sounds.gameMusic) { sounds.gameMusic.muted = true; sounds.gameMusic.volume = 0; }
-    }
+    isMusicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
+    isSfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
 
     // --- INITIALIZATION & MENU ---
     function showMainMenu() {
@@ -95,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playMusic(musicKey) {
-        if (!isMusicEnabled || (window.parent && window.parent !== window)) return;
+        if (!isMusicEnabled) return;
         const music = sounds[musicKey];
         if (music) {
             music.currentTime = 0;
@@ -153,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         musicToggle.addEventListener('change', () => {
             isMusicEnabled = musicToggle.checked;
             playSound('uiClick');
-            if (isMusicEnabled && (!window.parent || window.parent === window)) {
+            if (isMusicEnabled) {
                 if (!mainMenu.classList.contains('hidden')) {
                     playMusic('menuMusic');
                 } else {

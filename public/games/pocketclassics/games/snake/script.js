@@ -49,8 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const difficultySettings = { easy: 150, medium: 100, hard: 60 };
     
     // --- Sound & UI Functions ---
-    const playSound = (sound) => { if (gameSettings.sfx) { sound.currentTime = 0; sound.play(); } };
-    const toggleMusic = () => { if (gameSettings.music && window.parent === window && sounds.music) { sounds.music.volume = 0.3; sounds.music.play().catch(e => {}); } else if (sounds.music) { sounds.music.pause(); } };
+    const playSound = (sound) => { if (gameSettings.sfx && sound) { sound.currentTime = 0; sound.play().catch(e => {}); } };
+    const toggleMusic = () => { if (gameSettings.music && sounds.music) { sounds.music.volume = 0.3; sounds.music.play().catch(e => {}); } else if (sounds.music) { sounds.music.pause(); } };
     const showScreen = (screenName) => { Object.values(screens).forEach(screen => { if (screen) screen.classList.remove('active'); }); if (screens[screenName]) { screens[screenName].classList.add('active'); } };
     const resetToMainMenu = () => { clearInterval(gameInterval); gameUi.style.opacity = 0; showScreen('mainMenu'); toggleMusic(); };
 
