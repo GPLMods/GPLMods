@@ -12390,6 +12390,92 @@ app.get('/api/admin/indexnow-sync', ensureAdmin, async (req, res) => {
     }
 });
 
+function getSuggestionPlatformBadge(category, platforms) {
+    const cat = (category || '').toLowerCase().trim();
+    const platArr = Array.isArray(platforms) ? platforms.map(p => String(p).toLowerCase().trim()) : [];
+
+    if (cat === 'ios-jailed' || cat === 'ios-ipa' || cat === 'ipa' || platArr.some(p => p.includes('ipa') || p.includes('jailed'))) {
+        return {
+            label: 'iOS (IPA)',
+            className: 'platform-ios-ipa',
+            color: '#60a5fa',
+            bg: 'rgba(0, 122, 255, 0.15)',
+            border: 'rgba(0, 122, 255, 0.35)'
+        };
+    }
+    if (cat === 'ios-jailbroken' || cat === 'ios-deb' || cat === 'deb' || platArr.some(p => p.includes('deb') || p.includes('jailbroken'))) {
+        return {
+            label: 'iOS (DEB)',
+            className: 'platform-ios-deb',
+            color: '#fb923c',
+            bg: 'rgba(251, 146, 60, 0.15)',
+            border: 'rgba(251, 146, 60, 0.35)'
+        };
+    }
+    if (cat === 'android' || platArr.some(p => p.includes('android'))) {
+        return {
+            label: 'Android',
+            className: 'platform-android',
+            color: '#3ddc84',
+            bg: 'rgba(61, 220, 132, 0.15)',
+            border: 'rgba(61, 220, 132, 0.35)'
+        };
+    }
+    if (cat === 'windows' || platArr.some(p => p.includes('windows') || p.includes('win'))) {
+        return {
+            label: 'Windows',
+            className: 'platform-windows',
+            color: '#38bdf8',
+            bg: 'rgba(0, 164, 239, 0.15)',
+            border: 'rgba(0, 164, 239, 0.35)'
+        };
+    }
+    if (cat === 'wordpress' || platArr.some(p => p.includes('wordpress') || p.includes('wp'))) {
+        return {
+            label: 'WordPress',
+            className: 'platform-wordpress',
+            color: '#38bdf8',
+            bg: 'rgba(33, 117, 155, 0.18)',
+            border: 'rgba(33, 117, 155, 0.4)'
+        };
+    }
+    if (cat === 'mac' || cat === 'macos' || platArr.some(p => p.includes('mac'))) {
+        return {
+            label: 'macOS',
+            className: 'platform-mac',
+            color: '#c084fc',
+            bg: 'rgba(192, 132, 252, 0.15)',
+            border: 'rgba(192, 132, 252, 0.35)'
+        };
+    }
+    if (cat === 'linux' || platArr.some(p => p.includes('linux'))) {
+        return {
+            label: 'Linux',
+            className: 'platform-linux',
+            color: '#f59e0b',
+            bg: 'rgba(245, 158, 11, 0.15)',
+            border: 'rgba(245, 158, 11, 0.35)'
+        };
+    }
+    if (cat.startsWith('ios')) {
+        return {
+            label: 'iOS',
+            className: 'platform-ios',
+            color: '#60a5fa',
+            bg: 'rgba(0, 122, 255, 0.15)',
+            border: 'rgba(0, 122, 255, 0.35)'
+        };
+    }
+    const raw = (cat || 'Global').toUpperCase().replace(/-/g, ' ');
+    return {
+        label: raw,
+        className: 'platform-global',
+        color: 'var(--gold, #ffd700)',
+        bg: 'rgba(255, 215, 0, 0.12)',
+        border: 'rgba(255, 215, 0, 0.3)'
+    };
+}
+
 app.get('/api/search/suggestions', async (req, res) => {
     try {
         const rawQuery = (req.query.q || '').trim();
@@ -12428,7 +12514,7 @@ app.get('/api/search/suggestions', async (req, res) => {
                 ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         })
-            .select('name slug category iconKey iconUrl downloads averageRating developer isVariant')
+            .select('name slug category platforms iconKey iconUrl downloads averageRating developer isVariant')
             .sort({ downloads: -1 })
             .limit(5)
             .lean();
@@ -12441,10 +12527,17 @@ app.get('/api/search/suggestions', async (req, res) => {
             }
             const modSlug = file.slug || slugify(file.name);
             const modUrl = file.isVariant ? `/mods/${file.category}/${modSlug}/${file._id}` : `/mods/${file.category}/${modSlug}`;
+            const platInfo = getSuggestionPlatformBadge(file.category, file.platforms);
             return {
                 _id: file._id,
                 name: file.name,
                 category: file.category,
+                platforms: file.platforms || [],
+                platformLabel: platInfo.label,
+                platformClass: platInfo.className,
+                platformColor: platInfo.color,
+                platformBg: platInfo.bg,
+                platformBorder: platInfo.border,
                 developer: file.developer,
                 downloads: file.downloads || 0,
                 rating: file.averageRating || 5.0,

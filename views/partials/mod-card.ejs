@@ -7,20 +7,23 @@
             Boolean(file.hasLiveVariants) ||
             (Array.isArray(file.variants) && file.variants.length > 0 && file.variants.some(v => typeof v === 'object' && v !== null && v.status === 'live'));
         const isModMaster = !isModVariant && hasLiveVariants;
+        let cardColorClass = '';
+        if (isModVariant) cardColorClass = 'mod-card-variant';
+        else if (isModMaster) cardColorClass = 'mod-card-master';
     %>
     <!-- The Card is a DIV, not an 'A' tag -->
-    <div class="mod-card">
+    <div class="mod-card <%= cardColorClass %>" data-card-type="<%= isModVariant ? 'variant' : (isModMaster ? 'master' : 'standard') %>">
         
         <!-- Top Badges Row: Original design with Certification on left and Version on right -->
         <div class="card-top-badges">
             <% if (file.certification === 'certified') { %>
-                <div class="app-feature-tag"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
+                <div class="app-feature-tag certified" style="border-radius: 12px !important;"><i class="fas fa-check-circle" style="font-size: 0.85em; margin-right: 4px;"></i> Certified</div>
             <% } else if (file.certification === 'community-tested') { %>
-                <div class="app-feature-tag" style="background-color: var(--silver); color: var(--black);">Community Tested</div>
+                <div class="app-feature-tag community-tested" style="background-color: var(--silver); color: var(--black); border-radius: 12px !important;">Community Tested</div>
             <% } %>
             
             <% if (file.version) { %>
-                <div class="mod-type-tag"><%= file.version %></div>
+                <div class="mod-type-tag" style="border-radius: 12px !important;"><%= file.version %></div>
             <% } %>
         </div>
         
@@ -57,8 +60,17 @@
             
             <!-- Platform Tag & View Count -->
             <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 10;">
+                <%
+                    let displayPlatform = 'OTHER';
+                    if (file.category === 'android') displayPlatform = 'ANDROID';
+                    else if (file.category === 'windows') displayPlatform = 'WINDOWS';
+                    else if (file.category === 'ios-jailed') displayPlatform = 'IOS (IPA)';
+                    else if (file.category === 'ios-jailbroken') displayPlatform = 'IOS (DEB)';
+                    else if (file.category === 'wordpress') displayPlatform = 'WORDPRESS';
+                    else if (file.category) displayPlatform = file.category.toUpperCase().replace('-', ' ');
+                %>
                 <span class="platform-tag <%= file.category.replace('-jailed', '-ipa').replace('-jailbroken', '-deb') %>">
-                    <%= file.category.toUpperCase().replace('-', ' ') %>
+                    <%= displayPlatform %>
                 </span>
                 
                 <div class="view-count" style="display: flex; align-items: center; gap: 5px; color: var(--silver); font-size: 0.85em; font-weight: 600;" title="<%= file.views || 0 %> Views">

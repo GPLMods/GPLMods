@@ -407,32 +407,70 @@
 
                     <% if (hasAnyMods) { %>
                         <!-- Loop through each category provided from the backend -->
-                        <% Object.keys(filesByCategory).forEach(category=> { %>
+                        <% Object.keys(filesByCategory).forEach(category=> { 
+                            const categorySections = filesByCategory[category] || {};
+                            let categoryModCount = 0;
+                            Object.keys(categorySections).forEach(sec => {
+                                if (Array.isArray(categorySections[sec])) {
+                                    categoryModCount += categorySections[sec].length;
+                                }
+                            });
+                            
+                            const categoryDisplayNames = {
+                                'android': 'Android',
+                                'windows': 'Windows',
+                                'ios-jailed': 'iOS (IPA)',
+                                'ios-jailbroken': 'iOS (DEB)',
+                                'wordpress': 'WordPress'
+                            };
+                            const catDisplayName = categoryDisplayNames[category] || category.toUpperCase().replace('-', ' ');
+                            const uploadPlatformParam = category === 'ios-jailed' ? 'ios-jailed' : (category === 'ios-jailbroken' ? 'ios-jailbroken' : category);
+                        %>
                             <div id="<%= category %>-mods"
                                 class="tab-content <%= category === 'android' ? 'active' : '' %>">
 
-                                <!-- Loop through each sub-section for the category -->
-                                <% Object.keys(filesByCategory[category]).forEach(section=> { %>
-                                    <section class="mod-section">
-                                        <div class="section-header">
-                                            <h2 class="section-title">
-                                                <%= section.replace('-', ' ' ) %>
-                                            </h2>
-                                            <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
-                                        </div>
+                                <% if (categoryModCount > 0) { %>
+                                    <!-- Loop through each sub-section for the category -->
+                                    <% Object.keys(categorySections).forEach(section=> { 
+                                        const sectionFiles = categorySections[section];
+                                        if (Array.isArray(sectionFiles) && sectionFiles.length > 0) {
+                                    %>
+                                        <section class="mod-section">
+                                            <div class="section-header">
+                                                <h2 class="section-title">
+                                                    <%= section.replace('-', ' ' ) %>
+                                                </h2>
+                                                <a href="/category?cat=<%= category %>" class="section-more">View All ></a>
+                                            </div>
 
-                                        <!-- The Horizontal Glide Container -->
-                                        <div class="mod-carousel">
-                                            <!-- Loop through the files in this section -->
-                                            <% filesByCategory[category][section].forEach(file=> { %>
-                                                <%- include('../partials/mod-card', { file: file }) %>
-                                                    <% }) %> <!-- Closes the files loop -->
-                                        </div>
-                                    </section>
+                                            <!-- The Horizontal Glide Container -->
+                                            <div class="mod-carousel">
+                                                <!-- Loop through the files in this section -->
+                                                <% sectionFiles.forEach(file=> { %>
+                                                    <%- include('../partials/mod-card', { file: file }) %>
+                                                <% }) %> <!-- Closes the files loop -->
+                                            </div>
+                                        </section>
+                                        <% } %>
                                     <% }) %> <!-- Closes the section loop -->
+                                <% } else { %>
+                                    <!-- Empty state when no mods exist in this specific category -->
+                                    <div class="category-empty-state" style="text-align: center; padding: 50px 24px; background: linear-gradient(135deg, rgba(25, 27, 34, 0.85) 0%, rgba(15, 16, 21, 0.95) 100%); border-radius: 16px; border: 1px solid rgba(255, 215, 0, 0.2); margin: 30px auto; max-width: 650px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+                                        <div style="width: 70px; height: 70px; margin: 0 auto 18px; border-radius: 50%; background: rgba(255, 215, 0, 0.1); border: 1.5px solid rgba(255, 215, 0, 0.35); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 1.8rem; box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);">
+                                            <i class="fas fa-box-open"></i>
+                                        </div>
+                                        <h3 style="color: var(--white); font-size: 1.35rem; font-weight: 700; margin-bottom: 8px;">No <%= catDisplayName %> Mods Found</h3>
+                                        <p style="color: var(--silver); font-size: 0.95rem; line-height: 1.5; margin-bottom: 22px; max-width: 480px; margin-left: auto; margin-right: auto;">
+                                            There are currently no mods available in the <%= catDisplayName %> category. Be the first creator to share your mod with the community!
+                                        </p>
+                                        <a href="/upload?platform=<%= uploadPlatformParam %>" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; background: var(--gold); color: var(--black); padding: 12px 28px; border-radius: 25px; font-weight: 700; font-size: 0.95rem; text-decoration: none; box-shadow: 0 0 18px var(--glow-gold); transition: transform 0.25s ease, box-shadow 0.25s ease;">
+                                            <i class="fas fa-cloud-upload-alt"></i> Upload Mod to this Category
+                                        </a>
+                                    </div>
+                                <% } %>
 
                             </div>
-                            <% }) %> <!-- Closes the category loop -->
+                        <% }) %> <!-- Closes the category loop -->
                                 <% } else { %>
                                     <!-- This block will display if filesByCategory is empty or not defined -->
                                     <div

@@ -734,6 +734,45 @@ function safeCompactNum(num) {
     }
 }
 
+function getClientSuggestionPlatformBadge(mod) {
+    if (mod.platformLabel && mod.platformColor && mod.platformBg) {
+        return {
+            label: mod.platformLabel,
+            color: mod.platformColor,
+            bg: mod.platformBg,
+            border: mod.platformBorder || 'transparent'
+        };
+    }
+    const cat = (mod.category || '').toLowerCase().trim();
+    const platArr = Array.isArray(mod.platforms) ? mod.platforms.map(p => String(p).toLowerCase().trim()) : [];
+
+    if (cat === 'ios-jailed' || cat === 'ios-ipa' || cat === 'ipa' || platArr.some(p => p.includes('ipa') || p.includes('jailed'))) {
+        return { label: 'iOS (IPA)', color: '#60a5fa', bg: 'rgba(0, 122, 255, 0.15)', border: 'rgba(0, 122, 255, 0.35)' };
+    }
+    if (cat === 'ios-jailbroken' || cat === 'ios-deb' || cat === 'deb' || platArr.some(p => p.includes('deb') || p.includes('jailbroken'))) {
+        return { label: 'iOS (DEB)', color: '#fb923c', bg: 'rgba(251, 146, 60, 0.15)', border: 'rgba(251, 146, 60, 0.35)' };
+    }
+    if (cat === 'android' || platArr.some(p => p.includes('android'))) {
+        return { label: 'Android', color: '#3ddc84', bg: 'rgba(61, 220, 132, 0.15)', border: 'rgba(61, 220, 132, 0.35)' };
+    }
+    if (cat === 'windows' || platArr.some(p => p.includes('windows') || p.includes('win'))) {
+        return { label: 'Windows', color: '#38bdf8', bg: 'rgba(0, 164, 239, 0.15)', border: 'rgba(0, 164, 239, 0.35)' };
+    }
+    if (cat === 'wordpress' || platArr.some(p => p.includes('wordpress') || p.includes('wp'))) {
+        return { label: 'WordPress', color: '#38bdf8', bg: 'rgba(33, 117, 155, 0.18)', border: 'rgba(33, 117, 155, 0.4)' };
+    }
+    if (cat === 'mac' || cat === 'macos' || platArr.some(p => p.includes('mac'))) {
+        return { label: 'macOS', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.15)', border: 'rgba(192, 132, 252, 0.35)' };
+    }
+    if (cat === 'linux' || platArr.some(p => p.includes('linux'))) {
+        return { label: 'Linux', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' };
+    }
+    if (cat.startsWith('ios')) {
+        return { label: 'iOS', color: '#60a5fa', bg: 'rgba(0, 122, 255, 0.15)', border: 'rgba(0, 122, 255, 0.35)' };
+    }
+    return { label: (cat || 'Global').toUpperCase().replace(/-/g, ' '), color: 'var(--gold, #ffd700)', bg: 'rgba(255, 215, 0, 0.12)', border: 'rgba(255, 215, 0, 0.3)' };
+}
+
 async function fetchAndDisplaySuggestions(query) {
     const suggestionsBox = document.getElementById('searchSuggestions');
     if (!suggestionsBox) return;
@@ -790,13 +829,14 @@ async function fetchAndDisplaySuggestions(query) {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(escapedQuery, 'gi');
                 const boldedTitle = safeEscapeHtml(mod.name).replace(regex, (match) => `<b>${match}</b>`);
+                const platInfo = getClientSuggestionPlatformBadge(mod);
                 containerHtml += `
                     <a href="${mod.url}" class="suggestion-item suggestion-mod" style="display: flex; align-items: center; gap: 12px; padding: 9px 16px; color: var(--white); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s ease;">
                         <img src="${mod.iconUrl || '/images/default-app-icon.png'}" alt="${safeEscapeHtml(mod.name)}" style="width: 34px; height: 34px; border-radius: 8px; object-fit: cover; background: #000; border: 1px solid rgba(255,215,0,0.25); flex-shrink: 0;" onerror="this.onerror=null; this.src='/images/default-app-icon.png';">
                         <div style="flex-grow: 1; min-width: 0;">
                             <div style="font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--white);">${boldedTitle}</div>
                             <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72em; color: var(--silver); margin-top: 2px;">
-                                <span style="background: rgba(255,215,0,0.12); color: var(--gold); padding: 1px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 700;">${mod.category}</span>
+                                <span style="background: ${platInfo.bg}; color: ${platInfo.color}; border: 1px solid ${platInfo.border}; padding: 1px 7px; border-radius: 4px; font-weight: 700; font-size: 0.74em; letter-spacing: 0.3px; display: inline-flex; align-items: center;">${safeEscapeHtml(platInfo.label)}</span>
                                 ${mod.developer ? `<span><i class="fas fa-code-branch" style="font-size: 0.85em;"></i> ${safeEscapeHtml(mod.developer)}</span>` : ''}
                                 <span><i class="fas fa-download" style="font-size: 0.85em;"></i> ${safeCompactNum(mod.downloads || 0)}</span>
                             </div>
