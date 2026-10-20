@@ -51,20 +51,28 @@
         }
 
         setupListeners() {
+            // Immediate autoplay attempt (succeeds if user already engaged in session)
+            if (this.musicEnabled && !this.isInGamePage() && !this.isFirstLoadSplash()) {
+                this.playMusic();
+            }
+
             // Browser unlock on first interaction
             const unlockAudio = () => {
                 if (!this.hasInteracted) {
                     this.hasInteracted = true;
-                    // Don't auto-start music if on game container page or first load intro video
+                    // Auto-start music if on hub page
                     if (this.musicEnabled && !this.isInGamePage() && !this.isFirstLoadSplash()) {
                         this.playMusic();
                     }
-                    window.removeEventListener('pointerdown', unlockAudio);
-                    window.removeEventListener('keydown', unlockAudio);
+                    ['pointerdown', 'pointermove', 'touchstart', 'keydown', 'scroll', 'wheel'].forEach(evt => {
+                        window.removeEventListener(evt, unlockAudio);
+                    });
                 }
             };
-            window.addEventListener('pointerdown', unlockAudio, { once: true });
-            window.addEventListener('keydown', unlockAudio, { once: true });
+
+            ['pointerdown', 'pointermove', 'touchstart', 'keydown', 'scroll', 'wheel'].forEach(evt => {
+                window.addEventListener(evt, unlockAudio, { passive: true });
+            });
 
             // Global click sound on buttons (except muted or in-game elements if disabled)
             document.addEventListener('click', (e) => {

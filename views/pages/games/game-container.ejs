@@ -204,16 +204,9 @@
                     const idoc = iframe?.contentDocument || iframe?.contentWindow?.document;
                     if (idoc) {
                         idoc.querySelectorAll('audio').forEach(a => {
-                            // Do not accidentally trigger main menu music tracks inside iframe
-                            if (a.id === 'music-menu' || a.id.includes('menu')) {
-                                a.pause();
-                                return;
-                            }
                             if (a.hasAttribute('loop') || a.id.includes('music') || a.id.includes('bg')) {
                                 a.muted = !enable;
-                                if (enable && a.paused) {
-                                    a.play().catch(() => {});
-                                } else if (!enable && !a.paused) {
+                                if (!enable) {
                                     a.pause();
                                 }
                             }

@@ -3,65 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Modern 2048</title>
+    <title>2048 Classic Arcade</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="main-menu">
-        <h1 class="title">2048</h1>
-        <div class="main-menu-buttons">
-            <button id="play-btn" class="btn"><i class="fas fa-play"></i> Play</button>
-        </div>
-    </div>
-    <div id="difficulty-menu" class="hidden">
-        <h1 class="title">2048</h1>
-        <p class="subtitle">Select a difficulty</p>
-        <div class="difficulty-buttons">
-            <button class="btn" data-size="4" data-win="2048">Easy (4x4)</button>
-            <button class="btn" data-size="5" data-win="4096">Medium (5x5)</button>
-            <button class="btn" data-size="6" data-win="8192">Hard (6x6)</button>
-        </div>
-        <button id="back-to-main-btn" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</button>
-    </div>
-    <div id="game-container" class="hidden">
-        <div class="game-header">
-            <h1 class="title">2048</h1>
-            <div class="score-container"><div class="score-box"><span>SCORE</span><div id="score">0</div></div><div class="score-box"><span>BEST</span><div id="best-score">0</div></div></div>
-        </div>
-        <div class="game-controls"><button id="menu-btn" class="btn btn-small"><i class="fas fa-bars"></i> Menu</button><button id="restart-btn" class="btn btn-small"><i class="fas fa-rotate-right"></i> New Game</button></div>
-        <div id="game-board-container"><div id="game-board"></div></div>
-        <p class="game-info">Use arrow keys or swipe to play!</p>
-    </div>
-    <div id="game-over-modal" class="hidden">
-        <div class="modal-content">
-            <h2 id="modal-title">Game Over!</h2><p>Final Score: <span id="final-score">0</span></p>
-            <div class="modal-buttons"><button id="modal-restart-btn" class="btn"><i class="fas fa-rotate-right"></i> Play Again</button><button id="modal-menu-btn" class="btn"><i class="fas fa-bars"></i> Back to Menu</button></div>
-        </div>
-    </div>
-    <div id="settings-modal" class="hidden">
-        <div class="modal-content">
-            <h2>Settings</h2>
-            <div class="setting-item"><label for="music-toggle">Background Music</label><label class="toggle-switch"><input type="checkbox" id="music-toggle"><span class="slider"></span></label></div>
-            <div class="setting-item"><label for="sfx-toggle">Sound Effects</label><label class="toggle-switch"><input type="checkbox" id="sfx-toggle"><span class="slider"></span></label></div>
-            <button id="close-settings-btn" class="btn"><i class="fas fa-times"></i> Close</button>
-        </div>
-    </div>
-    <canvas id="confetti-canvas"></canvas>
-
-    <!-- Audio Elements -->
-    <audio id="bg-music" src="sounds/music.mp3" loop></audio>
+    <!-- Background Audio Elements -->
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/music.mp3" preload="auto" loop></audio>
     <audio id="move-sound" src="sounds/move.wav" preload="auto"></audio>
     <audio id="merge-sound" src="sounds/merge.wav" preload="auto"></audio>
     <audio id="win-sound" src="sounds/win.wav" preload="auto"></audio>
     <audio id="lose-sound" src="sounds/lose.wav" preload="auto"></audio>
-    <audio id="ui-click-sound" src="sounds/click.wav" preload="auto"></audio> <!-- NEW -->
+    <audio id="ui-click-sound" src="sounds/click.wav" preload="auto"></audio>
+
+    <div class="arcade-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">2048</h1>
+                <p class="tagline">Slide, merge numbers &amp; conquer the 2048 tile!</p>
+            </div>
+            
+            <div class="menu-actions">
+                <button id="play-btn" class="arc-btn-primary pulse-btn">
+                    <i class="fas fa-play"></i> <span>Play Game</span>
+                </button>
+                <button id="settings-btn" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <!-- Controller / Input Badges -->
+            <div class="input-hints-bar">
+                <span class="hint-pill" title="Arrow Keys / WASD"><i class="fas fa-keyboard"></i> Keyboard</span>
+                <span class="hint-pill" title="Touch & Swipe"><i class="fas fa-hand-pointer"></i> Touch</span>
+                <span class="hint-pill" title="Gamepad Supported"><i class="fas fa-gamepad"></i> Gamepad</span>
+            </div>
+        </div>
+
+        <!-- 2. Difficulty Select Menu Screen -->
+        <div id="difficulty-menu" class="card-screen hidden">
+            <h2 class="sub-neon-title">Select Grid Mode</h2>
+            <p class="tagline">Choose your board size and target sum</p>
+
+            <div class="difficulty-options">
+                <button class="diff-card" data-size="4" data-win="2048">
+                    <div class="diff-header">
+                        <span class="diff-name">Classic 4×4</span>
+                        <span class="diff-badge green">Easy</span>
+                    </div>
+                    <div class="diff-desc">Target: 2048 • Recommended for classic strategy</div>
+                </button>
+
+                <button class="diff-card" data-size="5" data-win="4096">
+                    <div class="diff-header">
+                        <span class="diff-name">Expanded 5×5</span>
+                        <span class="diff-badge blue">Medium</span>
+                    </div>
+                    <div class="diff-desc">Target: 4096 • More room for massive combo merges</div>
+                </button>
+
+                <button class="diff-card" data-size="6" data-win="8192">
+                    <div class="diff-header">
+                        <span class="diff-name">Expert 6×6</span>
+                        <span class="diff-badge purple">Hard</span>
+                    </div>
+                    <div class="diff-desc">Target: 8192 • Maximum board for endurance masters</div>
+                </button>
+            </div>
+
+            <button id="back-to-main-btn" class="arc-btn-secondary">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
+        </div>
+
+        <!-- 3. Active Gameplay Screen -->
+        <div id="game-container" class="hidden">
+            <header class="game-hud">
+                <div class="hud-brand">
+                    <span class="hud-title">2048</span>
+                    <span id="grid-mode-label" class="hud-mode-pill">4×4</span>
+                </div>
+                
+                <div class="hud-scores">
+                    <div class="score-pill">
+                        <span class="lbl">SCORE</span>
+                        <span id="score" class="val">0</span>
+                    </div>
+                    <div class="score-pill best">
+                        <span class="lbl">BEST</span>
+                        <span id="best-score" class="val">0</span>
+                    </div>
+                </div>
+
+                <div class="hud-buttons">
+                    <button id="menu-btn" class="icon-btn" title="Back to Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <button id="restart-btn" class="icon-btn" title="Restart Game">
+                        <i class="fas fa-rotate-right"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Board Viewport -->
+            <div id="game-board-container" class="board-frame">
+                <div id="game-board"></div>
+            </div>
+
+            <!-- Virtual On-screen D-Pad for Mobile Accessibility -->
+            <div class="mobile-virtual-dpad" id="virtualDpad">
+                <button class="dpad-key up" data-dir="up"><i class="fas fa-chevron-up"></i></button>
+                <div class="dpad-row">
+                    <button class="dpad-key left" data-dir="left"><i class="fas fa-chevron-left"></i></button>
+                    <button class="dpad-key down" data-dir="down"><i class="fas fa-chevron-down"></i></button>
+                    <button class="dpad-key right" data-dir="right"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+
+            <div class="controls-guide-text">
+                <span class="guide-item"><i class="fas fa-arrows-up-down-left-right"></i> Swipe or WASD / D-Pad</span>
+            </div>
+        </div>
+
+        <!-- 4. Game Over / Win Modal -->
+        <div id="game-over-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-glow-icon" id="modal-icon"><i class="fas fa-trophy"></i></div>
+                <h2 id="modal-title" class="modal-headline">Game Over!</h2>
+                <div class="modal-score-box">
+                    <span>Final Score</span>
+                    <strong id="final-score">0</strong>
+                </div>
+                <div class="modal-btn-row">
+                    <button id="modal-restart-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="modal-menu-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Game Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <div class="setting-meta">
+                            <span class="setting-title"><i class="fas fa-music"></i> Music</span>
+                            <span class="setting-subtitle">Theme &amp; In-game soundtrack</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-meta">
+                            <span class="setting-title"><i class="fas fa-volume-high"></i> Sound FX</span>
+                            <span class="setting-subtitle">Merge, slide &amp; victory sound</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="close-settings-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="confetti-canvas"></canvas>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

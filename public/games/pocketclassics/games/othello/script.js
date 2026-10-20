@@ -1,173 +1,518 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Universal Arcade Helper ---
+    const helper = window.ArcadeHelper ? window.ArcadeHelper.init({
+        menuMusic: 'sounds/menu-music.mp3',
+        gameMusic: 'sounds/music.mp3'
+    }) : null;
+
     // --- DOM Elements ---
-    const boardContainer = document.getElementById('board-container');
-    const playerTurnEl = document.getElementById('player-turn');
-    const blackScoreEl = document.getElementById('black-score');
-    const whiteScoreEl = document.getElementById('white-score');
-    const statusMessageEl = document.getElementById('status-message');
-    const menuOverlay = document.getElementById('menu-overlay');
     const mainMenu = document.getElementById('main-menu');
     const aiDifficultyMenu = document.getElementById('ai-difficulty-menu');
     const gameScreen = document.getElementById('game-screen');
     const settingsMenu = document.getElementById('settings-menu');
-    const musicToggle = document.getElementById('music-toggle');
-    const sfxToggle = document.getElementById('sfx-toggle');
-    const bgMusic = document.getElementById('bg-music');
-    const sfxSound = document.getElementById('sfx-sound'); // This is now the "flip" sound
-    const winSound = document.getElementById('win-sound');
-    const uiClickSound = document.getElementById('ui-click-sound'); // NEW: Get the UI click sound element
-    const winPopupOverlay = document.getElementById('win-popup-overlay');
-    const winParticlesCanvas = document.getElementById('win-particles-canvas');
+    const winPopup = document.getElementById('win-popup-overlay');
+
+    const pvpBtn = document.getElementById('pvp-btn');
+    const pvaiBtn = document.getElementById('pvai-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const backToMainBtn = document.getElementById('back-to-main-btn');
+    const closeSettingsBtn = document.getElementById('close-settings-btn');
+    const backToMenuGameBtn = document.getElementById('back-to-menu-game-btn');
+    const restartGameBtn = document.getElementById('restart-game-btn');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const winBackToMenuBtn = document.getElementById('win-back-to-menu-btn');
+
+    const boardContainer = document.getElementById('board-container');
+    const blackScoreEl = document.getElementById('black-score');
+    const whiteScoreEl = document.getElementById('white-score');
+    const playerTurnEl = document.getElementById('player-turn');
+    const statusMessageEl = document.getElementById('status-message');
     const winResultEl = document.getElementById('win-result');
     const winScoreEl = document.getElementById('win-score');
-    
-    // --- Game State (unchanged) ---
-    const BOARD_SIZE = 8, PLAYER_BLACK = 1, PLAYER_WHITE = 2;
-    const DIRECTIONS = [ [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1] ];
-    let board = [], currentPlayer, gameMode, aiDifficulty, gameOver;
-    let particles = [];
-    let isMusicOn = true, isSfxOn = true;
-    window.addEventListener('message', (e) => {
-        if (!e.data) return;
-        if (e.data.type === 'ARCADE_TOGGLE_MUSIC') {
-            isMusicOn = !!e.data.enabled;
-            if (musicToggle) musicToggle.checked = isMusicOn;
-            if (isMusicOn) {
-                if (bgMusic && bgMusic.src) bgMusic.play().catch(() => {});
-            } else {
-                if (bgMusic) bgMusic.pause();
-            }
-        } else if (e.data.type === 'ARCADE_TOGGLE_SFX') {
-            isSfxOn = !!e.data.enabled;
-            if (sfxToggle) sfxToggle.checked = isSfxOn;
-        }
-    });
 
-    // --- UPDATED, ROBUST AUDIO LOGIC ---
-    let audioContextUnlocked = false;
+    const musicToggle = document.getElementById('music-toggle');
+    const sfxToggle = document.getElementById('sfx-toggle');
 
-    function unlockAllAudio() {
-        if (audioContextUnlocked) return;
-        if (isMusicOn && bgMusic) { bgMusic.play().catch(() => {}); bgMusic.pause(); }
-        sfxSound.play().catch(() => {}); sfxSound.pause();
-        winSound.play().catch(() => {}); winSound.pause();
-        uiClickSound.play().catch(() => {}); uiClickSound.pause(); // NEW: Unlock the UI sound
-        audioContextUnlocked = true;
-        console.log("Audio contexts have been unlocked by user interaction.");
-    }
+    // --- Sounds ---
+    const clickSound = document.getElementById('sfx-sound');
+    const winSound = document.getElementById('win-sound');
+    const uiClickSound = document.getElementById('ui-click-sound');
 
-    function playSfx() { // This function now ONLY plays the piece "flip" sound
-        unlockAllAudio();
-        if (isSfxOn && sfxSound.src) { sfxSound.currentTime = 0; sfxSound.play().catch(e => {}); }
+    function playSound(snd) {
+        if (helper) helper.audio.playSfx(snd);
+        else if (snd) { snd.currentTime = 0; snd.play().catch(() => {}); }
     }
-    
-    // NEW: A separate function for playing the UI button "pop" sound
-    function playUiClickSound() {
-        unlockAllAudio();
-        if (isSfxOn && uiClickSound.src) { uiClickSound.currentTime = 0; uiClickSound.play().catch(e => {}); }
-    }
-    
-    function playWinSound() { // This function is unchanged
-        unlockAllAudio();
-        if (isSfxOn && winSound.src) { winSound.currentTime = 0; winSound.play().catch(e => {}); }
-    }
+    function playClick() { playSound(uiClickSound); }
 
+    if (helper) helper.audio.playMenuMusic();
+
+    // Sync settings
     if (musicToggle) {
+        musicToggle.checked = helper ? helper.audio.musicEnabled : (localStorage.getItem('arc_music_enabled') !== 'false');
         musicToggle.addEventListener('change', (e) => {
-            isMusicOn = e.target.checked;
-            if (isMusicOn) { unlockAllAudio(); bgMusic.play().catch(e => console.error("Error playing background music:", e)); } 
-            else { bgMusic.pause(); }
+            if (helper) helper.audio.setMusicEnabled(e.target.checked);
+        });
+    }
+    if (sfxToggle) {
+        sfxToggle.checked = helper ? helper.audio.sfxEnabled : (localStorage.getItem('arc_sfx_enabled') !== 'false');
+        sfxToggle.addEventListener('change', (e) => {
+            if (helper) helper.audio.setSfxEnabled(e.target.checked);
         });
     }
 
-    if (sfxToggle) {
-        sfxToggle.addEventListener('change', (e) => isSfxOn = e.target.checked);
-    }
-    
-    // UPDATED: This listener now calls the new UI click sound function
-    document.addEventListener('click', (e) => {
-        if (e.target.matches('button')) playUiClickSound();
-    });
-    
-    // --- Menu & Navigation Logic ---
-    const setupButton = (id, callback) => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', callback);
-    };
-    setupButton('pvp-btn', () => { gameMode = 'pvp'; startGame(); });
-    setupButton('pvai-btn', () => { mainMenu.classList.add('hidden'); aiDifficultyMenu.classList.remove('hidden'); });
-    if (aiDifficultyMenu) {
-        aiDifficultyMenu.addEventListener('click', (e) => { if (e.target.tagName === 'BUTTON' && e.target.dataset.difficulty) { gameMode = 'pvai'; aiDifficulty = e.target.dataset.difficulty; startGame(); } });
-    }
-    setupButton('back-to-main-btn', () => { aiDifficultyMenu.classList.add('hidden'); mainMenu.classList.remove('hidden'); });
-    setupButton('open-settings-btn', () => { menuOverlay.classList.add('invisible'); settingsMenu.classList.remove('invisible'); });
-    setupButton('close-settings-btn', () => { settingsMenu.classList.add('invisible'); menuOverlay.classList.remove('invisible'); });
-    setupButton('home-btn', () => { 
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-        } else {
-            window.location.href = '/games/hub'; 
+    // --- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) ---
+    let sessBlack = parseInt(localStorage.getItem('arc_othello_black') || '0', 10);
+    let sessDraw = parseInt(localStorage.getItem('arc_othello_draw') || '0', 10);
+    let sessWhite = parseInt(localStorage.getItem('arc_othello_white') || '0', 10);
+
+    function updateOthelloScoreboard() {
+        const bEl = document.getElementById('sessBlackWins');
+        const dEl = document.getElementById('sessDraws');
+        const wEl = document.getElementById('sessWhiteWins');
+        const pillB = document.getElementById('pillBlack');
+        const pillW = document.getElementById('pillWhite');
+        if (bEl) bEl.textContent = sessBlack;
+        if (dEl) dEl.textContent = sessDraw;
+        if (wEl) wEl.textContent = sessWhite;
+        if (pillB && pillW) {
+            pillB.classList.toggle('leading', sessBlack > sessWhite);
+            pillW.classList.toggle('leading', sessWhite > sessBlack);
         }
-    });
-    const goBackToMenu = () => { bgMusic.pause(); winPopupOverlay.classList.add('invisible'); gameScreen.classList.add('hidden'); menuOverlay.classList.remove('invisible'); mainMenu.classList.remove('hidden'); particles = []; };
-    setupButton('back-to-menu-game-btn', goBackToMenu);
-    setupButton('win-back-to-menu-btn', goBackToMenu);
-    setupButton('play-again-btn', () => { winPopupOverlay.classList.add('invisible'); particles = []; initGame(); });
-
-    function startGame() {
-        unlockAllAudio();
-        menuOverlay.classList.add('invisible'); gameScreen.classList.remove('hidden'); aiDifficultyMenu.classList.add('hidden');
-        if (isMusicOn && bgMusic.src) bgMusic.play().catch(e => console.error("Error playing music on start:", e));
-        initGame();
     }
-    
-    // --- Core Game Logic and Rendering ---
-    function initGame() { board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0)); board[3][3] = PLAYER_WHITE; board[3][4] = PLAYER_BLACK; board[4][3] = PLAYER_BLACK; board[4][4] = PLAYER_WHITE; currentPlayer = PLAYER_BLACK; gameOver = false; statusMessageEl.textContent = ''; boardContainer.style.pointerEvents = 'auto'; renderBoard(); updateUI(); highlightValidMoves(); }
-    
-    boardContainer.addEventListener('click', (e) => { if (gameOver) return; const highlighter = e.target.closest('.valid-move-highlighter'); if (highlighter) { playSfx(); const cell = highlighter.parentElement; makeMove(parseInt(cell.dataset.row), parseInt(cell.dataset.col)); } });
-    
-    function makeMove(row, col) { const piecesToFlip = getPiecesToFlip(row, col, currentPlayer); if (piecesToFlip.length === 0) return; boardContainer.style.pointerEvents = 'none'; document.querySelectorAll('.valid-move-highlighter').forEach(h => h.remove()); statusMessageEl.textContent = ''; board[row][col] = currentPlayer; piecesToFlip.forEach(p => { board[p.row][p.col] = currentPlayer; }); const playerClass = currentPlayer === 1 ? 'black' : 'white'; const opponentClass = currentPlayer === 1 ? 'white' : 'black'; const newPieceCell = boardContainer.children[row * 8 + col]; const newPiece = document.createElement('div'); newPiece.className = `piece ${playerClass}`; newPiece.style.transform = 'scale(0)'; newPieceCell.appendChild(newPiece); requestAnimationFrame(() => { newPiece.style.transform = 'scale(1)'; }); let maxDelay = 0; piecesToFlip.forEach((p, i) => { const delay = 100 + 50 * i; maxDelay = delay; setTimeout(() => { const pieceToFlip = boardContainer.children[p.row * 8 + p.col].querySelector('.piece'); if (pieceToFlip) { pieceToFlip.style.transform = 'rotateY(180deg)'; setTimeout(() => { pieceToFlip.classList.remove(opponentClass); pieceToFlip.classList.add(playerClass); pieceToFlip.style.transform = ''; }, 300); } }, delay); }); setTimeout(switchPlayer, maxDelay + 600); }
-    function switchPlayer() { updateUI(); const opponent = (currentPlayer === 1) ? 2 : 1; if (getValidMoves(opponent).length > 0) { currentPlayer = opponent; } else if (getValidMoves(currentPlayer).length > 0) { statusMessageEl.textContent = `${opponent === 1 ? 'Black' : 'White'} has no moves! Turn skipped.`; } else { endGame(); return; } updateUI(); highlightValidMoves(); if (!gameOver && gameMode === 'pvai' && currentPlayer === 2) { setTimeout(makeAiMove, 800); } else { boardContainer.style.pointerEvents = 'auto'; } }
-    function getValidMoves(player) { const moves = []; for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) { if (board[r][c] === 0 && getPiecesToFlip(r, c, player).length > 0) moves.push({ row: r, col: c }); } return moves; }
-    function getPiecesToFlip(row, col, player) { const opponent = (player === 1) ? 2 : 1; let allPiecesToFlip = []; for (const [dr, dc] of DIRECTIONS) { let path = [], r = row + dr, c = col + dc; while (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === opponent) { path.push({ row: r, col: c }); r += dr; c += dc; } if (r >= 0 && r < 8 && c >= 0 && c < 8 && board[r][c] === player) { allPiecesToFlip.push(...path); } } return allPiecesToFlip; }
-    function endGame() { 
-        playWinSound(); 
-        gameOver = true; 
-        boardContainer.style.pointerEvents = 'none'; 
-        const scores = getScores(); 
-        let winner; 
-        let result = 'draw';
-        if (scores.black > scores.white) { 
-            winResultEl.textContent = "Black Wins!"; 
-            winner = 'black'; 
-            result = 'win';
-        } else if (scores.white > scores.black) { 
-            winResultEl.textContent = "White Wins!"; 
-            winner = 'white'; 
-            result = 'loss';
-        } else { 
-            winResultEl.textContent = "It's a Draw!"; 
-            winner = 'draw'; 
-            result = 'draw';
-        } 
-        winScoreEl.textContent = `Final Score: Black ${scores.black} - ${scores.white} White`; 
-        winPopupOverlay.classList.remove('invisible'); 
-        initParticles(winner); 
+    updateOthelloScoreboard();
+
+    function launchWinParticles() {
+        const canvas = document.getElementById('win-particles-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const colors = ['#10b981', '#38bdf8', '#ffd700', '#f8fafc', '#a855f7'];
+        const particles = Array.from({ length: 90 }, () => ({
+            x: canvas.width / 2,
+            y: canvas.height * 0.45,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.7) * 14,
+            size: Math.random() * 8 + 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            vr: (Math.random() - 0.5) * 10,
+            alpha: 1
+        }));
+        function frame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.25;
+                p.rotation += p.vr;
+                p.alpha -= 0.012;
+                if (p.alpha > 0) {
+                    active = true;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate((p.rotation * Math.PI) / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+                }
+            });
+            if (active) requestAnimationFrame(frame);
+            else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        requestAnimationFrame(frame);
+    }
+
+    // --- Game State ---
+    const BOARD_SIZE = 8;
+    const EMPTY = 0, BLACK = 1, WHITE = 2;
+    let board = [];
+    let currentPlayer = BLACK; // Black goes first in Othello
+    let gameMode = 'pvp'; // 'pvp' | 'pvai'
+    let difficulty = 'medium';
+    let isGameOver = false;
+    let cursor = { r: 3, c: 2 };
+
+    // --- Navigation ---
+    pvpBtn?.addEventListener('click', () => {
+        playClick();
+        gameMode = 'pvp';
+        startGame();
+    });
+
+    pvaiBtn?.addEventListener('click', () => {
+        playClick();
+        gameMode = 'pvai';
+        mainMenu.classList.add('hidden');
+        aiDifficultyMenu.classList.remove('hidden');
+    });
+
+    backToMainBtn?.addEventListener('click', () => {
+        playClick();
+        aiDifficultyMenu.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+    });
+
+    document.querySelectorAll('.difficulty-options .diff-card').forEach(btn => {
+        btn.addEventListener('click', () => {
+            playClick();
+            difficulty = btn.dataset.difficulty;
+            startGame();
+        });
+    });
+
+    settingsBtn?.addEventListener('click', () => {
+        playClick();
+        settingsMenu.classList.remove('hidden');
+    });
+
+    closeSettingsBtn?.addEventListener('click', () => {
+        playClick();
+        settingsMenu.classList.add('hidden');
+    });
+
+    function returnToMenu() {
+        playClick();
+        gameScreen.classList.add('hidden');
+        aiDifficultyMenu.classList.add('hidden');
+        winPopup.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+        if (helper) helper.audio.playMenuMusic();
+    }
+
+    backToMenuGameBtn?.addEventListener('click', returnToMenu);
+    winBackToMenuBtn?.addEventListener('click', returnToMenu);
+
+    restartGameBtn?.addEventListener('click', () => {
+        playClick();
+        startGame();
+    });
+
+    playAgainBtn?.addEventListener('click', () => {
+        playClick();
+        winPopup.classList.add('hidden');
+        startGame();
+    });
+
+    // --- Game Logic ---
+    function startGame() {
+        mainMenu.classList.add('hidden');
+        aiDifficultyMenu.classList.add('hidden');
+        winPopup.classList.add('hidden');
+        gameScreen.classList.remove('hidden');
+
+        if (helper) helper.audio.playGameMusic();
+
+        board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
+        // Center initial 4 discs
+        board[3][3] = WHITE;
+        board[3][4] = BLACK;
+        board[4][3] = BLACK;
+        board[4][4] = WHITE;
+
+        currentPlayer = BLACK;
+        isGameOver = false;
+        cursor = { r: 3, c: 2 };
+
+        renderBoard();
+        updateScores();
+        updateTurnDisplay();
+    }
+
+    const DIRS = [
+        [-1, -1], [-1, 0], [-1, 1],
+        [0, -1],           [0, 1],
+        [1, -1],  [1, 0],  [1, 1]
+    ];
+
+    function getFlippableDiscs(r, c, player) {
+        if (board[r][c] !== EMPTY) return [];
+        const opponent = player === BLACK ? WHITE : BLACK;
+        const flippable = [];
+
+        for (const [dr, dc] of DIRS) {
+            const path = [];
+            let nr = r + dr, nc = c + dc;
+
+            while (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === opponent) {
+                path.push({ r: nr, c: nc });
+                nr += dr;
+                nc += dc;
+            }
+
+            if (path.length > 0 && nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE && board[nr][nc] === player) {
+                flippable.push(...path);
+            }
+        }
+
+        return flippable;
+    }
+
+    function getValidMoves(player) {
+        const moves = [];
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const flips = getFlippableDiscs(r, c, player);
+                if (flips.length > 0) {
+                    moves.push({ r, c, flips });
+                }
+            }
+        }
+        return moves;
+    }
+
+    function renderBoard() {
+        boardContainer.innerHTML = '';
+        const validMoves = getValidMoves(currentPlayer);
+
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.row = r;
+                cell.dataset.col = c;
+
+                if (cursor.r === r && cursor.c === c) {
+                    cell.classList.add('gamepad-cursor');
+                }
+
+                if (board[r][c] !== EMPTY) {
+                    const piece = document.createElement('div');
+                    piece.classList.add('piece', board[r][c] === BLACK ? 'black' : 'white');
+                    cell.appendChild(piece);
+                } else {
+                    const move = validMoves.find(m => m.r === r && m.c === c);
+                    if (move && (!gameMode === 'pvai' || currentPlayer === BLACK)) {
+                        const dot = document.createElement('div');
+                        dot.classList.add('valid-move-dot');
+                        cell.appendChild(dot);
+                    }
+                }
+
+                cell.addEventListener('click', () => onCellClick(r, c));
+                boardContainer.appendChild(cell);
+            }
+        }
+    }
+
+    function updateScores() {
+        let black = 0, white = 0;
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if (board[r][c] === BLACK) black++;
+                else if (board[r][c] === WHITE) white++;
+            }
+        }
+        if (blackScoreEl) blackScoreEl.textContent = black;
+        if (whiteScoreEl) whiteScoreEl.textContent = white;
+        return { black, white };
+    }
+
+    function updateTurnDisplay() {
+        const isB = currentPlayer === BLACK;
+        playerTurnEl.textContent = isB ? "Black's Turn" : (gameMode === 'pvai' ? "AI Thinking..." : "White's Turn");
+        playerTurnEl.style.color = isB ? '#f8fafc' : '#ffd700';
+    }
+
+    function onCellClick(r, c) {
+        if (isGameOver) return;
+        if (gameMode === 'pvai' && currentPlayer === WHITE) return;
+
+        cursor = { r, c };
+        const flips = getFlippableDiscs(r, c, currentPlayer);
+        if (flips.length === 0) return;
+
+        makeMove(r, c, flips);
+    }
+
+    function makeMove(r, c, flips) {
+        board[r][c] = currentPlayer;
+        playSound(clickSound);
+        if (helper) helper.vibrate(18);
+
+        // Flip discs with staggered 3D animation
+        flips.forEach((pos, idx) => {
+            setTimeout(() => {
+                board[pos.r][pos.c] = currentPlayer;
+                const cell = document.querySelector(`.cell[data-row="${pos.r}"][data-col="${pos.c}"]`);
+                const piece = cell?.querySelector('.piece');
+                if (piece) {
+                    piece.classList.add('flipping');
+                    setTimeout(() => {
+                        piece.className = `piece ${currentPlayer === BLACK ? 'black' : 'white'}`;
+                        piece.classList.remove('flipping');
+                    }, 150);
+                }
+            }, idx * 40);
+        });
+
+        setTimeout(() => {
+            updateScores();
+            switchTurn();
+        }, (flips.length * 40) + 160);
+    }
+
+    function switchTurn() {
+        const nextPlayer = currentPlayer === BLACK ? WHITE : BLACK;
+        const nextMoves = getValidMoves(nextPlayer);
+
+        if (nextMoves.length > 0) {
+            currentPlayer = nextPlayer;
+            renderBoard();
+            updateTurnDisplay();
+            if (statusMessageEl) statusMessageEl.textContent = "Select an illuminated circle to flip discs";
+
+            if (gameMode === 'pvai' && currentPlayer === WHITE) {
+                setTimeout(makeAiMove, 550);
+            }
+        } else {
+            // Check if current player can move again (pass turn)
+            const currentMoves = getValidMoves(currentPlayer);
+            if (currentMoves.length > 0) {
+                if (statusMessageEl) statusMessageEl.textContent = `${nextPlayer === BLACK ? 'Black' : 'White'} has no legal moves! Turn passed.`;
+                if (helper) helper.vibrate(25);
+                setTimeout(() => {
+                    renderBoard();
+                    updateTurnDisplay();
+                    if (gameMode === 'pvai' && currentPlayer === WHITE) {
+                        setTimeout(makeAiMove, 550);
+                    }
+                }, 1000);
+            } else {
+                // Game Over - neither can move
+                endGame();
+            }
+        }
+    }
+
+    // --- AI Strategist ---
+    function makeAiMove() {
+        if (isGameOver) return;
+        const moves = getValidMoves(WHITE);
+        if (moves.length === 0) {
+            switchTurn();
+            return;
+        }
+
+        // Positional weight matrix for Othello corners and edges
+        const CORNER_WEIGHTS = [
+            [100, -20,  10,   5,   5,  10, -20, 100],
+            [-20, -50,  -2,  -2,  -2,  -2, -50, -20],
+            [ 10,  -2,  -1,  -1,  -1,  -1,  -2,  10],
+            [  5,  -2,  -1,   0,   0,  -1,  -2,   5],
+            [  5,  -2,  -1,   0,   0,  -1,  -2,   5],
+            [ 10,  -2,  -1,  -1,  -1,  -1,  -2,  10],
+            [-20, -50,  -2,  -2,  -2,  -2, -50, -20],
+            [100, -20,  10,   5,   5,  10, -20, 100]
+        ];
+
+        let pick = moves[0];
+
+        if (difficulty === 'easy') {
+            pick = moves[Math.floor(Math.random() * moves.length)];
+        } else if (difficulty === 'medium') {
+            // Greedy: most flips
+            moves.sort((a, b) => b.flips.length - a.flips.length);
+            pick = moves[0];
+        } else {
+            // Hard: positional corner strategy
+            moves.sort((a, b) => {
+                const scoreA = CORNER_WEIGHTS[a.r][a.c] + a.flips.length;
+                const scoreB = CORNER_WEIGHTS[b.r][b.c] + b.flips.length;
+                return scoreB - scoreA;
+            });
+            pick = moves[0];
+        }
+
+        makeMove(pick.r, pick.c, pick.flips);
+    }
+
+    function endGame() {
+        isGameOver = true;
+        playSound(winSound);
+        const { black, white } = updateScores();
+
+        let msg = "It's a Draw!";
+        if (black > white) {
+            msg = gameMode === 'pvai' ? "You Win!" : "Black Wins!";
+            sessBlack++;
+            localStorage.setItem('arc_othello_black', sessBlack);
+            launchWinParticles();
+        } else if (white > black) {
+            msg = gameMode === 'pvai' ? "AI Wins!" : "White Wins!";
+            sessWhite++;
+            localStorage.setItem('arc_othello_white', sessWhite);
+            launchWinParticles();
+        } else {
+            sessDraw++;
+            localStorage.setItem('arc_othello_draw', sessDraw);
+        }
+        updateOthelloScoreboard();
+
+        winResultEl.textContent = msg;
+        winScoreEl.textContent = `Black: ${black} • White: ${white}`;
+        winPopup.classList.remove('hidden');
+
+        if (helper) {
+            helper.vibrate([40, 30, 80]);
+            helper.audio.playMenuMusic();
+        }
 
         if (window.parent && window.parent !== window) {
+            const isPlayerWon = black > white;
             window.parent.postMessage({
                 type: 'ARCADE_GAME_OVER',
-                result: result,
-                score: Math.max(scores.black, scores.white) * 10
+                result: isPlayerWon ? 'win' : 'loss',
+                score: black * 10
             }, '*');
         }
     }
-    function renderBoard() { boardContainer.innerHTML = ''; for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) { const cell = document.createElement('div'); cell.className = 'cell'; cell.dataset.row = r; cell.dataset.col = c; if (board[r][c] !== 0) { const piece = document.createElement('div'); piece.className = `piece ${board[r][c] === 1 ? 'black' : 'white'}`; cell.appendChild(piece); } boardContainer.appendChild(cell); } }
-    function updateUI() { const scores = getScores(); blackScoreEl.textContent = scores.black; whiteScoreEl.textContent = scores.white; if (!gameOver) { playerTurnEl.innerHTML = `<div class="piece ${currentPlayer === 1 ? 'black' : 'white'}" style="width:24px; height:24px; display:inline-block; vertical-align:middle; margin: 0 10px;"></div>`; } else { playerTurnEl.innerHTML = ''; } }
-    function getScores() { return board.flat().reduce((acc, cell) => { if (cell === 1) acc.black++; else if (cell === 2) acc.white++; return acc; }, { black: 0, white: 0 });}
-    function highlightValidMoves() { document.querySelectorAll('.valid-move-highlighter').forEach(h => h.remove()); if(gameOver) return; getValidMoves(currentPlayer).forEach(move => { const cell = boardContainer.children[move.row * 8 + move.col]; const highlighter = document.createElement('div'); highlighter.className = 'valid-move-highlighter'; cell.appendChild(highlighter); }); }
-    // UPDATED: AI move now correctly calls playSfx(), the "flip" sound.
-    function makeAiMove() { if (gameOver) return; const validMoves = getValidMoves(2); if (validMoves.length === 0) return; let bestMove; switch (aiDifficulty) { case 'easy': bestMove = validMoves[Math.floor(Math.random() * validMoves.length)]; break; case 'medium': bestMove = validMoves.reduce((best, move) => { const flips = getPiecesToFlip(move.row, move.col, 2).length; return flips > best.flips ? { move, flips } : best; }, { move: validMoves[0], flips: 0 }).move; break; case 'hard': const w = [ [120,-20,20,5,5,20,-20,120],[-20,-40,-5,-5,-5,-5,-40,-20],[20,-5,15,3,3,15,-5,20],[5,-5,3,3,3,3,-5,5],[5,-5,3,3,3,3,-5,5],[20,-5,15,3,3,15,-5,20],[-20,-40,-5,-5,-5,-5,-40,-20],[120,-20,20,5,5,20,-20,120]]; bestMove = validMoves.reduce((best, move) => { const score = w[move.row][move.col]; return score > best.score ? { move, score } : best; }, { move: null, score: -Infinity }).move || validMoves[0]; break; } playSfx(); makeMove(bestMove.row, bestMove.col); }
-    function initParticles(winner) { const ctx = winParticlesCanvas.getContext('2d'); winParticlesCanvas.width = window.innerWidth; winParticlesCanvas.height = window.innerHeight; const colors = { black: ['#111', '#333', '#555'], white: ['#fff', '#f0f0f0', '#ddd'], draw: ['#111', '#333', '#fff', '#ddd'] }[winner]; particles = []; for (let i = 0; i < 150; i++) { particles.push({ x: winParticlesCanvas.width / 2, y: winParticlesCanvas.height / 2, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8, size: Math.random() * 3 + 2, color: colors[Math.floor(Math.random() * colors.length)], life: Math.random() * 100 + 50 }); } animateParticles(ctx); }
-    function animateParticles(ctx) { if (particles.length === 0) { ctx.clearRect(0, 0, winParticlesCanvas.width, winParticlesCanvas.height); return; } requestAnimationFrame(() => animateParticles(ctx)); ctx.clearRect(0, 0, winParticlesCanvas.width, winParticlesCanvas.height); for (let i = particles.length - 1; i >= 0; i--) { const p = particles[i]; p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life--; if (p.life <= 0) { particles.splice(i, 1); continue; } ctx.globalAlpha = p.life / 100; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; } }
+
+    // --- KEYBOARD & CONTROLLER NAVIGATION ---
+    window.addEventListener('keydown', (e) => {
+        if (gameScreen.classList.contains('hidden') || isGameOver) return;
+
+        let moved = false;
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            cursor.r = Math.max(0, cursor.r - 1); moved = true;
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            cursor.r = Math.min(BOARD_SIZE - 1, cursor.r + 1); moved = true;
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            cursor.c = Math.max(0, cursor.c - 1); moved = true;
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            cursor.c = Math.min(BOARD_SIZE - 1, cursor.c + 1); moved = true;
+        } else if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            onCellClick(cursor.r, cursor.c);
+        } else if (e.key === 'Escape') {
+            backToMenuGameBtn?.click();
+        }
+
+        if (moved) {
+            e.preventDefault();
+            renderBoard();
+        }
+    });
+
+    if (helper && helper.gamepad) {
+        helper.gamepad.onDirection((dir) => {
+            if (!gameScreen.classList.contains('hidden') && !isGameOver) {
+                if (dir === 'up') cursor.r = Math.max(0, cursor.r - 1);
+                else if (dir === 'down') cursor.r = Math.min(BOARD_SIZE - 1, cursor.r + 1);
+                else if (dir === 'left') cursor.c = Math.max(0, cursor.c - 1);
+                else if (dir === 'right') cursor.c = Math.min(BOARD_SIZE - 1, cursor.c + 1);
+                renderBoard();
+            }
+        });
+
+        helper.gamepad.onAction((act) => {
+            if (!gameScreen.classList.contains('hidden')) {
+                if (act === 'A') onCellClick(cursor.r, cursor.c);
+                else if (act === 'START') backToMenuGameBtn?.click();
+                else if (act === 'SELECT') restartGameBtn?.click();
+            }
+        });
+    }
 });

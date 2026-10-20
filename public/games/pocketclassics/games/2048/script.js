@@ -1,122 +1,367 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Initialize Universal Arcade Helper ---
+    const helper = window.ArcadeHelper ? window.ArcadeHelper.init({
+        menuMusic: 'sounds/menu-music.mp3',
+        gameMusic: 'sounds/music.mp3'
+    }) : null;
+
     // --- DOM Elements ---
     const mainMenu = document.getElementById('main-menu');
     const difficultyMenu = document.getElementById('difficulty-menu');
     const gameContainer = document.getElementById('game-container');
     const gameOverModal = document.getElementById('game-over-modal');
     const settingsModal = document.getElementById('settings-modal');
+
     const playBtn = document.getElementById('play-btn');
     const settingsBtn = document.getElementById('settings-btn');
-    const homeBtn = document.getElementById('home-btn');
     const backToMainBtn = document.getElementById('back-to-main-btn');
-    const difficultyButtons = document.querySelectorAll('.difficulty-buttons .btn');
+    const difficultyButtons = document.querySelectorAll('.diff-card');
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const menuBtn = document.getElementById('menu-btn');
     const restartBtn = document.getElementById('restart-btn');
     const modalRestartBtn = document.getElementById('modal-restart-btn');
     const modalMenuBtn = document.getElementById('modal-menu-btn');
+
     const gameBoard = document.getElementById('game-board');
+    const boardContainer = document.getElementById('game-board-container');
     const scoreDisplay = document.getElementById('score');
     const bestScoreDisplay = document.getElementById('best-score');
     const finalScoreDisplay = document.getElementById('final-score');
     const modalTitle = document.getElementById('modal-title');
+    const modalIcon = document.getElementById('modal-icon');
+    const gridModeLabel = document.getElementById('grid-mode-label');
+
     const musicToggle = document.getElementById('music-toggle');
     const sfxToggle = document.getElementById('sfx-toggle');
-    const bgMusic = document.getElementById('bg-music');
+
     const moveSound = document.getElementById('move-sound');
     const mergeSound = document.getElementById('merge-sound');
     const winSound = document.getElementById('win-sound');
     const loseSound = document.getElementById('lose-sound');
     const uiClickSound = document.getElementById('ui-click-sound');
-    const confettiCanvas = document.getElementById('confetti-canvas');
-    const confettiInstance = confetti.create(confettiCanvas, { resize: true, useWorker: true });
 
-    // --- Game State & Settings ---
-    let gridSize, winValue, board, score, bestScore;
+    const confettiCanvas = document.getElementById('confetti-canvas');
+    const confettiInstance = window.confetti ? window.confetti.create(confettiCanvas, { resize: true, useWorker: true }) : null;
+
+    // --- Game State ---
+    let gridSize = 4;
+    let winValue = 2048;
+    let board = [];
+    let score = 0;
+    let bestScore = 0;
     let isGameOver = false;
     let isMoving = false;
-    let isMusicOn = false;
-    let isSfxOn = false;
-    let userHasInteracted = false;
+    let hasWon = false;
 
-    // --- Settings & Sound Logic ---
-    window.addEventListener('message', (e) => {
-        if (!e.data) return;
-        if (e.data.type === 'ARCADE_TOGGLE_MUSIC') {
-            isMusicOn = !!e.data.enabled;
-            if (musicToggle) musicToggle.checked = isMusicOn;
-            if (isMusicOn) {
-                userHasInteracted = true;
-                playBgMusic();
-            } else {
-                pauseBgMusic();
-            }
-        } else if (e.data.type === 'ARCADE_TOGGLE_SFX') {
-            isSfxOn = !!e.data.enabled;
-            if (sfxToggle) sfxToggle.checked = isSfxOn;
-        }
-    });
-
-    function loadSettings() {
-        isMusicOn = localStorage.getItem('isMusicOn') !== 'false';
-        isSfxOn = localStorage.getItem('isSfxOn') !== 'false';
-        if (musicToggle) musicToggle.checked = isMusicOn;
-        if (sfxToggle) sfxToggle.checked = isSfxOn;
+    // --- Audio Helper wrappers ---
+    function playSfx(snd) {
+        if (helper) helper.audio.playSfx(snd);
+        else if (snd) { snd.currentTime = 0; snd.play().catch(() => {}); }
     }
-    function saveSettings() { localStorage.setItem('isMusicOn', isMusicOn); localStorage.setItem('isSfxOn', isSfxOn); }
-    function playBgMusic() {
-        if (isMusicOn && userHasInteracted && bgMusic) bgMusic.play().catch(e => {});
-    }
-    function pauseBgMusic() { if (bgMusic) bgMusic.pause(); }
-    function playSfx(sound) { if (isSfxOn && sound) { sound.currentTime = 0; sound.play().catch(e => {}); } }
-    function playUiClick() { playSfx(uiClickSound); }
-    function handleFirstInteraction() { if (!userHasInteracted) { userHasInteracted = true; playBgMusic(); } }
+    function playClick() { playSfx(uiClickSound); }
 
-    // --- Menu Navigation ---
-    if (playBtn) playBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); mainMenu.classList.add('hidden'); difficultyMenu.classList.remove('hidden'); });
-    if (settingsBtn) settingsBtn.addEventListener('click', () => { handleFirstInteraction(); playUiClick(); settingsModal.classList.remove('hidden'); });
-    if (homeBtn) {
-        homeBtn.addEventListener('click', () => { 
-            handleFirstInteraction(); 
-            playUiClick(); 
-            if (window.parent && window.parent !== window) {
-                window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-            } else {
-                window.location.href = '/games/hub'; 
-            }
+    // Start with Menu Music
+    if (helper) {
+        helper.audio.playMenuMusic();
+    }
+
+    // Settings Toggle sync
+    if (musicToggle) {
+        musicToggle.checked = helper ? helper.audio.musicEnabled : (localStorage.getItem('arc_music_enabled') !== 'false');
+        musicToggle.addEventListener('change', (e) => {
+            if (helper) helper.audio.setMusicEnabled(e.target.checked);
         });
     }
-    backToMainBtn.addEventListener('click', () => { playUiClick(); difficultyMenu.classList.add('hidden'); mainMenu.classList.remove('hidden'); });
-    closeSettingsBtn.addEventListener('click', () => { playUiClick(); settingsModal.classList.add('hidden'); });
-    musicToggle.addEventListener('change', (e) => { isMusicOn = e.target.checked; isMusicOn ? playBgMusic() : pauseBgMusic(); saveSettings(); });
-    sfxToggle.addEventListener('change', (e) => { isSfxOn = e.target.checked; saveSettings(); });
+    if (sfxToggle) {
+        sfxToggle.checked = helper ? helper.audio.sfxEnabled : (localStorage.getItem('arc_sfx_enabled') !== 'false');
+        sfxToggle.addEventListener('change', (e) => {
+            if (helper) helper.audio.setSfxEnabled(e.target.checked);
+        });
+    }
 
-    // --- Game Setup ---
-    function startGame(size, win) { gridSize = size; winValue = win; bestScoreDisplay.textContent = localStorage.getItem(`bestScore_${gridSize}`) || 0; bestScore = parseInt(bestScoreDisplay.textContent); difficultyMenu.classList.add('hidden'); gameContainer.classList.remove('hidden'); playBgMusic(); initGame(); }
-    function initGame() { board = Array(gridSize * gridSize).fill(0); score = 0; isGameOver = false; isMoving = false; updateScore(0); setupGameBoard(); spawnTile(); spawnTile(); updateDisplay(); }
-    function setupGameBoard() { gameBoard.innerHTML = ''; gameBoard.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`; const boardContainer = document.getElementById('game-board-container'); const gap = 10; const totalGapSize = gap * (gridSize - 1); const totalPadding = gap * 2; const cellSize = (boardContainer.clientWidth - totalPadding - totalGapSize) / gridSize; gameBoard.style.gridTemplateRows = `repeat(${gridSize}, ${cellSize}px)`; for (let i = 0; i < gridSize * gridSize; i++) { const cell = document.createElement('div'); cell.classList.add('grid-cell'); gameBoard.appendChild(cell); } }
-    
-    // --- Core Logic ---
-    function getEmptyCells() { const emptyCells = []; for (let i = 0; i < board.length; i++) { if (board[i] === 0) emptyCells.push(i); } return emptyCells; }
-    function spawnTile() { const emptyCells = getEmptyCells(); if (emptyCells.length > 0) { const index = emptyCells[Math.floor(Math.random() * emptyCells.length)]; board[index] = Math.random() < 0.9 ? 2 : 4; } }
-    function updateDisplay() { const boardContainer = document.getElementById('game-board-container'); boardContainer.querySelectorAll('.tile').forEach(t => t.remove()); const gap = 10; const cellWidth = (boardContainer.clientWidth - (gap * 2) - (gap * (gridSize - 1))) / gridSize; for (let i = 0; i < board.length; i++) { if (board[i] !== 0) { const row = Math.floor(i / gridSize); const col = i % gridSize; const tile = document.createElement('div'); tile.classList.add('tile'); tile.dataset.value = board[i]; tile.textContent = board[i]; tile.style.width = `${cellWidth}px`; tile.style.height = `${cellWidth}px`; tile.style.top = `${gap + row * (cellWidth + gap)}px`; tile.style.left = `${gap + col * (cellWidth + gap)}px`; if (boardContainer.querySelector(`[data-merged-at="${i}"]`)) { tile.classList.add('merged'); } else { tile.classList.add('show'); } boardContainer.appendChild(tile); } } }
-    function updateScore(points) { score += points; scoreDisplay.textContent = score; if (score > bestScore) { bestScore = score; bestScoreDisplay.textContent = bestScore; localStorage.setItem(`bestScore_${gridSize}`, bestScore); } }
-    function move(direction) { if (isGameOver || isMoving) return; isMoving = true; let boardChanged = false; let mergeOccurred = false; let tempBoard = [...board]; function slideAndMerge(line) { let filtered = line.filter(num => num !== 0); for (let i = 0; i < filtered.length - 1; i++) { if (filtered[i] === filtered[i + 1]) { filtered[i] *= 2; updateScore(filtered[i]); filtered[i + 1] = 0; mergeOccurred = true; } } let newLine = filtered.filter(num => num !== 0); while (newLine.length < gridSize) newLine.push(0); return newLine; } if (direction === 'up' || direction === 'down') { for (let c = 0; c < gridSize; c++) { let column = []; for (let r = 0; r < gridSize; r++) column.push(tempBoard[r * gridSize + c]); if (direction === 'down') column.reverse(); let newColumn = slideAndMerge(column); if (direction === 'down') newColumn.reverse(); for (let r = 0; r < gridSize; r++) { const index = r * gridSize + c; if (tempBoard[index] !== newColumn[r]) boardChanged = true; tempBoard[index] = newColumn[r]; } } } else { for (let r = 0; r < gridSize; r++) { let row = tempBoard.slice(r * gridSize, r * gridSize + gridSize); if (direction === 'right') row.reverse(); let newRow = slideAndMerge(row); if (direction === 'right') newRow.reverse(); for (let c = 0; c < gridSize; c++) { const index = r * gridSize + c; if (tempBoard[index] !== newRow[c]) boardChanged = true; tempBoard[index] = newRow[c]; } } } if (boardChanged) { board = tempBoard; if (mergeOccurred) playSfx(mergeSound); else playSfx(moveSound); spawnTile(); updateDisplay(); checkGameOver(); } setTimeout(() => { isMoving = false; }, 200); }
-    function checkGameOver() { if (board.includes(winValue)) { endGame(true); return; } if (getEmptyCells().length === 0 && !canMove()) { endGame(false); } }
-    function endGame(isWin) { 
-        isGameOver = true; 
-        pauseBgMusic(); 
-        if (isWin) { 
-            modalTitle.textContent = "You Win!"; 
-            playSfx(winSound); 
-            triggerConfetti(); 
-        } else { 
-            modalTitle.textContent = "Game Over!"; 
-            playSfx(loseSound); 
-        } 
-        finalScoreDisplay.textContent = score; 
-        setTimeout(() => gameOverModal.classList.remove('hidden'), 500); 
+    // --- Navigation ---
+    playBtn?.addEventListener('click', () => {
+        playClick();
+        mainMenu.classList.add('hidden');
+        difficultyMenu.classList.remove('hidden');
+    });
 
+    settingsBtn?.addEventListener('click', () => {
+        playClick();
+        settingsModal.classList.remove('hidden');
+    });
+
+    closeSettingsBtn?.addEventListener('click', () => {
+        playClick();
+        settingsModal.classList.add('hidden');
+    });
+
+    backToMainBtn?.addEventListener('click', () => {
+        playClick();
+        difficultyMenu.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+        if (helper) helper.audio.playMenuMusic();
+    });
+
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            playClick();
+            const size = parseInt(btn.dataset.size, 10);
+            const win = parseInt(btn.dataset.win, 10);
+            startGame(size, win);
+        });
+    });
+
+    function returnToMenu() {
+        playClick();
+        gameContainer.classList.add('hidden');
+        gameOverModal.classList.add('hidden');
+        difficultyMenu.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+        if (helper) helper.audio.playMenuMusic();
+    }
+
+    menuBtn?.addEventListener('click', returnToMenu);
+    modalMenuBtn?.addEventListener('click', returnToMenu);
+
+    restartBtn?.addEventListener('click', () => {
+        playClick();
+        initGame();
+        if (helper) helper.audio.playGameMusic();
+    });
+
+    modalRestartBtn?.addEventListener('click', () => {
+        playClick();
+        gameOverModal.classList.add('hidden');
+        initGame();
+        if (helper) helper.audio.playGameMusic();
+    });
+
+    // --- Game Logic ---
+    function startGame(size, win) {
+        gridSize = size;
+        winValue = win;
+        hasWon = false;
+        if (gridModeLabel) gridModeLabel.textContent = `${gridSize}×${gridSize}`;
+        
+        bestScore = parseInt(localStorage.getItem(`bestScore_${gridSize}`) || '0', 10);
+        if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore;
+
+        difficultyMenu.classList.add('hidden');
+        mainMenu.classList.add('hidden');
+        gameOverModal.classList.add('hidden');
+        gameContainer.classList.remove('hidden');
+
+        // Switch smoothly to Game Music
+        if (helper) helper.audio.playGameMusic();
+
+        initGame();
+    }
+
+    function initGame() {
+        board = Array(gridSize * gridSize).fill(0);
+        score = 0;
+        isGameOver = false;
+        isMoving = false;
+        hasWon = false;
+        updateScore(0);
+        setupGameBoard();
+        spawnTile();
+        spawnTile();
+        updateDisplay();
+    }
+
+    function setupGameBoard() {
+        gameBoard.innerHTML = '';
+        gameBoard.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        gameBoard.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const cell = document.createElement('div');
+            cell.classList.add('grid-cell');
+            gameBoard.appendChild(cell);
+        }
+    }
+
+    function getEmptyCells() {
+        const empty = [];
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] === 0) empty.push(i);
+        }
+        return empty;
+    }
+
+    function spawnTile() {
+        const empty = getEmptyCells();
+        if (empty.length > 0) {
+            const idx = empty[Math.floor(Math.random() * empty.length)];
+            board[idx] = Math.random() < 0.9 ? 2 : 4;
+        }
+    }
+
+    function updateDisplay() {
+        if (!boardContainer) return;
+        boardContainer.querySelectorAll('.tile').forEach(t => t.remove());
+
+        const pad = 8;
+        const gap = 8;
+        const totalGap = gap * (gridSize - 1);
+        const availWidth = boardContainer.clientWidth - (pad * 2);
+        const cellSize = Math.floor((availWidth - totalGap) / gridSize);
+
+        for (let i = 0; i < board.length; i++) {
+            if (board[i] !== 0) {
+                const r = Math.floor(i / gridSize);
+                const c = i % gridSize;
+                const tile = document.createElement('div');
+                tile.classList.add('tile', 'show');
+                tile.dataset.value = board[i];
+                tile.textContent = board[i];
+
+                tile.style.width = `${cellSize}px`;
+                tile.style.height = `${cellSize}px`;
+                tile.style.top = `${pad + r * (cellSize + gap)}px`;
+                tile.style.left = `${pad + c * (cellSize + gap)}px`;
+
+                // Adjust font size for larger numbers
+                if (board[i] >= 1024) tile.style.fontSize = `${Math.max(12, cellSize * 0.28)}px`;
+                else if (board[i] >= 128) tile.style.fontSize = `${Math.max(14, cellSize * 0.35)}px`;
+                else tile.style.fontSize = `${Math.max(16, cellSize * 0.42)}px`;
+
+                boardContainer.appendChild(tile);
+            }
+        }
+    }
+
+    function updateScore(pts) {
+        score += pts;
+        if (scoreDisplay) scoreDisplay.textContent = score;
+        if (score > bestScore) {
+            bestScore = score;
+            if (bestScoreDisplay) bestScoreDisplay.textContent = bestScore;
+            localStorage.setItem(`bestScore_${gridSize}`, bestScore);
+        }
+    }
+
+    function move(dir) {
+        if (isGameOver || isMoving) return;
+        isMoving = true;
+        let boardChanged = false;
+        let mergeOccurred = false;
+        let tempBoard = [...board];
+
+        function slideAndMerge(line) {
+            let filtered = line.filter(num => num !== 0);
+            for (let i = 0; i < filtered.length - 1; i++) {
+                if (filtered[i] === filtered[i + 1]) {
+                    filtered[i] *= 2;
+                    updateScore(filtered[i]);
+                    filtered[i + 1] = 0;
+                    mergeOccurred = true;
+                }
+            }
+            let newLine = filtered.filter(num => num !== 0);
+            while (newLine.length < gridSize) newLine.push(0);
+            return newLine;
+        }
+
+        if (dir === 'up' || dir === 'down') {
+            for (let c = 0; c < gridSize; c++) {
+                let column = [];
+                for (let r = 0; r < gridSize; r++) column.push(tempBoard[r * gridSize + c]);
+                if (dir === 'down') column.reverse();
+                let newColumn = slideAndMerge(column);
+                if (dir === 'down') newColumn.reverse();
+                for (let r = 0; r < gridSize; r++) {
+                    const idx = r * gridSize + c;
+                    if (tempBoard[idx] !== newColumn[r]) boardChanged = true;
+                    tempBoard[idx] = newColumn[r];
+                }
+            }
+        } else {
+            for (let r = 0; r < gridSize; r++) {
+                let row = tempBoard.slice(r * gridSize, r * gridSize + gridSize);
+                if (dir === 'right') row.reverse();
+                let newRow = slideAndMerge(row);
+                if (dir === 'right') newRow.reverse();
+                for (let c = 0; c < gridSize; c++) {
+                    const idx = r * gridSize + c;
+                    if (tempBoard[idx] !== newRow[c]) boardChanged = true;
+                    tempBoard[idx] = newRow[c];
+                }
+            }
+        }
+
+        if (boardChanged) {
+            board = tempBoard;
+            if (mergeOccurred) {
+                playSfx(mergeSound);
+                if (helper) helper.vibrate(25);
+            } else {
+                playSfx(moveSound);
+                if (helper) helper.vibrate(12);
+            }
+            spawnTile();
+            updateDisplay();
+            checkGameState();
+        }
+
+        setTimeout(() => { isMoving = false; }, 130);
+    }
+
+    function canMove() {
+        for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+                const val = board[r * gridSize + c];
+                if (val === 0) return true;
+                if (c < gridSize - 1 && val === board[r * gridSize + (c + 1)]) return true;
+                if (r < gridSize - 1 && val === board[(r + 1) * gridSize + c]) return true;
+            }
+        }
+        return false;
+    }
+
+    function checkGameState() {
+        if (!hasWon && board.includes(winValue)) {
+            hasWon = true;
+            endGame(true);
+            return;
+        }
+        if (getEmptyCells().length === 0 && !canMove()) {
+            endGame(false);
+        }
+    }
+
+    function endGame(isWin) {
+        isGameOver = true;
+        if (isWin) {
+            modalTitle.textContent = "You Win!";
+            if (modalIcon) {
+                modalIcon.innerHTML = '<i class="fas fa-trophy"></i>';
+                modalIcon.style.color = '#ffd700';
+                modalIcon.style.borderColor = '#ffd700';
+            }
+            playSfx(winSound);
+            if (helper) helper.vibrate([40, 30, 60]);
+            triggerConfetti();
+        } else {
+            modalTitle.textContent = "Game Over!";
+            if (modalIcon) {
+                modalIcon.innerHTML = '<i class="fas fa-skull"></i>';
+                modalIcon.style.color = '#ef4444';
+                modalIcon.style.borderColor = '#ef4444';
+            }
+            playSfx(loseSound);
+            if (helper) helper.vibrate(50);
+        }
+
+        if (finalScoreDisplay) finalScoreDisplay.textContent = score;
+        setTimeout(() => {
+            gameOverModal.classList.remove('hidden');
+            if (helper) helper.audio.playMenuMusic();
+        }, 400);
+
+        // Relay result to GPLMods Arcade shell
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 type: 'ARCADE_GAME_OVER',
@@ -125,31 +370,80 @@ document.addEventListener('DOMContentLoaded', () => {
             }, '*');
         }
     }
-    function triggerConfetti() { const duration = 3 * 1000; const animationEnd = Date.now() + duration; const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 101 }; function randomInRange(min, max) { return Math.random() * (max - min) + min; } const interval = setInterval(() => { const timeLeft = animationEnd - Date.now(); if (timeLeft <= 0) return clearInterval(interval); const particleCount = 50 * (timeLeft / duration); confettiInstance({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }); confettiInstance({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }); }, 250); }
-    
-    // --- In-Game Buttons ---
-    function goBackToMenu() {
-        playUiClick();
-        // The pauseBgMusic() line was removed from here.
-        gameContainer.classList.add('hidden');
-        gameOverModal.classList.add('hidden');
-        difficultyMenu.classList.remove('hidden');
+
+    function triggerConfetti() {
+        if (!confettiInstance) return;
+        confettiInstance({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+        setTimeout(() => {
+            confettiInstance({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 } });
+            confettiInstance({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 } });
+        }, 200);
     }
 
-    menuBtn.addEventListener('click', goBackToMenu);
-    modalMenuBtn.addEventListener('click', goBackToMenu);
-    restartBtn.addEventListener('click', () => { playUiClick(); initGame(); playBgMusic(); });
-    modalRestartBtn.addEventListener('click', () => { playUiClick(); gameOverModal.classList.add('hidden'); initGame(); playBgMusic(); });
-    difficultyButtons.forEach(button => button.addEventListener('click', () => { playUiClick(); startGame(parseInt(button.dataset.size), parseInt(button.dataset.win)); }));
-    
-    // --- Controls ---
-    let touchStartX = 0, touchStartY = 0;
-    document.addEventListener("keydown", e => { if (gameContainer.classList.contains("hidden")) return; const keyMap = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" }; if (keyMap[e.key]) { e.preventDefault(); move(keyMap[e.key]); } });
-    gameBoard.parentElement.addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
-    gameBoard.parentElement.addEventListener("touchend", e => { if (touchStartX === 0 && touchStartY === 0) return; const touchEndX = e.changedTouches[0].clientX; const touchEndY = e.changedTouches[0].clientY; const dx = touchEndX - touchStartX, dy = touchEndY - touchStartY; const swipeThreshold = 50; if (Math.abs(dx) > Math.abs(dy)) { if (Math.abs(dx) > swipeThreshold) move(dx > 0 ? "right" : "left"); } else { if (Math.abs(dy) > swipeThreshold) move(dy > 0 ? "down" : "up"); } touchStartX = 0; touchStartY = 0; });
-    
-    window.addEventListener("resize", () => { if (!gameContainer.classList.contains('hidden')) { setupGameBoard(); updateDisplay(); } });
-    
-    // --- Initial Load ---
-    loadSettings();
+    // --- INPUT SUPPORT ---
+
+    // 1. Keyboard (WASD + Arrows + HJKL)
+    window.addEventListener('keydown', (e) => {
+        if (gameContainer.classList.contains('hidden') || isGameOver) return;
+        const keyMap = {
+            ArrowUp: 'up', KeyW: 'up', KeyK: 'up',
+            ArrowDown: 'down', KeyS: 'down', KeyJ: 'down',
+            ArrowLeft: 'left', KeyA: 'left', KeyH: 'left',
+            ArrowRight: 'right', KeyD: 'right', KeyL: 'right'
+        };
+        const dir = keyMap[e.code] || keyMap[e.key];
+        if (dir) {
+            e.preventDefault();
+            move(dir);
+        } else if (e.code === 'KeyR') {
+            restartBtn?.click();
+        } else if (e.code === 'Escape') {
+            menuBtn?.click();
+        }
+    });
+
+    // 2. Gamepad Controller Support
+    if (helper && helper.gamepad) {
+        helper.gamepad.onDirection((dir) => {
+            if (!gameContainer.classList.contains('hidden') && !isGameOver) {
+                move(dir);
+            }
+        });
+
+        helper.gamepad.onAction((action) => {
+            if (action === 'SELECT') {
+                restartBtn?.click();
+            } else if (action === 'START') {
+                if (!gameContainer.classList.contains('hidden')) {
+                    menuBtn?.click();
+                }
+            }
+        });
+    }
+
+    // 3. Touch Swipe Handling
+    if (helper && boardContainer) {
+        helper.bindSwipe(boardContainer, (dir) => {
+            if (!gameContainer.classList.contains('hidden') && !isGameOver) {
+                move(dir);
+            }
+        });
+    }
+
+    // 4. On-screen Virtual D-Pad
+    document.querySelectorAll('.dpad-key').forEach(key => {
+        key.addEventListener('click', () => {
+            const dir = key.dataset.dir;
+            if (dir && !gameContainer.classList.contains('hidden') && !isGameOver) {
+                move(dir);
+            }
+        });
+    });
+
+    // 5. Responsive Resize Fix
+    window.addEventListener('resize', () => {
+        if (!gameContainer.classList.contains('hidden')) {
+            updateDisplay();
+        }
+    });
 });

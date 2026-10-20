@@ -3,73 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Minesweeper</title>
+    <title>Minesweeper Deluxe | Pocket Classics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Link to your external CSS file -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="main-menu-view" class="screen active menu-container">
-        <h1 class="menu-title">Minesweeper</h1>
-        <button id="play-button" class="menu-button"><i class="fas fa-play"></i> Play</button>
-    </div>
+    <!-- Audio Elements -->
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/music-background.mp3" preload="auto" loop></audio>
+    <audio id="sfx-click" src="sounds/sfx-click.wav" preload="auto"></audio>
+    <audio id="sfx-flag" src="sounds/sfx-flag.wav" preload="auto"></audio>
+    <audio id="sfx-reveal" src="sounds/sfx-reveal.wav" preload="auto"></audio>
+    <audio id="sfx-explode" src="sounds/sfx-explode.wav" preload="auto"></audio>
+    <audio id="sfx-win" src="sounds/sfx-win.mp3" preload="auto"></audio>
+    <audio id="sfx-lose" src="sounds/sfx-lose.mp3" preload="auto"></audio>
 
-    <div id="difficulty-view" class="screen menu-container">
-        <h1 class="menu-title">Select Difficulty</h1>
-        <button class="difficulty-button" data-difficulty="easy">Easy</button>
-        <button class="difficulty-button" data-difficulty="medium">Medium</button>
-        <button class="difficulty-button" data-difficulty="hard">Hard</button>
-        <button id="back-to-main-button" class="menu-button" style="background: var(--cell-hidden-bg);"><i class="fas fa-arrow-left"></i> Back</button>
-    </div>
-
-    <div id="settings-view" class="screen menu-container">
-        <h1 class="menu-title">Settings</h1>
-        <div class="settings-container">
-            <div class="setting-row">
-                <label for="music-toggle">Background Music</label>
-                <label class="toggle-switch"> <input type="checkbox" id="music-toggle"> <span class="slider"></span> </label>
+    <div class="minesweeper-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">MINESWEEPER</h1>
+                <p class="tagline">Tactical deduction, hazard detection &amp; minefield clearance</p>
             </div>
-            <div class="setting-row">
-                <label for="sfx-toggle">Sound & Vibration</label>
-                <label class="toggle-switch"> <input type="checkbox" id="sfx-toggle"> <span class="slider"></span> </label>
-            </div>
-        </div>
-        <button id="settings-back-button" class="menu-button"><i class="fas fa-arrow-left"></i> Back</button>
-    </div>
 
-    <div id="game-view" class="screen">
-        <div class="game-container">
-            <div class="controls">
-                <div class="status-display">
-                    <div class="status-item"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C11.5 2 11 2.19 10.59 2.59L4.59 8.59C3.81 9.37 3.81 10.63 4.59 11.41L10.59 17.41C11.37 18.19 12.63 18.19 13.41 17.41L19.41 11.41C20.19 10.63 20.19 9.37 19.41 8.59L13.41 2.59C13 2.19 12.5 2 12 2M12 4L18 10L12 16L6 10L12 4M12.5 19V22H11.5V19H12.5Z"></path></svg><span id="mine-counter"></span></div>
-                    <div class="status-item"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 20C16.4 20 20 16.4 20 12S16.4 4 12 4 4 7.6 4 12 7.6 20 12 20M12 2C17.5 2 22 6.5 22 12S17.5 22 12 22 2 17.5 2 12 6.5 2 12 2M12.5 7V12.2L17 14.9L16.2 16.2L11 13V7H12.5Z"></path></svg><span id="timer"></span></div>
+            <div class="menu-options-list">
+                <div class="option-row">
+                    <span class="opt-label">Mission Sector</span>
+                    <div class="button-group" id="difficulty-btns">
+                        <button class="option-btn active" data-diff="easy">
+                            <span class="diff-title">Novice</span>
+                            <span class="diff-meta">8×10 (10 💣)</span>
+                        </button>
+                        <button class="option-btn" data-diff="medium">
+                            <span class="diff-title">Adept</span>
+                            <span class="diff-meta">12×12 (24 💣)</span>
+                        </button>
+                        <button class="option-btn" data-diff="hard">
+                            <span class="diff-title">Expert</span>
+                            <span class="diff-meta">16×16 (44 💣)</span>
+                        </button>
+                    </div>
                 </div>
-                <button id="pause-button"><svg viewBox="0 0 24 24"><path d="M14,19H18V5H14M6,19H10V5H6V19Z" /></svg></button>
             </div>
-            <div id="game-board-viewport"><div id="game-board"></div></div>
+
+            <!-- Session Match Scoreboard Comparison -->
+            <div class="score-strip">
+                <div class="score-card cleared">
+                    <span class="score-label">CLEARED (W)</span>
+                    <span class="score-val" id="menu-score-cleared">0</span>
+                </div>
+                <div class="score-card detonated">
+                    <span class="score-label">DETONATED (L)</span>
+                    <span class="score-val" id="menu-score-detonated">0</span>
+                </div>
+            </div>
+
+            <div class="menu-actions">
+                <button id="start-game-btn" class="arc-btn-primary pulse-btn">
+                    <i class="fas fa-play"></i> <span>Launch Mission</span>
+                </button>
+                <button id="open-settings-btn" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Click: Dig / Right-Click: Flag</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Arrows: Move | Space: Dig | F: Flag</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad: [A] Dig | [X] Flag</span>
+            </div>
         </div>
-        <div id="action-bar">
-            <button class="mode-button" id="dig-mode-button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M2,16.5L3.5,15L2.75,14.25L5,12L6.25,13.25L5.5,14L7,15.5L8.5,14L7.75,13.25L10,11L11.25,12.25L10.5,13L12,14.5L13.5,13L12.75,12.25L15,10L16.25,11.25L15.5,12L17,13.5L18.5,12L17.75,11.25L20,9L22,11V22H2V16.5Z" /></svg></button>
-            <button class="mode-button" id="flag-mode-button"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M6,3A1,1 0 0,1 7,4V4.88C8.06,4.44 9.5,4 11,4C14,4 14,6 16,6C19,6 20,4 20,4V12C20,12 19,14 16,14C13,14 13,12 11,12C8,12 7,14 7,14V21H5V4A1,1 0 0,1 6,3Z" /></svg></button>
+
+        <!-- 2. Active Game Screen -->
+        <div id="game-container" class="hidden">
+            <header class="game-hud">
+                <button id="back-to-menu-btn" class="hud-icon-btn" title="Back to Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- LCD Digital Displays -->
+                <div class="lcd-cluster">
+                    <div class="lcd-box" title="Mines Remaining">
+                        <i class="fas fa-bomb lcd-icon red"></i>
+                        <span id="mine-counter" class="lcd-text">010</span>
+                    </div>
+
+                    <div class="lcd-box" title="Mission Elapsed Time">
+                        <i class="fas fa-stopwatch lcd-icon amber"></i>
+                        <span id="timer" class="lcd-text">000</span>
+                    </div>
+                </div>
+
+                <button id="restart-game-btn" class="hud-icon-btn" title="Restart Mission">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <!-- Scoreboard Comparison Strip -->
+            <div class="score-strip">
+                <div class="score-card cleared">
+                    <span class="score-label">CLEARED (WINS)</span>
+                    <span class="score-val" id="score-cleared">0</span>
+                </div>
+                <div class="score-card detonated">
+                    <span class="score-label">DETONATED (LOSSES)</span>
+                    <span class="score-val" id="score-detonated">0</span>
+                </div>
+            </div>
+
+            <!-- Board Viewport -->
+            <div id="board-viewport" class="board-frame">
+                <div id="game-board"></div>
+            </div>
+
+            <!-- Mobile Touch Mode Switcher (HIDDEN ON PC) -->
+            <div id="mobile-controls-bar" class="mobile-touch-bar">
+                <button id="dig-mode-btn" class="mode-toggle-btn active">
+                    <i class="fas fa-shovels"></i> <span>DIG</span>
+                </button>
+                <button id="flag-mode-btn" class="mode-toggle-btn">
+                    <i class="fas fa-flag"></i> <span>FLAG</span>
+                </button>
+            </div>
         </div>
-        <div id="modal"><div class="modal-content"><h2 id="modal-message"></h2><button id="restart-button"><i class="fas fa-rotate-right"></i> Play Again</button></div></div>
-    </div>
-    
-    <div id="pause-menu" class="screen menu-container">
-        <h1 class="menu-title">Paused</h1>
-        <div class="settings-container">
-            <div class="setting-row"> <label for="pause-music-toggle">Background Music</label> <label class="toggle-switch"> <input type="checkbox" id="pause-music-toggle"> <span class="slider"></span> </label> </div>
-            <div class="setting-row"> <label for="pause-sfx-toggle">Sound & Vibration</label> <label class="toggle-switch"> <input type="checkbox" id="pause-sfx-toggle"> <span class="slider"></span> </label> </div>
+
+        <!-- 3. Result Modal (Win / Loss) -->
+        <div id="result-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <div class="modal-glow-icon" id="result-badge-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2 id="result-title" class="modal-headline">Sector Cleared!</h2>
+                <p id="result-desc" class="tagline">All mines located and neutralized.</p>
+
+                <div class="modal-stats-box">
+                    <div class="stat-cell">
+                        <span class="stat-lbl">Time</span>
+                        <span class="stat-num" id="modal-time-val">042s</span>
+                    </div>
+                    <div class="stat-cell">
+                        <span class="stat-lbl">Mission</span>
+                        <span class="stat-num" id="modal-diff-val">Novice</span>
+                    </div>
+                </div>
+
+                <div class="modal-btn-row">
+                    <button id="play-again-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="modal-menu-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Menu</span>
+                    </button>
+                </div>
+            </div>
         </div>
-        <button id="resume-button" class="menu-button"><i class="fas fa-play"></i> Resume</button>
-        <button id="pause-leave-button" class="menu-button" style="background: var(--danger-color);"><i class="fas fa-arrow-left"></i> Leave Game</button>
+
+        <!-- 4. Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Audio Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <span><i class="fas fa-music"></i> Background Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span><i class="fas fa-volume-high"></i> Sound Effects</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="close-settings-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Win Confetti Particles Canvas -->
+        <canvas id="confetti-canvas"></canvas>
     </div>
 
-    <!-- Link to your external JavaScript file -->
     <script src="../../js/protection.js"></script>
-    <script src="script.js" defer></script>
+    <script src="../../js/arcade-helper.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

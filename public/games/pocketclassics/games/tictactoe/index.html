@@ -3,85 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Tic-Tac-Toe Advanced</title>
+    <title>Tic-Tac-Toe Deluxe | Pocket Classics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Audio paths are correct, looking inside the 'audio' subfolder -->
-    <audio id="background-music" src="audio/background.mp3" loop></audio>
+    <!-- Audio Elements for Dual-Track Music & SFX -->
+    <audio id="music-menu" src="audio/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="audio/background.mp3" preload="auto" loop></audio>
+    <audio id="sound-click" src="audio/click.wav" preload="auto"></audio>
+    <audio id="sound-win" src="audio/win.wav" preload="auto"></audio>
+    <audio id="sound-draw" src="audio/draw.wav" preload="auto"></audio>
 
-    <!-- Main Menu Screen -->
-    <div id="main-menu" class="screen active">
-        <h1>Tic-Tac-Toe</h1>
-        <button id="vs-player-btn"><i class="fas fa-users"></i> Player vs Player</button>
-        <button id="vs-ai-btn"><i class="fas fa-robot"></i> Player vs AI</button>
-        
-        <div id="ai-difficulty-selection" class="hidden">
-            <h3>Select AI Difficulty</h3>
-            <button class="difficulty-btn" data-difficulty="easy">Easy</button>
-            <button class="difficulty-btn" data-difficulty="medium">Medium</button>
-            <button class="difficulty-btn" data-difficulty="hard">Hard</button>
-        </div>
-    </div>
-
-    <!-- The rest of your file is exactly as you provided it, which is correct. -->
-
-    <!-- Settings Screen -->
-    <div id="settings-screen" class="screen hidden">
-        <h2>Settings</h2>
-        <div class="setting-item">
-            <span>Background Music</span>
-            <label class="switch">
-                <input type="checkbox" id="music-toggle" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <div class="setting-item">
-            <span>Sound Effects (SFX)</span>
-            <label class="switch">
-                <input type="checkbox" id="sfx-toggle" checked>
-                <span class="slider round"></span>
-            </label>
-        </div>
-        <button id="back-to-menu-btn">Back</button>
-    </div>
-
-    <!-- Game Screen -->
-    <div id="game-container" class="screen hidden">
-        <div class="game-header">
-            <h2 id="status-display">X's Turn</h2>
-            <button id="main-menu-btn">Main Menu</button>
-        </div>
-        <div id="board-container">
-            <div id="board" class="board">
-                <div class="cell" data-cell-index="0"></div>
-                <div class="cell" data-cell-index="1"></div>
-                <div class="cell" data-cell-index="2"></div>
-                <div class="cell" data-cell-index="3"></div>
-                <div class="cell" data-cell-index="4"></div>
-                <div class="cell" data-cell-index="5"></div>
-                <div class="cell" data-cell-index="6"></div>
-                <div class="cell" data-cell-index="7"></div>
-                <div class="cell" data-cell-index="8"></div>
+    <div class="ttt-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">TIC-TAC-TOE</h1>
+                <p class="tagline">Classic 3x3 duel of strategy, speed &amp; neon wits!</p>
             </div>
-            <canvas id="line-canvas"></canvas>
+
+            <div class="menu-btn-stack">
+                <button id="vs-player-btn" class="arc-btn-primary pulse-btn">
+                    <i class="fas fa-users"></i> <span>2 Player (Pass &amp; Play)</span>
+                </button>
+                <button id="vs-ai-btn" class="arc-btn-secondary">
+                    <i class="fas fa-robot"></i> <span>Player vs AI Rival</span>
+                </button>
+                <button id="settings-btn" class="arc-btn-outline">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+            
+            <div id="ai-difficulty-selection" class="ai-difficulty-box hidden">
+                <span class="ai-diff-label">Select AI Difficulty</span>
+                <div class="difficulty-btn-row">
+                    <button class="difficulty-btn" data-difficulty="easy">Novice</button>
+                    <button class="difficulty-btn active" data-difficulty="medium">Adept</button>
+                    <button class="difficulty-btn" data-difficulty="hard">Grandmaster</button>
+                </div>
+                <button id="start-ai-match-btn" class="arc-btn-primary" style="margin-top: 8px;">
+                    <i class="fas fa-play"></i> <span>Battle AI</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Tap Cell</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Numpad 1–9 / Arrows + Enter</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> D-Pad + Button A</span>
+            </div>
+        </div>
+
+        <!-- 2. Settings Screen Modal -->
+        <div id="settings-screen" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Audio Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <span><i class="fas fa-music"></i> Background Music</span>
+                        <label class="switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <span><i class="fas fa-volume-high"></i> Sound Effects</span>
+                        <label class="switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="back-to-menu-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Active Game Screen -->
+        <div id="game-container" class="game-view hidden">
+            <header class="game-hud">
+                <button id="main-menu-btn" class="hud-icon-btn" title="Main Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div id="status-display" class="status-pill">
+                    <span class="turn-symbol x-sym">X</span>'s Turn
+                </div>
+                <button id="restart-btn" class="hud-icon-btn" title="Restart Round">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <div class="board-frame-wrapper">
+                <div id="board-container">
+                    <div id="board" class="board">
+                        <div class="cell" data-cell-index="0" tabindex="0"></div>
+                        <div class="cell" data-cell-index="1" tabindex="0"></div>
+                        <div class="cell" data-cell-index="2" tabindex="0"></div>
+                        <div class="cell" data-cell-index="3" tabindex="0"></div>
+                        <div class="cell" data-cell-index="4" tabindex="0"></div>
+                        <div class="cell" data-cell-index="5" tabindex="0"></div>
+                        <div class="cell" data-cell-index="6" tabindex="0"></div>
+                        <div class="cell" data-cell-index="7" tabindex="0"></div>
+                        <div class="cell" data-cell-index="8" tabindex="0"></div>
+                    </div>
+                    <canvas id="line-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Score and Match Banner -->
+            <div class="score-strip">
+                <div class="score-card player-x">
+                    <span class="score-label">PLAYER X</span>
+                    <span class="score-val" id="score-x">0</span>
+                </div>
+                <div class="score-card ties">
+                    <span class="score-label">TIES</span>
+                    <span class="score-val" id="score-ties">0</span>
+                </div>
+                <div class="score-card player-o">
+                    <span class="score-label">PLAYER O</span>
+                    <span class="score-val" id="score-o">0</span>
+                </div>
+            </div>
+
+            <div class="gamepad-hint-bar">
+                <span><i class="fas fa-gamepad"></i> D-Pad: Navigate | [A] / Space: Place Mark | [B]: Menu</span>
+            </div>
+        </div>
+
+        <!-- 4. Win / Draw Popup Screen -->
+        <div id="win-popup" class="modal-overlay hidden">
+            <canvas id="particle-canvas"></canvas>
+            <div class="modal-card">
+                <div class="modal-glow-icon" id="win-badge-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h2 id="win-message" class="modal-headline">X Wins!</h2>
+                <p class="tagline" id="win-subtext">3 in a row! Spectacular play!</p>
+                <div class="modal-btn-row">
+                    <button id="play-again-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="modal-menu-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Main Menu</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Win Popup Screen -->
-    <div id="win-popup" class="popup-container hidden">
-        <canvas id="particle-canvas"></canvas>
-        <div class="popup-content">
-            <h2 id="win-message"></h2>
-            <button id="play-again-btn">Play Again</button>
-        </div>
-    </div>
-
-    <!-- This link is correct, as script.js is in the same folder -->
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

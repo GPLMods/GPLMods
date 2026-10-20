@@ -1,156 +1,663 @@
+/**
+ * Minesweeper Deluxe - Pocket Classics
+ * 3x3 Safe First Click, Session Scoreboard, Win Particles, Gamepad & Full Responsiveness
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    const screens = document.querySelectorAll('.screen'), docEl = document.documentElement;
-    let isMusicEnabled = localStorage.getItem('arc_music_enabled') !== 'false';
-    let isSfxEnabled = localStorage.getItem('arc_sfx_enabled') !== 'false';
-    let audioInitialized = false;
-    
-    const audio = { music: new Audio('./sounds/music-background.mp3'), click: new Audio('./sounds/sfx-click.wav'), flag: new Audio('./sounds/sfx-flag.wav'), reveal: new Audio('./sounds/sfx-reveal.wav'), explode: new Audio('./sounds/sfx-explode.wav'), win: new Audio('./sounds/sfx-win.mp3'), lose: new Audio('./sounds/sfx-lose.mp3'), };
-    audio.music.loop = true;
-    
-    function playSound(soundName) { if (!isSfxEnabled || !audio[soundName]) return; audio[soundName].currentTime = 0; audio[soundName].play().catch(e => {}); }
-    function playOverlappingSound(soundName) { if (!isSfxEnabled) return; const clone = audio[soundName].cloneNode(); clone.play().catch(e => {}); }
-    function toggleMusic() {
-        if (isMusicEnabled) {
-            audio.music.play().catch(e => {});
-        } else {
-            audio.music.pause();
-        }
+    // --- AUDIO CONTROLLER ---
+    const audioCtrl = (typeof ArcadeAudioController !== 'undefined')
+        ? new ArcadeAudioController({
+            menuAudioId: 'music-menu',
+            gameAudioId: 'music-game',
+            storagePrefix: 'pc_minesweeper_'
+        })
+        : (window.ArcadeHelper && window.ArcadeHelper.audio ? window.ArcadeHelper.audio : {
+            musicEnabled: true, sfxEnabled: true,
+            playMenuMusic: () => {}, playGameMusic: () => {}, pauseAll: () => {},
+            toggleMusic: () => {}, toggleSfx: () => {}, playSfx: () => {}
+        });
+
+    const sfx = {
+        click: document.getElementById('sfx-click'),
+        flag: document.getElementById('sfx-flag'),
+        reveal: document.getElementById('sfx-reveal'),
+        explode: document.getElementById('sfx-explode'),
+        win: document.getElementById('sfx-win'),
+        lose: document.getElementById('sfx-lose')
+    };
+
+    function playSfx(sound) {
+        if (!sound || !audioCtrl.sfxEnabled) return;
+        try {
+            sound.currentTime = 0;
+            const p = sound.play();
+            if (p && p.catch) p.catch(() => {});
+        } catch (_) {}
     }
-    function triggerVibration(pattern) { if (navigator.vibrate && isSfxEnabled) navigator.vibrate(pattern); }
-    function showScreen(screenId) { screens.forEach(s => { if(s.id !== 'pause-menu') s.classList.remove('active'); }); document.getElementById(screenId).classList.add('active'); }
-    
-    const playButton = document.getElementById('play-button'), settingsButton = document.getElementById('settings-button'), difficultyButtons = document.querySelectorAll('.difficulty-button'), backToMainButton = document.getElementById('back-to-main-button'), settingsBackButton = document.getElementById('settings-back-button'), musicToggle = document.getElementById('music-toggle'), sfxToggle = document.getElementById('sfx-toggle'), pauseButton = document.getElementById('pause-button'), pauseMenu = document.getElementById('pause-menu'), resumeButton = document.getElementById('resume-button'), pauseLeaveButton = document.getElementById('pause-leave-button'), pauseMusicToggle = document.getElementById('pause-music-toggle'), pauseSfxToggle = document.getElementById('pause-sfx-toggle'), homeButton = document.getElementById('home-button');
-    
-    function handleFirstInteraction() {
-        if (!audioInitialized) {
-            audioInitialized = true;
-            toggleMusic();
-        }
+
+    // --- DOM REFERENCES ---
+    const dom = {
+        mainMenu: document.getElementById('main-menu'),
+        gameContainer: document.getElementById('game-container'),
+        resultModal: document.getElementById('result-modal'),
+        settingsModal: document.getElementById('settings-modal'),
+        confettiCanvas: document.getElementById('confetti-canvas'),
+        gameBoard: document.getElementById('game-board'),
+        mineCounter: document.getElementById('mine-counter'),
+        timer: document.getElementById('timer'),
+        scoreCleared: document.getElementById('score-cleared'),
+        scoreDetonated: document.getElementById('score-detonated'),
+        menuScoreCleared: document.getElementById('menu-score-cleared'),
+        menuScoreDetonated: document.getElementById('menu-score-detonated'),
+        difficultyBtns: Array.from(document.querySelectorAll('#difficulty-btns .option-btn')),
+        startGameBtn: document.getElementById('start-game-btn'),
+        openSettingsBtn: document.getElementById('open-settings-btn'),
+        closeSettingsBtn: document.getElementById('close-settings-btn'),
+        backToMenuBtn: document.getElementById('back-to-menu-btn'),
+        restartGameBtn: document.getElementById('restart-game-btn'),
+        playAgainBtn: document.getElementById('play-again-btn'),
+        modalMenuBtn: document.getElementById('modal-menu-btn'),
+        digModeBtn: document.getElementById('dig-mode-btn'),
+        flagModeBtn: document.getElementById('flag-mode-btn'),
+        resultTitle: document.getElementById('result-title'),
+        resultDesc: document.getElementById('result-desc'),
+        resultBadgeIcon: document.getElementById('result-badge-icon'),
+        modalTimeVal: document.getElementById('modal-time-val'),
+        modalDiffVal: document.getElementById('modal-diff-val'),
+        musicToggle: document.getElementById('music-toggle'),
+        sfxToggle: document.getElementById('sfx-toggle')
+    };
+
+    // --- MISSION CONFIGURATIONS ---
+    const MISSIONS = {
+        easy: { rows: 10, cols: 8, mines: 10, label: 'Novice' },
+        medium: { rows: 12, cols: 12, mines: 24, label: 'Adept' },
+        hard: { rows: 16, cols: 16, mines: 44, label: 'Expert' }
+    };
+
+    let selectedDifficulty = 'easy';
+    let currentConfig = MISSIONS.easy;
+
+    // --- GAME STATE ---
+    let grid = []; // 2D array of { r, c, isMine, isRevealed, isFlagged, count }
+    let isFirstClick = true;
+    let isGameOver = false;
+    let flagsPlaced = 0;
+    let revealedCount = 0;
+    let timerSeconds = 0;
+    let timerInterval = null;
+    let touchMode = 'dig'; // 'dig' or 'flag'
+    let cursor = { r: 0, c: 0 };
+
+    // Scoreboard session stats
+    const stats = {
+        cleared: 0,
+        detonated: 0
+    };
+
+    function updateScoreDisplay() {
+        if (dom.scoreCleared) dom.scoreCleared.textContent = stats.cleared;
+        if (dom.scoreDetonated) dom.scoreDetonated.textContent = stats.detonated;
+        if (dom.menuScoreCleared) dom.menuScoreCleared.textContent = stats.cleared;
+        if (dom.menuScoreDetonated) dom.menuScoreDetonated.textContent = stats.detonated;
     }
-    document.addEventListener('click', handleFirstInteraction, { once: true });
-    
-    if (playButton) playButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('difficulty-view'), 50); });
-    if (settingsButton) settingsButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('settings-view'), 50); });
-    if (backToMainButton) backToMainButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
-    if (settingsBackButton) settingsBackButton.addEventListener('click', () => { playSound('click'); setTimeout(() => showScreen('main-menu-view'), 50); });
-    if (homeButton) {
-        homeButton.addEventListener('click', () => { 
-            playSound('click'); 
-            setTimeout(() => { 
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'ARCADE_EXIT' }, '*');
-                } else {
-                    window.location.href = '/games/hub'; 
-                }
-            }, 150); 
+
+    // Audio Settings init
+    if (dom.musicToggle) {
+        dom.musicToggle.checked = audioCtrl.musicEnabled;
+        dom.musicToggle.addEventListener('change', () => {
+            audioCtrl.toggleMusic(dom.musicToggle.checked);
         });
     }
-    
-    difficultyButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            playSound('click');
-            const difficulty = button.dataset.difficulty;
-            setTimeout(() => {
-                showScreen('game-view');
-                requestAnimationFrame(() => {
-                    initGame(difficulty);
-                    toggleMusic();
+    if (dom.sfxToggle) {
+        dom.sfxToggle.checked = audioCtrl.sfxEnabled;
+        dom.sfxToggle.addEventListener('change', () => {
+            audioCtrl.toggleSfx(dom.sfxToggle.checked);
+        });
+    }
+
+    // Start menu music on load
+    audioCtrl.playMenuMusic();
+
+    // --- SCREEN NAVIGATION ---
+    function showMainMenu() {
+        playSfx(sfx.click);
+        stopTimer();
+        stopConfetti();
+        dom.gameContainer.classList.add('hidden');
+        dom.resultModal.classList.add('hidden');
+        dom.settingsModal.classList.add('hidden');
+        dom.mainMenu.classList.remove('hidden');
+        audioCtrl.playMenuMusic();
+        updateScoreDisplay();
+    }
+
+    function startMission() {
+        playSfx(sfx.click);
+        stopConfetti();
+        dom.mainMenu.classList.add('hidden');
+        dom.resultModal.classList.add('hidden');
+        dom.settingsModal.classList.add('hidden');
+        dom.gameContainer.classList.remove('hidden');
+
+        audioCtrl.playGameMusic();
+        initMission();
+    }
+
+    function initMission() {
+        currentConfig = MISSIONS[selectedDifficulty] || MISSIONS.easy;
+        stopTimer();
+        isFirstClick = true;
+        isGameOver = false;
+        flagsPlaced = 0;
+        revealedCount = 0;
+        timerSeconds = 0;
+        updateTimerDisplay();
+        updateMineCounter();
+        cursor = { r: Math.floor(currentConfig.rows / 2), c: Math.floor(currentConfig.cols / 2) };
+
+        createGrid();
+        renderBoard();
+        updateScoreDisplay();
+    }
+
+    // --- GRID LOGIC ---
+    function createGrid() {
+        grid = [];
+        for (let r = 0; r < currentConfig.rows; r++) {
+            const row = [];
+            for (let c = 0; c < currentConfig.cols; c++) {
+                row.push({
+                    r, c,
+                    isMine: false,
+                    isRevealed: false,
+                    isFlagged: false,
+                    count: 0
                 });
-            }, 50);
-        });
-    });
-
-    const syncSettings = (source, target) => { target.checked = source.checked; };
-    musicToggle.addEventListener('change', (e) => { playSound('click'); isMusicEnabled = e.target.checked; localStorage.setItem('minesweeper_musicEnabled', isMusicEnabled); toggleMusic(); syncSettings(e.target, pauseMusicToggle); });
-    sfxToggle.addEventListener('change', (e) => { playSound('click'); isSfxEnabled = e.target.checked; localStorage.setItem('minesweeper_sfxEnabled', isSfxEnabled); syncSettings(e.target, pauseSfxToggle); });
-    pauseMusicToggle.addEventListener('change', (e) => { musicToggle.checked = e.target.checked; musicToggle.dispatchEvent(new Event('change')); });
-    pauseSfxToggle.addEventListener('change', (e) => { sfxToggle.checked = e.target.checked; sfxToggle.dispatchEvent(new Event('change')); });
-    function loadSettings() { const musicSetting = localStorage.getItem('minesweeper_musicEnabled'); const sfxSetting = localStorage.getItem('minesweeper_sfxEnabled'); isMusicEnabled = musicSetting !== null ? JSON.parse(musicSetting) : true; isSfxEnabled = sfxSetting !== null ? JSON.parse(sfxSetting) : true; musicToggle.checked = isMusicEnabled; pauseMusicToggle.checked = isMusicEnabled; sfxToggle.checked = isSfxEnabled; pauseSfxToggle.checked = isSfxEnabled; }
-    
-    pauseButton.addEventListener('click', () => { playSound('click'); pauseGame(); });
-    resumeButton.addEventListener('click', () => { playSound('click'); setTimeout(() => resumeGame(), 50); });
-    pauseLeaveButton.addEventListener('click', () => { playSound('click'); setTimeout(() => { pauseMenu.classList.remove('active'); showScreen('main-menu-view'); isGameOver = true; clearInterval(timerInterval); audio.music.pause(); }, 50); });
-    
-    const viewport = document.getElementById('game-board-viewport'), gameBoard = document.getElementById('game-board'), mineCounterDisplay = document.getElementById('mine-counter'), timerDisplay = document.getElementById('timer'), modal = document.getElementById('modal'), modalMessage = document.getElementById('modal-message'), restartButton = document.getElementById('restart-button'), digModeButton = document.getElementById('dig-mode-button'), flagModeButton = document.getElementById('flag-mode-button');
-    const difficulties = { easy: { rows: 10, cols: 8, mines: 10 }, medium: { rows: 18, cols: 14, mines: 35 }, hard: { rows: 24, cols: 20, mines: 75 } };
-    const googleColors = ['#e53935', '#d81b60', '#8e24aa', '#3949ab', '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047', '#f4511e', '#ffb300'];
-    let rows, cols, mineCount, board, flags, revealedCells, isGameOver, timerInterval, firstClick, isPaused;
-    let currentMode = 'dig';
-
-    function setGameMode(mode) { currentMode = mode; digModeButton.classList.toggle('active', mode === 'dig'); flagModeButton.classList.toggle('active', mode === 'flag'); }
-    digModeButton.addEventListener('click', () => { playSound('click'); setGameMode('dig'); });
-    flagModeButton.addEventListener('click', () => { playSound('click'); setGameMode('flag'); });
-    
-    function pauseGame() { if(isGameOver) return; isPaused = true; clearInterval(timerInterval); pauseMenu.classList.add('active'); }
-    function resumeGame() { isPaused = false; startTimer(parseInt(timerDisplay.textContent || '0')); pauseMenu.classList.remove('active'); }
-    function initGame(difficulty) { const diffSettings = difficulties[difficulty]; rows = diffSettings.rows; cols = diffSettings.cols; mineCount = diffSettings.mines; flags = 0; revealedCells = 0; isGameOver = false; isPaused = false; firstClick = true; clearInterval(timerInterval); timerDisplay.textContent = '000'; mineCounterDisplay.textContent = `${mineCount}`; modal.style.display = 'none'; setGameMode('dig'); renderBoard(); }
-    function renderBoard() { gameBoard.innerHTML = ''; gameBoard.style.setProperty('--cols', cols); board = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ isMine: false, isRevealed: false, isFlagged: false, neighborMines: 0 }))); for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) { const cellElement = document.createElement('div'); cellElement.classList.add('cell'); cellElement.dataset.row = r; cellElement.dataset.col = c; gameBoard.appendChild(cellElement); }} updateCellSize(); }
-    function updateCellSize() { const GAP = 1; const vpWidth = viewport.clientWidth; const vpHeight = viewport.clientHeight; if(vpWidth === 0) return; const sizeBasedOnWidth = (vpWidth - ((cols - 1) * GAP)) / cols; const sizeBasedOnHeight = (vpHeight - ((rows - 1) * GAP)) / rows; const finalSize = Math.floor(Math.min(sizeBasedOnWidth, sizeBasedOnHeight)); docEl.style.setProperty('--cell-size', `${finalSize}px`); }
-
-    gameBoard.addEventListener('click', (e) => {
-        if (isGameOver || isPaused) return;
-        const cellElement = e.target.closest('.cell');
-        if (!cellElement) return;
-        const row = parseInt(cellElement.dataset.row), col = parseInt(cellElement.dataset.col);
-        if (board[row][col].isRevealed) { if (currentMode === 'dig') { playSound('click'); chord(row, col); } return; }
-        if (firstClick) { playSound('click'); revealCell(row, col); return; }
-        currentMode === 'dig' ? revealCell(row, col) : toggleFlag(row, col);
-    });
-    
-    function placeMines(firstRow, firstCol) { let minesPlaced = 0; while (minesPlaced < mineCount) { const r = Math.floor(Math.random() * rows); const c = Math.floor(Math.random() * cols); const isSafeZone = Math.abs(r - firstRow) <= 1 && Math.abs(c - firstCol) <= 1; if (!board[r][c].isMine && !isSafeZone) { board[r][c].isMine = true; minesPlaced++; } } for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) { if (board[r][c].isMine) continue; let count = 0; for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { const nr = r + dr, nc = c + dc; if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].isMine) count++; } } board[r][c].neighborMines = count; } } }
-    function revealCell(row, col) { if (row < 0 || row >= rows || col < 0 || col >= cols || isGameOver || board[row][col].isRevealed || board[row][col].isFlagged) return; if (firstClick) { placeMines(row, col); startTimer(); firstClick = false; } const cell = board[row][col]; cell.isRevealed = true; const cellElement = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`); cellElement.classList.add('revealed'); if (cell.isMine) { gameOver(false, cellElement); return; } revealedCells++; playSound('reveal'); if (cell.neighborMines > 0) { cellElement.textContent = cell.neighborMines; cellElement.dataset.number = cell.neighborMines; } else { for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { revealCell(row + dr, col + dc); } } } checkWin(); }
-    function toggleFlag(row, col) { 
-        if (isGameOver || board[row][col].isRevealed) return; 
-        playSound('flag'); 
-        const cell = board[row][col]; 
-        const cellElement = document.querySelector(`.cell[data-row='${row}'][data-col='${col}']`); 
-        cell.isFlagged = !cell.isFlagged; 
-        flags += cell.isFlagged ? 1 : -1; 
-        cellElement.classList.toggle('flagged'); 
-        cellElement.innerHTML = cell.isFlagged ? '<i class="fas fa-flag" style="color:#ef4444;"></i>' : ''; 
-        mineCounterDisplay.textContent = `${mineCount - flags}`; 
-        checkWin(); 
-    }
-    
-    function chord(row, col) { const cell = board[row][col]; if (!cell.isRevealed || cell.neighborMines === 0) return; let flaggedNeighborsCount = 0; const neighborsToProcess = []; for (let dr = -1; dr <= 1; dr++) { for (let dc = -1; dc <= 1; dc++) { if (dr === 0 && dc === 0) continue; const nr = row + dr, nc = col + dc; if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) { const neighbor = board[nr][nc]; if (neighbor.isFlagged) { flaggedNeighborsCount++; } else if (!neighbor.isRevealed) { neighborsToProcess.push({ el: document.querySelector(`.cell[data-row='${nr}'][data-col='${nc}']`), r: nr, c: nc }); } } } } if (flaggedNeighborsCount === cell.neighborMines) { neighborsToProcess.forEach(n => revealCell(n.r, n.c)); } else { triggerVibration(50); neighborsToProcess.forEach(n => { n.el.classList.add('shake'); setTimeout(() => n.el.classList.remove('shake'), 300); }); } }
-    function checkWin() { if (revealedCells === rows * cols - mineCount) gameOver(true); }
-    
-    function gameOver(isWin, clickedCellElement = null) {
-        isGameOver = true; clearInterval(timerInterval); audio.music.pause();
-        const score = isWin ? 500 : Math.max(0, revealedCells * 10);
-        if (isWin) {
-            playSound('win'); triggerVibration(500); modalMessage.innerHTML = '<i class="fas fa-trophy" style="color:#f59e0b;"></i> You Win!'; modal.style.display = 'flex';
-        } else {
-            triggerVibration([200, 100, 200]); modalMessage.innerHTML = '<i class="fas fa-bomb" style="color:#ef4444;"></i> Game Over';
-            const minesToExplode = [];
-            for (let r = 0; r < rows; r++) { for (let c = 0; c < cols; c++) {
-                const cell = board[r][c], cellEl = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
-                if (cell.isMine && !cell.isFlagged) { if (cellEl !== clickedCellElement) minesToExplode.push(cellEl); }
-                else if (!cell.isMine && cell.isFlagged) { cellEl.classList.add('revealed'); cellEl.innerHTML = '<i class="fas fa-times" style="color:var(--danger-color);"></i>'; cellEl.style.color = 'var(--danger-color)'; }
-            }}
-            if (clickedCellElement) explodeMine(clickedCellElement);
-            minesToExplode.sort(() => Math.random() - 0.5);
-            minesToExplode.forEach((mineEl, index) => { setTimeout(() => explodeMine(mineEl), (index + 1) * 120); });
-            const totalExplosionTime = (minesToExplode.length * 120) + 1200;
-            setTimeout(() => { playSound('lose'); modal.style.display = 'flex'; }, totalExplosionTime);
+            }
+            grid.push(row);
         }
+    }
+
+    function populateMines(safeR, safeC) {
+        let placed = 0;
+        const totalMines = currentConfig.mines;
+
+        while (placed < totalMines) {
+            const r = Math.floor(Math.random() * currentConfig.rows);
+            const c = Math.floor(Math.random() * currentConfig.cols);
+
+            // Guaranteed 3x3 safe zone around initial click
+            const isSafeZone = Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1;
+            if (!grid[r][c].isMine && !isSafeZone) {
+                grid[r][c].isMine = true;
+                placed++;
+            }
+        }
+
+        // Calculate surrounding mine counts
+        for (let r = 0; r < currentConfig.rows; r++) {
+            for (let c = 0; c < currentConfig.cols; c++) {
+                if (grid[r][c].isMine) continue;
+                let count = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = r + dr, nc = c + dc;
+                        if (nr >= 0 && nr < currentConfig.rows && nc >= 0 && nc < currentConfig.cols) {
+                            if (grid[nr][nc].isMine) count++;
+                        }
+                    }
+                }
+                grid[r][c].count = count;
+            }
+        }
+    }
+
+    // --- BOARD RENDERING ---
+    function renderBoard() {
+        const boardEl = dom.gameBoard;
+        boardEl.innerHTML = '';
+        boardEl.style.gridTemplateColumns = `repeat(${currentConfig.cols}, 1fr)`;
+        boardEl.style.gridTemplateRows = `repeat(${currentConfig.rows}, 1fr)`;
+
+        for (let r = 0; r < currentConfig.rows; r++) {
+            for (let c = 0; c < currentConfig.cols; c++) {
+                const cellData = grid[r][c];
+                const cellEl = document.createElement('div');
+                cellEl.className = 'cell';
+                cellEl.dataset.r = r;
+                cellEl.dataset.c = c;
+
+                if (cursor.r === r && cursor.c === c) {
+                    cellEl.classList.add('focused');
+                }
+
+                if (cellData.isRevealed) {
+                    cellEl.classList.add('revealed');
+                    if (cellData.isMine) {
+                        cellEl.classList.add('mine');
+                        cellEl.innerHTML = '<i class="fas fa-bomb"></i>';
+                    } else if (cellData.count > 0) {
+                        cellEl.dataset.num = cellData.count;
+                        cellEl.textContent = cellData.count;
+                    }
+                } else if (cellData.isFlagged) {
+                    cellEl.classList.add('flagged');
+                    cellEl.innerHTML = '<i class="fas fa-flag"></i>';
+                }
+
+                // Event Listeners
+                cellEl.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    cursor = { r, c };
+                    if (touchMode === 'flag') {
+                        toggleFlag(r, c);
+                    } else {
+                        revealCell(r, c);
+                    }
+                });
+
+                cellEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    cursor = { r, c };
+                    toggleFlag(r, c);
+                });
+
+                // Long press support for mobile touch devices
+                let touchTimer = null;
+                cellEl.addEventListener('touchstart', (e) => {
+                    touchTimer = setTimeout(() => {
+                        toggleFlag(r, c);
+                        touchTimer = null;
+                        if (window.ArcadeHelper) window.ArcadeHelper.vibrate(30);
+                    }, 260);
+                }, { passive: true });
+
+                cellEl.addEventListener('touchend', () => {
+                    if (touchTimer) {
+                        clearTimeout(touchTimer);
+                        touchTimer = null;
+                    }
+                }, { passive: true });
+
+                boardEl.appendChild(cellEl);
+            }
+        }
+    }
+
+    // --- GAME ACTIONS ---
+    function revealCell(r, c) {
+        if (isGameOver) return;
+        const cell = grid[r][c];
+        if (cell.isRevealed || cell.isFlagged) return;
+
+        // Guaranteed safe on first click
+        if (isFirstClick) {
+            isFirstClick = false;
+            populateMines(r, c);
+            startTimer();
+        }
+
+        cell.isRevealed = true;
+        revealedCount++;
+
+        // Hit Mine -> Game Over
+        if (cell.isMine) {
+            handleExplosion(r, c);
+            return;
+        }
+
+        playSfx(sfx.reveal);
+        if (window.ArcadeHelper) window.ArcadeHelper.vibrate(12);
+
+        // Flood fill empty neighbors
+        if (cell.count === 0) {
+            floodFill(r, c);
+        }
+
+        renderBoard();
+        checkVictoryCondition();
+    }
+
+    function floodFill(startR, startC) {
+        const queue = [{ r: startR, c: startC }];
+        while (queue.length > 0) {
+            const { r, c } = queue.shift();
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < currentConfig.rows && nc >= 0 && nc < currentConfig.cols) {
+                        const neighbor = grid[nr][nc];
+                        if (!neighbor.isRevealed && !neighbor.isFlagged && !neighbor.isMine) {
+                            neighbor.isRevealed = true;
+                            revealedCount++;
+                            if (neighbor.count === 0) {
+                                queue.push({ r: nr, c: nc });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function toggleFlag(r, c) {
+        if (isGameOver) return;
+        const cell = grid[r][c];
+        if (cell.isRevealed) return;
+
+        cell.isFlagged = !cell.isFlagged;
+        flagsPlaced += cell.isFlagged ? 1 : -1;
+        playSfx(sfx.flag);
+        if (window.ArcadeHelper) window.ArcadeHelper.vibrate(20);
+        updateMineCounter();
+        renderBoard();
+    }
+
+    function chordCell(r, c) {
+        const cell = grid[r][c];
+        if (!cell.isRevealed || cell.count === 0) return;
+
+        let flagsAround = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr, nc = c + dc;
+                if (nr >= 0 && nr < currentConfig.rows && nc >= 0 && nc < currentConfig.cols) {
+                    if (grid[nr][nc].isFlagged) flagsAround++;
+                }
+            }
+        }
+
+        if (flagsAround === cell.count) {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < currentConfig.rows && nc >= 0 && nc < currentConfig.cols) {
+                        if (!grid[nr][nc].isFlagged && !grid[nr][nc].isRevealed) {
+                            revealCell(nr, nc);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function handleExplosion(hitR, hitC) {
+        isGameOver = true;
+        stopTimer();
+        playSfx(sfx.explode);
+        if (window.ArcadeHelper) window.ArcadeHelper.vibrate([60, 40, 100]);
+        audioCtrl.playMenuMusic();
+
+        // Reveal all mines
+        grid.forEach(row => row.forEach(c => {
+            if (c.isMine) c.isRevealed = true;
+        }));
+
+        renderBoard();
+
+        const hitEl = document.querySelector(`.cell[data-r='${hitR}'][data-c='${hitC}']`);
+        if (hitEl) hitEl.classList.add('triggered');
+
+        stats.detonated++;
+        updateScoreDisplay();
+
+        setTimeout(() => {
+            showResultModal(false);
+        }, 600);
 
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({
                 type: 'ARCADE_GAME_OVER',
-                result: isWin ? 'win' : 'loss',
-                score: score
+                result: 'loss',
+                score: Math.max(0, revealedCount * 10)
             }, '*');
         }
     }
-    
-    function explodeMine(mineEl) { playOverlappingSound('explode'); triggerVibration(100); const randomColor = googleColors[Math.floor(Math.random() * googleColors.length)]; mineEl.classList.add('revealed', 'mine-hit'); mineEl.style.animation = 'mine-pop 0.3s ease-out forwards'; mineEl.style.backgroundColor = randomColor; mineEl.style.boxShadow = `0 0 20px ${randomColor}`; createGoogleExplosion(mineEl); }
-    function startTimer(startTime = 0) { clearInterval(timerInterval); let seconds = startTime; timerDisplay.textContent = String(seconds).padStart(3, '0'); timerInterval = setInterval(() => { if(!isPaused) { seconds++; timerDisplay.textContent = String(seconds).padStart(3, '0'); } }, 1000); }
-    function createGoogleExplosion(cellElement) { const rect = cellElement.getBoundingClientRect(); const container = document.body; const particleCount = 20; for (let i = 0; i < particleCount; i++) { const p = document.createElement('div'); p.classList.add('particle'); const size = Math.random() * 8 + 4; p.style.width = `${size}px`; p.style.height = `${size * (Math.random() > 0.5 ? 1 : 1.5)}px`; p.style.backgroundColor = googleColors[Math.floor(Math.random() * googleColors.length)]; const startX = rect.left + rect.width / 2; const startY = rect.top + rect.height / 2; p.style.left = `${startX}px`; p.style.top = `${startY}px`; p.style.opacity = 1; const angle = Math.random() * 360 * (Math.PI / 180); const distance = Math.random() * 60 + 30; const endX = Math.cos(angle) * distance; const endY = Math.sin(angle) * distance; const rotation = Math.random() * 720 - 360; container.appendChild(p); setTimeout(() => { p.style.transform = `translate(${endX}px, ${endY}px) rotateZ(${rotation}deg) scale(0.5)`; p.style.opacity = 0; }, 10); setTimeout(() => { p.remove(); }, 800); } }
-    function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
-    restartButton.addEventListener('click', () => { playSound('click'); setTimeout(() => { showScreen('difficulty-view'); modal.style.display = 'none'; }, 50); });
-    window.addEventListener('resize', debounce(updateCellSize, 250));
-    
-    loadSettings();
-    showScreen('main-menu-view');
+
+    function checkVictoryCondition() {
+        const totalNonMines = (currentConfig.rows * currentConfig.cols) - currentConfig.mines;
+        if (revealedCount === totalNonMines) {
+            isGameOver = true;
+            stopTimer();
+            playSfx(sfx.win);
+            audioCtrl.playMenuMusic();
+
+            stats.cleared++;
+            updateScoreDisplay();
+            startConfetti();
+
+            setTimeout(() => {
+                showResultModal(true);
+            }, 500);
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'ARCADE_GAME_OVER',
+                    result: 'win',
+                    score: Math.max(100, 1000 - timerSeconds * 5)
+                }, '*');
+            }
+        }
+    }
+
+    function showResultModal(isWin) {
+        dom.resultBadgeIcon.innerHTML = isWin ? '<i class="fas fa-trophy"></i>' : '<i class="fas fa-bomb"></i>';
+        dom.resultBadgeIcon.style.color = isWin ? '#ffd700' : '#ef4444';
+        dom.resultBadgeIcon.style.borderColor = isWin ? '#ffd700' : '#ef4444';
+
+        dom.resultTitle.textContent = isWin ? 'Sector Cleared!' : 'Mine Detonated!';
+        dom.resultTitle.style.color = isWin ? '#10b981' : '#ef4444';
+        dom.resultDesc.textContent = isWin 
+            ? 'All hazardous mines identified and neutralized.' 
+            : 'Unstable explosive triggered during survey.';
+
+        dom.modalTimeVal.textContent = `${String(timerSeconds).padStart(3, '0')}s`;
+        dom.modalDiffVal.textContent = currentConfig.label;
+
+        dom.resultModal.classList.remove('hidden');
+    }
+
+    // --- TIMERS & DISPLAY ---
+    function startTimer() {
+        stopTimer();
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            if (timerSeconds > 999) timerSeconds = 999;
+            updateTimerDisplay();
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = null;
+    }
+
+    function updateTimerDisplay() {
+        if (dom.timer) dom.timer.textContent = String(timerSeconds).padStart(3, '0');
+    }
+
+    function updateMineCounter() {
+        const remaining = Math.max(0, currentConfig.mines - flagsPlaced);
+        if (dom.mineCounter) dom.mineCounter.textContent = String(remaining).padStart(3, '0');
+    }
+
+    // --- CONFETTI PARTICLES ---
+    let confettiAnimationId = null;
+    let confettiParticles = [];
+    function startConfetti() {
+        const canvas = dom.confettiCanvas;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        confettiParticles = [];
+
+        const colors = ['#00f0ff', '#ffd700', '#10b981', '#38bdf8', '#ffffff'];
+        for (let i = 0; i < 130; i++) {
+            confettiParticles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                radius: Math.random() * 4 + 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                vx: Math.random() * 6 - 3,
+                vy: Math.random() * 4 + 3,
+                opacity: 1
+            });
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiParticles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.opacity -= 0.006;
+                if (p.opacity <= 0) confettiParticles.splice(idx, 1);
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = Math.max(0, p.opacity);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            if (confettiParticles.length > 0) {
+                confettiAnimationId = requestAnimationFrame(render);
+            } else {
+                confettiAnimationId = null;
+            }
+        }
+        render();
+    }
+
+    function stopConfetti() {
+        if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+        confettiAnimationId = null;
+        if (dom.confettiCanvas) {
+            const ctx = dom.confettiCanvas.getContext('2d');
+            ctx.clearRect(0, 0, dom.confettiCanvas.width, dom.confettiCanvas.height);
+        }
+    }
+
+    // --- EVENT LISTENERS & NAVIGATION ---
+    dom.startGameBtn?.addEventListener('click', startMission);
+    dom.playAgainBtn?.addEventListener('click', startMission);
+    dom.modalMenuBtn?.addEventListener('click', showMainMenu);
+    dom.backToMenuBtn?.addEventListener('click', showMainMenu);
+    dom.restartGameBtn?.addEventListener('click', () => {
+        playSfx(sfx.click);
+        initMission();
+    });
+
+    dom.openSettingsBtn?.addEventListener('click', () => {
+        playSfx(sfx.click);
+        dom.settingsModal.classList.remove('hidden');
+    });
+    dom.closeSettingsBtn?.addEventListener('click', () => {
+        playSfx(sfx.click);
+        dom.settingsModal.classList.add('hidden');
+    });
+    dom.settingsModal?.addEventListener('click', (e) => {
+        if (e.target === dom.settingsModal) dom.settingsModal.classList.add('hidden');
+    });
+
+    // Difficulty selection
+    dom.difficultyBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            playSfx(sfx.click);
+            dom.difficultyBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedDifficulty = btn.dataset.diff;
+        });
+    });
+
+    // Mobile Dig / Flag Mode Toggle
+    dom.digModeBtn?.addEventListener('click', () => {
+        touchMode = 'dig';
+        dom.digModeBtn.classList.add('active');
+        dom.flagModeBtn.classList.remove('active');
+    });
+    dom.flagModeBtn?.addEventListener('click', () => {
+        touchMode = 'flag';
+        dom.flagModeBtn.classList.add('active');
+        dom.digModeBtn.classList.remove('active');
+    });
+
+    // --- KEYBOARD CONTROLS ---
+    window.addEventListener('keydown', (e) => {
+        if (dom.gameContainer.classList.contains('hidden') || isGameOver) return;
+
+        let moved = false;
+        if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+            cursor.r = Math.max(0, cursor.r - 1); moved = true;
+        } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+            cursor.r = Math.min(currentConfig.rows - 1, cursor.r + 1); moved = true;
+        } else if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+            cursor.c = Math.max(0, cursor.c - 1); moved = true;
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+            cursor.c = Math.min(currentConfig.cols - 1, cursor.c + 1); moved = true;
+        } else if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            revealCell(cursor.r, cursor.c);
+        } else if (e.key === 'f' || e.key === 'F') {
+            e.preventDefault();
+            toggleFlag(cursor.r, cursor.c);
+        } else if (e.key === 'c' || e.key === 'C') {
+            e.preventDefault();
+            chordCell(cursor.r, cursor.c);
+        }
+
+        if (moved) {
+            e.preventDefault();
+            renderBoard();
+        }
+    });
+
+    // --- GAMEPAD CONTROLLER INTEGRATION ---
+    if (window.ArcadeGamepadController) {
+        new ArcadeGamepadController({
+            onDirectionDown: (dir) => {
+                if (dom.gameContainer.classList.contains('hidden') || isGameOver) return;
+                if (dir === 'up') cursor.r = Math.max(0, cursor.r - 1);
+                else if (dir === 'down') cursor.r = Math.min(currentConfig.rows - 1, cursor.r + 1);
+                else if (dir === 'left') cursor.c = Math.max(0, cursor.c - 1);
+                else if (dir === 'right') cursor.c = Math.min(currentConfig.cols - 1, cursor.c + 1);
+                renderBoard();
+            },
+            onActionDown: (act) => {
+                if (act === 'a') {
+                    if (!dom.resultModal.classList.contains('hidden')) {
+                        startMission();
+                    } else if (!dom.mainMenu.classList.contains('hidden')) {
+                        startMission();
+                    } else if (!dom.gameContainer.classList.contains('hidden') && !isGameOver) {
+                        revealCell(cursor.r, cursor.c);
+                    }
+                } else if (act === 'x') {
+                    if (!dom.gameContainer.classList.contains('hidden') && !isGameOver) {
+                        toggleFlag(cursor.r, cursor.c);
+                    }
+                } else if (act === 'y') {
+                    if (!dom.gameContainer.classList.contains('hidden') && !isGameOver) {
+                        chordCell(cursor.r, cursor.c);
+                    }
+                } else if (act === 'start') {
+                    if (!dom.gameContainer.classList.contains('hidden')) {
+                        initMission();
+                    }
+                } else if (act === 'b') {
+                    if (!dom.gameContainer.classList.contains('hidden')) {
+                        showMainMenu();
+                    }
+                }
+            }
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        if (confettiAnimationId && dom.confettiCanvas) {
+            dom.confettiCanvas.width = window.innerWidth;
+            dom.confettiCanvas.height = window.innerHeight;
+        }
+    });
 });

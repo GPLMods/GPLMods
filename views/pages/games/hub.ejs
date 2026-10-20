@@ -28,12 +28,35 @@
 </head>
 <body class="arcade-body arcade-body-hub" data-theme="classic">
 
+    <!-- Collapse-Open Shutter Doors (Starts closed at center, header goes up & footer goes down simultaneously) -->
+    <div class="arcade-vault-shutter" id="arcadeVaultShutter">
+        <div class="vault-door vault-door-top">
+            <div class="vault-edge-glow"></div>
+            <div class="vault-peek-brand">
+                <i class="fas fa-gamepad"></i> <span>POCKET CLASSICS</span>
+            </div>
+        </div>
+        <div class="vault-door vault-door-bottom">
+            <div class="vault-edge-glow"></div>
+        </div>
+    </div>
+
     <div class="arcade-wrapper">
         <!-- Arcade Header Partial -->
         <%- include('./partials/header') %>
 
         <!-- PWA Banner Partial -->
         <%- include('./partials/pwa-banner') %>
+
+        <!-- Hero Arcade Banner (Requirement: Improve UI of Main Menu) -->
+        <section class="arcade-hero-banner">
+            <div class="hero-badge-pill">
+                <span class="live-dot"></span>
+                <span>POCKET CLASSICS ARCADE REMASTERED</span>
+            </div>
+            <h2 class="hero-neon-headline">RETRO <span>BATTLEGROUND</span></h2>
+            <p class="hero-subtitle">10 legendary classics upgraded with high-fps physics, responsive mobile &amp; PC layouts, full controller navigation &amp; real-time dual-track soundtracks.</p>
+        </section>
 
         <!-- Controls & Category Filters (Requirement 8) -->
         <div class="arcade-controls-bar">
@@ -70,40 +93,56 @@
                      data-screenshots='<%- JSON.stringify(game.screenshots) %>'
                      data-url="/games/<%= game.id %><%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>">
                     
-                    <span class="card-badge <%= game.category === '2P' ? 'badge-2p' : 'badge-1p' %>">
-                        <%= game.category === '2P' ? '2P Online' : '1P Solo' %>
-                    </span>
-
-                    <div class="card-icon-wrap">
-                        <img src="<%= game.icon %>" alt="<%= game.name %>" class="protect-asset" loading="lazy">
+                    <!-- Cover Screenshot Preview Banner (Requirement: update game screenshot & icons representation) -->
+                    <div class="card-banner-wrap">
+                        <img src="<%= (game.screenshots && game.screenshots[0]) ? game.screenshots[0] : game.icon %>" 
+                             alt="<%= game.name %> Gameplay" 
+                             class="card-banner-img protect-asset" 
+                             loading="lazy">
+                        <div class="card-banner-gradient"></div>
+                        <span class="card-badge <%= game.category === '2P' ? 'badge-2p' : 'badge-1p' %>">
+                            <i class="fas <%= game.category === '2P' ? 'fa-user-friends' : 'fa-user' %>"></i> <%= game.category === '2P' ? '2P Online' : '1P Solo' %>
+                        </span>
+                        <div class="card-floating-icon">
+                            <img src="<%= game.icon %>" alt="<%= game.name %> Icon" class="protect-asset" loading="lazy">
+                        </div>
                     </div>
 
-                    <h3 class="card-title">
-                        <%= game.name %>
-                    </h3>
+                    <div class="card-body-content">
+                        <h3 class="card-title">
+                            <%= game.name %>
+                        </h3>
 
-                    <p class="card-desc">
-                        <%= game.tagline %>
-                    </p>
+                        <p class="card-desc">
+                            <%= game.tagline %>
+                        </p>
 
-                    <div class="card-footer">
-                        <span style="font-size: 0.78rem; color: var(--arc-text-muted);"><i class="fas fa-gamepad"></i> <%= game.typeLabel %></span>
-                        <span class="card-play-hint">
-                            Play Now <i class="fas fa-arrow-right"></i>
-                        </span>
+                        <div class="card-footer">
+                            <span class="card-genre"><i class="fas fa-gamepad"></i> <%= game.typeLabel %></span>
+                            <div class="card-actions-group">
+                                <button type="button" class="card-preview-btn" data-action="details" title="Screenshots & Rules">
+                                    <i class="fas fa-images"></i> Details
+                                </button>
+                                <span class="card-play-hint" data-action="play">
+                                    Play <i class="fas fa-arrow-right"></i>
+                                </span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             <% }); %>
 
             <!-- Coming Soon Card -->
-            <div class="arcade-game-card" style="opacity: 0.7; border-style: dashed; cursor: default;">
-                <div class="card-icon-wrap" style="background: rgba(255,255,255,0.05);">
-                    <i class="fas fa-plus" style="font-size: 1.8rem; color: var(--arc-text-muted);"></i>
+            <div class="arcade-game-card coming-soon-card" style="opacity: 0.7; border-style: dashed; cursor: default;">
+                <div class="card-banner-wrap" style="display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03);">
+                    <i class="fas fa-plus" style="font-size: 2.2rem; color: var(--arc-accent);"></i>
                 </div>
-                <h3 class="card-title" style="color: var(--arc-text-muted);">More Games</h3>
-                <p class="card-desc">Additional retro and community multi-player board games arriving soon in GPLMods Arcade!</p>
-                <div class="card-footer">
-                    <span style="font-size: 0.78rem; color: var(--arc-text-muted);">Stay tuned</span>
+                <div class="card-body-content">
+                    <h3 class="card-title" style="color: var(--arc-text-muted);">More Games</h3>
+                    <p class="card-desc">Additional retro and community multi-player board games arriving soon in GPLMods Arcade!</p>
+                    <div class="card-footer">
+                        <span style="font-size: 0.78rem; color: var(--arc-text-muted);">Stay tuned</span>
+                    </div>
                 </div>
             </div>
         </main>
@@ -168,30 +207,37 @@
     <script src="/games/pocketclassics/js/theme-manager.js"></script>
     <script src="/games/pocketclassics/js/protection.js"></script>
     <script src="/games/pocketclassics/js/multiplayer-client.js"></script>
+    <script src="/games/pocketclassics/js/arcade-helper.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // 1. Category Filter Logic
             const filterBtns = document.querySelectorAll('.filter-btn');
-            const gameCards = document.querySelectorAll('.arcade-game-card[data-category]');
+            const gameCards = Array.from(document.querySelectorAll('.arcade-game-card[data-category]'));
+            let activeFilterIndex = 0;
 
-            filterBtns.forEach(btn => {
+            function applyFilter(index) {
+                activeFilterIndex = (index + filterBtns.length) % filterBtns.length;
+                filterBtns.forEach((b, i) => b.classList.toggle('active', i === activeFilterIndex));
+                const category = filterBtns[activeFilterIndex].dataset.filter;
+
+                gameCards.forEach(card => {
+                    if (category === 'all' || card.dataset.category === category) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                updateCardFocus(0);
+            }
+
+            filterBtns.forEach((btn, idx) => {
                 btn.addEventListener('click', function() {
-                    filterBtns.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    const category = this.dataset.filter;
-
-                    gameCards.forEach(card => {
-                        if (category === 'all' || card.dataset.category === category) {
-                            card.style.display = 'flex';
-                        } else {
-                            card.style.display = 'none';
-                        }
-                    });
+                    applyFilter(idx);
                 });
             });
 
-            // 2. Interactive Game Details Modal with Screenshot Gallery (Requirement 7)
+            // 2. Interactive Game Details Modal with Screenshot Gallery
             const detailsOverlay = document.getElementById('gameDetailsModalOverlay');
             const detailTitle = document.getElementById('detailModalTitle');
             const detailDesc = document.getElementById('detailModalDesc');
@@ -201,35 +247,51 @@
             const detailPlayBtn = document.getElementById('detailPlayNowBtn');
             const closeDetailBtn = document.getElementById('closeDetailModalBtn');
 
+            function openCardDetails(card) {
+                const title = card.dataset.title;
+                const desc = card.dataset.desc;
+                const icon = card.dataset.icon;
+                const typeLabel = card.dataset.typeLabel;
+                const category = card.dataset.category;
+                const url = card.dataset.url;
+                let screenshots = [];
+                try {
+                    screenshots = JSON.parse(card.dataset.screenshots || '[]');
+                } catch (err) {}
+
+                detailTitle.textContent = title;
+                detailDesc.textContent = desc;
+                detailIcon.src = icon;
+                detailBadge.textContent = typeLabel;
+                detailBadge.className = `card-badge ${category === '2P' ? 'badge-2p' : 'badge-1p'}`;
+                detailPlayBtn.href = url;
+
+                detailScreenshots.innerHTML = screenshots.map((ss, idx) => `
+                    <div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--arc-border); background: #000; aspect-ratio: 16/9;">
+                        <img src="${ss}" alt="${title} Screenshot ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;" class="protect-asset">
+                    </div>
+                `).join('');
+
+                detailsOverlay.classList.add('open');
+            }
+
             gameCards.forEach(card => {
                 card.addEventListener('click', (e) => {
-                    // Prevent navigation immediately; show details modal first
-                    e.preventDefault();
-                    const title = card.dataset.title;
-                    const desc = card.dataset.desc;
-                    const icon = card.dataset.icon;
-                    const typeLabel = card.dataset.typeLabel;
-                    const category = card.dataset.category;
-                    const url = card.dataset.url;
-                    let screenshots = [];
-                    try {
-                        screenshots = JSON.parse(card.dataset.screenshots || '[]');
-                    } catch (err) {}
-
-                    detailTitle.textContent = title;
-                    detailDesc.textContent = desc;
-                    detailIcon.src = icon;
-                    detailBadge.textContent = typeLabel;
-                    detailBadge.className = `card-badge ${category === '2P' ? 'badge-2p' : 'badge-1p'}`;
-                    detailPlayBtn.href = url;
-
-                    detailScreenshots.innerHTML = screenshots.map((ss, idx) => `
-                        <div style="border-radius: 10px; overflow: hidden; border: 1px solid var(--arc-border); background: #000; aspect-ratio: 16/9;">
-                            <img src="${ss}" alt="${title} Screenshot ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;" class="protect-asset">
-                        </div>
-                    `).join('');
-
-                    detailsOverlay.classList.add('open');
+                    const detailsBtn = e.target.closest('[data-action="details"]');
+                    if (detailsBtn) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openCardDetails(card);
+                        return;
+                    }
+                    const playHint = e.target.closest('[data-action="play"]');
+                    if (playHint) {
+                        e.preventDefault();
+                        window.location.href = card.dataset.url;
+                        return;
+                    }
+                    // Clicking elsewhere on card opens details modal
+                    openCardDetails(card);
                 });
             });
 
@@ -237,7 +299,102 @@
                 detailsOverlay.classList.remove('open');
             });
 
-            // 3. Settings Modal Toggle
+            // 3. Gamepad & Keyboard Navigation for Hub
+            let focusedCardIndex = 0;
+            function getVisibleCards() {
+                return gameCards.filter(c => c.style.display !== 'none');
+            }
+
+            function updateCardFocus(newIdx) {
+                const visible = getVisibleCards();
+                if (visible.length === 0) return;
+                visible.forEach(c => c.classList.remove('card-focused'));
+                focusedCardIndex = Math.max(0, Math.min(visible.length - 1, newIdx));
+                if (visible[focusedCardIndex]) {
+                    visible[focusedCardIndex].classList.add('card-focused');
+                    visible[focusedCardIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            function getGridColumns() {
+                const grid = document.getElementById('arcadeGameGrid');
+                if (!grid) return 1;
+                const gridWidth = grid.clientWidth;
+                if (gridWidth >= 1000) return 4;
+                if (gridWidth >= 700) return 3;
+                if (gridWidth >= 500) return 2;
+                return 1;
+            }
+
+            // Keyboard navigation
+            window.addEventListener('keydown', (e) => {
+                if (detailsOverlay.classList.contains('open')) {
+                    if (e.key === 'Escape') {
+                        detailsOverlay.classList.remove('open');
+                    } else if (e.code === 'Space' || e.key === 'Enter') {
+                        e.preventDefault();
+                        detailPlayBtn.click();
+                    }
+                    return;
+                }
+
+                const visible = getVisibleCards();
+                const cols = getGridColumns();
+
+                if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+                    e.preventDefault();
+                    updateCardFocus(focusedCardIndex + 1);
+                } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                    e.preventDefault();
+                    updateCardFocus(focusedCardIndex - 1);
+                } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+                    e.preventDefault();
+                    updateCardFocus(focusedCardIndex + cols);
+                } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+                    e.preventDefault();
+                    updateCardFocus(focusedCardIndex - cols);
+                } else if (e.code === 'Space' || e.key === 'Enter') {
+                    e.preventDefault();
+                    if (visible[focusedCardIndex]) {
+                        openCardDetails(visible[focusedCardIndex]);
+                    }
+                } else if (e.code === 'Tab') {
+                    e.preventDefault();
+                    applyFilter(activeFilterIndex + (e.shiftKey ? -1 : 1));
+                }
+            });
+
+            // Gamepad Controller integration for Hub
+            if (window.ArcadeGamepadController) {
+                new ArcadeGamepadController({
+                    onDirectionDown: (dir) => {
+                        if (detailsOverlay.classList.contains('open')) return;
+                        const cols = getGridColumns();
+                        if (dir === 'right') updateCardFocus(focusedCardIndex + 1);
+                        else if (dir === 'left') updateCardFocus(focusedCardIndex - 1);
+                        else if (dir === 'down') updateCardFocus(focusedCardIndex + cols);
+                        else if (dir === 'up') updateCardFocus(focusedCardIndex - cols);
+                    },
+                    onActionDown: (action) => {
+                        if (action === 'a' || action === 'start') {
+                            if (detailsOverlay.classList.contains('open')) {
+                                detailPlayBtn.click();
+                            } else {
+                                const visible = getVisibleCards();
+                                if (visible[focusedCardIndex]) {
+                                    openCardDetails(visible[focusedCardIndex]);
+                                }
+                            }
+                        } else if (action === 'b') {
+                            if (detailsOverlay.classList.contains('open')) {
+                                detailsOverlay.classList.remove('open');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 4. Settings Modal Toggle
             const openSettingsBtn = document.getElementById('openSettingsBtn');
             const settingsOverlay = document.getElementById('settingsModalOverlay');
             openSettingsBtn?.addEventListener('click', () => {
@@ -250,7 +407,6 @@
                     window.ArcadeTheme?.setTheme(this.dataset.theme);
                 });
             });
-
 
             // Music toggle button in header
             document.getElementById('musicToggleBtn')?.addEventListener('click', () => {
@@ -266,10 +422,10 @@
 
             // Surprise Me / Random Game
             document.getElementById('hubRandomGameBtn')?.addEventListener('click', () => {
-                const visibleCards = Array.from(gameCards).filter(c => c.style.display !== 'none');
+                const visibleCards = getVisibleCards();
                 if (visibleCards.length > 0) {
                     const picked = visibleCards[Math.floor(Math.random() * visibleCards.length)];
-                    picked.click();
+                    openCardDetails(picked);
                 }
             });
         });

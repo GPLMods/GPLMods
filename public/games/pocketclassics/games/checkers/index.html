@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>HTML Checkers Game</title>
+    <title>Checkers Master | Pocket Classics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,47 +22,131 @@
     <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
     <audio id="music-game" src="sounds/game-music.mp3" preload="auto" loop></audio>
 
-    <h1>Checkers Master</h1>
+    <div class="checkers-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">CHECKERS</h1>
+                <p class="tagline">Classic draughts strategy • Crown Kings &amp; capture</p>
+            </div>
 
-    <!-- Main Menu Updated -->
-    <div id="main-menu">
-        <h2>Game Menu</h2>
-        <button id="play-player"><i class="fas fa-user-friends"></i> Player vs Player</button>
-        <div class="ai-options">
-            <button id="play-ai"><i class="fas fa-robot"></i> Player vs AI</button>
-            <div id="ai-difficulty-selector" class="hidden">
-                <select id="ai-difficulty"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
-                <button id="start-ai-game">Play</button>
+            <div class="menu-actions">
+                <button id="play-player" class="arc-btn-primary">
+                    <i class="fas fa-user-friends"></i> <span>2 Players Local</span>
+                </button>
+                
+                <div class="ai-select-card">
+                    <button id="play-ai" class="arc-btn-secondary">
+                        <i class="fas fa-robot"></i> <span>Player vs AI</span>
+                    </button>
+                    <div id="ai-difficulty-selector" class="hidden diff-selector-drawer">
+                        <div class="drawer-header">Choose AI Difficulty:</div>
+                        <div class="diff-btn-group">
+                            <button class="ai-lvl-btn active" data-level="easy">Easy</button>
+                            <button class="ai-lvl-btn" data-level="medium">Medium</button>
+                            <button class="ai-lvl-btn" data-level="hard">Hard</button>
+                        </div>
+                        <button id="start-ai-game" class="arc-btn-accent">
+                            <i class="fas fa-play"></i> <span>Start Match</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="settings-button" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Tap / Click</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Arrows / WASD</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad Grid</span>
             </div>
         </div>
-    </div>
 
-    <!-- Game Container (Promotion Dialog removed) -->
-    <div id="game-container" class="hidden">
-        <div id="status-panel">
-            <div id="status">White's Turn</div>
+        <!-- 2. Active Game Screen -->
+        <div id="game-container" class="hidden">
+            <header class="game-hud">
+                <div class="hud-left">
+                    <button id="back-to-menu" class="hud-icon-btn" title="Back to Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div id="status" class="turn-indicator">White's Turn</div>
+                </div>
+                
+                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <div class="checkers-session-scoreboard" id="checkersScoreboard">
+                    <div class="score-pill score-white leading" id="pillWhite" title="White (Player 1) Session Wins">
+                        <span class="label">P1 (WHITE)</span>
+                        <span class="val" id="scoreWhiteVal">0</span>
+                    </div>
+                    <div class="score-pill score-ties" id="pillDraws" title="Draws">
+                        <span class="label">TIES</span>
+                        <span class="val" id="scoreDrawVal">0</span>
+                    </div>
+                    <div class="score-pill score-red" id="pillRed" title="P2 / AI Session Wins">
+                        <span class="label">P2 (RED)</span>
+                        <span class="val" id="scoreRedVal">0</span>
+                    </div>
+                </div>
+
+                <div class="hud-scores">
+                    <div class="player-chip white" title="Pieces Remaining">
+                        <span class="chip-color w"></span>
+                        <span id="white-count">12</span>
+                    </div>
+                    <div class="player-chip red" title="Pieces Remaining">
+                        <span class="chip-color r"></span>
+                        <span id="red-count">12</span>
+                    </div>
+                </div>
+
+                <button id="restart-match-btn" class="hud-icon-btn" title="Restart Match">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <canvas id="win-particles-canvas" class="win-confetti-canvas"></canvas>
+
+            <div id="board-container" class="board-frame">
+                <div id="board"></div>
+            </div>
+
+            <footer class="game-footer-hint">
+                <span id="hint-text"><i class="fas fa-info-circle"></i> Select a piece to see available moves</span>
+            </footer>
         </div>
-        <div id="board-container"><div id="board"></div></div>
-        <div id="controls"><button id="back-to-menu">Back to Main Menu</button></div>
-    </div>
 
-    <!-- NEW SETTINGS DIALOG (MODAL) -->
-    <div id="settings-dialog" class="dialog-overlay hidden">
-        <div class="dialog-box">
-            <h2>Settings</h2>
-            <div class="settings-option">
-                <label for="music-toggle">Background Music</label>
-                <input type="checkbox" id="music-toggle" checked>
+        <!-- 3. Settings Modal -->
+        <div id="settings-dialog" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span><i class="fas fa-music"></i> Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span><i class="fas fa-volume-high"></i> SFX</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="close-settings-button" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
             </div>
-            <div class="settings-option">
-                <label for="sfx-toggle">Sound Effects</label>
-                <input type="checkbox" id="sfx-toggle" checked>
-            </div>
-            <button id="close-settings-button">Done</button>
         </div>
     </div>
 
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

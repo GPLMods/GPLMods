@@ -3,93 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Snake and Ladder</title>
+    <title>Snakes &amp; Ladders Deluxe | Pocket Classics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <!-- Main Menu Container -->
-    <div id="main-menu" class="container">
-        <div class="menu-header" style="justify-content: center;">
-            <h1>Snake &amp; Ladder</h1>
-        </div>
-        <div class="menu-options">
-            <div class="option-section">
-                <div class="option-label">Game Mode</div>
-                <div class="button-group" id="game-mode-btns">
-                    <button class="option-btn active" data-mode="pvp">Player vs Player</button>
-                    <button class="option-btn" data-mode="pva">Player vs AI</button>
-                </div>
-            </div>
-            <div class="option-section">
-                <div class="option-label">Players</div>
-                <div class="button-group" id="player-count-btns">
-                    <button class="option-btn active" data-count="2">2</button>
-                    <button class="option-btn" data-count="3">3</button>
-                    <button class="option-btn" data-count="4">4</button>
-                </div>
-            </div>
-        </div>
-        <button id="start-game-btn" class="start-button"><i class="fas fa-play"></i> Start Game</button>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="popup-overlay hidden">
-        <div class="modal-content">
-            <button id="close-settings-btn" class="close-btn" title="Close"><i class="fas fa-times"></i></button>
-            <h2>Settings</h2>
-            <div class="setting-item">
-                <label for="music-toggle">Background Music</label>
-                <label class="switch"><input type="checkbox" id="music-toggle"><span class="slider"></span></label>
-            </div>
-            <div class="setting-item">
-                <label for="sfx-toggle">Sound Effects</label>
-                <label class="switch"><input type="checkbox" id="sfx-toggle"><span class="slider"></span></label>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game Container -->
-    <div id="game-container" class="hidden">
-        <div id="game-board"></div>
-        <div id="game-controls">
-            <div id="turn-info">Player 1's Turn</div>
-            <div class="dice-container">
-                <div id="dice"><div class="dice-face" data-face="1">⚀</div><div class="dice-face" data-face="2">⚁</div><div class="dice-face" data-face="3">⚂</div><div class="dice-face" data-face="4">⚃</div><div class="dice-face" data-face="5">⚄</div><div class="dice-face" data-face="6">⚅</div></div>
-            </div>
-            <button id="roll-dice-btn"><i class="fas fa-dice"></i> Roll Dice</button>
-            <div id="message-log"></div>
-            <button id="back-to-menu-btn"><i class="fas fa-arrow-left"></i> Back to Menu</button>
-        </div>
-    </div>
-
-    <!-- Modernized Win Popup -->
-    <div id="win-popup" class="popup-overlay hidden">
-        <canvas id="confetti-canvas"></canvas>
-        <div class="popup-content">
-            <span class="popup-icon"><i class="fas fa-trophy" style="color: #f59e0b; font-size: 2.5rem;"></i></span>
-            <h2 id="win-message">Player 1 Wins!</h2>
-            <div class="popup-buttons">
-                <button id="play-again-btn" class="popup-btn primary"><i class="fas fa-rotate-right"></i> Play Again</button>
-                <button id="menu-from-win-btn" class="popup-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Audio Elements -->
-    <audio id="bg-music" src="assets/music.mp3" loop></audio>
-    <audio id="dice-sound" src="assets/dice.mp3"></audio>
-    <audio id="move-sound" src="assets/move.mp3"></audio>
-    <audio id="ladder-sound" src="assets/ladder.mp3"></audio>
-    <audio id="snake-sound" src="assets/snake.mp3"></audio>
-    <audio id="win-sound" src="assets/win.mp3"></audio>
-    <audio id="click-sound" src="assets/click.mp3"></audio>
+    <audio id="music-menu" src="assets/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="assets/music.mp3" preload="auto" loop></audio>
+    <audio id="dice-sound" src="assets/dice.mp3" preload="auto"></audio>
+    <audio id="move-sound" src="assets/move.mp3" preload="auto"></audio>
+    <audio id="ladder-sound" src="assets/ladder.mp3" preload="auto"></audio>
+    <audio id="snake-sound" src="assets/snake.mp3" preload="auto"></audio>
+    <audio id="win-sound" src="assets/win.mp3" preload="auto"></audio>
+    <audio id="click-sound" src="assets/click.mp3" preload="auto"></audio>
+
+    <div class="snakes-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">SNAKES &amp; LADDERS</h1>
+                <p class="tagline">Roll the dice, climb epic ladders &amp; dodge treacherous snakes!</p>
+            </div>
+
+            <div class="menu-options-list">
+                <div class="option-row">
+                    <span class="opt-label">Game Mode</span>
+                    <div class="button-group" id="game-mode-btns">
+                        <button class="option-btn active" data-mode="pvp">Pass &amp; Play</button>
+                        <button class="option-btn" data-mode="pva">vs AI Rivals</button>
+                    </div>
+                </div>
+
+                <div class="option-row">
+                    <span class="opt-label">Number of Players</span>
+                    <div class="button-group" id="player-count-btns">
+                        <button class="option-btn active" data-count="2">2P</button>
+                        <button class="option-btn" data-count="3">3P</button>
+                        <button class="option-btn" data-count="4">4P</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="menu-actions">
+                <button id="start-game-btn" class="arc-btn-primary pulse-btn">
+                    <i class="fas fa-play"></i> <span>Start Match</span>
+                </button>
+                <button id="open-settings-btn" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Tap Dice / Roll</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Spacebar / Enter: Roll</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad Button A</span>
+            </div>
+        </div>
+
+        <!-- 2. Active Game Screen -->
+        <div id="game-container" class="hidden">
+            <header class="game-hud">
+                <button id="back-to-menu-btn" class="hud-icon-btn" title="Back to Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div id="turn-info" class="turn-indicator">Player 1's Turn</div>
+
+                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <div class="snakes-session-scoreboard" id="snakesScoreboard">
+                    <div class="score-pill p1 leading" id="pillP1" title="Player 1 Session Wins">
+                        <span class="label">P1</span>
+                        <span class="val" id="sessP1Wins">0</span>
+                    </div>
+                    <div class="score-pill p2" id="pillP2" title="Player 2 Session Wins">
+                        <span class="label">P2</span>
+                        <span class="val" id="sessP2Wins">0</span>
+                    </div>
+                </div>
+
+                <button id="restart-game-btn" class="hud-icon-btn" title="Restart Game">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <div class="game-main-layout">
+                <!-- 10x10 Board Grid -->
+                <div id="board-viewport" class="board-frame">
+                    <div id="game-board"></div>
+                </div>
+
+                <!-- Dice & Control Sidebar -->
+                <aside class="game-sidebar">
+                    <div class="dice-box">
+                        <div id="dice" class="dice-display">
+                            <span class="dice-glyph" id="dice-glyph">⚅</span>
+                        </div>
+                        <button id="roll-dice-btn" class="roll-btn">
+                            <i class="fas fa-dice"></i> <span>ROLL DICE</span>
+                        </button>
+                    </div>
+
+                    <div class="players-rack" id="players-rack">
+                        <!-- Dynamic Player Badges -->
+                    </div>
+
+                    <div id="message-log" class="action-log">
+                        <div class="log-entry">Match started! Roll dice to begin.</div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- 3. Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span><i class="fas fa-music"></i> Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span><i class="fas fa-volume-high"></i> SFX</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="close-settings-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. Win Popup Modal -->
+        <div id="win-popup" class="modal-overlay hidden">
+            <canvas id="confetti-canvas"></canvas>
+            <div class="modal-card">
+                <div class="modal-glow-icon"><i class="fas fa-trophy"></i></div>
+                <h2 id="win-message" class="modal-headline">Player 1 Wins!</h2>
+                <p class="tagline">Reached exact square 100!</p>
+                <div class="modal-btn-row">
+                    <button id="play-again-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="menu-from-win-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

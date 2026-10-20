@@ -3,61 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Othello</title>
+    <title>Othello Reversi | Pocket Classics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <audio id="bg-music" src="sounds/music.mp3" loop></audio>
-    <audio id="sfx-sound" src="sounds/click.wav"></audio>
-    <audio id="win-sound" src="sounds/game over.wav"></audio>
-    <audio id="ui-click-sound" src="sounds/pop.wav"></audio>
+    <!-- Audio Elements -->
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/music.mp3" preload="auto" loop></audio>
+    <audio id="sfx-sound" src="sounds/click.wav" preload="auto"></audio>
+    <audio id="win-sound" src="sounds/game over.wav" preload="auto"></audio>
+    <audio id="ui-click-sound" src="sounds/pop.wav" preload="auto"></audio>
 
-    <div id="menu-overlay" class="overlay">
-        <div id="main-menu" class="menu">
-            <h1>Othello</h1>
-            <button id="pvp-btn"><i class="fas fa-users"></i> Player vs Player</button>
-            <button id="pvai-btn"><i class="fas fa-robot"></i> Player vs AI</button>
-        </div>
-        <div id="ai-difficulty-menu" class="menu hidden">
-            <h1>Select AI Difficulty</h1>
-            <button data-difficulty="easy">Easy (Random)</button>
-            <button data-difficulty="medium">Medium (Greedy)</button>
-            <button data-difficulty="hard">Hard (Strategic)</button>
-            <button id="back-to-main-btn"><i class="fas fa-arrow-left"></i> Back</button>
-        </div>
-    </div>
+    <div class="othello-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">OTHELLO</h1>
+                <p class="tagline">A minute to learn, a lifetime to master! Flip discs to conquer</p>
+            </div>
 
-    <div id="settings-menu" class="overlay invisible">
-        <div class="menu">
-            <h2>Settings</h2>
-            <div class="settings-row"><label>Background Music</label><label class="toggle-switch"><input type="checkbox" id="music-toggle" checked> <span class="slider"></span></label></div>
-            <div class="settings-row"><label>Sound Effects (SFX)</label><label class="toggle-switch"><input type="checkbox" id="sfx-toggle" checked> <span class="slider"></span></label></div>
-            <button id="close-settings-btn" style="margin-top: 20px;"><i class="fas fa-times"></i> Close</button>
+            <div class="menu-actions">
+                <button id="pvp-btn" class="arc-btn-primary">
+                    <i class="fas fa-users"></i> <span>2 Players Local</span>
+                </button>
+                <button id="pvai-btn" class="arc-btn-secondary">
+                    <i class="fas fa-robot"></i> <span>Play against AI</span>
+                </button>
+                <button id="settings-btn" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Tap Valid Square</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Arrows / WASD</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad Grid</span>
+            </div>
         </div>
-    </div>
-    
-    <div id="win-popup-overlay" class="overlay invisible">
-        <canvas id="win-particles-canvas"></canvas>
-        <div id="win-popup-content" class="menu">
-            <h1 id="win-result"></h1><p id="win-score"></p>
-            <button id="play-again-btn"><i class="fas fa-rotate-right"></i> Play Again</button>
-            <button id="win-back-to-menu-btn"><i class="fas fa-bars"></i> Back to Menu</button>
+
+        <!-- 2. AI Difficulty Menu Screen -->
+        <div id="ai-difficulty-menu" class="card-screen hidden">
+            <h2 class="sub-neon-title">SELECT AI TACTICS</h2>
+            <p class="tagline">Choose your AI opponent's calculation depth</p>
+
+            <div class="difficulty-options">
+                <button class="diff-card" data-difficulty="easy">
+                    <div class="diff-header">
+                        <span class="diff-name">Casual</span>
+                        <span class="diff-badge green">Easy</span>
+                    </div>
+                    <div class="diff-desc">Relaxed moves with random exploration</div>
+                </button>
+
+                <button class="diff-card" data-difficulty="medium">
+                    <div class="diff-header">
+                        <span class="diff-name">Greedy Strategist</span>
+                        <span class="diff-badge blue">Medium</span>
+                    </div>
+                    <div class="diff-desc">Prioritizes immediate disc flips &amp; edges</div>
+                </button>
+
+                <button class="diff-card" data-difficulty="hard">
+                    <div class="diff-header">
+                        <span class="diff-name">Corner Master</span>
+                        <span class="diff-badge purple">Hard</span>
+                    </div>
+                    <div class="diff-desc">Positions for stable corners &amp; traps</div>
+                </button>
+            </div>
+
+            <button id="back-to-main-btn" class="arc-btn-secondary">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
         </div>
-    </div>
-    
-    <div id="game-screen" class="hidden">
-        <div class="game-info">
-            <div class="score"><div class="piece black"></div><div id="black-score">2</div></div>
-            <div id="player-turn"></div>
-            <div class="score"><div class="piece white"></div><div id="white-score">2</div></div>
+
+        <!-- 3. Active Game Screen -->
+        <div id="game-screen" class="hidden">
+            <header class="game-hud">
+                <div class="hud-left">
+                    <button id="back-to-menu-game-btn" class="hud-icon-btn" title="Back to Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div id="player-turn" class="turn-indicator">Black's Turn</div>
+                </div>
+
+                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <div class="othello-session-scoreboard" id="othelloScoreboard">
+                    <div class="score-pill score-black leading" id="pillBlack" title="Black (P1) Session Wins">
+                        <span class="label">P1 (BLACK)</span>
+                        <span class="val" id="sessBlackWins">0</span>
+                    </div>
+                    <div class="score-pill score-ties" id="pillDraws" title="Draws">
+                        <span class="label">DRAWS</span>
+                        <span class="val" id="sessDraws">0</span>
+                    </div>
+                    <div class="score-pill score-white" id="pillWhite" title="White (P2/AI) Session Wins">
+                        <span class="label">P2 (WHITE)</span>
+                        <span class="val" id="sessWhiteWins">0</span>
+                    </div>
+                </div>
+
+                <div class="hud-scores">
+                    <div class="player-score-card black" title="Current Black Discs">
+                        <span class="disc-icon black"></span>
+                        <span id="black-score" class="score-val">2</span>
+                    </div>
+                    <div class="player-score-card white" title="Current White Discs">
+                        <span class="disc-icon white"></span>
+                        <span id="white-score" class="score-val">2</span>
+                    </div>
+                </div>
+
+                <button id="restart-game-btn" class="hud-icon-btn" title="Restart Game">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <div class="status-alert-bar">
+                <span id="status-message">Select an illuminated circle to flip discs</span>
+            </div>
+
+            <div id="board-container" class="board-frame">
+                <!-- 8x8 Grid dynamically generated -->
+            </div>
         </div>
-        <div class="status-bar"><div id="status-message"></div></div>
-        <div id="board-container"></div>
-        <button id="back-to-menu-game-btn" style="margin-top: 20px; padding: 10px 20px; font-size: 1em;">Back to Menu</button>
+
+        <!-- 4. Settings Modal -->
+        <div id="settings-menu" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span><i class="fas fa-music"></i> Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span><i class="fas fa-volume-high"></i> SFX</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="close-settings-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. Win Popup Modal -->
+        <div id="win-popup-overlay" class="modal-overlay hidden">
+            <canvas id="win-particles-canvas"></canvas>
+            <div id="win-popup-content" class="modal-card">
+                <div class="modal-glow-icon"><i class="fas fa-trophy"></i></div>
+                <h2 id="win-result" class="modal-headline">Black Wins!</h2>
+                <p id="win-score" class="tagline" style="font-size: 1rem; margin-bottom: 20px;">Black: 42 • White: 22</p>
+                <div class="modal-btn-row">
+                    <button id="play-again-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="win-back-to-menu-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

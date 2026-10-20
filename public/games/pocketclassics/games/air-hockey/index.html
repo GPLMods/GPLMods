@@ -3,78 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Neon Air Hockey</title>
+    <title>Neon Air Hockey Showdown</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/background.mp3" preload="auto" loop></audio>
+    <audio id="hit-sound" src="sounds/hit.wav" preload="auto"></audio>
+    <audio id="score-sound" src="sounds/score.wav" preload="auto"></audio>
+    <audio id="win-sound" src="sounds/win.wav" preload="auto"></audio>
+    <audio id="click-sound" src="sounds/click.wav" preload="auto"></audio>
+
     <div id="game-wrapper">
-        <!-- Main Menu -->
+        <!-- 1. Main Menu Screen -->
         <div id="main-menu" class="menu-screen active">
-            <h1>NEON HOCKEY</h1>
-            <button id="pvp-button"><i class="fas fa-users"></i> Player vs Player</button>
-            <button id="pva-button"><i class="fas fa-robot"></i> Player vs AI</button>
+            <span class="game-badge">POCKET CLASSICS</span>
+            <h1 class="glitch-title">AIR HOCKEY</h1>
+            <p class="tagline">High-speed neon showdown • First to 7 goals</p>
+
+            <div class="menu-button-group">
+                <button id="pva-button" class="btn-neon magenta">
+                    <i class="fas fa-robot"></i> <span>Player vs AI</span>
+                </button>
+                <button id="pvp-button" class="btn-neon cyan">
+                    <i class="fas fa-users"></i> <span>2 Players Local</span>
+                </button>
+                <button id="settings-button" class="btn-neon outline">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Drag / Touch</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> WASD / Arrows</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad Stick</span>
+            </div>
         </div>
 
-        <!-- AI Difficulty Menu -->
+        <!-- 2. AI Difficulty Menu Screen -->
         <div id="difficulty-menu" class="menu-screen">
-            <h2>SELECT AI</h2>
-            <button data-difficulty="easy">Easy</button>
-            <button data-difficulty="medium">Medium</button>
-            <button data-difficulty="hard">Hard</button>
-            <button id="difficulty-back-button" class="back-button"><i class="fas fa-arrow-left"></i> Back</button>
+            <h2 class="menu-title">SELECT AI RIVAL</h2>
+            <p class="tagline">Choose your rival's reaction speed</p>
+
+            <div class="menu-button-group">
+                <button data-difficulty="easy" class="btn-neon green">
+                    <div class="diff-btn-content">
+                        <strong>ROOKIE</strong>
+                        <small>Easy • Relaxed puck pace</small>
+                    </div>
+                </button>
+                <button data-difficulty="medium" class="btn-neon cyan">
+                    <div class="diff-btn-content">
+                        <strong>PRO</strong>
+                        <small>Medium • Balanced defense &amp; strikes</small>
+                    </div>
+                </button>
+                <button data-difficulty="hard" class="btn-neon magenta">
+                    <div class="diff-btn-content">
+                        <strong>MASTER</strong>
+                        <small>Hard • Lightning sharp reflections</small>
+                    </div>
+                </button>
+            </div>
+
+            <button id="difficulty-back-button" class="btn-back">
+                <i class="fas fa-arrow-left"></i> <span>Back</span>
+            </button>
         </div>
 
-        <!-- Settings Menu -->
+        <!-- 3. Settings Menu Screen -->
         <div id="settings-menu" class="menu-screen">
-            <h2>SETTINGS</h2>
-            <div class="setting-item">
-                <span>Background Music</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="music-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="setting-item">
-                <span>Sound Effects</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="sfx-toggle" checked>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div class="setting-item">
-                <span>Puck Speed</span>
-                <div class="slider-container">
-                    <input type="range" min="0.5" max="1.5" value="1" step="0.1" class="speed-slider" id="puck-speed-slider">
-                    <span id="puck-speed-value">1.0x</span>
+            <h2 class="menu-title">SETTINGS</h2>
+            
+            <div class="settings-list">
+                <div class="setting-item">
+                    <span><i class="fas fa-music"></i> Music</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="music-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <span><i class="fas fa-volume-high"></i> SFX</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sfx-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item speed-setting">
+                    <span><i class="fas fa-bolt"></i> Puck Speed</span>
+                    <div class="slider-container">
+                        <input type="range" min="0.8" max="1.4" value="1.0" step="0.1" class="speed-slider" id="puck-speed-slider">
+                        <span id="puck-speed-value">1.0x</span>
+                    </div>
                 </div>
             </div>
-            <button id="settings-back-button" class="back-button">Back</button>
+
+            <button id="settings-back-button" class="btn-back">
+                <i class="fas fa-check"></i> <span>Done</span>
+            </button>
         </div>
         
-        <!-- Game Container -->
+        <!-- 4. Active Game Container -->
         <div id="game-container">
             <div id="score-display">
-                <div id="score-player2">0</div>
-                <div id="score-player1">0</div>
+                <div id="score-player2" class="score-num p2">0</div>
+                <div class="score-divider">VS</div>
+                <div id="score-player1" class="score-num p1">0</div>
             </div>
+
             <canvas id="game-canvas"></canvas>
-            <button id="back-to-menu-ingame-button" class="ingame-button"><i class="fas fa-bars"></i> Menu</button>
+
+            <header class="ingame-hud-bar">
+                <button id="back-to-menu-ingame-button" class="hud-btn" title="Pause / Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <div class="airhockey-session-scoreboard" id="airhockeyScoreboard">
+                    <div class="score-pill score-p1 leading" id="pillP1" title="Player 1 Match Wins">
+                        <span class="label">P1</span>
+                        <span class="val" id="sessP1Wins">0</span>
+                    </div>
+                    <div class="score-pill score-sets" title="Sets Won">
+                        <span class="label">SETS</span>
+                    </div>
+                    <div class="score-pill score-p2" id="pillP2" title="Player 2 / AI Match Wins">
+                        <span class="label" id="sessP2Label">P2</span>
+                        <span class="val" id="sessP2Wins">0</span>
+                    </div>
+                </div>
+
+                <button id="hud-restart-btn" class="hud-btn" title="Restart Match">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <div class="touch-hint-banner" id="touchHintBanner">
+                <span>Drag inside your half or use Keyboard / Gamepad</span>
+            </div>
         </div>
 
-        <!-- Win Popup -->
+        <!-- 5. Win Popup Modal -->
         <div id="win-popup">
             <canvas id="particle-canvas"></canvas>
             <div id="win-popup-content">
-                <h2 id="win-message"></h2>
-                <button id="play-again-button"><i class="fas fa-rotate-right"></i> Play Again</button>
+                <div class="trophy-glow"><i class="fas fa-trophy"></i></div>
+                <h2 id="win-message">PLAYER 1 WINS!</h2>
+                <div class="win-btn-row">
+                    <button id="play-again-button" class="btn-neon cyan">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="win-menu-button" class="btn-neon outline">
+                        <i class="fas fa-bars"></i> <span>Menu</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
+
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

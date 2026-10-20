@@ -3,68 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Rock Paper Scissors</title>
-    <!-- Link to the external CSS file -->
+    <title>Rock Paper Scissors Arena | Pocket Classics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Main Menu Screen -->
-        <div id="main-menu" class="screen">
-            <h1>Rock Paper Scissors</h1>
-            <p>Can you beat the computer?</p>
-            <div class="main-menu-buttons">
-                <button id="play-btn" class="btn btn-primary"><i class="fas fa-play"></i> Play Game</button>
+    <!-- Audio Elements -->
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/bg-music.mp3" preload="auto" loop></audio>
+    <audio id="sfx-click" src="sounds/click.wav" preload="auto"></audio>
+    <audio id="sfx-win" src="sounds/win.wav" preload="auto"></audio>
+    <audio id="sfx-lose" src="sounds/lose.wav" preload="auto"></audio>
+    <audio id="sfx-tie" src="sounds/tie.wav" preload="auto"></audio>
+
+    <div class="rps-app-wrapper">
+        <!-- 1. Main Menu Screen -->
+        <div id="main-menu" class="card-screen">
+            <div class="menu-brand">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">RPS ARENA</h1>
+                <p class="tagline">Psychological duel of reflexes • First to 3 round wins</p>
+            </div>
+
+            <div class="menu-actions">
+                <button id="play-btn" class="arc-btn-primary pulse-btn">
+                    <i class="fas fa-play"></i> <span>Enter Battle</span>
+                </button>
+                <button id="settings-btn" class="arc-btn-secondary">
+                    <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                </button>
+            </div>
+
+            <div class="input-hints-bar">
+                <span class="hint-pill"><i class="fas fa-mouse-pointer"></i> Tap Card</span>
+                <span class="hint-pill"><i class="fas fa-keyboard"></i> Keys 1, 2, 3 or R, P, S</span>
+                <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad: X: Rock • Y: Paper • B: Scissors</span>
             </div>
         </div>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen hidden">
-            <div class="score-board">
-                <div>Player: <span id="player-score">0</span></div>
-                <div>Computer: <span id="computer-score">0</span></div>
+        <!-- 2. Active Battle Screen -->
+        <div id="game-screen" class="battle-screen hidden">
+            <!-- HUD -->
+            <header class="battle-hud">
+                <button id="back-to-menu-btn" class="hud-icon-btn" title="Back to Menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <div class="rps-session-scoreboard" id="rpsSessionScoreboard">
+                    <div class="score-pill score-p1 leading" id="pillP1" title="Your Session Match Wins">
+                        <span class="label">YOU</span>
+                        <span class="val" id="sessP1Wins">0</span>
+                    </div>
+                    <div class="score-pill score-ties" id="pillTies" title="Ties">
+                        <span class="label">TIES</span>
+                        <span class="val" id="sessTies">0</span>
+                    </div>
+                    <div class="score-pill score-cpu" id="pillCpu" title="CPU Session Match Wins">
+                        <span class="label">CPU</span>
+                        <span class="val" id="sessCpuWins">0</span>
+                    </div>
+                </div>
+
+                <div class="scoreboard-pill" title="Current Round Score">
+                    <div class="score-side p1">
+                        <span class="side-label">YOU</span>
+                        <span id="player-score" class="side-val">0</span>
+                    </div>
+                    <div class="vs-divider">VS</div>
+                    <div class="score-side cpu">
+                        <span id="computer-score" class="side-val">0</span>
+                        <span class="side-label">CPU</span>
+                    </div>
+                </div>
+
+                <button id="restart-match-btn" class="hud-icon-btn" title="Restart Duel">
+                    <i class="fas fa-rotate-right"></i>
+                </button>
+            </header>
+
+            <canvas id="win-particles-canvas" class="win-confetti-canvas"></canvas>
+
+            <!-- Clash Arena Stage -->
+            <div class="clash-stage">
+                <div class="clash-fighter left" id="fighter-player">
+                    <div id="player-choice-display" class="choice-circle">
+                        <i class="fas fa-question"></i>
+                    </div>
+                    <span class="fighter-name">YOU</span>
+                </div>
+
+                <div class="clash-center">
+                    <div class="clash-sparks" id="clash-sparks"></div>
+                    <div class="result-message" id="result-message">Choose Weapon!</div>
+                </div>
+
+                <div class="clash-fighter right" id="fighter-cpu">
+                    <div id="computer-choice-display" class="choice-circle">
+                        <i class="fas fa-question"></i>
+                    </div>
+                    <span class="fighter-name">CPU</span>
+                </div>
             </div>
-            <div class="result-message" id="result-message">Choose your weapon!</div>
-            <div class="choices-display">
-                <div class="player-choice"><span id="player-choice-display" class="choice-display">?</span><h3>You</h3></div>
-                <div class="computer-choice"><span id="computer-choice-display" class="choice-display">?</span><h3>CPU</h3></div>
-            </div>
-            <div class="choices">
-                <button class="choice-btn" data-choice="rock" title="Rock"><i class="fas fa-hand-back-fist"></i></button>
-                <button class="choice-btn" data-choice="paper" title="Paper"><i class="fas fa-hand"></i></button>
-                <button class="choice-btn" data-choice="scissors" title="Scissors"><i class="fas fa-hand-scissors"></i></button>
-            </div>
-            <div class="controls">
-                <button id="back-to-menu-btn" class="btn btn-danger"><i class="fas fa-arrow-left"></i> Back to Menu</button>
+
+            <!-- Weapon Choices Dock -->
+            <div class="weapon-dock">
+                <button class="choice-card" data-choice="rock" title="Rock (Key: 1 / R)">
+                    <div class="card-icon"><i class="fas fa-hand-back-fist"></i></div>
+                    <span class="card-title">ROCK</span>
+                    <span class="shortcut-tag">1 / [X]</span>
+                </button>
+
+                <button class="choice-card" data-choice="paper" title="Paper (Key: 2 / P)">
+                    <div class="card-icon"><i class="fas fa-hand"></i></div>
+                    <span class="card-title">PAPER</span>
+                    <span class="shortcut-tag">2 / [Y]</span>
+                </button>
+
+                <button class="choice-card" data-choice="scissors" title="Scissors (Key: 3 / S)">
+                    <div class="card-icon"><i class="fas fa-hand-scissors"></i></div>
+                    <span class="card-title">SCISSORS</span>
+                    <span class="shortcut-tag">3 / [B]</span>
+                </button>
             </div>
         </div>
 
-        <!-- Settings Screen -->
-        <div id="settings-screen" class="screen hidden">
-            <h2>Settings</h2>
-            <div class="setting-option">
-                <label for="sfx-toggle">Sound Effects (SFX)</label>
-                <label class="switch">
-                    <input type="checkbox" id="sfx-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-            <div class="setting-option">
-                <label for="music-toggle">Background Music</label>
-                <label class="switch">
-                    <input type="checkbox" id="music-toggle" checked>
-                    <span class="slider round"></span>
-                </label>
-            </div>
-            <div class="controls">
-                <button id="back-from-settings-btn" class="btn btn-primary">Back</button>
+        <!-- 3. Settings Modal -->
+        <div id="settings-screen" class="modal-overlay hidden">
+            <div class="modal-card">
+                <h2 class="modal-headline">Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span><i class="fas fa-music"></i> Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span><i class="fas fa-volume-high"></i> SFX</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="back-from-settings-btn" class="arc-btn-secondary" style="margin-top: 18px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Link to the external JavaScript file (defer ensures it runs after the HTML is parsed) -->
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js" defer></script>
 </body>
 </html>

@@ -3,65 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Modern Snake Game</title>
+    <title>Snake Classic Arcade | Pocket Classics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="game-container">
-        <div class="ui-overlay">
-            <div id="game-ui">
-                <p>SCORE: <span id="score">0</span></p>
-                <button id="pause-btn" aria-label="Pause"><i class="fas fa-pause"></i></button>
-            </div>
-
-            <div id="main-menu-screen" class="screen active">
-                <h1>SNAKE</h1>
-                <button id="play-btn" class="action-btn"><i class="fas fa-play"></i> Play</button>
-            </div>
-
-            <div id="settings-screen" class="screen">
-                <h2>Settings</h2>
-                <div class="setting-item"><span>Music</span><button id="music-toggle-btn" class="toggle-btn active"><span></span></button></div>
-                <div class="setting-item"><span>Sound FX</span><button id="sfx-toggle-btn" class="toggle-btn active"><span></span></button></div>
-                <button id="back-from-settings-btn" class="action-btn"><i class="fas fa-arrow-left"></i> Back</button>
-            </div>
-            
-            <div id="difficulty-screen" class="screen">
-                <h2>Select Difficulty</h2>
-                <div class="difficulty-selector">
-                    <button class="difficulty-btn active" data-difficulty="easy">Easy</button>
-                    <button class="difficulty-btn" data-difficulty="medium">Medium</button>
-                    <button class="difficulty-btn" data-difficulty="hard">Hard</button>
-                </div>
-                <button id="start-game-btn" class="action-btn"><i class="fas fa-play"></i> Start Game</button>
-                <button id="back-from-difficulty-btn" class="action-btn secondary"><i class="fas fa-arrow-left"></i> Back</button>
-            </div>
-
-            <div id="pause-screen" class="screen">
-                <h2>Paused</h2>
-                <button id="resume-btn" class="action-btn"><i class="fas fa-play"></i> Resume</button>
-                <button id="menu-from-pause-btn" class="action-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
-            </div>
-            
-            <div id="game-over-screen" class="screen">
-                <h2>Game Over</h2>
-                <p>Final Score: <span id="final-score">0</span></p>
-                <button id="restart-btn" class="action-btn"><i class="fas fa-rotate-right"></i> Play Again</button>
-                <button id="menu-from-gameover-btn" class="action-btn secondary"><i class="fas fa-bars"></i> Main Menu</button>
-            </div>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-    </div>
-
-    <audio id="bg-music" src="sounds/bg-music.mp3" loop></audio>
+    <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
+    <audio id="music-game" src="sounds/bg-music.mp3" preload="auto" loop></audio>
     <audio id="eat-sound" src="sounds/eat.wav" preload="auto"></audio>
     <audio id="game-over-sound" src="sounds/game-over.wav" preload="auto"></audio>
     <audio id="click-sound" src="sounds/click.wav" preload="auto"></audio>
     <audio id="turn-sound" src="sounds/turn.wav" preload="auto"></audio>
 
+    <div class="snake-app-wrapper">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- Active HUD -->
+            <div id="game-ui">
+                <div class="hud-score-badge">
+                    <span class="hud-lbl">SCORE</span>
+                    <span id="score" class="hud-val">0</span>
+                </div>
+                <div class="hud-score-badge best">
+                    <span class="hud-lbl">BEST</span>
+                    <span id="best-score" class="hud-val">0</span>
+                </div>
+                <button id="pause-btn" class="hud-icon-btn" title="Pause Game">
+                    <i class="fas fa-pause"></i>
+                </button>
+            </div>
+
+            <!-- 1. Main Menu Screen -->
+            <div id="main-menu-screen" class="screen active">
+                <span class="game-badge">POCKET CLASSICS</span>
+                <h1 class="neon-title">SNAKE</h1>
+                <p class="tagline">Slither, feast on glowing orbs &amp; grow longer!</p>
+
+                <div class="menu-actions">
+                    <button id="play-btn" class="arc-btn-primary pulse-btn">
+                        <i class="fas fa-play"></i> <span>Play Game</span>
+                    </button>
+                    <button id="settings-btn" class="arc-btn-secondary">
+                        <i class="fas fa-sliders-h"></i> <span>Settings</span>
+                    </button>
+                </div>
+
+                <div class="input-hints-bar">
+                    <span class="hint-pill"><i class="fas fa-keyboard"></i> Arrow Keys / WASD</span>
+                    <span class="hint-pill"><i class="fas fa-hand-pointer"></i> Swipe / D-Pad</span>
+                    <span class="hint-pill"><i class="fas fa-gamepad"></i> Gamepad D-Pad</span>
+                </div>
+            </div>
+
+            <!-- 2. Difficulty Screen -->
+            <div id="difficulty-screen" class="screen">
+                <h2 class="sub-neon-title">SELECT SPEED</h2>
+                <p class="tagline">Choose your slither velocity</p>
+
+                <div class="difficulty-selector">
+                    <button class="difficulty-btn active" data-difficulty="easy">
+                        <span class="diff-title">SLOW</span>
+                        <small>Relaxed pace (150ms)</small>
+                    </button>
+                    <button class="difficulty-btn" data-difficulty="medium">
+                        <span class="diff-title">MEDIUM</span>
+                        <small>Arcade balance (100ms)</small>
+                    </button>
+                    <button class="difficulty-btn" data-difficulty="hard">
+                        <span class="diff-title">TURBO</span>
+                        <small>Reflex master (60ms)</small>
+                    </button>
+                </div>
+
+                <div class="menu-actions">
+                    <button id="start-game-btn" class="arc-btn-primary">
+                        <i class="fas fa-play"></i> <span>Start Slithering</span>
+                    </button>
+                    <button id="back-from-difficulty-btn" class="arc-btn-secondary">
+                        <i class="fas fa-arrow-left"></i> <span>Back</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Settings Screen -->
+            <div id="settings-screen" class="screen">
+                <h2 class="sub-neon-title">Settings</h2>
+                <div class="settings-list">
+                    <div class="setting-row">
+                        <span><i class="fas fa-music"></i> Music</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="music-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span><i class="fas fa-volume-high"></i> SFX</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sfx-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <button id="back-from-settings-btn" class="arc-btn-secondary" style="margin-top: 14px; width: 100%;">
+                    <i class="fas fa-check"></i> <span>Done</span>
+                </button>
+            </div>
+
+            <!-- 4. Pause Screen -->
+            <div id="pause-screen" class="screen">
+                <h2 class="sub-neon-title">GAME PAUSED</h2>
+                <div class="menu-actions">
+                    <button id="resume-btn" class="arc-btn-primary">
+                        <i class="fas fa-play"></i> <span>Resume</span>
+                    </button>
+                    <button id="menu-from-pause-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Main Menu</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 5. Game Over Screen -->
+            <div id="game-over-screen" class="screen">
+                <div class="modal-glow-icon"><i class="fas fa-skull"></i></div>
+                <h2 class="sub-neon-title" style="color: #ef4444;">GAME OVER</h2>
+                <div class="modal-score-box">
+                    <span>Score Achieved</span>
+                    <strong id="final-score">0</strong>
+                </div>
+                <div class="menu-actions">
+                    <button id="restart-btn" class="arc-btn-primary">
+                        <i class="fas fa-rotate-right"></i> <span>Play Again</span>
+                    </button>
+                    <button id="menu-from-gameover-btn" class="arc-btn-secondary">
+                        <i class="fas fa-bars"></i> <span>Main Menu</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- On-screen Virtual D-Pad for Mobile Touch -->
+        <div class="mobile-virtual-dpad" id="virtualDpad">
+            <button class="dpad-key up" data-dir="up"><i class="fas fa-chevron-up"></i></button>
+            <div class="dpad-row">
+                <button class="dpad-key left" data-dir="left"><i class="fas fa-chevron-left"></i></button>
+                <button class="dpad-key down" data-dir="down"><i class="fas fa-chevron-down"></i></button>
+                <button class="dpad-key right" data-dir="right"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/protection.js"></script>
+    <script src="../../js/arcade-helper.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

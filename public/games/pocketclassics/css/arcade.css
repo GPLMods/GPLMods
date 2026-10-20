@@ -281,13 +281,13 @@ canvas.protect-asset,
 .arcade-game-card {
     background: var(--arc-card-bg);
     border: 1px solid var(--arc-border);
-    border-radius: 16px;
-    padding: 18px;
+    border-radius: 18px;
+    padding: 0;
     display: flex;
     flex-direction: column;
     position: relative;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
     text-decoration: none;
     color: var(--arc-text-main);
     overflow: hidden;
@@ -295,58 +295,102 @@ canvas.protect-asset,
 
 .arcade-game-card:hover {
     border-color: var(--arc-accent);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 15px var(--arc-accent-glow);
+    transform: translateY(-5px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px var(--arc-accent-glow);
     background: var(--arc-card-hover);
 }
 
-.card-badge {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.badge-2p {
-    background: rgba(168, 85, 247, 0.2);
-    border: 1px solid rgba(168, 85, 247, 0.5);
-    color: #c084fc;
-}
-
-.badge-1p {
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid rgba(59, 130, 246, 0.5);
-    color: #60a5fa;
-}
-
-.card-icon-wrap {
-    width: 68px;
-    height: 68px;
-    border-radius: 14px;
+.card-banner-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #05060d;
     overflow: hidden;
-    margin-bottom: 14px;
-    border: 1px solid var(--arc-border);
-    background: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.card-icon-wrap img {
+.card-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease, filter 0.4s ease;
+}
+
+.arcade-game-card:hover .card-banner-img {
+    transform: scale(1.06);
+    filter: brightness(1.1);
+}
+
+.card-banner-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(10,10,12,0.85) 100%);
+    pointer-events: none;
+}
+
+.card-floating-icon {
+    position: absolute;
+    bottom: -14px;
+    left: 14px;
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    border: 2px solid var(--arc-border);
+    background: #0a0a0c;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+    overflow: hidden;
+    z-index: 2;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.arcade-game-card:hover .card-floating-icon {
+    transform: scale(1.08);
+    border-color: var(--arc-accent);
+}
+
+.card-floating-icon img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
+.card-body-content {
+    padding: 22px 16px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 3;
+    backdrop-filter: blur(8px);
+}
+
+.badge-2p {
+    background: rgba(168, 85, 247, 0.35);
+    border: 1px solid rgba(168, 85, 247, 0.7);
+    color: #f3e8ff;
+}
+
+.badge-1p {
+    background: rgba(59, 130, 246, 0.35);
+    border: 1px solid rgba(59, 130, 246, 0.7);
+    color: #dbeafe;
+}
+
 .card-title {
     font-size: 1.15rem;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+    color: var(--arc-text-main);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -354,9 +398,9 @@ canvas.protect-asset,
 
 .card-desc {
     color: var(--arc-text-muted);
-    font-size: 0.85rem;
-    line-height: 1.4;
-    margin-bottom: 16px;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    margin-bottom: 14px;
     flex: 1;
 }
 
@@ -365,8 +409,41 @@ canvas.protect-asset,
     align-items: center;
     justify-content: space-between;
     border-top: 1px solid var(--arc-border);
-    padding-top: 12px;
+    padding-top: 10px;
     margin-top: auto;
+}
+
+.card-genre {
+    font-size: 0.75rem;
+    color: var(--arc-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.card-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-preview-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: var(--arc-text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.card-preview-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
 .card-play-hint {
@@ -375,7 +452,8 @@ canvas.protect-asset,
     color: var(--arc-accent);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    cursor: pointer;
 }
 
 .arcade-game-card:hover .card-play-hint i {
@@ -1030,3 +1108,201 @@ canvas.protect-asset,
         image-rendering: crisp-edges;
     }
 }
+
+/* Controller navigation focus */
+.arcade-game-card.card-focused {
+    border-color: var(--arc-accent) !important;
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 25px var(--arc-accent-glow) !important;
+    background: var(--arc-card-hover) !important;
+}
+
+.controller-connected-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: #00f0ff;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    animation: fadeIn 0.3s ease;
+}
+
+/* =========================================================================
+   MAIN MENU (HUB) COLLAPSE-OPEN VAULT ANIMATION & HERO UI
+   ========================================================================= */
+
+.arcade-vault-shutter {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.vault-door {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 50vh;
+    background: radial-gradient(circle at center, #171b30 0%, #060810 100%);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vault-door-top {
+    top: 0;
+    transform: translateY(0);
+    border-bottom: 2px solid var(--arc-accent);
+    animation: vaultSlideUp 0.85s cubic-bezier(0.77, 0, 0.175, 1) 0.1s forwards;
+}
+
+.vault-door-bottom {
+    bottom: 0;
+    transform: translateY(0);
+    border-top: 2px solid var(--arc-accent);
+    animation: vaultSlideDown 0.85s cubic-bezier(0.77, 0, 0.175, 1) 0.1s forwards;
+}
+
+.vault-edge-glow {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, transparent, var(--arc-accent), #00f0ff, var(--arc-accent), transparent);
+    filter: drop-shadow(0 0 12px var(--arc-accent));
+}
+
+.vault-door-top .vault-edge-glow { bottom: -3px; }
+.vault-door-bottom .vault-edge-glow { top: -3px; }
+
+.vault-peek-brand {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: var(--arc-accent);
+    text-shadow: 0 0 16px var(--arc-accent-glow);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeOut 0.4s ease 0.35s forwards;
+}
+
+@keyframes vaultSlideUp {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100%); visibility: hidden; }
+}
+
+@keyframes vaultSlideDown {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(100%); visibility: hidden; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: scale(0.9); }
+}
+
+/* Header & Footer Collapse-Open Simultaneous Motion */
+.arcade-body-hub .arcade-header {
+    animation: headerFlyUp 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    transform-origin: top center;
+}
+
+.arcade-body-hub .arcade-footer {
+    animation: footerFlyDown 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+    transform-origin: bottom center;
+}
+
+@keyframes headerFlyUp {
+    0% { transform: translateY(calc(50vh - 40px)); opacity: 0.85; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes footerFlyDown {
+    0% { transform: translateY(calc(-50vh + 40px)); opacity: 0.85; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* Main Hub Content Bloom */
+.arcade-body-hub .arcade-game-grid,
+.arcade-body-hub .arcade-controls-bar,
+.arcade-body-hub .arcade-hero-banner {
+    animation: hubContentReveal 1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+@keyframes hubContentReveal {
+    0% { opacity: 0; transform: scaleY(0.08) scaleX(0.96); filter: blur(6px); }
+    50% { opacity: 0.7; transform: scaleY(0.75) scaleX(0.99); filter: blur(2px); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* Hero Banner UI */
+.arcade-hero-banner {
+    margin-bottom: 22px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.06) 0%, rgba(0, 240, 255, 0.05) 50%, rgba(20, 20, 22, 0.85) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 18px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 215, 0, 0.08);
+}
+
+.hero-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    color: var(--arc-accent);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    padding: 3px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+.hero-neon-headline {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: 1.5px;
+    background: linear-gradient(135deg, #ffffff 20%, var(--arc-accent) 60%, #00f0ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.35));
+}
+
+.hero-neon-headline span {
+    color: var(--arc-accent);
+}
+
+.hero-subtitle {
+    font-size: 0.85rem;
+    color: var(--arc-text-muted);
+    max-width: 680px;
+    line-height: 1.4;
+}
+
+.live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+    animation: pulse-presence 2s infinite ease-in-out;
+}
+
+
