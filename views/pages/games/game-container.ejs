@@ -27,6 +27,60 @@
             avatar: '<%= user && (user.cardAvatarUrl || user.avatarUrl || user.profileImage) ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage) : "/images/default-avatar.png" %>'
         };
     </script>
+    <style>
+        .fs-floating-toggle-btn {
+            display: none;
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 9999;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #fff;
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+        .fs-floating-toggle-btn:hover {
+            background: rgba(30, 41, 59, 0.95);
+            transform: scale(1.05);
+            border-color: var(--arc-accent, #6366f1);
+        }
+        .game-viewport-card.controls-hidden .game-viewport-header {
+            display: none !important;
+        }
+        .game-viewport-card.controls-hidden #showControlsFloatingBtn {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 6px;
+        }
+        .game-viewport-card:fullscreen,
+        .game-viewport-card:-webkit-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+        }
+        .game-viewport-card:fullscreen .game-iframe-wrapper,
+        .game-viewport-card:-webkit-full-screen .game-iframe-wrapper {
+            flex: 1 1 100%;
+            height: 100% !important;
+            border-radius: 0 !important;
+        }
+        .game-viewport-card:fullscreen.controls-hidden .game-iframe-wrapper,
+        .game-viewport-card:-webkit-full-screen.controls-hidden .game-iframe-wrapper {
+            height: 100vh !important;
+        }
+    </style>
 </head>
 <body class="arcade-body" data-theme="classic">
 
@@ -48,21 +102,6 @@
                         </div>
                     </div>
 
-                    <!-- Game Switcher Dropdown (Requirement: Game filter dropdown in each game) -->
-                    <div class="game-select-dropdown-wrap" style="margin-left: 4px;">
-                        <select id="gameSwitchSelect" class="arc-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--arc-border); border-radius: 8px; color: var(--arc-text-main); font-size: 0.8rem; padding: 5px 8px; font-weight: 600; cursor: pointer; outline: none;" onchange="if(this.value) window.location.href='/games/' + this.value + '<%= typeof clubId !== 'undefined' && clubId ? ('?clubId=' + clubId) : '' %>'">
-                            <% if (typeof catalog !== 'undefined' && catalog) { %>
-                                <% Object.values(catalog).forEach(g => { %>
-                                    <option value="<%= g.id %>" <%= g.id === game.id ? 'selected' : '' %>>
-                                        <%= g.name %> (<%= g.typeLabel %>)
-                                    </option>
-                                <% }); %>
-                            <% } else { %>
-                                <option value="<%= game.id %>"><%= game.name %></option>
-                            <% } %>
-                        </select>
-                    </div>
-
                     <!-- PC Mode Indicator (Hidden on Touch/Mobile) -->
                     <div id="pcControlsBadge" class="pc-controls-badge" style="display: none; align-items: center; gap: 5px; font-size: 0.74rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 4px 8px;" title="PC Mode Optimized: WASD & Arrow Keys Enabled">
                         <i class="fas fa-keyboard"></i>
@@ -71,6 +110,11 @@
                 </div>
 
                 <div class="game-viewport-header-actions">
+                    <!-- Hide Container Controls in Fullscreen Mode -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="hideControlsBtn" title="Hide Top Controls (Fullscreen)">
+                        <i class="fas fa-eye-slash"></i>
+                    </button>
+
                     <!-- Rules Modal Button -->
                     <button type="button" class="arc-btn" id="openRulesBtn" title="How to Play / Game Rules">
                         <i class="fas fa-book-open" style="color: var(--arc-accent);"></i>
@@ -106,6 +150,12 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Floating reveal button when controls are hidden -->
+            <button type="button" id="showControlsFloatingBtn" class="fs-floating-toggle-btn" title="Show Controls Bar">
+                <i class="fas fa-eye"></i>
+                <span>Show Controls</span>
+            </button>
 
             <!-- Sandboxed Game Iframe -->
             <iframe id="gameIframe" 
@@ -230,15 +280,40 @@
             const fsBtn = document.getElementById('fullscreenToggleBtn');
             const fsIcon = fsBtn?.querySelector('i');
             const gameCard = document.querySelector('.game-viewport-card');
+            const hideControlsBtn = document.getElementById('hideControlsBtn');
+            const showControlsFloatingBtn = document.getElementById('showControlsFloatingBtn');
+
+            function toggleControls(hide) {
+                if (typeof hide === 'boolean') {
+                    gameCard?.classList.toggle('controls-hidden', hide);
+                } else {
+                    gameCard?.classList.toggle('controls-hidden');
+                }
+            }
+
+            hideControlsBtn?.addEventListener('click', () => toggleControls(true));
+            showControlsFloatingBtn?.addEventListener('click', () => toggleControls(false));
 
             function updateFsIcon() {
                 const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
                 if (fsIcon) {
                     fsIcon.className = isFs ? 'fas fa-compress' : 'fas fa-expand';
                 }
+                if (!isFs) {
+                    gameCard?.classList.remove('controls-hidden');
+                }
             }
             document.addEventListener('fullscreenchange', updateFsIcon);
             document.addEventListener('webkitfullscreenchange', updateFsIcon);
+
+            // Forward user interaction to game iframe to unlock audio autoplay seamlessly
+            ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(evt => {
+                window.addEventListener(evt, () => {
+                    try {
+                        iframe?.contentWindow?.postMessage({ type: 'ARCADE_PARENT_INTERACTION' }, '*');
+                    } catch (_) {}
+                }, { passive: true });
+            });
 
             if (iframe) {
                 iframe.addEventListener('load', () => {

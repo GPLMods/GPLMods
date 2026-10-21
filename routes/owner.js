@@ -941,10 +941,15 @@ router.post('/api/owner/site-state/coming-soon-path', catchAsync(async (req, res
         ? messages.map(m => String(m).trim()).filter(Boolean)
         : (messages ? [String(messages).trim()] : []);
 
+    let normalizedPattern = String(pathPattern || '').trim().toLowerCase();
+    if (normalizedPattern && !normalizedPattern.startsWith('/')) {
+        normalizedPattern = '/' + normalizedPattern;
+    }
+
     if (ruleId) {
         const existingRule = siteState.comingSoonPaths.id(ruleId);
         if (existingRule) {
-            existingRule.pathPattern = String(pathPattern).trim().toLowerCase();
+            existingRule.pathPattern = normalizedPattern;
             existingRule.title = title || 'Coming Soon';
             existingRule.message = message || '';
             existingRule.messages = processedMessages;
@@ -960,7 +965,7 @@ router.post('/api/owner/site-state/coming-soon-path', catchAsync(async (req, res
         }
     } else {
         siteState.comingSoonPaths.push({
-            pathPattern: String(pathPattern).trim().toLowerCase(),
+            pathPattern: normalizedPattern,
             title: title || 'Coming Soon',
             message: message || '',
             messages: processedMessages,

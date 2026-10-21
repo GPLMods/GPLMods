@@ -404,6 +404,8 @@ async function syncAllPublicUrlsForIndexing(baseUrl = 'https://gplmods.webredire
         }
     }
 
+    const uniqueUrls = Array.from(new Set(allUrlsForIndexNow));
+
     // 1. Submit ONLY unindexed or updated URLs to Google Indexing API (Quota Saver)
     let googleSubmitted = 0;
     const auth = getGoogleAuthClient();
@@ -426,7 +428,7 @@ async function syncAllPublicUrlsForIndexing(baseUrl = 'https://gplmods.webredire
                 await new Promise(r => setTimeout(r, 120));
             } catch (_) {}
         }
-        console.log(`[Google Indexing API] Quota-saver sync completed: submitted ${googleSubmitted} new/updated URLs (preserved quota for ${allUrlsForIndexNow.length - targetGoogleBatch.length} already-indexed URLs).`);
+        console.log(`[Google Indexing API] Quota-saver sync completed: submitted ${googleSubmitted} new/updated URLs (preserved quota for ${uniqueUrls.length - targetGoogleBatch.length} already-indexed URLs).`);
     } else {
         console.log('[Google Indexing API] All existing URLs already indexed and up-to-date. 0 quota consumed.');
     }

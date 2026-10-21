@@ -276,7 +276,27 @@ router.get('/api/leaderboard', async (req, res) => {
         const leaderboard = await GameScore.find(query)
             .sort(sortField)
             .limit(50)
+            .populate('user', 'username profileImage profileImageKey avatarUrl cardAvatarUrl customAvatar')
             .lean();
+
+        const getSmartImageUrl = req.app.get('getSmartImageUrl');
+        if (getSmartImageUrl && Array.isArray(leaderboard)) {
+            await Promise.all(leaderboard.map(async (item) => {
+                const u = item.user;
+                if (u) {
+                    const avatarKey = u.profileImageKey || u.cardAvatarUrl || u.avatarUrl || u.profileImage;
+                    if (avatarKey) {
+                        try {
+                            item.avatar = await getSmartImageUrl(avatarKey);
+                        } catch (_) {}
+                    }
+                } else if (item.avatar) {
+                    try {
+                        item.avatar = await getSmartImageUrl(item.avatar);
+                    } catch (_) {}
+                }
+            }));
+        }
 
         return res.json({
             success: true,

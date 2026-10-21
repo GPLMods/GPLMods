@@ -363,6 +363,9 @@
                                 <% if (file.isVariant) { %>
                                     <span style="font-size: 0.6em; vertical-align: middle; padding: 2px 7px; border-radius: 8px; background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); font-weight: 700; text-transform: uppercase; margin-left: 6px;">Variant</span>
                                 <% } %>
+                                <% if (file.pendingUpdate) { %>
+                                    <span style="font-size: 0.6em; vertical-align: middle; padding: 2px 7px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700; text-transform: uppercase; margin-left: 6px;"><i class="fas fa-clock"></i> v<%= file.pendingUpdate.version %> Update Pending</span>
+                                <% } %>
                             </h3>
                             
                             <div class="item-stats">
@@ -386,6 +389,18 @@
                                     <span class="stat-value"><%= new Date(file.createdAt).toLocaleDateString() %></span>
                                 </div>
                             </div>
+
+                            <% if (file.pendingUpdate) { %>
+                                <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 10px 12px; margin: 12px 0; font-size: 0.85em; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                                    <div style="color: #fbbf24; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-hourglass-half"></i>
+                                        <span>v<%= file.pendingUpdate.version %> Update Pending Approval</span>
+                                    </div>
+                                    <a href="/mods/<%= file.pendingUpdate._id %>/preview" target="_blank" class="action-btn btn-preview" style="padding: 4px 10px; font-size: 0.8em; margin: 0; white-space: nowrap;">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </a>
+                                </div>
+                            <% } %>
 
                             <% if (file.status === 'rejected' && file.rejectionReason) { %>
                                 <div class="rejection-reason">

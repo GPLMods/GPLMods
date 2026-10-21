@@ -1009,7 +1009,18 @@
                                     <label for="variantInheritDropdown" style="color: #e9d5ff; font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
                                         <i class="fas fa-sliders" style="color: #c084fc;"></i> Master Default Inheritance Preset:
                                     </label>
-                                    <select id="variantInheritDropdown" name="variantInheritanceMode" style="width: 100%; background: #121212; border: 1px solid rgba(168,85,247,0.5); color: #fff; padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; cursor: pointer;">
+                                    <div class="custom-select-wrapper" id="variantInheritWrapper">
+                                        <div class="custom-select" id="variantInheritCustomSelect" style="background: #121212; border: 1px solid rgba(168,85,247,0.5); border-radius: 8px;">
+                                            <span class="selected-text" style="color: #fff;">Inherit All Master Defaults (Quick Variant - Uses Master Description, Features &amp; Screenshots)</span>
+                                            <i class="fas fa-chevron-down arrow" style="color: #c084fc;"></i>
+                                        </div>
+                                        <div class="custom-options">
+                                            <div class="custom-option selected" data-value="all-default">Inherit All Master Defaults (Quick Variant - Uses Master Description, Features &amp; Screenshots)</div>
+                                            <div class="custom-option" data-value="custom-features">Custom Features &amp; Description (Enter custom mod description &amp; features, inherit screenshots)</div>
+                                            <div class="custom-option" data-value="custom-all">Full Custom Variant (Custom description, features, screenshots, and requirements)</div>
+                                        </div>
+                                    </div>
+                                    <select id="variantInheritDropdown" name="variantInheritanceMode" style="display: none;">
                                         <option value="all-default" selected>Inherit All Master Defaults (Quick Variant - Uses Master Description, Features &amp; Screenshots)</option>
                                         <option value="custom-features">Custom Features &amp; Description (Enter custom mod description &amp; features, inherit screenshots)</option>
                                         <option value="custom-all">Full Custom Variant (Custom description, features, screenshots, and requirements)</option>
@@ -1906,6 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCustomSelect(ageRatingWrapper, nativeAgeRatingSelect);
     setupCustomSelect(licenseWrapper, nativeLicenseSelect);
     setupCustomSelect(fetchPlatformWrapper, nativeFetchPlatformSelect); // ✅ INIT FETCH DROPDOWN
+    setupCustomSelect(document.getElementById('variantInheritWrapper'), document.getElementById('variantInheritDropdown')); // ✅ INIT VARIANT INHERITANCE DROPDOWN
 
     if (nativeAgeRatingSelect && ageRatingWrapper) {
         const currentValue = nativeAgeRatingSelect.value;
@@ -2053,6 +2065,54 @@ document.addEventListener('DOMContentLoaded', () => {
         updateVariantFieldRequirements(true);
     }
 
+    function applyMasterAutofill(master) {
+        if (!master) return;
+        // 1. Age Rating
+        if (master.ageRating && nativeAgeRatingSelect && ageRatingWrapper) {
+            nativeAgeRatingSelect.value = master.ageRating;
+            const opt = ageRatingWrapper.querySelector(`.custom-option[data-value="${master.ageRating}"]`);
+            if (opt) {
+                ageRatingWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                const txt = ageRatingWrapper.querySelector('.selected-text');
+                if (txt) { txt.textContent = opt.textContent; txt.style.color = 'var(--white)'; }
+            }
+        }
+        // 2. Subcategory / Category
+        const targetCategory = master.subCategory || master.category;
+        if (targetCategory && nativeCategorySelect && categoryWrapper) {
+            nativeCategorySelect.value = targetCategory;
+            const opt = categoryWrapper.querySelector(`.custom-option[data-value="${targetCategory}"]`);
+            if (opt) {
+                categoryWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                const txt = categoryWrapper.querySelector('.selected-text');
+                if (txt) { txt.textContent = opt.textContent; txt.style.color = 'var(--white)'; }
+            }
+        }
+        // 3. Developer
+        const devInput = document.getElementById('developerName');
+        if (devInput && (!devInput.value.trim() || devInput.value === 'N/A') && master.developer && master.developer !== 'N/A') {
+            devInput.value = master.developer;
+        }
+        // 4. Min OS Version
+        const minOsInput = document.getElementById('minOsVersion');
+        if (minOsInput && !minOsInput.value.trim() && master.minOsVersion) {
+            minOsInput.value = master.minOsVersion;
+        }
+        // 5. Software License
+        if (master.license && nativeLicenseSelect && licenseWrapper) {
+            nativeLicenseSelect.value = master.license;
+            const opt = licenseWrapper.querySelector(`.custom-option[data-value="${master.license}"]`);
+            if (opt) {
+                licenseWrapper.querySelectorAll('.custom-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                const txt = licenseWrapper.querySelector('.selected-text');
+                if (txt) { txt.textContent = opt.textContent; txt.style.color = 'var(--white)'; }
+            }
+        }
+    }
+
     async function checkVariantMatch() {
         if (!variantGroup || !modNameInput) return;
         const name = (modNameInput.value || '').trim();
@@ -2092,6 +2152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (detectedMasterId) detectedMasterId.value = data.masterFile._id;
                 if (isVariantCheckbox) isVariantCheckbox.checked = true;
                 renderVariantBanner(data.masterFile, data.currentUpload);
+                applyMasterAutofill(data.masterFile);
             } else {
                 cachedMasterFile = null;
                 cachedCurrentUpload = null;

@@ -424,7 +424,13 @@
                 <span class="logo-gold-glow">GPL</span> <span class="logo-silver-glow">Mods</span>
             </a>
 
-            <% if (typeof user !== 'undefined' && user) { %>
+            <% if (typeof isOwnerPreview !== 'undefined' && isOwnerPreview) { %>
+                <div style="background: rgba(255, 215, 0, 0.15); border: 1px solid var(--gold); border-radius: 20px; padding: 6px 16px; font-size: 0.82em; color: var(--gold); display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-crown"></i>
+                    <span>Owner Preview Mode</span>
+                    <a href="<%= typeof bypassUrl !== 'undefined' ? bypassUrl : '?bypass=true' %>" style="color: #000; background: var(--gold); padding: 3px 10px; border-radius: 12px; font-weight: 700; text-decoration: none; margin-left: 6px;">Bypass & View Page</a>
+                </div>
+            <% } else if (typeof user !== 'undefined' && user) { %>
                 <div class="user-access-badge">
                     <i class="fas fa-user-shield"></i>
                     <span>Previewing as <strong><%= user.username %></strong> (<%= user.role || 'Member' %>)</span>

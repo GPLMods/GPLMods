@@ -1194,6 +1194,37 @@ canvas.protect-asset,
     animation: fadeOut 0.4s ease 0.35s forwards;
 }
 
+.vault-peek-footer {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeOut 0.4s ease 0.35s forwards;
+    text-transform: lowercase;
+}
+
+.vault-peek-footer .vault-gni {
+    background: linear-gradient(135deg, #ff9800, #ffffff, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+}
+
+.vault-peek-footer .vault-love {
+    color: #f472b6;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vault-peek-footer .vault-love i {
+    color: #ec4899;
+}
+
 @keyframes vaultSlideUp {
     0% { transform: translateY(0); }
     100% { transform: translateY(-100%); visibility: hidden; }

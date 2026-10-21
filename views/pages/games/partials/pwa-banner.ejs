@@ -148,6 +148,24 @@
             // Already dismissed this session
         }
 
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const isInstalled = isStandalone || localStorage.getItem('gpl_pwa_installed') === 'true' || localStorage.getItem('arc_pwa_installed') === 'true';
+
+        if (isInstalled) {
+            if (banner) banner.style.display = 'none';
+            return;
+        }
+
+        window.addEventListener('appinstalled', () => {
+            localStorage.setItem('arc_pwa_installed', 'true');
+            if (banner) banner.style.display = 'none';
+            deferredPrompt = null;
+            if (modal) modal.classList.remove('open');
+            if (window.ArcadeToast) {
+                window.ArcadeToast.show('Pocket Classics installed successfully!', 'success');
+            }
+        });
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -157,7 +175,6 @@
         });
 
         // Show floating card on mobile if not already standalone
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         if (!isStandalone && banner && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
             setTimeout(() => {
                 if (sessionStorage.getItem('arc_pwa_dismissed') !== 'true') {
@@ -174,10 +191,27 @@
             if (modal) modal.classList.remove('open');
         }
 
-        // Clicking Install App on floating card opens the dedicated Multi-Platform Modal
+        // Clicking Install App triggers direct native prompt if available, or opens instructions modal
         if (installBtn) {
-            installBtn.addEventListener('click', () => {
-                openInstallModal();
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    try {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            localStorage.setItem('arc_pwa_installed', 'true');
+                            if (banner) banner.style.display = 'none';
+                            if (window.ArcadeToast) {
+                                window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
+                            }
+                        }
+                    } catch (err) {
+                        openInstallModal();
+                    }
+                    deferredPrompt = null;
+                } else {
+                    openInstallModal();
+                }
             });
         }
 
@@ -191,6 +225,7 @@
                     deferredPrompt.prompt();
                     const { outcome } = await deferredPrompt.userChoice;
                     if (outcome === 'accepted') {
+                        localStorage.setItem('arc_pwa_installed', 'true');
                         closeInstallModal();
                         if (banner) banner.style.display = 'none';
                         if (window.ArcadeToast) {

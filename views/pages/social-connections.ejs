@@ -19,6 +19,40 @@
         </p>
     </div>
 
+    <!-- Default Mod Broadcasting & Plus Requirement Banner -->
+    <div style="background: rgba(255, 215, 0, 0.08); border: 1px solid rgba(255, 215, 0, 0.25); border-radius: 14px; padding: 18px 22px; margin-bottom: 25px; display: flex; align-items: flex-start; gap: 16px;">
+        <i class="fas fa-bullhorn" style="color: var(--gold); font-size: 1.5em; margin-top: 4px;"></i>
+        <div style="flex: 1;">
+            <div style="color: #fff; font-weight: 700; font-size: 1.05em; margin-bottom: 4px;">
+                Official GPL Mods Social Broadcasts are Free & Automatic!
+            </div>
+            <div style="color: var(--silver); font-size: 0.9em; line-height: 1.5;">
+                Every approved mod you upload is automatically featured and broadcasted across official GPL Mods Discord, Telegram, and Reddit feeds for the entire community. 
+                <strong>Custom Social Bot Linking</strong> (connecting your private channels and personal bot hooks) is an exclusive feature reserved for <strong>GPL Plus</strong> members.
+            </div>
+        </div>
+    </div>
+
+    <% if (typeof isPlus !== 'undefined' && !isPlus) { %>
+    <!-- GPL Plus Upgrade Required Box -->
+    <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1)); border: 1.5px solid var(--gold); border-radius: 14px; padding: 22px; margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255, 215, 0, 0.25); display: flex; align-items: center; justify-content: center; font-size: 1.6em; color: var(--gold);">
+                <i class="fas fa-crown"></i>
+            </div>
+            <div>
+                <h3 style="color: #fff; margin: 0 0 4px 0; font-size: 1.15em;">GPL Plus Membership Required</h3>
+                <p style="color: var(--silver); margin: 0; font-size: 0.9em;">
+                    Custom bot connections require an active <strong>GPL Plus</strong> membership (GPL Lite and Free tiers do not include custom bot webhooks).
+                </p>
+            </div>
+        </div>
+        <a href="/membership" style="background: var(--gold); color: #000; font-weight: 700; padding: 10px 22px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);">
+            <i class="fas fa-arrow-up"></i> Upgrade to GPL Plus
+        </a>
+    </div>
+    <% } %>
+
     <!-- Elevated Perks Banner -->
     <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(0, 255, 136, 0.08)); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 14px; padding: 22px; margin-bottom: 35px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
         <div style="display: flex; align-items: center; gap: 16px;">
@@ -71,6 +105,10 @@
                     <button type="button" onclick="disconnectSocial('discord')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                         <i class="fas fa-unlink"></i> Disconnect Discord
                     </button>
+                <% } else if (typeof isPlus !== 'undefined' && !isPlus) { %>
+                    <a href="/membership" style="width: 100%; padding: 11px; background: rgba(255, 215, 0, 0.12); border: 1px solid var(--gold); color: var(--gold); border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;">
+                        <i class="fas fa-lock"></i> GPL Plus Required
+                    </a>
                 <% } else { %>
                     <button type="button" onclick="openConnectModal('discord')" style="width: 100%; padding: 11px; background: #5865F2; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3);">
                         <i class="fas fa-link"></i> Link Discord Account
@@ -108,6 +146,10 @@
                     <button type="button" onclick="disconnectSocial('telegram')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                         <i class="fas fa-unlink"></i> Disconnect Telegram
                     </button>
+                <% } else if (typeof isPlus !== 'undefined' && !isPlus) { %>
+                    <a href="/membership" style="width: 100%; padding: 11px; background: rgba(255, 215, 0, 0.12); border: 1px solid var(--gold); color: var(--gold); border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;">
+                        <i class="fas fa-lock"></i> GPL Plus Required
+                    </a>
                 <% } else { %>
                     <button type="button" onclick="openConnectModal('telegram')" style="width: 100%; padding: 11px; background: #0088cc; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);">
                         <i class="fas fa-link"></i> Link Telegram Account
@@ -145,6 +187,10 @@
                     <button type="button" onclick="disconnectSocial('reddit')" style="width: 100%; padding: 11px; background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d; border-radius: 10px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
                         <i class="fas fa-unlink"></i> Disconnect Reddit
                     </button>
+                <% } else if (typeof isPlus !== 'undefined' && !isPlus) { %>
+                    <a href="/membership" style="width: 100%; padding: 11px; background: rgba(255, 215, 0, 0.12); border: 1px solid var(--gold); color: var(--gold); border-radius: 10px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; box-sizing: border-box;">
+                        <i class="fas fa-lock"></i> GPL Plus Required
+                    </a>
                 <% } else { %>
                     <button type="button" onclick="openConnectModal('reddit')" style="width: 100%; padding: 11px; background: #FF4500; border: none; color: #fff; border-radius: 10px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3);">
                         <i class="fas fa-link"></i> Link Reddit Account

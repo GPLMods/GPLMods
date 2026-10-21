@@ -15,13 +15,34 @@ function generateRoomCode() {
 }
 
 function broadcastPresence(io) {
-    const totalOnline = arcadeSockets.size;
+    const activeSockets = io.sockets?.sockets || (io.of ? io.of('/').sockets : null);
+    if (activeSockets) {
+        for (const [socketId] of arcadeSockets) {
+            if (!activeSockets.has(socketId)) {
+                arcadeSockets.delete(socketId);
+            }
+        }
+    }
+
+    const uniqueUsers = new Set();
     const gameCounts = {};
-    for (const [, data] of arcadeSockets) {
+
+    for (const [socketId, data] of arcadeSockets) {
+        const sock = activeSockets ? activeSockets.get(socketId) : null;
+        const ip = sock?.handshake?.headers?.['x-forwarded-for']?.split(',')[0]?.trim() || sock?.handshake?.address || socketId;
+        const identity = (!data.profile.isGuest && data.profile.id) 
+            ? `user_${data.profile.id}` 
+            : `guest_${ip}_${data.profile.username || socketId}`;
+
+        uniqueUsers.add(identity);
+
         if (data.gameId) {
             gameCounts[data.gameId] = (gameCounts[data.gameId] || 0) + 1;
         }
     }
+
+    const totalOnline = uniqueUsers.size;
+
     io.to('arcade_lobby').emit('arcade_presence_update', {
         totalOnline,
         gameCounts

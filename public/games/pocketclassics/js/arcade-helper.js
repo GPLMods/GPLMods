@@ -131,6 +131,15 @@
                     this.setMusicEnabled(Boolean(event.data.enabled));
                 } else if (event.data.type === 'ARCADE_TOGGLE_SFX') {
                     this.setSfxEnabled(Boolean(event.data.enabled));
+                } else if (event.data.type === 'ARCADE_PARENT_INTERACTION' || event.data.type === 'ARCADE_USER_INTERACTION') {
+                    this.hasInteracted = true;
+                    if (this.musicEnabled) {
+                        if (this.currentState === 'menu') {
+                            this.playMenuMusic();
+                        } else {
+                            this.playGameMusic();
+                        }
+                    }
                 }
             });
         }
@@ -140,7 +149,7 @@
             localStorage.setItem('arc_music_enabled', enabled ? 'true' : 'false');
             if (!enabled) {
                 this.pauseAll();
-            } else if (this.hasInteracted) {
+            } else {
                 if (this.currentState === 'menu') {
                     this.playMenuMusic();
                 } else {
@@ -171,10 +180,13 @@
             if (this.gameAudio && !this.gameAudio.paused) {
                 try { this.gameAudio.pause(); this.gameAudio.currentTime = 0; } catch (_) {}
             }
-            if (!this.musicEnabled || !this.hasInteracted || !this.menuAudio) return;
+            if (!this.musicEnabled || !this.menuAudio) return;
             try {
                 this.menuAudio.currentTime = this.menuAudio.currentTime || 0;
-                this.menuAudio.play().catch(() => {});
+                const p = this.menuAudio.play();
+                if (p !== undefined) {
+                    p.then(() => { this.hasInteracted = true; }).catch(() => {});
+                }
             } catch (_) {}
         }
 
@@ -183,9 +195,12 @@
             if (this.menuAudio && !this.menuAudio.paused) {
                 try { this.menuAudio.pause(); } catch (_) {}
             }
-            if (!this.musicEnabled || !this.hasInteracted || !this.gameAudio) return;
+            if (!this.musicEnabled || !this.gameAudio) return;
             try {
-                this.gameAudio.play().catch(() => {});
+                const p = this.gameAudio.play();
+                if (p !== undefined) {
+                    p.then(() => { this.hasInteracted = true; }).catch(() => {});
+                }
             } catch (_) {}
         }
 

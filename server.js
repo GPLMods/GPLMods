@@ -998,6 +998,13 @@ function getFileUploadInfo(fileDoc) {
         _id: fileDoc._id,
         name: fileDoc.name,
         category: fileDoc.category,
+        subCategory: fileDoc.subCategory || '',
+        ageRating: fileDoc.ageRating || 'Everyone',
+        platforms: Array.isArray(fileDoc.platforms) ? fileDoc.platforms : (fileDoc.category ? [fileDoc.category] : []),
+        developer: fileDoc.developer || '',
+        minOsVersion: fileDoc.minOsVersion || '',
+        packageId: fileDoc.packageId || '',
+        license: fileDoc.license || 'Free / Open Source',
         version: fileDoc.version || '1.0',
         uploader: fileDoc.uploader || 'Community',
         status: fileDoc.status || 'live',
@@ -2111,8 +2118,23 @@ app.use(async (req, res, next) => {
         for (const p of cachedSiteState.comingSoonPaths) {
             if (!p || p.enabled === false || !p.pathPattern) continue;
 
-            const pattern = p.pathPattern.toLowerCase().trim();
-            const isMatch = pattern && (reqPath === pattern || reqPath.startsWith(pattern.endsWith('/') ? pattern : pattern + '/'));
+            let pattern = String(p.pathPattern).trim().toLowerCase();
+            if (!pattern.startsWith('/')) {
+                pattern = '/' + pattern;
+            }
+
+            // Normalization & alias matching (e.g., volenteer <-> volunteer, trailing slashes)
+            const cleanReq = reqPath.endsWith('/') && reqPath.length > 1 ? reqPath.slice(0, -1) : reqPath;
+            const cleanPat = pattern.endsWith('/') && pattern.length > 1 ? pattern.slice(0, -1) : pattern;
+
+            let isMatch = (cleanReq === cleanPat || reqPath.startsWith(cleanPat + '/'));
+            if (!isMatch) {
+                const normReq = cleanReq.replace('volenteer', 'volunteer');
+                const normPat = cleanPat.replace('volenteer', 'volunteer');
+                if (normReq === normPat || cleanReq.startsWith(normPat + '/')) {
+                    isMatch = true;
+                }
+            }
 
             if (!isMatch) continue;
 
@@ -2129,9 +2151,10 @@ app.use(async (req, res, next) => {
                 continue;
             }
 
-            // Owner can always bypass
-            if (isOwner) {
-                break;
+            // Owner can bypass explicitly with ?bypass=true or cookie, otherwise see preview
+            const hasOwnerBypass = isOwner && (req.query.bypass === 'true' || req.cookies?.gpl_owner_bypass === 'true');
+            if (hasOwnerBypass) {
+                continue;
             }
 
             const allowedRoles = Array.isArray(p.allowedRoles) ? p.allowedRoles.map(r => String(r || '').toLowerCase().trim()).filter(Boolean) : [];
@@ -2142,14 +2165,14 @@ app.use(async (req, res, next) => {
             const isAllowedRole = userRole && allowedRoles.includes(userRole);
             const isAllowedUser = userName && allowedUsers.includes(userName);
             if (isAllowedRole || isAllowedUser) {
-                break;
+                continue;
             }
 
             // If targetRoles is specified, only users with those roles see coming soon
             if (targetRoles.length > 0) {
                 const isTargetRole = userRole && targetRoles.includes(userRole);
                 if (!isTargetRole) {
-                    break;
+                    continue;
                 }
             }
 
@@ -2189,6 +2212,8 @@ app.use(async (req, res, next) => {
                 customStatusName: cachedSiteState.customStatusName || '',
                 currentStatusLabel: cachedSiteState.currentStatusLabel || 'Coming Soon',
                 pathPattern: p.pathPattern,
+                isOwnerPreview: isOwner,
+                bypassUrl: req.originalUrl + (req.originalUrl.includes('?') ? '&bypass=true' : '?bypass=true'),
                 user: req.user || null
             });
         }
@@ -5507,6 +5532,11 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                     directDownloadUrl: promotedVariant.directDownloadUrl || '',
                     fastDownloadUrl: promotedVariant.fastDownloadUrl || '',
                     secondaryDownloadUrl: promotedVariant.secondaryDownloadUrl || '',
+                    externalDownloadUrl: promotedVariant.externalDownloadUrl || '',
+                    isMultiPart: Boolean(promotedVariant.isMultiPart),
+                    downloadParts: promotedVariant.downloadParts || [],
+                    alternativeLinks: promotedVariant.alternativeLinks || [],
+                    customAdLink: promotedVariant.customAdLink || '',
                     fileType: promotedVariant.fileType || masterFile.fileType,
                     originalApkName: promotedVariant.originalApkName || masterFile.originalApkName,
                     minOsVersion: promotedVariant.minOsVersion || masterFile.minOsVersion,
@@ -5563,6 +5593,11 @@ async function renderModDownloadPage(req, res, next, { category, slug, variantId
                     directDownloadUrl: requestedVariant.directDownloadUrl || '',
                     fastDownloadUrl: requestedVariant.fastDownloadUrl || '',
                     secondaryDownloadUrl: requestedVariant.secondaryDownloadUrl || '',
+                    externalDownloadUrl: requestedVariant.externalDownloadUrl || '',
+                    isMultiPart: Boolean(requestedVariant.isMultiPart),
+                    downloadParts: requestedVariant.downloadParts || [],
+                    alternativeLinks: requestedVariant.alternativeLinks || [],
+                    customAdLink: requestedVariant.customAdLink || '',
                     fileType: requestedVariant.fileType || masterFile.fileType,
                     originalApkName: requestedVariant.originalApkName || masterFile.originalApkName,
                     minOsVersion: requestedVariant.minOsVersion || masterFile.minOsVersion,
@@ -7231,7 +7266,14 @@ async function enforceOldVersionStorageLimits(activeFileId) {
 app.get('/download-file/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
-        const file = await File.findById(fileId);
+        let file = await File.findById(fileId);
+        let targetVariant = null;
+        if (!file && Types.ObjectId.isValid(fileId)) {
+            file = await File.findOne({ 'variants._id': fileId });
+            if (file) {
+                targetVariant = file.variants.id(fileId);
+            }
+        }
         if (!file) return res.status(404).render('pages/404');
         if (file.isDmcaHidden) {
             return res.status(451).render('pages/unavailable', {
@@ -7240,6 +7282,8 @@ app.get('/download-file/:id', async (req, res) => {
             });
         }
         if (file.ageRating === '18+' && shouldHideAdultContent(req.user)) return res.status(404).render('pages/404');
+
+        const downloadTarget = targetVariant || file;
 
         // ==========================================
         // DOWNLOAD TRACKING LOGIC (Anti-Spam)
@@ -7260,21 +7304,24 @@ app.get('/download-file/:id', async (req, res) => {
         }
 
         if (shouldIncrementDownload) {
+            if (targetVariant) {
+                targetVariant.downloads = (targetVariant.downloads || 0) + 1;
+            }
             file.downloads += 1;
             await file.save();
-            await recordDailyStat(file._id, file.uploader, 'download');
+            await recordDailyStat(file._id, downloadTarget.uploader || file.uploader, 'download');
         }
         // ==========================================
 
         // --- 1. CHECK FOR DIRECT CLOUD DOWNLOAD FIRST (Dropbox, Google Drive, OneDrive, etc.) ---
-        if (file.directDownloadUrl) {
-            return res.redirect(file.directDownloadUrl);
+        if (downloadTarget.directDownloadUrl) {
+            return res.redirect(downloadTarget.directDownloadUrl);
         }
 
         // --- 1b. CHECK FOR EXTERNAL CLOUD LINK ---
-        if (file.externalDownloadUrl) {
-            const encodedUrl = encodeURIComponent(file.externalDownloadUrl);
-            const encodedName = encodeURIComponent(file.originalFilename || file.name);
+        if (downloadTarget.externalDownloadUrl) {
+            const encodedUrl = encodeURIComponent(downloadTarget.externalDownloadUrl);
+            const encodedName = encodeURIComponent(downloadTarget.originalApkName || file.originalFilename || file.name);
             return res.redirect(`/leave?url=${encodedUrl}&name=${encodedName}`);
         }
 
@@ -7283,8 +7330,8 @@ app.get('/download-file/:id', async (req, res) => {
             const requestedUrl = req.query.url;
             const allowedMirrorUrls = [];
 
-            if (file.alternativeLinks && file.alternativeLinks.length > 0) {
-                file.alternativeLinks.forEach(mirror => {
+            if (downloadTarget.alternativeLinks && downloadTarget.alternativeLinks.length > 0) {
+                downloadTarget.alternativeLinks.forEach(mirror => {
                     allowedMirrorUrls.push(mirror.url);
                     if (res.locals.showAds && res.locals.linkvertiseEnabled && !isUploaderDistributor) {
                         allowedMirrorUrls.push(res.locals.generateAdLink(mirror.url));
@@ -7301,10 +7348,10 @@ app.get('/download-file/:id', async (req, res) => {
         }
 
         // --- 3. FALLBACK TO ALTERNATIVE LINKS IF EXTERNAL LINK KEY ---
-        const fileKey = file.fileKey || file.fileUrl;
+        const fileKey = downloadTarget.fileKey || downloadTarget.fileUrl;
         if (fileKey === 'external-link') {
-            if (file.alternativeLinks && file.alternativeLinks.length > 0 && file.alternativeLinks[0].url) {
-                return res.redirect(file.alternativeLinks[0].url);
+            if (downloadTarget.alternativeLinks && downloadTarget.alternativeLinks.length > 0 && downloadTarget.alternativeLinks[0].url) {
+                return res.redirect(downloadTarget.alternativeLinks[0].url);
             }
             return res.status(404).send("File download link not available.");
         }
@@ -7314,7 +7361,7 @@ app.get('/download-file/:id', async (req, res) => {
         const command = new GetObjectCommand({
             Bucket: process.env.B2_BUCKET_NAME,
             Key: fileKey,
-            ResponseContentDisposition: `attachment; filename="${file.originalFilename || file.name}"`
+            ResponseContentDisposition: `attachment; filename="${downloadTarget.originalApkName || file.originalFilename || file.name}"`
         });
 
         const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
@@ -8181,11 +8228,16 @@ app.get('/settings/social-connections', ensureAuthenticated, async (req, res) =>
         const connections = await SocialConnection.find({ user: req.user._id });
         const botConfig = await SocialBotConfig.getOrCreate();
 
+        const role = String(req.user.role || '').toLowerCase();
+        const membership = String(req.user.membership || '').toLowerCase();
+        const isPlus = (role === 'admin' || role === 'owner' || role === 'distributor' || membership === 'premium' || membership === 'plus' || membership === 'gplplus');
+
         res.render('pages/social-connections', {
             title: 'Social Bot Connections | GPL Mods',
             user: req.user,
             connections: connections || [],
             botConfig,
+            isPlus,
             pageTitle: 'Social Connections & Bots | GPL Mods'
         });
     } catch (err) {
@@ -8197,6 +8249,17 @@ app.get('/settings/social-connections', ensureAuthenticated, async (req, res) =>
 // API: Generate one-time 8-char link code
 app.post('/api/social-connect/generate-code', ensureAuthenticated, async (req, res) => {
     try {
+        const role = String(req.user.role || '').toLowerCase();
+        const membership = String(req.user.membership || '').toLowerCase();
+        const isPlus = (role === 'admin' || role === 'owner' || role === 'distributor' || membership === 'premium' || membership === 'plus' || membership === 'gplplus');
+
+        if (!isPlus) {
+            return res.status(403).json({
+                success: false,
+                message: 'Custom Social Bot Integration is a GPL Plus exclusive feature. Please upgrade to GPL Plus to connect your personal bot.'
+            });
+        }
+
         const { platform } = req.body;
         if (!platform || !['discord', 'telegram', 'reddit'].includes(platform)) {
             return res.status(400).json({ success: false, message: 'Invalid platform. Choose discord, telegram, or reddit.' });
@@ -8770,22 +8833,37 @@ app.get('/account/2fa/recovery-codes', ensureAuthenticated, (req, res) => {
 // My Uploads Route
 app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
     try {
-        // 1. Fetch ONLY the user's active, non-DMCA-hidden uploads (including variants)
-        const userUploads = await File.find({
+        // 1. Fetch user's non-DMCA-hidden uploads
+        const allUserFiles = await File.find({
             uploader: req.user.username,
-            isDmcaHidden: { $ne: true },
-            $or: [
-                { isLatestVersion: true },
-                { isVariant: true, parentFile: null },
-                { status: { $in: ['processing', 'draft', 'pending'] } }
-            ]
+            isDmcaHidden: { $ne: true }
         })
             .sort({ createdAt: -1 })
-            .populate('olderVersions', 'version fileSize createdAt architectures minOsVersion')
+            .populate('olderVersions', 'version fileSize createdAt architectures minOsVersion status')
             .lean();
 
-        // 2. Map through the uploads to generate signed image URLs
-        const uploadsWithUrls = await Promise.all(userUploads.map(async (file) => {
+        // 2. Identify pending update files that belong to a parent mod
+        // These should NOT be rendered as standalone duplicate cards
+        const pendingUpdatesByParent = new Map();
+        const pendingChildIds = new Set();
+
+        allUserFiles.forEach(f => {
+            if (f.parentFile && ['pending', 'processing'].includes(f.status)) {
+                pendingUpdatesByParent.set(f.parentFile.toString(), f);
+                pendingChildIds.add(f._id.toString());
+            }
+        });
+
+        // 3. Filter primary uploads:
+        // Exclude pending children of existing parent files and older non-latest versions
+        const primaryUploads = allUserFiles.filter(f => {
+            if (pendingChildIds.has(f._id.toString())) return false;
+            if (f.parentFile && f.status === 'live' && f.isLatestVersion === false) return false;
+            return true;
+        });
+
+        // 4. Map through primary uploads: attach pendingUpdate and ensure olderVersions is complete
+        const uploadsWithUrls = await Promise.all(primaryUploads.map(async (file) => {
             const key = file.iconUrl || file.iconKey;
             let signedIconUrl = '/images/default-app-icon.png';
             if (key) {
@@ -8795,7 +8873,45 @@ app.get('/my-uploads', ensureAuthenticated, async (req, res) => {
             }
 
             file.iconUrl = signedIconUrl;
-            file.olderVersions = file.olderVersions || [];
+
+            // Check if this file has a pending update submitted
+            const pendingChild = pendingUpdatesByParent.get(file._id.toString());
+            if (pendingChild) {
+                file.pendingUpdate = {
+                    _id: pendingChild._id,
+                    version: pendingChild.version,
+                    status: pendingChild.status,
+                    createdAt: pendingChild.createdAt
+                };
+            }
+
+            // Resolve older versions for this mod:
+            // Look at both file.olderVersions AND any files in allUserFiles with parentFile === file._id
+            const olderMap = new Map();
+            if (Array.isArray(file.olderVersions)) {
+                file.olderVersions.forEach(v => {
+                    if (v && (v._id || v)) {
+                        const vId = (v._id || v).toString();
+                        if (vId !== file._id.toString()) {
+                            olderMap.set(vId, v);
+                        }
+                    }
+                });
+            }
+            allUserFiles.forEach(other => {
+                if (other.parentFile && other.parentFile.toString() === file._id.toString() && other.status === 'live' && other._id.toString() !== file._id.toString()) {
+                    olderMap.set(other._id.toString(), {
+                        _id: other._id,
+                        version: other.version,
+                        fileSize: other.fileSize,
+                        createdAt: other.createdAt,
+                        architectures: other.architectures,
+                        minOsVersion: other.minOsVersion
+                    });
+                }
+            });
+
+            file.olderVersions = Array.from(olderMap.values());
             return file;
         }));
 
@@ -12771,7 +12887,7 @@ app.get('/api/search/suggestions', async (req, res) => {
                 ...(tokens.length > 1 ? [{ $and: tokenConditions }] : [])
             ]
         })
-            .select('name slug category platforms iconKey iconUrl downloads averageRating developer isVariant')
+            .select('name slug category platforms iconKey iconUrl downloads averageRating developer isVariant variants')
             .sort({ downloads: -1 })
             .limit(5)
             .lean();
@@ -12799,7 +12915,9 @@ app.get('/api/search/suggestions', async (req, res) => {
                 downloads: file.downloads || 0,
                 rating: file.averageRating || 5.0,
                 iconUrl: iconUrl,
-                url: modUrl
+                url: modUrl,
+                isVariant: Boolean(file.isVariant),
+                isMaster: Boolean(file.variants && file.variants.length > 0)
             };
         }));
 

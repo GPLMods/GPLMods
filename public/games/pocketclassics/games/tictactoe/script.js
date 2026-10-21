@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clearWinningLine();
         updateFocusedCell(4);
         updateStatus();
+        audioCtrl.playGameMusic();
     }
 
     function updateStatus() {
@@ -595,6 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dom.playAgainBtn.addEventListener('click', () => {
         playSfx(sfx.click);
         dom.winPopup.classList.add('hidden');
+        audioCtrl.playGameMusic();
         resetRound();
     });
 

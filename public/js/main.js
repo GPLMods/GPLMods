@@ -837,7 +837,9 @@ async function fetchAndDisplaySuggestions(query) {
                             <div style="font-weight: 600; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--white);">${boldedTitle}</div>
                             <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72em; color: var(--silver); margin-top: 2px;">
                                 <span style="background: ${platInfo.bg}; color: ${platInfo.color}; border: 1px solid ${platInfo.border}; padding: 1px 7px; border-radius: 4px; font-weight: 700; font-size: 0.74em; letter-spacing: 0.3px; display: inline-flex; align-items: center;">${safeEscapeHtml(platInfo.label)}</span>
-                                ${mod.developer ? `<span><i class="fas fa-code-branch" style="font-size: 0.85em;"></i> ${safeEscapeHtml(mod.developer)}</span>` : ''}
+                                ${mod.isVariant ? `<span style="background: rgba(168, 85, 247, 0.18); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 0.74em; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-code-branch" style="font-size: 0.75em;"></i> Variant</span>` : ''}
+                                ${mod.isMaster ? `<span style="background: rgba(255, 215, 0, 0.15); color: var(--gold); border: 1px solid rgba(255, 215, 0, 0.35); padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 0.74em; display: inline-flex; align-items: center; gap: 4px;"><i class="fas fa-crown" style="font-size: 0.75em;"></i> Master</span>` : ''}
+                                ${mod.developer ? `<span title="Developer"><i class="fas fa-laptop-code" style="font-size: 0.85em;"></i> ${safeEscapeHtml(mod.developer)}</span>` : ''}
                                 <span><i class="fas fa-download" style="font-size: 0.85em;"></i> ${safeCompactNum(mod.downloads || 0)}</span>
                             </div>
                         </div>

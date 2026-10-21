@@ -11,20 +11,28 @@
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                     <!-- Game Filter Dropdown (Requirement: Game filter dropdown in each game & distinct playtime) -->
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <select id="lbGameSelect" class="arc-btn" style="background: rgba(255,255,255,0.06); border: 1px solid var(--arc-border); border-radius: 8px; color: var(--arc-text-main); padding: 7px 12px; font-weight: 600; cursor: pointer; outline: none;">
-                            <option value="all">🎮 All Games (Distinct)</option>
-                            <option value="2048">2048 Classic</option>
-                            <option value="air-hockey">Air Hockey Showdown</option>
-                            <option value="checkers">Checkers (Draughts)</option>
-                            <option value="chess">Classic Chess Master</option>
-                            <option value="minesweeper">Minesweeper Retro</option>
-                            <option value="othello">Othello (Reversi)</option>
-                            <option value="rock-paper-scissors">Rock Paper Scissors</option>
-                            <option value="snake">Snake Classic Arcade</option>
-                            <option value="snakes-ladders">Snakes & Ladders</option>
-                            <option value="tictactoe">Tic Tac Toe</option>
-                        </select>
+                    <!-- Custom Game Filter Dropdown UI -->
+                    <div class="arc-custom-dropdown" id="lbGameCustomDropdown" style="position: relative; min-width: 190px;">
+                        <input type="hidden" id="lbGameSelect" value="all">
+                        <button type="button" class="arc-dropdown-trigger arc-btn" id="lbDropdownTrigger" style="width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: rgba(255,255,255,0.06); border: 1px solid var(--arc-border); border-radius: 8px; color: var(--arc-text-main); padding: 7px 12px; font-weight: 600; font-size: 0.85rem; cursor: pointer; outline: none;">
+                            <span id="lbDropdownLabel" style="display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                🎮 All Games (Distinct)
+                            </span>
+                            <i class="fas fa-chevron-down" id="lbDropdownChevron" style="font-size: 0.72rem; color: var(--arc-accent); transition: transform 0.2s;"></i>
+                        </button>
+                        <div class="arc-dropdown-menu" id="lbDropdownMenu" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 240px; overflow-y: auto; background: #0f172a; border: 1px solid var(--arc-border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); z-index: 1000; padding: 4px 0;">
+                            <div class="arc-dropdown-item active" data-value="all" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">🎮 All Games (Distinct)</div>
+                            <div class="arc-dropdown-item" data-value="2048" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">2048 Classic</div>
+                            <div class="arc-dropdown-item" data-value="air-hockey" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Air Hockey Showdown</div>
+                            <div class="arc-dropdown-item" data-value="checkers" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Checkers (Draughts)</div>
+                            <div class="arc-dropdown-item" data-value="chess" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Classic Chess Master</div>
+                            <div class="arc-dropdown-item" data-value="minesweeper" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Minesweeper Retro</div>
+                            <div class="arc-dropdown-item" data-value="othello" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Othello (Reversi)</div>
+                            <div class="arc-dropdown-item" data-value="rock-paper-scissors" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Rock Paper Scissors</div>
+                            <div class="arc-dropdown-item" data-value="snake" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Snake Classic Arcade</div>
+                            <div class="arc-dropdown-item" data-value="snakes-ladders" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Snakes & Ladders</div>
+                            <div class="arc-dropdown-item" data-value="tictactoe" style="padding: 7px 12px; font-size: 0.84rem; color: var(--arc-text-main); cursor: pointer;">Tic Tac Toe</div>
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 4px;">
@@ -68,18 +76,75 @@
     </div>
 </div>
 
+<style>
+    .arc-custom-dropdown .arc-dropdown-item:hover {
+        background: rgba(99, 102, 241, 0.2);
+        color: var(--arc-accent) !important;
+    }
+    .arc-custom-dropdown .arc-dropdown-item.active {
+        background: rgba(99, 102, 241, 0.35);
+        color: var(--arc-accent) !important;
+        font-weight: 700;
+    }
+</style>
+
 <script>
     (function() {
         let activeMetric = 'score';
         let activeFilter = 'global';
         const userCountry = window.__ARCADE_USER__?.country || 'India';
         const gameSelect = document.getElementById('lbGameSelect');
+        const dropdownTrigger = document.getElementById('lbDropdownTrigger');
+        const dropdownLabel = document.getElementById('lbDropdownLabel');
+        const dropdownMenu = document.getElementById('lbDropdownMenu');
+        const dropdownChevron = document.getElementById('lbDropdownChevron');
+        const dropdownItems = document.querySelectorAll('.arc-dropdown-item');
+
+        function toggleDropdown(show) {
+            const isOpen = show !== undefined ? show : (dropdownMenu.style.display === 'block');
+            if (isOpen) {
+                dropdownMenu.style.display = 'none';
+                if (dropdownChevron) dropdownChevron.style.transform = 'rotate(0deg)';
+            } else {
+                dropdownMenu.style.display = 'block';
+                if (dropdownChevron) dropdownChevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        dropdownTrigger?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleDropdown();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!document.getElementById('lbGameCustomDropdown')?.contains(e.target)) {
+                toggleDropdown(true);
+            }
+        });
+
+        function selectGameOption(val, text) {
+            if (gameSelect) gameSelect.value = val;
+            if (dropdownLabel) dropdownLabel.innerHTML = text;
+            dropdownItems.forEach(item => {
+                item.classList.toggle('active', item.dataset.value === val);
+            });
+            toggleDropdown(true);
+            fetchLeaderboard();
+        }
+
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', () => {
+                selectGameOption(item.dataset.value, item.innerHTML);
+            });
+        });
 
         // Automatically preselect current game if inside an individual game room
-        if (window.__GAME_ID__ && gameSelect) {
-            const hasOption = Array.from(gameSelect.options).some(o => o.value === window.__GAME_ID__);
-            if (hasOption) {
-                gameSelect.value = window.__GAME_ID__;
+        if (window.__GAME_ID__) {
+            const matchingItem = Array.from(dropdownItems).find(i => i.dataset.value === window.__GAME_ID__);
+            if (matchingItem) {
+                if (gameSelect) gameSelect.value = window.__GAME_ID__;
+                if (dropdownLabel) dropdownLabel.innerHTML = matchingItem.innerHTML;
+                dropdownItems.forEach(item => item.classList.toggle('active', item.dataset.value === window.__GAME_ID__));
             }
         }
 
@@ -126,9 +191,13 @@
                         <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--arc-border); border-radius: 10px; gap: 10px;">
                             <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
                                 ${medal}
-                                <img src="${item.avatar || '/images/default-avatar.png'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--arc-border);" onerror="this.src='/images/default-avatar.png'">
+                                <a href="/users/${encodeURIComponent(item.username)}" target="_blank" title="View ${item.username}'s Profile" style="display: inline-flex; border-radius: 50%; text-decoration: none;">
+                                    <img src="${item.avatar || '/images/default-avatar.png'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--arc-border); cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.12)'" onmouseout="this.style.transform='scale(1)'" onerror="this.src='/images/default-avatar.png'">
+                                </a>
                                 <div style="min-width: 0;">
-                                    <strong style="display: block; font-size: 0.92rem; color: var(--arc-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.username}</strong>
+                                    <a href="/users/${encodeURIComponent(item.username)}" target="_blank" style="text-decoration: none; color: inherit;" title="View Profile">
+                                        <strong style="display: block; font-size: 0.92rem; color: var(--arc-text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;">${item.username}</strong>
+                                    </a>
                                     <span style="font-size: 0.75rem; color: var(--arc-text-muted);"><i class="fas fa-globe-americas"></i> ${item.country || 'Global'} &bull; <span style="text-transform: capitalize; color: var(--arc-accent);">${gameLabel}</span></span>
                                 </div>
                             </div>
@@ -141,10 +210,6 @@
             } catch (err) {
                 container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--arc-danger);">Failed to load leaderboard data.</div>';
             }
-        }
-
-        if (gameSelect) {
-            gameSelect.addEventListener('change', fetchLeaderboard);
         }
 
         document.querySelectorAll('.lb-metric-btn').forEach(btn => {
@@ -166,8 +231,13 @@
         });
 
         window.openLeaderboard = function() {
-            if (window.__GAME_ID__ && gameSelect) {
-                gameSelect.value = window.__GAME_ID__;
+            if (window.__GAME_ID__) {
+                const matchingItem = Array.from(dropdownItems).find(i => i.dataset.value === window.__GAME_ID__);
+                if (matchingItem) {
+                    if (gameSelect) gameSelect.value = window.__GAME_ID__;
+                    if (dropdownLabel) dropdownLabel.innerHTML = matchingItem.innerHTML;
+                    dropdownItems.forEach(item => item.classList.toggle('active', item.dataset.value === window.__GAME_ID__));
+                }
             }
             document.getElementById('leaderboardModalOverlay').classList.add('open');
             fetchLeaderboard();
