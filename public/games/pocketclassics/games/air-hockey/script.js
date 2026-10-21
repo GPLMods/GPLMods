@@ -39,15 +39,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Audio Elements ---
     const hitSound = document.getElementById('hit-sound');
+    const sidebarSound = document.getElementById('sidebar-sound');
     const scoreSound = document.getElementById('score-sound');
     const winSound = document.getElementById('win-sound');
     const clickSound = document.getElementById('click-sound');
 
+    let audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+        }
+        return audioCtx;
+    }
+
     function playSfx(snd) {
         if (helper) helper.audio.playSfx(snd);
-        else if (snd) { snd.currentTime = 0; snd.play().catch(() => {}); }
+        else if (snd) { 
+            try {
+                const clone = snd.cloneNode();
+                clone.play().catch(() => {});
+            } catch (_) {
+                snd.currentTime = 0; 
+                snd.play().catch(() => {});
+            }
+        }
     }
-    function playClick() { playSfx(clickSound); }
+
+    function playSynthClick() {
+        try {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.04);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.04);
+        } catch (_) {}
+    }
+
+    function playClick() {
+        if (helper && !helper.audio.sfxEnabled) return;
+        if (localStorage.getItem('arc_sfx_enabled') === 'false') return;
+
+        try {
+            if (clickSound) {
+                const clone = clickSound.cloneNode();
+                clone.volume = 0.65;
+                const p = clone.play();
+                if (p) {
+                    p.catch(() => playSynthClick());
+                    return;
+                }
+            }
+        } catch (_) {}
+        playSynthClick();
+    }
+
+    // Global click sound delegation for all interactive controls
+    document.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button, .btn-neon, .hud-btn, .btn-back, .toggle-switch, a, input[type="range"]')) {
+            playClick();
+        }
+    }, { passive: true });
 
     if (helper) helper.audio.playMenuMusic();
 
@@ -92,18 +155,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let sessP2 = parseInt(localStorage.getItem('arc_airhockey_p2') || '0', 10);
 
     function updateAirHockeyScoreboard() {
-        const p1El = document.getElementById('sessP1Wins');
-        const p2El = document.getElementById('sessP2Wins');
         const p2Lbl = document.getElementById('sessP2Label');
-        const pill1 = document.getElementById('pillP1');
-        const pill2 = document.getElementById('pillP2');
-        if (p1El) p1El.textContent = sessP1;
-        if (p2El) p2El.textContent = sessP2;
         if (p2Lbl) p2Lbl.textContent = gameMode === 'pvp' ? 'P2' : 'AI';
-        if (pill1 && pill2) {
-            pill1.classList.toggle('leading', sessP1 > sessP2);
-            pill2.classList.toggle('leading', sessP2 > sessP1);
-        }
+        updateScoreDisplay();
     }
     updateAirHockeyScoreboard();
 
@@ -257,8 +311,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateScoreDisplay() {
-        if (paddle1 && scorePlayer1El) scorePlayer1El.textContent = paddle1.score;
-        if (paddle2 && scorePlayer2El) scorePlayer2El.textContent = paddle2.score;
+        const p1Score = paddle1 ? paddle1.score : 0;
+        const p2Score = paddle2 ? paddle2.score : 0;
+        if (scorePlayer1El) scorePlayer1El.textContent = p1Score;
+        if (scorePlayer2El) scorePlayer2El.textContent = p2Score;
+
+        const hudP1 = document.getElementById('hudP1Score');
+        const hudP2 = document.getElementById('hudP2Score');
+        const pill1 = document.getElementById('pillP1');
+        const pill2 = document.getElementById('pillP2');
+        if (hudP1) hudP1.textContent = p1Score;
+        if (hudP2) hudP2.textContent = p2Score;
+        if (pill1 && pill2) {
+            pill1.classList.toggle('leading', p1Score > p2Score);
+            pill2.classList.toggle('leading', p2Score > p1Score);
+        }
     }
 
     function startGame() {
@@ -546,11 +613,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (puck.x < puck.radius) {
             puck.x = puck.radius;
             puck.dx = Math.abs(puck.dx);
-            playSfx(hitSound);
+            playSfx(sidebarSound || hitSound);
         } else if (puck.x > canvas.width - puck.radius) {
             puck.x = canvas.width - puck.radius;
             puck.dx = -Math.abs(puck.dx);
-            playSfx(hitSound);
+            playSfx(sidebarSound || hitSound);
         }
 
         // Paddle collisions
@@ -593,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 puck.y = puck.radius;
                 puck.dy = Math.abs(puck.dy);
-                playSfx(hitSound);
+                playSfx(sidebarSound || hitSound);
             }
         }
 
@@ -608,7 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 puck.y = canvas.height - puck.radius;
                 puck.dy = -Math.abs(puck.dy);
-                playSfx(hitSound);
+                playSfx(sidebarSound || hitSound);
             }
         }
     }

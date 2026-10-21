@@ -240,7 +240,8 @@ body {
 .score-strip {
     display: flex;
     gap: 8px;
-    width: var(--board-size);
+    width: min(var(--board-size), 94vw);
+    max-width: 460px;
 }
 
 .score-card {
@@ -269,10 +270,11 @@ body {
 .player-b .score-label { color: #38bdf8; }
 
 .score-val {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
     font-size: 1.15rem;
     font-weight: 800;
     color: #ffd700;
+    font-variant-numeric: normal;
 }
 
 #confetti-canvas {

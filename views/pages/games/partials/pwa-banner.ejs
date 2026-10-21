@@ -129,6 +129,7 @@
 <script>
     (function() {
         let deferredPrompt = null;
+        let pwaTimer = null;
         const banner = document.getElementById('arcadePwaBanner');
         const installBtn = document.getElementById('pwaInstallActionBtn');
         const copyBtn = document.getElementById('pwaCopyLinkBtn');
@@ -141,112 +142,153 @@
         const domainOrigin = document.getElementById('pwaDomainOrigin');
 
         if (domainOrigin) {
-            domainOrigin.textContent = window.location.host;
+            domainOrigin.textContent = window.location.host || 'gplmods.com';
         }
 
-        if (sessionStorage.getItem('arc_pwa_dismissed') === 'true') {
-            // Already dismissed this session
+        function checkIsInstalled() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const isStandalone = Boolean(
+                    window.matchMedia('(display-mode: standalone)').matches ||
+                    window.matchMedia('(display-mode: fullscreen)').matches ||
+                    window.matchMedia('(display-mode: minimal-ui)').matches ||
+                    window.navigator.standalone === true ||
+                    (document.referrer && document.referrer.includes('android-app://')) ||
+                    params.get('source') === 'pwa' ||
+                    params.get('mode') === 'pwa'
+                );
+                const storedInstalled = localStorage.getItem('arc_pwa_installed') === 'true' || 
+                                        localStorage.getItem('gpl_pwa_installed') === 'true';
+                return isStandalone || storedInstalled;
+            } catch (e) {
+                return false;
+            }
         }
 
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        const isInstalled = isStandalone || localStorage.getItem('gpl_pwa_installed') === 'true' || localStorage.getItem('arc_pwa_installed') === 'true';
-
-        if (isInstalled) {
-            if (banner) banner.style.display = 'none';
+        // If already installed, never show
+        if (checkIsInstalled()) {
+            localStorage.setItem('arc_pwa_installed', 'true');
+            if (banner) banner.remove();
             return;
         }
 
+        // Deep check with navigator.getInstalledRelatedApps if supported
+        if (navigator.getInstalledRelatedApps) {
+            navigator.getInstalledRelatedApps().then(apps => {
+                if (apps && apps.length > 0) {
+                    localStorage.setItem('arc_pwa_installed', 'true');
+                    if (banner) banner.remove();
+                }
+            }).catch(() => {});
+        }
+
+        function isDismissed() {
+            const dismissedAt = localStorage.getItem('arc_pwa_dismissed');
+            if (!dismissedAt) return false;
+            // Snooze for 3 days if dismissed
+            const diff = Date.now() - parseInt(dismissedAt, 10);
+            return diff < 3 * 24 * 60 * 60 * 1000;
+        }
+
+        function showBannerWithDelay() {
+            if (checkIsInstalled() || isDismissed()) {
+                if (banner) banner.style.display = 'none';
+                return;
+            }
+            if (pwaTimer) clearTimeout(pwaTimer);
+            // Show after 12 seconds like the main arcade announcements
+            pwaTimer = setTimeout(() => {
+                if (!checkIsInstalled() && !isDismissed() && banner) {
+                    banner.style.display = 'flex';
+                }
+            }, 12000);
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            window.arcadeDeferredPrompt = e;
+            showBannerWithDelay();
+        });
+
+        // Also trigger delay check on mobile or desktop without beforeinstallprompt
+        showBannerWithDelay();
+
         window.addEventListener('appinstalled', () => {
             localStorage.setItem('arc_pwa_installed', 'true');
-            if (banner) banner.style.display = 'none';
+            if (banner) banner.remove();
             deferredPrompt = null;
+            window.arcadeDeferredPrompt = null;
             if (modal) modal.classList.remove('open');
             if (window.ArcadeToast) {
                 window.ArcadeToast.show('Pocket Classics installed successfully!', 'success');
             }
         });
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (banner && sessionStorage.getItem('arc_pwa_dismissed') !== 'true') {
-                banner.style.display = 'flex';
-            }
-        });
-
-        // Show floating card on mobile if not already standalone
-        if (!isStandalone && banner && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-            setTimeout(() => {
-                if (sessionStorage.getItem('arc_pwa_dismissed') !== 'true') {
-                    banner.style.display = 'flex';
-                }
-            }, 1200);
-        }
-
         function openInstallModal() {
-            if (modal) modal.classList.add('open');
+            if (modal) {
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         function closeInstallModal() {
-            if (modal) modal.classList.remove('open');
+            if (modal) {
+                modal.classList.remove('open');
+                document.body.style.overflow = '';
+            }
         }
 
-        // Clicking Install App triggers direct native prompt if available, or opens instructions modal
+        // Clicking banner Install App button opens the rich PWA modal (same function as main site banner)
         if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    try {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        if (outcome === 'accepted') {
-                            localStorage.setItem('arc_pwa_installed', 'true');
-                            if (banner) banner.style.display = 'none';
-                            if (window.ArcadeToast) {
-                                window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
-                            }
-                        }
-                    } catch (err) {
-                        openInstallModal();
-                    }
-                    deferredPrompt = null;
-                } else {
-                    openInstallModal();
-                }
+            installBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openInstallModal();
             });
         }
 
         closeModalBtn?.addEventListener('click', closeInstallModal);
         cancelModalBtn?.addEventListener('click', closeInstallModal);
+        modal?.addEventListener('click', (e) => {
+            if (e.target === modal) closeInstallModal();
+        });
 
         // Native Install Trigger inside Modal
         if (triggerNativeBtn) {
             triggerNativeBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    if (outcome === 'accepted') {
-                        localStorage.setItem('arc_pwa_installed', 'true');
-                        closeInstallModal();
-                        if (banner) banner.style.display = 'none';
-                        if (window.ArcadeToast) {
-                            window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
+                const promptEvent = deferredPrompt || window.arcadeDeferredPrompt;
+                if (promptEvent) {
+                    try {
+                        promptEvent.prompt();
+                        const { outcome } = await promptEvent.userChoice;
+                        if (outcome === 'accepted') {
+                            localStorage.setItem('arc_pwa_installed', 'true');
+                            closeInstallModal();
+                            if (banner) banner.remove();
+                            if (window.ArcadeToast) {
+                                window.ArcadeToast.show('Thank you for installing Pocket Classics!', 'success');
+                            }
                         }
+                    } catch (err) {
+                        console.warn('[PWA] Prompt failed:', err);
                     }
                     deferredPrompt = null;
+                    window.arcadeDeferredPrompt = null;
                 } else {
                     // Highlight the instructions for the user's platform
                     const guide = document.getElementById('pwaInstructionsGuide');
                     if (guide) {
+                        guide.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         guide.style.borderColor = 'var(--arc-accent)';
                         guide.style.boxShadow = '0 0 15px var(--arc-accent-glow)';
                         setTimeout(() => {
                             guide.style.borderColor = 'var(--arc-border)';
                             guide.style.boxShadow = 'none';
-                        }, 2000);
+                        }, 2500);
                     }
                     if (window.ArcadeToast) {
                         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-                        window.ArcadeToast.show(isIOS ? 'Tap Share and choose "Add to Home Screen"' : 'Tap browser menu and select "Install app"', 'info', 4000);
+                        window.ArcadeToast.show(isIOS ? 'Tap Share and select "Add to Home Screen"' : 'Tap browser menu (⋮) and select "Install app"', 'info', 4500);
                     }
                 }
             });
@@ -278,7 +320,7 @@
                 if (banner) {
                     banner.style.display = 'none';
                 }
-                sessionStorage.setItem('arc_pwa_dismissed', 'true');
+                localStorage.setItem('arc_pwa_dismissed', Date.now().toString());
             });
         }
     })();

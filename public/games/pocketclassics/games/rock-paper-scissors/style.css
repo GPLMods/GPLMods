@@ -232,20 +232,21 @@ body {
 }
 
 .side-val {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Poppins', 'Nunito', system-ui, -apple-system, sans-serif;
     font-size: 1.6rem;
-    font-weight: 900;
+    font-weight: 800;
     color: #fff;
+    font-variant-numeric: normal;
 }
 
 .score-side.p1 .side-val { color: var(--cyan); text-shadow: 0 0 10px rgba(0, 240, 255, 0.6); }
 .score-side.cpu .side-val { color: var(--magenta); text-shadow: 0 0 10px rgba(255, 0, 127, 0.6); }
 
 .vs-divider {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Poppins', sans-serif;
     font-size: 0.8rem;
-    font-weight: 900;
-    color: rgba(255, 255, 255, 0.25);
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.35);
 }
 
 /* Clash Stage */
@@ -502,8 +503,10 @@ input:checked + .slider:before {
 }
 
 .rps-session-scoreboard .score-pill .val {
-    font-size: 0.88rem;
-    font-weight: 900;
+    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    font-variant-numeric: normal;
 }
 
 .rps-session-scoreboard .score-pill.score-p1 {
@@ -524,6 +527,32 @@ input:checked + .slider:before {
 .rps-session-scoreboard .score-pill.leading {
     border: 1px solid var(--accent);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+@media (max-width: 600px) {
+    .battle-hud {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 4px;
+    }
+    .scoreboard-pill {
+        padding: 4px 12px;
+        gap: 8px;
+    }
+    .side-val {
+        font-size: 1.25rem;
+    }
+    .rps-session-scoreboard {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        gap: 4px;
+        margin-top: 2px;
+    }
+    .rps-session-scoreboard .score-pill {
+        padding: 2px 8px;
+        font-size: 0.68rem;
+    }
 }
 
 /* Win Confetti Canvas */

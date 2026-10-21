@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cell.appendChild(piece);
                 } else {
                     const move = validMoves.find(m => m.r === r && m.c === c);
-                    if (move && (!gameMode === 'pvai' || currentPlayer === BLACK)) {
+                    if (move && (gameMode !== 'pvai' || currentPlayer === BLACK)) {
                         const dot = document.createElement('div');
                         dot.classList.add('valid-move-dot');
                         cell.appendChild(dot);

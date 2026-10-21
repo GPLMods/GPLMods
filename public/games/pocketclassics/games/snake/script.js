@@ -85,6 +85,13 @@ document.addEventListener('DOMContentLoaded', () => {
         Object.values(screens).forEach(s => s && s.classList.remove('active'));
         if (name && screens[name]) screens[name].classList.add('active');
 
+        // Only show virtual D-pad when actively playing (!name) AND on touch devices
+        const dpad = document.getElementById('virtualDpad');
+        if (dpad) {
+            const isTouch = document.body.classList.contains('arc-is-touch') || ('ontouchstart' in window);
+            dpad.style.display = (!name && isTouch) ? 'flex' : 'none';
+        }
+
         if (name === 'mainMenu' || name === 'difficulty' || name === 'settings' || name === 'pause' || name === 'gameOver') {
             if (helper) helper.audio.playMenuMusic();
         } else if (!name) {

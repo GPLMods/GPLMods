@@ -349,16 +349,18 @@ button {
 .detonated .score-label { color: #ef4444; }
 
 .score-val {
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
     font-size: 1.15rem;
     font-weight: 800;
     color: #fff;
+    font-variant-numeric: normal;
 }
 
-/* Board Frame & Grid */
+/* Board Frame & Grid - perfectly square cells on any aspect ratio */
 .board-frame {
-    width: var(--board-size);
-    height: var(--board-size);
+    width: min(var(--board-size), 94vw);
+    max-width: 460px;
+    height: auto;
     background: var(--board-bg);
     border: 2px solid rgba(0, 240, 255, 0.3);
     border-radius: 14px;
@@ -369,26 +371,30 @@ button {
 #game-board {
     display: grid;
     width: 100%;
-    height: 100%;
-    gap: 2px;
+    gap: 3px;
     background: rgba(0, 0, 0, 0.4);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .cell {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    height: auto;
     background: var(--cell-unrevealed);
     border: 1px solid var(--cell-border);
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
+    font-family: 'Poppins', 'Orbitron', sans-serif;
+    font-weight: 800;
     font-size: clamp(0.75rem, 2.8vw, 1.25rem);
     cursor: pointer;
     transition: all 0.12s ease;
     box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.12), inset -1px -1px 0 rgba(0, 0, 0, 0.5);
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .cell:not(.revealed):hover {
@@ -414,20 +420,88 @@ button {
     filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.8));
 }
 
+/* IconScout Style 3D Bomb SVG */
+.iconscout-bomb {
+    width: 78%;
+    height: 78%;
+    display: block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+    animation: bombWiggle 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes bombWiggle {
+    0% { transform: scale(0.95) rotate(-3deg); }
+    100% { transform: scale(1.05) rotate(3deg); }
+}
+
+/* Colorful Party Popper Animation for Mines */
+.party-popper-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+}
+
+.popper-cone {
+    font-size: clamp(1rem, 3.2vw, 1.45rem);
+    animation: popperPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.4) forwards;
+    transform-origin: center bottom;
+    z-index: 2;
+}
+
+.popper-sparkles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+}
+
+.popper-sparkles .confetti {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 2px;
+    opacity: 0;
+    animation: confettiBurst 0.65s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+.confetti.c1 { top: 15%; left: 15%; background: #ffd700; --tx: -10px; --ty: -12px; animation-delay: 0.02s; }
+.confetti.c2 { top: 10%; right: 20%; background: #ff007f; --tx: 12px; --ty: -14px; animation-delay: 0.05s; }
+.confetti.c3 { bottom: 20%; left: 12%; background: #00f0ff; --tx: -12px; --ty: 10px; animation-delay: 0.07s; }
+.confetti.c4 { top: 25%; right: 12%; background: #10b981; --tx: 14px; --ty: -8px; animation-delay: 0.1s; }
+.confetti.c5 { bottom: 15%; right: 15%; background: #a855f7; --tx: 10px; --ty: 12px; animation-delay: 0.04s; }
+.confetti.c6 { top: 5%; left: 45%; background: #f97316; --tx: 2px; --ty: -16px; animation-delay: 0.08s; }
+
+@keyframes popperPop {
+    0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+    60% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes confettiBurst {
+    0% { transform: translate(0, 0) scale(0.2) rotate(0deg); opacity: 0; }
+    35% { opacity: 1; }
+    100% { transform: translate(var(--tx, 10px), var(--ty, -12px)) scale(1.1) rotate(220deg); opacity: 0.9; }
+}
+
 .cell.mine {
-    background: rgba(239, 68, 68, 0.45) !important;
-    color: #fff;
-    filter: drop-shadow(0 0 6px #ef4444);
+    background: rgba(255, 0, 127, 0.22) !important;
+    border-color: rgba(255, 0, 127, 0.5) !important;
+    box-shadow: 0 0 10px rgba(255, 0, 127, 0.35) !important;
 }
 
 .cell.triggered {
-    background: #ef4444 !important;
-    color: #fff;
-    animation: explodeFlash 0.3s ease;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.8), rgba(255, 0, 127, 0.8)) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), inset 0 0 10px #ffd700 !important;
+    animation: popperTriggerPulse 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.4);
 }
 
-@keyframes explodeFlash {
-    0% { transform: scale(1.3); }
+@keyframes popperTriggerPulse {
+    0% { transform: scale(1.35); }
+    50% { transform: scale(0.92); }
     100% { transform: scale(1); }
 }
 

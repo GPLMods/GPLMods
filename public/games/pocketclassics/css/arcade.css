@@ -912,10 +912,39 @@ canvas.protect-asset,
 
 .game-iframe-wrapper {
     width: 100%;
-    min-height: 640px;
+    min-height: 600px;
     height: 75vh;
     border: none;
     background: #000;
+}
+
+/* Pseudo and native fullscreen styles */
+.game-viewport-card.arcade-fullscreen-active,
+.game-viewport-card:fullscreen,
+.game-viewport-card:-webkit-full-screen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    padding: 0 !important;
+    background: #000 !important;
+    z-index: 999999 !important;
+}
+
+.game-viewport-card.arcade-fullscreen-active .game-iframe-wrapper,
+.game-viewport-card:fullscreen .game-iframe-wrapper,
+.game-viewport-card:-webkit-full-screen .game-iframe-wrapper {
+    height: calc(100dvh - 48px) !important;
+    min-height: 0 !important;
+    flex: 1 1 100%;
 }
 
 @media (max-width: 768px) {
@@ -941,33 +970,48 @@ canvas.protect-asset,
         white-space: nowrap;
     }
     .game-iframe-wrapper {
-        min-height: 520px;
-        height: 70vh;
+        min-height: 0;
+        height: 72vh;
     }
 }
 
 @media (max-width: 600px) {
+    .btn-text-full {
+        display: none !important;
+    }
     .game-viewport-header {
         padding: 6px 10px;
         gap: 6px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .game-viewport-header-left {
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 6px;
+    }
+    .game-viewport-header-left a.arc-btn {
+        padding: 5px 8px;
     }
     .game-viewport-header-actions {
-        width: 100%;
-        justify-content: space-between;
+        width: auto;
+        flex-shrink: 0;
         gap: 4px;
     }
     .game-viewport-header-actions .arc-btn {
-        padding: 6px 8px;
-        font-size: 0.78rem;
-    }
-    .game-viewport-header-actions .arc-btn.arc-btn-icon {
-        width: 32px;
-        height: 32px;
+        padding: 6px;
+        font-size: 0.8rem;
         min-width: 32px;
-        padding: 0;
+        height: 32px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
+    }
+    .game-iframe-wrapper {
+        min-height: 0;
+        height: calc(100dvh - 65px);
+        max-height: 86vh;
     }
 }
 

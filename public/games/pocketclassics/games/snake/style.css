@@ -409,16 +409,12 @@ input:checked + .slider:before {
     color: var(--primary);
 }
 
-/* Virtual D-Pad for Touch */
+/* Virtual D-Pad for Touch (Shown ONLY during active gameplay) */
 .mobile-virtual-dpad {
     display: none;
     flex-direction: column;
     align-items: center;
     gap: 4px;
-}
-
-body.arc-is-touch .mobile-virtual-dpad {
-    display: flex;
 }
 
 .dpad-row {

@@ -14,6 +14,7 @@
     <audio id="music-menu" src="sounds/menu-music.mp3" preload="auto" loop></audio>
     <audio id="music-game" src="sounds/background.mp3" preload="auto" loop></audio>
     <audio id="hit-sound" src="sounds/hit.wav" preload="auto"></audio>
+    <audio id="sidebar-sound" src="sounds/sidebar.mp3" preload="auto"></audio>
     <audio id="score-sound" src="sounds/score.wav" preload="auto"></audio>
     <audio id="win-sound" src="sounds/win.wav" preload="auto"></audio>
     <audio id="click-sound" src="sounds/click.wav" preload="auto"></audio>
@@ -123,18 +124,18 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 
-                <!-- Match Session Scoreboard Comparison (Requirement: player 1 (4) and player 2 (5)) -->
+                <!-- Live Match Goals & Sets Scoreboard -->
                 <div class="airhockey-session-scoreboard" id="airhockeyScoreboard">
-                    <div class="score-pill score-p1 leading" id="pillP1" title="Player 1 Match Wins">
+                    <div class="score-pill score-p1" id="pillP1" title="Player 1 Goals">
                         <span class="label">P1</span>
-                        <span class="val" id="sessP1Wins">0</span>
+                        <span class="val" id="hudP1Score">0</span>
                     </div>
-                    <div class="score-pill score-sets" title="Sets Won">
-                        <span class="label">SETS</span>
+                    <div class="score-pill score-sets" title="First to 7 Goals">
+                        <span class="label" id="hudMatchTarget">FIRST TO 7</span>
                     </div>
-                    <div class="score-pill score-p2" id="pillP2" title="Player 2 / AI Match Wins">
-                        <span class="label" id="sessP2Label">P2</span>
-                        <span class="val" id="sessP2Wins">0</span>
+                    <div class="score-pill score-p2" id="pillP2" title="Player 2 / AI Goals">
+                        <span class="label" id="sessP2Label">AI</span>
+                        <span class="val" id="hudP2Score">0</span>
                     </div>
                 </div>
 

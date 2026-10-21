@@ -26,6 +26,10 @@
             country: '<%= user && user.country ? user.country : "India" %>',
             avatar: '<%= user && (user.cardAvatarUrl || user.avatarUrl || user.profileImage) ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage) : "/images/default-avatar.png" %>'
         };
+        (function() {
+            var savedTheme = localStorage.getItem('arc_theme') || 'classic';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
     </script>
     <style>
         .fs-floating-toggle-btn {
@@ -34,7 +38,7 @@
             top: 14px;
             right: 14px;
             z-index: 9999;
-            background: rgba(15, 23, 42, 0.85);
+            background: rgba(15, 23, 42, 0.9);
             border: 1px solid rgba(255, 255, 255, 0.25);
             color: #fff;
             backdrop-filter: blur(8px);
@@ -49,7 +53,7 @@
         .fs-floating-toggle-btn:hover {
             background: rgba(30, 41, 59, 0.95);
             transform: scale(1.05);
-            border-color: var(--arc-accent, #6366f1);
+            border-color: var(--arc-accent, #ffd700);
         }
         .game-viewport-card.controls-hidden .game-viewport-header {
             display: none !important;
@@ -59,30 +63,83 @@
             align-items: center;
             gap: 6px;
         }
+        /* Native and Pseudo-Fullscreen for mobile & desktop */
+        .game-viewport-card.arcade-fullscreen-active,
         .game-viewport-card:fullscreen,
         .game-viewport-card:-webkit-full-screen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
             width: 100vw !important;
-            height: 100vh !important;
+            height: 100dvh !important;
             max-width: 100vw !important;
+            max-height: 100dvh !important;
             margin: 0 !important;
             border-radius: 0 !important;
+            border: none !important;
             display: flex;
             flex-direction: column;
-            background: #000;
+            background: #000 !important;
+            z-index: 999999 !important;
         }
+        .game-viewport-card.arcade-fullscreen-active .game-iframe-wrapper,
         .game-viewport-card:fullscreen .game-iframe-wrapper,
         .game-viewport-card:-webkit-full-screen .game-iframe-wrapper {
             flex: 1 1 100%;
-            height: 100% !important;
+            height: calc(100dvh - 50px) !important;
             border-radius: 0 !important;
+            min-height: 0 !important;
         }
+        .game-viewport-card.arcade-fullscreen-active.controls-hidden .game-iframe-wrapper,
         .game-viewport-card:fullscreen.controls-hidden .game-iframe-wrapper,
         .game-viewport-card:-webkit-full-screen.controls-hidden .game-iframe-wrapper {
-            height: 100vh !important;
+            height: 100dvh !important;
+        }
+        @media (max-width: 600px) {
+            .btn-text-full {
+                display: none !important;
+            }
+            .arcade-wrapper {
+                padding-top: 4px !important;
+                padding-left: 4px !important;
+                padding-right: 4px !important;
+            }
+            .game-viewport-card {
+                border-radius: 12px;
+                margin-bottom: 12px;
+            }
+            .game-viewport-header {
+                padding: 6px 8px;
+                gap: 6px;
+                flex-wrap: nowrap;
+            }
+            .game-viewport-header-left {
+                gap: 6px;
+            }
+            .game-viewport-header-left a.arc-btn {
+                padding: 5px 8px !important;
+            }
+            .game-viewport-header-actions {
+                gap: 4px;
+            }
+            .game-viewport-header-actions .arc-btn {
+                padding: 6px;
+                min-width: 32px;
+                height: 32px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .game-iframe-wrapper {
+                min-height: 0 !important;
+                height: calc(100dvh - 65px) !important;
+            }
         }
     </style>
 </head>
-<body class="arcade-body" data-theme="classic">
+<body class="arcade-body">
 
     <div class="arcade-wrapper" style="padding-top: 14px;">
         <!-- Top Game Header Bar -->
@@ -132,6 +189,11 @@
                     <!-- Leaderboards Button -->
                     <button type="button" class="arc-btn arc-btn-icon" id="openLeaderboardBtn" title="Leaderboards">
                         <i class="fas fa-trophy" style="color: var(--arc-accent);"></i>
+                    </button>
+
+                    <!-- Quick Theme Toggle -->
+                    <button type="button" class="arc-btn arc-btn-icon" id="quickThemeBtn" title="Switch Theme (Classic / Cyber / India)">
+                        <i class="fas fa-palette" style="color: var(--arc-accent);"></i>
                     </button>
 
                     <!-- In-Game Music Toggle -->
@@ -294,8 +356,10 @@
             hideControlsBtn?.addEventListener('click', () => toggleControls(true));
             showControlsFloatingBtn?.addEventListener('click', () => toggleControls(false));
 
+            let isPseudoFs = false;
+
             function updateFsIcon() {
-                const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+                const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement || isPseudoFs);
                 if (fsIcon) {
                     fsIcon.className = isFs ? 'fas fa-compress' : 'fas fa-expand';
                 }
@@ -305,6 +369,56 @@
             }
             document.addEventListener('fullscreenchange', updateFsIcon);
             document.addEventListener('webkitfullscreenchange', updateFsIcon);
+
+            function enablePseudoFs() {
+                isPseudoFs = true;
+                gameCard?.classList.add('arcade-fullscreen-active');
+                document.body.style.overflow = 'hidden';
+                updateFsIcon();
+            }
+
+            function disablePseudoFs() {
+                isPseudoFs = false;
+                gameCard?.classList.remove('arcade-fullscreen-active');
+                document.body.style.overflow = '';
+                updateFsIcon();
+            }
+
+            function toggleGameFullscreen() {
+                const isNativeFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+                if (!isNativeFs && !isPseudoFs) {
+                    const target = gameCard || document.documentElement;
+                    const req = target.requestFullscreen || target.webkitRequestFullscreen;
+                    if (req) {
+                        try {
+                            const res = req.call(target);
+                            if (res && res.catch) {
+                                res.catch(() => enablePseudoFs());
+                            }
+                        } catch (e) {
+                            enablePseudoFs();
+                        }
+                    } else {
+                        enablePseudoFs();
+                    }
+                } else {
+                    if (isNativeFs) {
+                        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    }
+                    if (isPseudoFs) {
+                        disablePseudoFs();
+                    }
+                }
+            }
+
+            fsBtn?.addEventListener('click', toggleGameFullscreen);
+
+            window.addEventListener('message', (e) => {
+                if (e.data && e.data.type === 'ARCADE_REQUEST_FULLSCREEN') {
+                    toggleGameFullscreen();
+                }
+            });
 
             // Forward user interaction to game iframe to unlock audio autoplay seamlessly
             ['pointerdown', 'click', 'keydown', 'touchstart'].forEach(evt => {
@@ -323,27 +437,6 @@
                     }, 400);
                 });
             }
-
-            fsBtn?.addEventListener('click', () => {
-                const target = gameCard || iframe || document.documentElement;
-                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                    if (target.requestFullscreen) {
-                        target.requestFullscreen().catch(() => {
-                            if (iframe.requestFullscreen) iframe.requestFullscreen().catch(() => {});
-                        });
-                    } else if (target.webkitRequestFullscreen) {
-                        target.webkitRequestFullscreen();
-                    } else if (iframe.webkitRequestFullscreen) {
-                        iframe.webkitRequestFullscreen();
-                    }
-                } else {
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen().catch(() => {});
-                    } else if (document.webkitExitFullscreen) {
-                        document.webkitExitFullscreen();
-                    }
-                }
-            });
 
             // 6. Record Playtime on Unload / Leave
             window.addEventListener('beforeunload', () => {

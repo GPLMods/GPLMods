@@ -63,10 +63,11 @@
         }
 
         .static-logo-box img {
-            width: 78%;
-            height: 78%;
-            object-fit: contain;
-            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            border-radius: 21px;
         }
 
         .progress-box {
@@ -182,13 +183,9 @@
         </div>
 
         <!-- Static Logo Screen with Developer Logo (Shown on 2nd and subsequent visits) -->
-        <div class="static-logo-box" id="splashStaticBox" style="display: none; flex-direction: column; gap: 14px; padding: 28px 22px; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(255, 215, 0, 0.1) 0%, #06070b 100%);">
-            <!-- Developer Logo ONLY on 2nd and subsequent visits -->
-            <div class="dev-logo-wrap" id="splashDevLogoWrap" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <img src="/games/pocketclassics/assets/developer-logo.png" alt="Gaming Net India" class="protect-asset" style="width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 0 24px rgba(255, 215, 0, 0.85));">
-                <span style="font-size: 0.96rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 900; color: var(--arc-accent); text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);">Gaming Net India</span>
-                <span style="font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; color: var(--arc-text-muted);">Original Developer</span>
-            </div>
+        <div class="static-logo-box" id="splashStaticBox" style="display: none; background: #000; overflow: hidden; border-radius: 24px; padding: 0;">
+            <!-- Developer Logo ONLY inside container: Fits perfectly edge-to-edge without any text inside the box -->
+            <img src="/games/pocketclassics/assets/developer-logo.png" alt="Developer Logo" class="protect-asset" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 21px;">
         </div>
 
         <div class="progress-box">
@@ -334,11 +331,13 @@
 
             } else {
                 // ============================================================
-                // 2ND+ VISIT: STATIC SCREEN WITH LOGO & MAIN MENU THEME MUSIC
-                // Fast 1.8s progress bar, no video intro, music loops
+                // 2ND+ VISIT: STATIC SCREEN WITH DEVELOPER LOGO ONLY (NO TEXT)
+                // Fast 1.8s progress bar, automatically switch to next theme on revisit
                 // ============================================================
+                if (window.ArcadeTheme) {
+                    window.ArcadeTheme.nextTheme();
+                }
                 staticBox.style.display = 'flex';
-                showDeveloperBranding();
 
                 if (statusTxt) {
                     statusTxt.innerHTML = '<i class="fas fa-gamepad" style="color: var(--arc-accent); margin-right: 6px;"></i> Launching Pocket Classics...';
@@ -349,19 +348,28 @@
                     window.ArcadeAudio.playMusic();
                 }
 
-                const STATIC_DURATION_MS = 1800;
+                const STATIC_DURATION_MS = 2500;
                 const startTime = Date.now();
                 const staticInterval = setInterval(() => {
                     const elapsed = Date.now() - startTime;
                     const progress = Math.min(100, Math.floor((elapsed / STATIC_DURATION_MS) * 100));
                     if (pBar) pBar.style.width = progress + '%';
 
+                    // Reveal page developer branding during/after loading
+                    if (elapsed >= 1100) {
+                        showDeveloperBranding();
+                    }
+
                     if (elapsed >= STATIC_DURATION_MS) {
                         clearInterval(staticInterval);
                         if (pBar) pBar.style.width = '100%';
+                        showDeveloperBranding();
+                        if (statusTxt) {
+                            statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Ready to Play!</span>';
+                        }
                         setTimeout(() => {
                             window.location.href = '/games/hub';
-                        }, 250);
+                        }, 500);
                     }
                 }, 40);
             }

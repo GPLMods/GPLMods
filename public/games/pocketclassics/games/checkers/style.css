@@ -528,18 +528,22 @@ input:checked + .slider:before {
     border-radius: 999px;
     font-size: 0.72rem;
     font-weight: 700;
+    font-family: 'Poppins', sans-serif;
     transition: all 0.2s ease;
 }
 
 .checkers-session-scoreboard .score-pill .label {
-    opacity: 0.75;
+    opacity: 0.8;
     font-size: 0.65rem;
     letter-spacing: 0.5px;
 }
 
-.checkers-session-scoreboard .score-pill .val {
-    font-size: 0.88rem;
-    font-weight: 900;
+.checkers-session-scoreboard .score-pill .val,
+.player-chip {
+    font-family: 'Poppins', 'Nunito', system-ui, sans-serif;
+    font-size: 0.92rem;
+    font-weight: 800;
+    font-variant-numeric: normal;
 }
 
 .score-pill.score-white {
@@ -560,6 +564,39 @@ input:checked + .slider:before {
 .score-pill.leading {
     border: 1px solid var(--accent);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+@media (max-width: 600px) {
+    .game-hud {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 0 2px;
+    }
+    .hud-left {
+        gap: 6px;
+    }
+    .turn-indicator {
+        font-size: 0.78rem;
+        padding: 4px 8px;
+    }
+    .checkers-session-scoreboard {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        gap: 4px;
+        padding: 2px 4px;
+    }
+    .checkers-session-scoreboard .score-pill {
+        padding: 2px 6px;
+        font-size: 0.68rem;
+    }
+    .hud-scores {
+        gap: 4px;
+    }
+    .player-chip {
+        padding: 3px 6px;
+        font-size: 0.78rem;
+    }
 }
 
 /* Win Confetti Canvas */

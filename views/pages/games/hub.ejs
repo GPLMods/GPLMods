@@ -24,9 +24,13 @@
             country: '<%= user && user.country ? user.country : "India" %>',
             avatar: '<%= user && (user.cardAvatarUrl || user.avatarUrl || user.profileImage) ? (user.cardAvatarUrl || user.avatarUrl || user.profileImage) : "/images/default-avatar.png" %>'
         };
+        (function() {
+            var savedTheme = localStorage.getItem('arc_theme') || 'classic';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
     </script>
 </head>
-<body class="arcade-body arcade-body-hub" data-theme="classic">
+<body class="arcade-body arcade-body-hub">
 
     <!-- Collapse-Open Shutter Doors (Starts closed at center, header goes up & footer goes down simultaneously) -->
     <div class="arcade-vault-shutter" id="arcadeVaultShutter">

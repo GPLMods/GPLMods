@@ -212,12 +212,65 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- ICONS & ASSETS (IconScout Style 3D Bomb & Party Popper Animation) ---
+    const ICON_SCOUT_BOMB_SVG = `
+        <svg class="iconscout-bomb" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="msBombBody" cx="38%" cy="32%" r="65%">
+                    <stop offset="0%" stop-color="#4a5568"/>
+                    <stop offset="35%" stop-color="#1a202c"/>
+                    <stop offset="100%" stop-color="#05070a"/>
+                </radialGradient>
+                <radialGradient id="msBombHighlight" cx="30%" cy="28%" r="35%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+                    <stop offset="50%" stop-color="#cbd5e1" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                </radialGradient>
+                <linearGradient id="msFuseGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#d97706"/>
+                    <stop offset="100%" stop-color="#f59e0b"/>
+                </linearGradient>
+                <radialGradient id="msSparkGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fff"/>
+                    <stop offset="40%" stop-color="#fbbf24"/>
+                    <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+            <circle cx="30" cy="36" r="23" fill="url(#msBombBody)" stroke="#2d3748" stroke-width="1.2"/>
+            <ellipse cx="23" cy="28" rx="8" ry="5" fill="url(#msBombHighlight)"/>
+            <path d="M23 15 L37 15 L35 19 L25 19 Z" fill="#718096" stroke="#4a5568" stroke-width="1"/>
+            <path d="M30 15 Q31 7 42 9 Q47 10 49 5" fill="none" stroke="url(#msFuseGlow)" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="49" cy="5" r="5" fill="url(#msSparkGlow)"/>
+            <path d="M49 1 L50 4 L53 5 L50 6 L49 9 L48 6 L45 5 L48 4 Z" fill="#ffd700"/>
+        </svg>
+    `;
+
+    const PARTY_POPPER_HTML = `
+        <div class="party-popper-wrap" title="Party Popper Mine!">
+            <div class="popper-cone">🎉</div>
+            <div class="popper-sparkles">
+                <span class="confetti c1"></span>
+                <span class="confetti c2"></span>
+                <span class="confetti c3"></span>
+                <span class="confetti c4"></span>
+                <span class="confetti c5"></span>
+                <span class="confetti c6"></span>
+            </div>
+        </div>
+    `;
+
     // --- BOARD RENDERING ---
     function renderBoard() {
         const boardEl = dom.gameBoard;
         boardEl.innerHTML = '';
         boardEl.style.gridTemplateColumns = `repeat(${currentConfig.cols}, 1fr)`;
         boardEl.style.gridTemplateRows = `repeat(${currentConfig.rows}, 1fr)`;
+
+        const viewportFrame = boardEl.parentElement;
+        if (viewportFrame) {
+            const idealMaxW = Math.min(480, Math.max(300, currentConfig.cols * 44 + 24));
+            viewportFrame.style.maxWidth = `${idealMaxW}px`;
+        }
 
         for (let r = 0; r < currentConfig.rows; r++) {
             for (let c = 0; c < currentConfig.cols; c++) {
@@ -235,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cellEl.classList.add('revealed');
                     if (cellData.isMine) {
                         cellEl.classList.add('mine');
-                        cellEl.innerHTML = '<i class="fas fa-bomb"></i>';
+                        cellEl.innerHTML = PARTY_POPPER_HTML;
                     } else if (cellData.count > 0) {
                         cellEl.dataset.num = cellData.count;
                         cellEl.textContent = cellData.count;
