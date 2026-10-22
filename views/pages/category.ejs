@@ -299,8 +299,14 @@
                                         <% } else if (mod.certification === 'community-tested') { %>
                                             <div class="app-feature-tag" style="background-color: var(--silver); color: var(--black);">Community Tested</div>
                                         <% } %>
-                                        <% if (mod.version) { %>
-                                            <div class="mod-type-tag"><%= mod.version %></div>
+                                        <% if (mod.version) { 
+                                            const vStr = mod.version.toString();
+                                            const isLongVer = vStr.length > 8;
+                                            const isExtraLong = vStr.length > 13;
+                                        %>
+                                            <div class="mod-type-tag <%= isExtraLong ? 'extra-long-version' : (isLongVer ? 'long-version' : '') %>" 
+                                                 data-ver-len="<%= vStr.length %>" 
+                                                 title="<%= mod.version %>"><%= mod.version %></div>
                                         <% } %>
                                     </div>
                                     <img src="<%= mod.iconUrl %>" alt="<%= mod.name %> Icon" class="featured-icon">

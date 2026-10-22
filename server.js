@@ -7315,7 +7315,9 @@ app.get('/download-file/:id', async (req, res) => {
 
         // --- 1. CHECK FOR DIRECT CLOUD DOWNLOAD FIRST (Dropbox, Google Drive, OneDrive, etc.) ---
         if (downloadTarget.directDownloadUrl) {
-            return res.redirect(downloadTarget.directDownloadUrl);
+            const encodedUrl = encodeURIComponent(downloadTarget.directDownloadUrl);
+            const encodedName = encodeURIComponent(downloadTarget.originalApkName || file.originalFilename || file.name);
+            return res.redirect(`/leave?url=${encodedUrl}&name=${encodedName}`);
         }
 
         // --- 1b. CHECK FOR EXTERNAL CLOUD LINK ---
@@ -7344,14 +7346,17 @@ app.get('/download-file/:id', async (req, res) => {
                 return res.status(400).send("Invalid download URL.");
             }
 
-            return res.redirect(requestedUrl);
+            const encodedName = encodeURIComponent(downloadTarget.originalApkName || file.originalFilename || file.name);
+            return res.redirect(`/leave?url=${encodeURIComponent(requestedUrl)}&name=${encodedName}`);
         }
 
         // --- 3. FALLBACK TO ALTERNATIVE LINKS IF EXTERNAL LINK KEY ---
         const fileKey = downloadTarget.fileKey || downloadTarget.fileUrl;
         if (fileKey === 'external-link') {
             if (downloadTarget.alternativeLinks && downloadTarget.alternativeLinks.length > 0 && downloadTarget.alternativeLinks[0].url) {
-                return res.redirect(downloadTarget.alternativeLinks[0].url);
+                const encodedUrl = encodeURIComponent(downloadTarget.alternativeLinks[0].url);
+                const encodedName = encodeURIComponent(downloadTarget.originalApkName || file.originalFilename || file.name);
+                return res.redirect(`/leave?url=${encodedUrl}&name=${encodedName}`);
             }
             return res.status(404).send("File download link not available.");
         }
@@ -11088,28 +11093,52 @@ app.post('/mods/:id/delete-version/:versionId', ensureAuthenticated, async (req,
 
         // Security check
         if (!masterFile || masterFile.uploader !== req.user.username) {
-            return res.status(404).json({ success: false, message: 'Resource not found.' });
+            return res.status(404).json({ success: false, message: 'Parent mod not found or unauthorized.' });
         }
 
-        // Find the version to delete
-        const versionToDelete = masterFile.olderVersions.find(v => v._id.toString() === versionId);
-        if (!versionToDelete) {
-            return res.status(404).json({ success: false, message: 'Version not found.' });
+        // Find the version document directly
+        let versionDoc = await File.findById(versionId);
+
+        // Check if version is referenced in masterFile.olderVersions or has parentFile === masterFile._id
+        const isReferencedInMaster = Array.isArray(masterFile.olderVersions) && masterFile.olderVersions.some(v => {
+            if (!v) return false;
+            const vid = v._id ? v._id.toString() : v.toString();
+            return vid === versionId.toString();
+        });
+
+        const isChildOfMaster = versionDoc && versionDoc.parentFile && versionDoc.parentFile.toString() === id.toString();
+
+        if (!isReferencedInMaster && !isChildOfMaster && !versionDoc) {
+            return res.status(404).json({ success: false, message: 'Version not found or already deleted.' });
         }
 
-        // 1. Delete from B2
-        await deleteFromB2(versionToDelete.fileKey);
+        // If versionDoc exists, ensure it belongs to the same user or parent
+        if (versionDoc && versionDoc.uploader && versionDoc.uploader !== req.user.username && !isReferencedInMaster && !isChildOfMaster) {
+            return res.status(403).json({ success: false, message: 'Unauthorized to delete this version.' });
+        }
 
-        // 2. Remove from Master File's array
+        // 1. Delete from B2 if fileKey exists
+        const fileKeyToDelete = (versionDoc && versionDoc.fileKey) || (masterFile.olderVersions && masterFile.olderVersions.find(v => v && (v._id ? v._id.toString() : v.toString()) === versionId.toString())?.fileKey);
+        if (fileKeyToDelete) {
+            try {
+                await deleteFromB2(fileKeyToDelete);
+            } catch (b2Err) {
+                console.warn('Could not delete old version file from B2 storage:', b2Err.message);
+            }
+        }
+
+        // 2. Remove from Master File's olderVersions array
         await File.findByIdAndUpdate(id, { $pull: { olderVersions: versionId } });
 
-        // 3. Delete the version document
-        await File.findByIdAndDelete(versionId);
+        // 3. Delete the version document if it exists
+        if (versionDoc) {
+            await File.findByIdAndDelete(versionId);
+        }
 
         res.json({ success: true, message: 'Version deleted successfully.' });
     } catch (error) {
         console.error("Error deleting version:", error);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Failed to delete version: ' + (error.message || 'Server error') });
     }
 });
 
@@ -11121,26 +11150,63 @@ app.post('/mods/:id/delete-all-versions', ensureAuthenticated, async (req, res) 
 
         // Security check
         if (!masterFile || masterFile.uploader !== req.user.username) {
-            return res.status(404).json({ success: false, message: 'Resource not found.' });
+            return res.status(404).json({ success: false, message: 'Parent mod not found or unauthorized.' });
         }
 
-        if (masterFile.olderVersions && masterFile.olderVersions.length > 0) {
-            for (const oldVersion of masterFile.olderVersions) {
-                // 1. Delete from B2
-                await deleteFromB2(oldVersion.fileKey);
-                // 2. Delete the version document
-                await File.findByIdAndDelete(oldVersion._id);
+        // Find all child versions linked via parentFile as well
+        const childVersions = await File.find({
+            parentFile: masterFile._id,
+            uploader: req.user.username,
+            _id: { $ne: masterFile._id }
+        });
+
+        // Combine all versions to delete
+        const allVersionsMap = new Map();
+        if (Array.isArray(masterFile.olderVersions)) {
+            masterFile.olderVersions.forEach(v => {
+                if (v) {
+                    const vid = (v._id || v).toString();
+                    if (vid !== masterFile._id.toString()) {
+                        allVersionsMap.set(vid, v);
+                    }
+                }
+            });
+        }
+        childVersions.forEach(cv => {
+            allVersionsMap.set(cv._id.toString(), cv);
+        });
+
+        for (const [vid, oldVersion] of allVersionsMap.entries()) {
+            // Delete B2
+            const fileKey = oldVersion.fileKey;
+            if (fileKey) {
+                try {
+                    await deleteFromB2(fileKey);
+                } catch (b2Err) {
+                    console.warn('Could not delete old version from B2:', b2Err.message);
+                }
+            } else {
+                const doc = await File.findById(vid);
+                if (doc && doc.fileKey) {
+                    try {
+                        await deleteFromB2(doc.fileKey);
+                    } catch (b2Err) {
+                        console.warn('Could not delete old version from B2:', b2Err.message);
+                    }
+                }
             }
-
-            // 3. Clear the array on the Master File
-            masterFile.olderVersions = [];
-            await masterFile.save();
+            // Delete doc
+            await File.findByIdAndDelete(vid);
         }
+
+        // Clear the array on the Master File
+        masterFile.olderVersions = [];
+        await masterFile.save();
 
         res.json({ success: true, message: 'All older versions deleted successfully.' });
     } catch (error) {
         console.error("Error deleting all versions:", error);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, message: 'Failed to delete all versions: ' + (error.message || 'Server error') });
     }
 });
 
@@ -12365,6 +12431,47 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
         return value.toString().trim().replace(/\s{2,}/g, ' ');
     };
 
+    const normalizeDescription = (value) => {
+        if (!value) return '';
+        let text = value.toString();
+
+        // 1. Convert HTML line breaks and structural block tags to newlines
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<\/p>/gi, '\n\n');
+        text = text.replace(/<\/div>/gi, '\n');
+        text = text.replace(/<\/(h[1-6]|section|article)>/gi, '\n\n');
+        text = text.replace(/<li[^>]*>/gi, '\n• ');
+        text = text.replace(/<\/li>/gi, '');
+        text = text.replace(/<\/ul>|<\/ol>/gi, '\n\n');
+
+        // 2. Strip any remaining HTML tags safely
+        text = text.replace(/<[^>]+>/g, '');
+
+        // 3. Decode common HTML entities
+        text = text
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&rsquo;/g, "'")
+            .replace(/&lsquo;/g, "'")
+            .replace(/&rdquo;/g, '"')
+            .replace(/&ldquo;/g, '"')
+            .replace(/&bull;/g, '•')
+            .replace(/&ndash;/g, '–')
+            .replace(/&mdash;/g, '—')
+            .replace(/&nbsp;/g, ' ');
+
+        // 4. Normalize line breaks and spaces while preserving paragraph breaks
+        text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        text = text.replace(/[ \t]+/g, ' ');
+        text = text.split('\n').map(line => line.trim()).join('\n');
+        text = text.replace(/\n{3,}/g, '\n\n');
+
+        return text.trim();
+    };
+
     const fetchWordPressData = async (targetWpUrl) => {
         const cleanedWp = cleanPlatformUrl(targetWpUrl);
         const wpUrlObj = new URL(cleanedWp);
@@ -12611,7 +12718,13 @@ app.post('/api/fetch-metadata', ensureAuthenticated, async (req, res) => {
         }
 
         Object.keys(data).forEach(key => {
-            if (data[key]) data[key] = data[key].trim().replace(/\s{2,}/g, ' ');
+            if (data[key]) {
+                if (['description', 'officialDescription', 'whatsNew'].includes(key)) {
+                    data[key] = normalizeDescription(data[key]);
+                } else {
+                    data[key] = data[key].toString().trim().replace(/\s{2,}/g, ' ');
+                }
+            }
         });
 
         data.minOs = data.minOsVersion || '';

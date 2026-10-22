@@ -114,17 +114,36 @@
                 padding: 6px 8px;
                 gap: 6px;
                 flex-wrap: nowrap;
+                justify-content: space-between;
+                align-items: center;
             }
             .game-viewport-header-left {
                 gap: 6px;
+                min-width: 0;
+                flex-shrink: 0;
+                max-width: 44%;
             }
             .game-viewport-header-left a.arc-btn {
                 padding: 5px 8px !important;
+                flex-shrink: 0;
             }
             .game-viewport-header-actions {
+                display: flex;
+                align-items: center;
                 gap: 4px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                flex-shrink: 1;
+                justify-content: flex-end;
+                max-width: 56%;
+                padding-left: 2px;
+            }
+            .game-viewport-header-actions::-webkit-scrollbar {
+                display: none;
             }
             .game-viewport-header-actions .arc-btn {
+                flex-shrink: 0;
                 padding: 6px;
                 min-width: 32px;
                 height: 32px;

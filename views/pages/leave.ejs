@@ -8,6 +8,7 @@
         justify-content: center;
         padding: 40px 20px;
         position: relative;
+        box-sizing: border-box;
     }
 
     .leave-card {
@@ -21,6 +22,7 @@
         backdrop-filter: blur(16px);
         position: relative;
         overflow: hidden;
+        box-sizing: border-box;
     }
 
     .leave-card::before {
@@ -54,6 +56,8 @@
         text-transform: uppercase;
         letter-spacing: 1px;
         margin-bottom: 20px;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .leave-header h1 {
@@ -64,6 +68,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        word-break: break-word;
     }
 
     .leave-header p {
@@ -78,6 +83,7 @@
         flex-direction: column;
         gap: 12px;
         margin-bottom: 24px;
+        width: 100%;
     }
 
     .info-card {
@@ -89,6 +95,8 @@
         align-items: center;
         justify-content: space-between;
         gap: 15px;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     .info-card-left {
@@ -96,6 +104,7 @@
         align-items: center;
         gap: 12px;
         min-width: 0;
+        flex: 1;
     }
 
     .info-icon {
@@ -113,6 +122,7 @@
 
     .info-meta {
         min-width: 0;
+        flex: 1;
     }
 
     .info-meta-label {
@@ -127,9 +137,9 @@
         font-size: 0.95rem;
         font-weight: 700;
         color: #FFFFFF;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        line-height: 1.4;
     }
 
     .destination-tag {
@@ -156,10 +166,13 @@
         font-size: 0.82rem;
         color: #AAAAAA;
         word-break: break-all;
+        overflow-wrap: anywhere;
         line-height: 1.4;
         display: flex;
         align-items: flex-start;
         gap: 10px;
+        min-width: 0;
+        box-sizing: border-box;
     }
 
     .url-display-box i {
@@ -174,6 +187,7 @@
         border-radius: 12px;
         padding: 16px 18px;
         margin-bottom: 26px;
+        box-sizing: border-box;
     }
 
     .security-title {
@@ -211,6 +225,8 @@
         display: flex;
         gap: 14px;
         flex-direction: column-reverse;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     @media (min-width: 640px) {
@@ -236,6 +252,8 @@
         gap: 8px;
         transition: all 0.2s ease;
         cursor: pointer;
+        min-height: 48px;
+        box-sizing: border-box;
     }
 
     .btn-leave-back:hover {
@@ -263,12 +281,36 @@
         box-shadow: 0 4px 20px rgba(255, 215, 0, 0.35);
         transition: all 0.2s ease;
         cursor: pointer;
+        min-height: 48px;
+        box-sizing: border-box;
     }
 
     .btn-leave-proceed:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 26px rgba(255, 215, 0, 0.5);
         color: #000000;
+    }
+
+    @media (max-width: 600px) {
+        .leave-page-wrapper {
+            padding: 20px 12px;
+        }
+        .leave-card {
+            padding: 24px 16px;
+            border-radius: 16px;
+        }
+        .leave-header h1 {
+            font-size: 1.45rem;
+        }
+        .info-card {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+        }
+        .destination-tag {
+            align-self: flex-start;
+        }
     }
 </style>
 
@@ -352,33 +394,40 @@
 </main>
 
 <script>
+    // Global immediately declared handler so inline onclick="cancelAutoRedirect()" never throws ReferenceError
+    window._leaveRedirectTimer = null;
+    window.cancelAutoRedirect = function() {
+        if (window._leaveRedirectTimer) {
+            clearInterval(window._leaveRedirectTimer);
+            window._leaveRedirectTimer = null;
+        }
+        var boxEl = document.getElementById('autoRedirectBox');
+        if (boxEl) {
+            boxEl.innerHTML = '<span style="color: #888;"><i class="fas fa-pause-circle"></i> Automatic redirection paused. Click below to continue.</span>';
+        }
+    };
+    // Compatibility alias in case "auto detect" was referenced
+    window.autoDetect = window.cancelAutoRedirect;
+    window.cancelRedirect = window.cancelAutoRedirect;
+</script>
+
+<script>
     (function() {
         var secondsLeft = 5;
         var timerEl = document.getElementById('countdownSecs');
-        var boxEl = document.getElementById('autoRedirectBox');
         var targetUrl = <%= JSON.stringify(targetUrl) %>;
-        var timerId = null;
 
-        timerId = setInterval(function() {
+        window._leaveRedirectTimer = setInterval(function() {
             secondsLeft--;
             if (timerEl) {
                 timerEl.textContent = secondsLeft;
             }
             if (secondsLeft <= 0) {
-                clearInterval(timerId);
+                clearInterval(window._leaveRedirectTimer);
+                window._leaveRedirectTimer = null;
                 window.location.href = targetUrl;
             }
         }, 1000);
-
-        window.cancelAutoRedirect = function() {
-            if (timerId) {
-                clearInterval(timerId);
-                timerId = null;
-            }
-            if (boxEl) {
-                boxEl.innerHTML = '<span style="color: #666;"><i class="fas fa-pause-circle"></i> Automatic redirection paused. Click below to continue.</span>';
-            }
-        };
     })();
 </script>
 

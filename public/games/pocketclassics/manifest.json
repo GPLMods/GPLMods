@@ -1,0 +1,27 @@
+{
+  "name": "Pocket Classics",
+  "short_name": "PocketClassics",
+  "description": "Play classic retro and 2-player multiplayer games on Pocket Classics Arcade.",
+  "start_url": "/games/hub?source=pwa",
+  "scope": "/games/",
+  "id": "/games/hub",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07090e",
+  "theme_color": "#07090e",
+  "icons": [
+    {
+      "src": "/games/pocketclassics/assets/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/games/pocketclassics/assets/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["games", "entertainment"]
+}

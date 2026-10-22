@@ -269,22 +269,40 @@
                                         style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; align-items: center; margin-top: 10px;">
 
                                         <!-- Optional Mirror 1 -->
-                                        <% if (part.mirror1Url) { %>
+                                        <% if (part.mirror1Url) { 
+                                            const m1Lower = (part.mirror1Provider || '').toLowerCase();
+                                            let m1Svg = '/images/cloud/cloud.svg';
+                                            if (m1Lower.includes('mega')) m1Svg = '/images/cloud/mega.svg';
+                                            else if (m1Lower.includes('drive') || m1Lower.includes('google')) m1Svg = '/images/cloud/google-drive.svg';
+                                            else if (m1Lower.includes('mediafire')) m1Svg = '/images/cloud/mediafire.svg';
+                                            else if (m1Lower.includes('dropbox')) m1Svg = '/images/cloud/dropbox.svg';
+                                            else if (m1Lower.includes('1fichier')) m1Svg = '/images/cloud/1fichier.svg';
+                                            else if (m1Lower.includes('yandex')) m1Svg = '/images/cloud/yandex.svg';
+                                        %>
                                             <a href="<%= getMirrorWarningUrl(part.mirror1Url, part.mirror1Provider || 'Mirror 1') %>"
                                                 target="_blank" rel="noopener noreferrer" class="btn btn-secondary"
-                                                style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                                <i class="fas fa-external-link-alt"></i>
+                                                style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver); display: inline-flex; align-items: center; gap: 6px;">
+                                                <img src="<%= m1Svg %>" alt="" style="width: 14px; height: 14px; object-fit: contain;">
                                                 <%= part.mirror1Provider || 'Mirror 1' %>
                                             </a>
                                             <% } %>
 
                                                 <!-- Optional Mirror 2 -->
-                                                <% if (part.mirror2Url) { %>
+                                                <% if (part.mirror2Url) { 
+                                                    const m2Lower = (part.mirror2Provider || '').toLowerCase();
+                                                    let m2Svg = '/images/cloud/cloud.svg';
+                                                    if (m2Lower.includes('mega')) m2Svg = '/images/cloud/mega.svg';
+                                                    else if (m2Lower.includes('drive') || m2Lower.includes('google')) m2Svg = '/images/cloud/google-drive.svg';
+                                                    else if (m2Lower.includes('mediafire')) m2Svg = '/images/cloud/mediafire.svg';
+                                                    else if (m2Lower.includes('dropbox')) m2Svg = '/images/cloud/dropbox.svg';
+                                                    else if (m2Lower.includes('1fichier')) m2Svg = '/images/cloud/1fichier.svg';
+                                                    else if (m2Lower.includes('yandex')) m2Svg = '/images/cloud/yandex.svg';
+                                                %>
                                                     <a href="<%= getMirrorWarningUrl(part.mirror2Url, part.mirror2Provider || 'Mirror 2') %>"
                                                         target="_blank" rel="noopener noreferrer"
                                                         class="btn btn-secondary"
-                                                        style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver);">
-                                                        <i class="fas fa-external-link-alt"></i>
+                                                        style="padding: 8px 15px; border-radius: 20px; font-size: 0.85em; border-color: #555; color: var(--silver); display: inline-flex; align-items: center; gap: 6px;">
+                                                        <img src="<%= m2Svg %>" alt="" style="width: 14px; height: 14px; object-fit: contain;">
                                                         <%= part.mirror2Provider || 'Mirror 2' %>
                                                     </a>
                                                     <% } %>
@@ -377,10 +395,21 @@
                                                         <% if (file.virusTotalId || file.virusTotalAnalysisId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) {
                                                             let vtUrl = file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com') ? file.manualFileScanUrl : '';
                                                             if (!vtUrl) {
-                                                                vtUrl = file.virusTotalId
-                                                                    ? (file.virusTotalId.length === 64 ? 'https://www.virustotal.com/gui/file/' + file.virusTotalId : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalId)
-                                                                    : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalAnalysisId;
-                                                            }
+        const rawVtId = file.virusTotalId || file.virusTotalAnalysisId;
+        const isUrlScan = Boolean((rawVtId && String(rawVtId).startsWith('u-')) || file.externalDownloadUrl || file.fileKey === 'external-link' || (file.directDownloadUrl && !file.fileUrl));
+        if (rawVtId) {
+            const vtStr = String(rawVtId).trim();
+            if (vtStr.startsWith('u-')) {
+                vtUrl = 'https://www.virustotal.com/gui/url-analysis/' + encodeURIComponent(vtStr);
+            } else if (isUrlScan) {
+                vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(vtStr);
+            } else if (vtStr.length === 64 && !vtStr.includes('-')) {
+                vtUrl = 'https://www.virustotal.com/gui/file/' + encodeURIComponent(vtStr);
+            } else {
+                vtUrl = 'https://www.virustotal.com/gui/file-analysis/' + encodeURIComponent(vtStr);
+            }
+        }
+    }
                                                             %>
                                                             <a href="<%= vtUrl %>" target="_blank"
                                                                 class="full-width-btn btn btn-secondary"

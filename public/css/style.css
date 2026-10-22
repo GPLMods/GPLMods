@@ -515,6 +515,7 @@ a.overlay-btn-primary:hover {
     border: 1px solid #222; /* Clean, subtle border */
     display: flex;
     flex-direction: column;
+    container-type: inline-size;
 }
 .mod-card:active { 
     transform: scale(0.98); 
@@ -667,16 +668,34 @@ a.overlay-btn-primary:hover {
 }
 .card-top-badges .app-feature-tag {
     flex-shrink: 1;
+    min-width: 0;
+    max-width: 50%;
     padding: 3px 8px;
-    font-size: 0.72em;
+    font-size: clamp(0.56rem, 3.2cqi, 0.72em);
     border-radius: 12px !important;
 }
 .card-top-badges .mod-type-tag {
     margin-left: auto;
-    flex-shrink: 0;
+    flex-shrink: 1;
+    min-width: 0;
+    max-width: 48%;
     padding: 3px 8px;
-    font-size: 0.72em;
+    font-size: clamp(0.56rem, 3.2cqi, 0.72em);
     border-radius: 12px !important;
+}
+
+/* Dynamic font-size scaling for longer versions */
+.mod-type-tag.long-version,
+.card-top-badges .mod-type-tag.long-version {
+    font-size: clamp(0.52rem, 2.6cqi, 0.62rem) !important;
+    padding: 2px 6px !important;
+    letter-spacing: -0.2px;
+}
+.mod-type-tag.extra-long-version,
+.card-top-badges .mod-type-tag.extra-long-version {
+    font-size: clamp(0.48rem, 2.2cqi, 0.55rem) !important;
+    padding: 1px 5px !important;
+    letter-spacing: -0.35px;
 }
 
 /* 6. Tags & Badges */
@@ -686,7 +705,7 @@ a.overlay-btn-primary:hover {
     left: 10px; 
     background-color: var(--gold); 
     color: var(--black); 
-    font-size: 0.75em; 
+    font-size: clamp(0.56rem, 3.2cqi, 0.75em); 
     font-weight: 700; 
     padding: 4px 10px; 
     border-radius: 12px; 
@@ -710,7 +729,7 @@ a.overlay-btn-primary:hover {
     transform: none !important; 
     background-color: var(--silver); 
     color: var(--black); 
-    font-size: 0.75em; 
+    font-size: clamp(0.56rem, 3.2cqi, 0.75em); 
     font-weight: 700; 
     padding: 4px 10px; 
     border-radius: 12px; 

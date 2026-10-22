@@ -261,9 +261,11 @@
     /* Channels Grid */
     .ist-channels-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 12px;
         margin-bottom: 18px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .ist-channel-item {
@@ -274,6 +276,9 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        min-width: 0;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .ist-channel-icon {
@@ -294,6 +299,8 @@
         min-width: 0;
         display: flex;
         flex-direction: column;
+        flex: 1;
+        overflow: hidden;
     }
 
     .ist-channel-title {
@@ -301,6 +308,9 @@
         color: var(--silver);
         font-weight: 500;
         margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .ist-channel-email {
@@ -309,6 +319,9 @@
         font-size: 0.92rem;
         text-decoration: none;
         word-break: break-all;
+        overflow-wrap: anywhere;
+        max-width: 100%;
+        display: block;
         transition: text-shadow 0.2s ease;
     }
 
@@ -394,7 +407,26 @@
 
     @media (max-width: 600px) {
         .ist-support-widget {
-            padding: 16px 14px;
+            padding: 16px 12px;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .ist-channels-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .ist-channel-item {
+            padding: 10px 12px;
+            gap: 10px;
+        }
+
+        .ist-channel-email {
+            font-size: 0.82rem;
+            word-break: break-all;
+            overflow-wrap: anywhere;
         }
 
         .ist-digits {

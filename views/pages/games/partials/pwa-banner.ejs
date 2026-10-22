@@ -32,7 +32,7 @@
 
 <!-- Dedicated Multi-Platform PWA Install Modal (Requirement 6) -->
 <div class="arc-modal-overlay" id="arcadePwaModalOverlay">
-    <div class="arc-modal-card" style="max-width: 500px; width: 94%; box-sizing: border-box; overflow: hidden; padding: 0;">
+    <div class="arc-modal-card" style="max-width: 500px; width: 94%; max-height: 88vh; overflow-y: auto; box-sizing: border-box; padding: 0;">
         <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(15, 18, 29, 0.95)); padding: 22px 20px 16px; border-bottom: 1px solid var(--arc-border); text-align: center; position: relative;">
             <button type="button" class="arc-btn arc-btn-icon" id="closeArcadePwaModalBtn" style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; min-width: 32px; padding: 0;">
                 <i class="fas fa-times"></i>
@@ -165,6 +165,19 @@
             }
         }
 
+        // Register Pocket Classics dedicated Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/games/pocketclassics/sw.js', { scope: '/games/' })
+                    .then(reg => {
+                        console.log('[PocketClassics PWA] ServiceWorker registered with scope:', reg.scope);
+                    })
+                    .catch(err => {
+                        console.warn('[PocketClassics PWA] ServiceWorker registration failed:', err);
+                    });
+            });
+        }
+
         // If already installed, never show
         if (checkIsInstalled()) {
             localStorage.setItem('arc_pwa_installed', 'true');
@@ -196,12 +209,12 @@
                 return;
             }
             if (pwaTimer) clearTimeout(pwaTimer);
-            // Show after 12 seconds like the main arcade announcements
+            // Show after 10 seconds like the main arcade announcements
             pwaTimer = setTimeout(() => {
                 if (!checkIsInstalled() && !isDismissed() && banner) {
                     banner.style.display = 'flex';
                 }
-            }, 12000);
+            }, 10000);
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -239,11 +252,31 @@
             }
         }
 
-        // Clicking banner Install App button opens the rich PWA modal (same function as main site banner)
+        // Banner Install Button: Directly prompt browser native install if available, otherwise open instructional modal
         if (installBtn) {
-            installBtn.addEventListener('click', (e) => {
+            installBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
-                openInstallModal();
+                const promptEvent = deferredPrompt || window.arcadeDeferredPrompt;
+                if (promptEvent) {
+                    try {
+                        promptEvent.prompt();
+                        const { outcome } = await promptEvent.userChoice;
+                        if (outcome === 'accepted') {
+                            localStorage.setItem('arc_pwa_installed', 'true');
+                            if (banner) banner.remove();
+                            if (window.ArcadeToast) {
+                                window.ArcadeToast.show('Pocket Classics installed successfully!', 'success');
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('[PWA] Direct prompt failed:', err);
+                        openInstallModal();
+                    }
+                    deferredPrompt = null;
+                    window.arcadeDeferredPrompt = null;
+                } else {
+                    openInstallModal();
+                }
             });
         }
 

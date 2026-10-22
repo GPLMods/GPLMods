@@ -1518,24 +1518,19 @@
                                                                 rel="noopener noreferrer"
                                                                 style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; text-decoration: none; color: var(--white); font-size: 0.9em; border: 1px solid #333; transition: all 0.2s;">
 
-                                                                <span>
+                                                                <span style="display: inline-flex; align-items: center; gap: 8px;">
                                                                     <% const
-                                                                        lowerName=mirror.providerName.toLowerCase(); let
-                                                                        icon='fas fa-cloud-download-alt' ; let
-                                                                        iconColor='var(--silver)' ; if
-                                                                        (lowerName.includes('mega')) { icon='fas fa-m' ;
-                                                                        iconColor='#D9272E' ; } if
-                                                                        (lowerName.includes('drive') ||
-                                                                        lowerName.includes('google')) {
-                                                                        icon='fab fa-google-drive' ; iconColor='#FFD700'
-                                                                        ; } if (lowerName.includes('mediafire')) {
-                                                                        icon='fas fa-fire' ; iconColor='#007FFF' ; } if
-                                                                        (lowerName.includes('dropbox')) {
-                                                                        icon='fab fa-dropbox' ; iconColor='#0061FF' ; }
-                                                                        %>
-                                                                        <i class="<%= icon %>"
-                                                                            <%- `style="margin-right: 8px; color: ${iconColor};"` %>></i>
-                                                                        <%= mirror.providerName %>
+                                                                        lowerName=mirror.providerName.toLowerCase();
+                                                                        let cloudSvg = '/images/cloud/cloud.svg';
+                                                                        if (lowerName.includes('mega')) { cloudSvg = '/images/cloud/mega.svg'; }
+                                                                        else if (lowerName.includes('drive') || lowerName.includes('google')) { cloudSvg = '/images/cloud/google-drive.svg'; }
+                                                                        else if (lowerName.includes('mediafire')) { cloudSvg = '/images/cloud/mediafire.svg'; }
+                                                                        else if (lowerName.includes('dropbox')) { cloudSvg = '/images/cloud/dropbox.svg'; }
+                                                                        else if (lowerName.includes('1fichier')) { cloudSvg = '/images/cloud/1fichier.svg'; }
+                                                                        else if (lowerName.includes('yandex')) { cloudSvg = '/images/cloud/yandex.svg'; }
+                                                                    %>
+                                                                    <img src="<%= cloudSvg %>" alt="" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle; flex-shrink: 0;">
+                                                                    <span><%= mirror.providerName %></span>
                                                                 </span>
 
                                                                 <!-- Show a lock icon if it's a monetized link -->
@@ -1848,10 +1843,21 @@
                                                                                   <% if (file.virusTotalId || file.virusTotalAnalysisId || (file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com'))) {
                                                                                       let vtUrl = file.manualFileScanUrl && file.manualFileScanUrl.includes('virustotal.com') ? file.manualFileScanUrl : '';
                                                                                       if (!vtUrl) {
-                                                                                          vtUrl = file.virusTotalId
-                                                                                              ? (file.virusTotalId.length === 64 ? 'https://www.virustotal.com/gui/file/' + file.virusTotalId : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalId)
-                                                                                              : 'https://www.virustotal.com/gui/file-analysis/' + file.virusTotalAnalysisId;
-                                                                                      }
+        const rawVtId = file.virusTotalId || file.virusTotalAnalysisId;
+        const isUrlScan = Boolean((rawVtId && String(rawVtId).startsWith('u-')) || file.externalDownloadUrl || file.fileKey === 'external-link' || (file.directDownloadUrl && !file.fileUrl));
+        if (rawVtId) {
+            const vtStr = String(rawVtId).trim();
+            if (vtStr.startsWith('u-')) {
+                vtUrl = 'https://www.virustotal.com/gui/url-analysis/' + encodeURIComponent(vtStr);
+            } else if (isUrlScan) {
+                vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(vtStr);
+            } else if (vtStr.length === 64 && !vtStr.includes('-')) {
+                vtUrl = 'https://www.virustotal.com/gui/file/' + encodeURIComponent(vtStr);
+            } else {
+                vtUrl = 'https://www.virustotal.com/gui/file-analysis/' + encodeURIComponent(vtStr);
+            }
+        }
+    }
                                                                                   %>
                                                                                       <a href="<%= vtUrl %>"
                                                                                           target="_blank"
@@ -2470,11 +2476,15 @@
                                                 <% if (version.fileSize && version.fileSize > 0) { %>
                                                     <%= formatBytes(version.fileSize) %>
                                                 <% } else if (version.directDownloadUrl && /dropbox\.com/i.test(version.directDownloadUrl)) { %>
-                                                    <span style="color: #0061ff; font-size: 0.82rem; font-weight: 600;"><i class="fab fa-dropbox"></i> Dropbox</span>
+                                                    <span style="color: #0061ff; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><img src="/images/cloud/dropbox.svg" alt="" style="width: 14px; height: 14px; object-fit: contain;"> Dropbox</span>
                                                 <% } else if (version.directDownloadUrl && /drive\.google\.com/i.test(version.directDownloadUrl)) { %>
-                                                    <span style="color: #34a853; font-size: 0.82rem; font-weight: 600;"><i class="fab fa-google-drive"></i> Google Drive</span>
+                                                    <span style="color: #34a853; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><img src="/images/cloud/google-drive.svg" alt="" style="width: 14px; height: 14px; object-fit: contain;"> Google Drive</span>
+                                                <% } else if (version.directDownloadUrl && /mega\.nz/i.test(version.directDownloadUrl)) { %>
+                                                    <span style="color: #D9272E; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><img src="/images/cloud/mega.svg" alt="" style="width: 14px; height: 14px; object-fit: contain;"> Mega</span>
+                                                <% } else if (version.directDownloadUrl && /mediafire\.com/i.test(version.directDownloadUrl)) { %>
+                                                    <span style="color: #1299F3; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><img src="/images/cloud/mediafire.svg" alt="" style="width: 14px; height: 14px; object-fit: contain;"> MediaFire</span>
                                                 <% } else if (version.directDownloadUrl || version.externalDownloadUrl || version.fileKey === 'external-link') { %>
-                                                    <span style="color: #38bdf8; font-size: 0.82rem; font-weight: 600;"><i class="fas fa-cloud"></i> Cloud Link</span>
+                                                    <span style="color: #38bdf8; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;"><img src="/images/cloud/cloud.svg" alt="" style="width: 14px; height: 14px; object-fit: contain;"> Cloud Link</span>
                                                 <% } else { %>
                                                     <%= formatBytes(version.fileSize) %>
                                                 <% } %>

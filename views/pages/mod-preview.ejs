@@ -606,12 +606,24 @@
                         <i class="fas fa-link" style="margin-right: 5px; color: var(--gold);"></i> Alternative Mirrors (Preview)
                     </span>
                     <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <% file.alternativeLinks.forEach(mirror => { %>
+                        <% file.alternativeLinks.forEach(mirror => { 
+                            const mLower = (mirror.providerName || '').toLowerCase();
+                            let mSvg = '/images/cloud/cloud.svg';
+                            if (mLower.includes('mega')) mSvg = '/images/cloud/mega.svg';
+                            else if (mLower.includes('drive') || mLower.includes('google')) mSvg = '/images/cloud/google-drive.svg';
+                            else if (mLower.includes('mediafire')) mSvg = '/images/cloud/mediafire.svg';
+                            else if (mLower.includes('dropbox')) mSvg = '/images/cloud/dropbox.svg';
+                            else if (mLower.includes('1fichier')) mSvg = '/images/cloud/1fichier.svg';
+                            else if (mLower.includes('yandex')) mSvg = '/images/cloud/yandex.svg';
+                        %>
                             <button type="button" class="dummy-action-trigger"
                                 data-action-name="Mirror: <%= mirror.providerName %>"
                                 data-action-info="Target URL: <%= mirror.url %>"
                                 style="display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 10px 15px; border-radius: 6px; color: var(--white); font-size: 0.9em; border: 1px solid #333; cursor: pointer;">
-                                <span><i class="fas fa-cloud-download-alt" style="margin-right: 8px; color: var(--gold);"></i> <%= mirror.providerName %></span>
+                                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                                    <img src="<%= mSvg %>" alt="" style="width: 16px; height: 16px; object-fit: contain;">
+                                    <%= mirror.providerName %>
+                                </span>
                                 <i class="fas fa-external-link-alt" style="font-size: 0.8em; color: var(--gold);"></i>
                             </button>
                         <% }) %>

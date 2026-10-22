@@ -186,11 +186,14 @@
                 if (hilltopadsLink) hilltopadsLink.style.display = 'inline-flex';
 
                 let adStarted = false;
+                let adEnded = false;
                 let countdownTimer = null;
-                let countdownLeft = 30; // 30 second required watch time
+                const MAX_AD_SECONDS = 16; // Maximum ad size is 16 seconds (960 frames)
+                let countdownLeft = MAX_AD_SECONDS;
 
                 // Helper function to unlock the button
                 function enableCloseButton() {
+                    adEnded = true;
                     if (countdownTimer) clearInterval(countdownTimer);
                     manualCloseBtn.style.display = 'inline-block';
                     manualCloseBtn.disabled = false;
@@ -201,19 +204,25 @@
                     manualCloseBtn.textContent = 'Close & Continue';
                 }
 
-                // 🟢 30-SECOND COUNTDOWN TIMER
+                // 🟢 16-SECOND (MAX AD SIZE) COUNTDOWN TIMER
                 // Starts only when the ad video successfully begins playing
                 function startCountdown() {
+                    if (adEnded) return;
                     manualCloseBtn.style.display = 'inline-block';
                     manualCloseBtn.disabled = true;
                     manualCloseBtn.style.opacity = '0.4';
                     manualCloseBtn.style.cursor = 'not-allowed';
                     manualCloseBtn.textContent = `You can close in ${countdownLeft}s...`;
                     countdownTimer = setInterval(() => {
+                        if (adEnded) {
+                            clearInterval(countdownTimer);
+                            return;
+                        }
                         countdownLeft--;
                         if (countdownLeft > 0) {
                             manualCloseBtn.textContent = `You can close in ${countdownLeft}s...`;
                         } else {
+                            // After full 16s has elapsed, enable close
                             enableCloseButton();
                         }
                     }, 1000);
@@ -227,14 +236,14 @@
                     }
                 }
 
-                // 🔴 15-SECOND FALLBACK TIMER
-                // If ad network or blockers prevent ad from starting, unlock gracefully after 15s
+                // 🔴 25-SECOND NETWORK TIMEOUT FALLBACK
+                // Only unlocks if ad failed to load/play entirely (e.g. adblock or network error)
                 const fallbackTimer = setTimeout(() => {
-                    if (!adStarted) {
+                    if (!adStarted && !adEnded) {
                         console.log("[Video Ad] Ad failed to load. Fallback triggered.");
                         enableCloseButton();
                     }
-                }, 15000);
+                }, 25000);
 
                 function playNativeVideoFallback() {
                     if (videoEl) {

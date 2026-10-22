@@ -494,22 +494,42 @@
 
 <!-- ======== CUSTOM MANAGE VERSIONS MODAL ======== -->
 <div id="versions-modal-container" class="policy-modal">
-    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; border-top: 3px solid var(--blue); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="color: var(--blue); margin: 0;">Manage Old Versions</h2>
-            <span class="close-versions-modal" style="color: var(--silver); font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 25px; border-radius: 16px; max-width: 600px; width: 92%; border-top: 3px solid var(--blue); box-shadow: 0 12px 35px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-history" style="color: var(--blue); font-size: 1.4rem;"></i>
+                <h2 style="color: var(--blue); margin: 0; font-size: 1.25rem;">Manage Previous Versions</h2>
+            </div>
+            <span class="close-versions-modal" style="color: var(--silver); font-size: 26px; font-weight: bold; cursor: pointer; line-height: 1; padding: 4px 8px; border-radius: 6px; transition: color 0.2s;">&times;</span>
         </div>
-        <p style="color: var(--silver); font-size: 0.9em; margin-bottom: 20px;">
-            Deleting old versions frees up server space. The current, active version will <strong style="color:var(--white);">not</strong> be affected.
+        <p style="color: var(--silver); font-size: 0.88em; margin-bottom: 16px; line-height: 1.5;">
+            Deleting older versions frees up your cloud storage space. The current, active live version will <strong style="color: var(--white);">not</strong> be affected.
         </p>
-        <div id="versions-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+        <div id="versions-list-container" style="max-height: 320px; overflow-y: auto; margin-bottom: 18px; display: flex; flex-direction: column; gap: 10px; padding-right: 4px;">
             <!-- JS will populate this list -->
         </div>
-        <div style="border-top: 1px solid #333; padding-top: 20px; text-align: center;">
-            <button type="button" id="deleteAllVersionsBtn" class="btn btn-secondary" style="background-color: transparent; color: var(--red); border: 2px solid var(--red); padding: 10px 20px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+        <div style="border-top: 1px solid #333; padding-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span style="font-size: 0.82em; color: var(--silver);">
+                <i class="fas fa-info-circle"></i> Deletions are permanent
+            </span>
+            <button type="button" id="deleteAllVersionsBtn" class="btn btn-secondary" style="background-color: rgba(239, 68, 68, 0.1); color: var(--red); border: 1.5px solid var(--red); padding: 8px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
                 <i class="fas fa-trash-alt"></i> Delete ALL Old Versions
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ======== CUSTOM STATUS FEEDBACK MODAL ======== -->
+<div id="status-feedback-modal-container" class="policy-modal" style="display: none;">
+    <div class="policy-modal-content" style="background-color: var(--dark-gray); color: var(--white); padding: 30px 24px; text-align: center; border-radius: 16px; max-width: 440px; width: 90%; border-top: 3px solid var(--gold); box-shadow: 0 12px 35px rgba(0,0,0,0.65);">
+        <div id="feedback-modal-icon" style="font-size: 2.8rem; margin-bottom: 14px; color: var(--gold);">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <h3 id="feedback-modal-title" style="margin-bottom: 10px; font-size: 1.25rem; color: #fff;">Notification</h3>
+        <p id="feedback-modal-message" style="margin-bottom: 22px; color: var(--silver); line-height: 1.55; font-size: 0.92rem;"></p>
+        <button type="button" id="closeFeedbackModalBtn" class="policy-button" style="background: var(--gold); color: #000; padding: 10px 28px; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; font-size: 0.92rem; box-shadow: 0 0 14px rgba(255,180,0,0.3); transition: transform 0.2s;">
+            Dismiss
+        </button>
     </div>
 </div>
 
@@ -707,24 +727,100 @@
 
         cancelDeleteBtn.addEventListener('click', closeDeleteModal);
 
+        // --- FEEDBACK MODAL HELPER ---
+        const feedbackModal = document.getElementById('status-feedback-modal-container');
+        const feedbackTitle = document.getElementById('feedback-modal-title');
+        const feedbackMessage = document.getElementById('feedback-modal-message');
+        const feedbackIcon = document.getElementById('feedback-modal-icon');
+        const closeFeedbackBtn = document.getElementById('closeFeedbackModalBtn');
+
+        function showFeedbackModal(title, message, type = 'info') {
+            if (!feedbackModal) {
+                alert(message);
+                return;
+            }
+            feedbackTitle.textContent = title;
+            feedbackMessage.textContent = message;
+            if (type === 'error') {
+                feedbackIcon.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: var(--red);"></i>';
+                feedbackTitle.style.color = 'var(--red)';
+                closeFeedbackBtn.style.backgroundColor = 'var(--red)';
+                closeFeedbackBtn.style.color = '#fff';
+            } else if (type === 'success') {
+                feedbackIcon.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i>';
+                feedbackTitle.style.color = '#10b981';
+                closeFeedbackBtn.style.backgroundColor = '#10b981';
+                closeFeedbackBtn.style.color = '#fff';
+            } else {
+                feedbackIcon.innerHTML = '<i class="fas fa-info-circle" style="color: var(--gold);"></i>';
+                feedbackTitle.style.color = 'var(--gold)';
+                closeFeedbackBtn.style.backgroundColor = 'var(--gold)';
+                closeFeedbackBtn.style.color = '#000';
+            }
+            feedbackModal.style.display = 'flex';
+            setTimeout(() => feedbackModal.classList.add('show'), 10);
+        }
+
+        if (closeFeedbackBtn) {
+            closeFeedbackBtn.addEventListener('click', () => {
+                feedbackModal.classList.remove('show');
+                setTimeout(() => { feedbackModal.style.display = 'none'; }, 200);
+            });
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || isNaN(bytes)) return '';
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+        }
+
         document.querySelectorAll('.manage-versions-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const modId = this.dataset.id;
-                const versions = JSON.parse(this.dataset.versions || '[]');
+                let versions = [];
+                try {
+                    versions = JSON.parse(this.dataset.versions || '[]');
+                } catch(e) {
+                    versions = [];
+                }
                 
                 versionsListContainer.innerHTML = '';
-                versions.forEach(v => {
-                    const div = document.createElement('div');
-                    div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 10px;';
-                    div.innerHTML = `
-                        <div>
-                            <strong style="color: var(--gold); display: block;">v${v.version || 'Unknown'}</strong>
-                            <span style="color: var(--silver); font-size: 0.85em;">Uploaded: ${new Date(v.createdAt).toLocaleDateString()}</span>
+                if (!versions || versions.length === 0) {
+                    versionsListContainer.innerHTML = `
+                        <div style="text-align: center; padding: 30px 10px; color: var(--silver);">
+                            <i class="fas fa-archive" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5; display: block;"></i>
+                            <p>No older versions available for this mod.</p>
                         </div>
-                        <button class="btn btn-secondary delete-single-version-btn" data-mod-id="${modId}" data-version-id="${v._id || v}" style="padding: 5px 15px; font-size: 0.85em; border-color: var(--red); color: var(--red);">Delete</button>
                     `;
-                    versionsListContainer.appendChild(div);
-                });
+                } else {
+                    versions.forEach(v => {
+                        const vId = (v && (v._id || v)) ? (v._id || v).toString() : '';
+                        const vNum = (v && v.version) ? v.version : 'Previous';
+                        const vDate = (v && v.createdAt) ? new Date(v.createdAt).toLocaleDateString() : 'Historical';
+                        const vSize = (v && v.fileSize) ? formatBytes(v.fileSize) : '';
+                        const vArch = (v && v.architectures && v.architectures.length > 0) ? (Array.isArray(v.architectures) ? v.architectures.join(', ') : v.architectures) : '';
+
+                        const div = document.createElement('div');
+                        div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: #141414; padding: 12px 16px; border-radius: 10px; border: 1px solid #282828; transition: border-color 0.2s;';
+                        div.innerHTML = `
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); color: #60a5fa; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.85rem;">v${vNum}</span>
+                                    ${vSize ? `<span style="color: var(--silver); font-size: 0.78rem;"><i class="fas fa-hdd"></i> ${vSize}</span>` : ''}
+                                    ${vArch ? `<span style="color: #94a3b8; font-size: 0.75rem; background: #222; padding: 1px 6px; border-radius: 4px;">${vArch}</span>` : ''}
+                                </div>
+                                <span style="color: #888; font-size: 0.78rem;">
+                                    <i class="far fa-calendar-alt"></i> Uploaded: ${vDate}
+                                </span>
+                            </div>
+                            <button class="btn btn-secondary delete-single-version-btn" data-mod-id="${modId}" data-version-id="${vId}" data-version-num="${vNum}" style="padding: 6px 14px; font-size: 0.82rem; border-color: rgba(239, 68, 68, 0.4); color: var(--red); background: rgba(239, 68, 68, 0.08); border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        `;
+                        versionsListContainer.appendChild(div);
+                    });
+                }
 
                 const deleteAllBtn = document.getElementById('deleteAllVersionsBtn');
                 const newDeleteAllBtn = deleteAllBtn.cloneNode(true);
@@ -745,10 +841,11 @@
                         deleteActionType = 'single-version';
                         targetModId = this.dataset.modId;
                         targetVersionId = this.dataset.versionId;
+                        const vNum = this.dataset.versionNum || '';
                         versionsModal.classList.remove('show');
                         setTimeout(() => {
                             versionsModal.style.display = 'none';
-                            showDeleteModal('Delete This Version?', 'Are you sure you want to permanently delete this specific older version of the mod?');
+                            showDeleteModal('Delete Old Version ' + (vNum ? `v${vNum}` : '') + '?', 'Are you sure you want to permanently delete this specific older version? This action cannot be undone.');
                         }, 200);
                     });
                 });
@@ -790,16 +887,20 @@
                     if (deleteActionType === 'full-mod') {
                         animateAndRemove(elementToAnimate);
                     } else {
-                        setTimeout(() => window.location.reload(), 300);
+                        showFeedbackModal('Success', result.message || 'Version successfully deleted.', 'success');
+                        setTimeout(() => window.location.reload(), 1200);
                     }
                 } else {
-                    alert(result.message || 'Failed to delete. Please try again later.');
                     closeDeleteModal();
+                    showFeedbackModal('Error Deleting Version', result.message || 'Failed to delete version. Please try again later.', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('A network error occurred.');
                 closeDeleteModal();
+                showFeedbackModal('Network Error', 'A network error occurred while communicating with the server.', 'error');
+            } finally {
+                confirmDeleteBtn.textContent = 'Yes, Delete';
+                confirmDeleteBtn.disabled = false;
             }
         });
     });

@@ -177,7 +177,7 @@
     <div class="splash-stage" id="splashScreen">
         <!-- 1:1 Video Animation (Shown only on first visit, unskippable) -->
         <div class="video-box" id="splashVideoBox" style="display: none;">
-            <video id="splashVideo" playsinline preload="auto">
+            <video id="splashVideo" playsinline webkit-playsinline autoplay preload="auto">
                 <source src="/games/pocketclassics/assets/logo.mp4" type="video/mp4">
             </video>
         </div>
@@ -259,14 +259,48 @@
                     window.ArcadeAudio.pauseMusic();
                 }
 
+                let introCompleted = false;
+                function finishIntro() {
+                    if (introCompleted) return;
+                    introCompleted = true;
+                    localStorage.setItem('arc_intro_seen', 'true');
+                    if (pBar) pBar.style.width = '100%';
+                    if (statusTxt) {
+                        statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Welcome to Pocket Classics!</span>';
+                    }
+                    setTimeout(() => {
+                        window.location.href = '/games/hub';
+                    }, 400);
+                }
+
                 if (video) {
                     video.muted = false;
                     video.volume = 1.0;
+
+                    video.addEventListener('timeupdate', () => {
+                        if (video.duration && !isNaN(video.duration) && video.duration > 0) {
+                            const progress = Math.min(100, Math.floor((video.currentTime / video.duration) * 100));
+                            if (pBar) pBar.style.width = progress + '%';
+                            if (video.currentTime >= (video.duration * 0.75)) {
+                                showDeveloperBranding();
+                            }
+                        }
+                    });
+
+                    video.addEventListener('ended', finishIntro);
+                    
+                    video.addEventListener('error', () => {
+                        console.warn('[Splash Video] Playback error, using fallback timer');
+                        startFallbackTimer();
+                    });
+
                     const playPromise = video.play();
                     if (playPromise !== undefined) {
                         playPromise.catch(() => {
                             video.muted = true;
-                            video.play().catch(() => {});
+                            video.play().catch(() => {
+                                startFallbackTimer();
+                            });
                             if (muteIcon) muteIcon.className = 'fas fa-volume-mute';
 
                             const unlockAudio = () => {
@@ -281,46 +315,26 @@
                         });
                     }
 
-                    video.addEventListener('timeupdate', () => {
-                        if (video.currentTime >= 8.0) {
-                            showDeveloperBranding();
-                        }
-                    });
+                    // Fallback timer: only kicks in if video fails or is blocked
+                    function startFallbackTimer() {
+                        const FALLBACK_TOTAL = 8000;
+                        const startTime = Date.now();
+                        const fallbackInterval = setInterval(() => {
+                            if (introCompleted) {
+                                clearInterval(fallbackInterval);
+                                return;
+                            }
+                            const elapsed = Date.now() - startTime;
+                            const progress = Math.min(100, Math.floor((elapsed / FALLBACK_TOTAL) * 100));
+                            if (pBar) pBar.style.width = progress + '%';
+                            if (elapsed >= 6000) showDeveloperBranding();
+                            if (elapsed >= FALLBACK_TOTAL) {
+                                clearInterval(fallbackInterval);
+                                finishIntro();
+                            }
+                        }, 80);
+                    }
                 }
-
-                // 10-Second Loading Timer for 1st visit
-                const TOTAL_DURATION_MS = 10000;
-                const startTime = Date.now();
-                const progressInterval = setInterval(() => {
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min(100, Math.floor((elapsed / TOTAL_DURATION_MS) * 100));
-                    if (pBar) pBar.style.width = progress + '%';
-
-                    if (elapsed >= 8000) {
-                        showDeveloperBranding();
-                    }
-
-                    if (elapsed >= TOTAL_DURATION_MS) {
-                        clearInterval(progressInterval);
-                        localStorage.setItem('arc_intro_seen', 'true');
-                        if (pBar) pBar.style.width = '100%';
-                        if (statusTxt) {
-                            statusTxt.innerHTML = '<span style="color: #34d399;"><i class="fas fa-check-circle"></i> Welcome to Pocket Classics!</span>';
-                        }
-                        setTimeout(() => {
-                            window.location.href = '/games/hub';
-                        }, 400);
-                    }
-                }, 60);
-
-                video?.addEventListener('ended', () => {
-                    clearInterval(progressInterval);
-                    localStorage.setItem('arc_intro_seen', 'true');
-                    if (pBar) pBar.style.width = '100%';
-                    setTimeout(() => {
-                        window.location.href = '/games/hub';
-                    }, 300);
-                });
 
                 muteBtn?.addEventListener('click', () => {
                     if (video) {

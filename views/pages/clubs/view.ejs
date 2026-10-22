@@ -2232,25 +2232,34 @@ function getUserAvatarUrl(u) {
     }
     .channel-menu-tabs-bar {
         display: flex;
-        gap: 4px;
+        align-items: center;
+        gap: 6px;
         padding: 8px 16px;
         background: #101117;
         border-bottom: 1px solid #282a36;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
     }
     .chan-tab-btn {
         background: none;
         border: 1px solid transparent;
         color: var(--silver);
-        padding: 8px 14px;
+        padding: 0 16px;
+        height: 38px;
+        min-height: 38px;
+        line-height: 36px;
         border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        justify-content: center;
+        gap: 8px;
         white-space: nowrap;
+        flex-shrink: 0;
+        box-sizing: border-box;
         transition: all 0.2s ease;
     }
     .chan-tab-btn:hover {
@@ -4424,9 +4433,9 @@ function getUserAvatarUrl(u) {
 <!-- ============================================================== -->
 <!-- EDIT ROLE MODAL                                                -->
 <!-- ============================================================== -->
-<div class="gpl-modal-backdrop" id="editRoleModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 24px; width: 90%; max-width: 520px; box-shadow: 0 16px 45px rgba(0,0,0,0.9);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+<div class="gpl-modal-backdrop" id="editRoleModal" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; backdrop-filter: blur(5px); padding: 16px; box-sizing: border-box;">
+    <div class="gpl-modal-box" style="background: #14151b; border: 1.5px solid var(--gold); border-radius: 16px; padding: 20px 20px 16px 20px; width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; box-shadow: 0 16px 45px rgba(0,0,0,0.9); display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; flex-shrink: 0;">
             <h3 style="color: #fff; margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
                 <i class="fas fa-user-shield" style="color: var(--gold);"></i> Edit Custom Role
             </h3>
@@ -4438,7 +4447,7 @@ function getUserAvatarUrl(u) {
                 <button type="button" class="gpl-modal-close-btn" onclick="closeEditRoleModal()" title="Close" style="margin-left: 6px;">&times;</button>
             </div>
         </div>
-        <form id="editRoleForm" onsubmit="submitEditRole(event)">
+        <form id="editRoleForm" onsubmit="submitEditRole(event)" style="display: flex; flex-direction: column; flex: 1;">
             <input type="hidden" id="editRoleId">
 
             <!-- Role Name -->
@@ -4493,7 +4502,7 @@ function getUserAvatarUrl(u) {
                             <div onclick="triggerEyeDropper('editRole')" style="position: relative; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(0,0,0,0.5); border: 2px solid #3d4255; flex-shrink: 0; background: #FFD700; transition: transform 0.15s, box-shadow 0.15s;" id="editRoleColorPreviewCircle" title="Click to pick color or toggle custom spectrum">
                                 <i class="fas fa-eye-dropper" style="font-size: 0.72rem; color: #000; pointer-events: none;"></i>
                             </div>
-                            <div style="display: flex; align-items: center; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 6px 10px; width: 100px;">
+                            <div style="display: flex; align-items: center; background: #14151b; border: 1px solid #333645; border-radius: 8px; padding: 6px 10px; width: 110px; min-width: 100px; box-sizing: border-box;">
                                 <span style="color: var(--silver); font-size: 0.8rem; margin-right: 2px; font-family: monospace;">#</span>
                                 <input type="text" id="editRoleColorHex" value="FFD700" maxlength="6" oninput="onEditRoleColorHexInput(this.value)" placeholder="FFD700" style="width: 100%; background: transparent; border: none; color: #fff; font-size: 0.82rem; font-family: monospace; outline: none; text-transform: uppercase;">
                             </div>
@@ -4567,7 +4576,7 @@ function getUserAvatarUrl(u) {
                     <% }) %>
                 </div>
                 <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-                    <input type="text" id="editRoleBadgeInput" value="fa-shield-alt" oninput="onEditRoleCustomIconInput(this.value)" placeholder="or type custom fa-icon class (e.g. fa-dragon)" style="flex: 1; background: #0d0e12; border: 1px solid #333645; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 0.78rem;">
+                    <input type="text" id="editRoleBadgeInput" value="fa-shield-alt" oninput="onEditRoleCustomIconInput(this.value)" placeholder="or type custom fa-icon class (e.g. fa-dragon)" style="flex: 1; min-width: 0; background: #0d0e12; border: 1px solid #333645; border-radius: 6px; color: #fff; padding: 8px 10px; font-size: 0.78rem; box-sizing: border-box;">
                 </div>
             </div>
 
@@ -4584,7 +4593,7 @@ function getUserAvatarUrl(u) {
                 </label>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: auto; padding-top: 14px; position: sticky; bottom: -16px; background: #14151b; border-top: 1px solid #282a36; z-index: 10; margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; padding-bottom: 6px;">
                 <button type="button" class="gpl-btn-secondary" onclick="closeEditRoleModal()">
                     <i class="fas fa-times"></i> Cancel
                 </button>
