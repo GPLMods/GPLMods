@@ -97,7 +97,13 @@
         .game-viewport-card:-webkit-full-screen.controls-hidden .game-iframe-wrapper {
             height: 100dvh !important;
         }
-        @media (max-width: 600px) {
+        .mobile-game-info-subbar {
+            display: none;
+        }
+        .game-viewport-card.controls-hidden .mobile-game-info-subbar {
+            display: none !important;
+        }
+        @media (max-width: 680px) {
             .btn-text-full {
                 display: none !important;
             }
@@ -108,35 +114,38 @@
             }
             .game-viewport-card {
                 border-radius: 12px;
-                margin-bottom: 12px;
+                margin-bottom: 8px;
             }
             .game-viewport-header {
                 padding: 6px 8px;
-                gap: 6px;
+                gap: 8px;
                 flex-wrap: nowrap;
                 justify-content: space-between;
                 align-items: center;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .desktop-game-info {
+                display: none !important;
             }
             .game-viewport-header-left {
                 gap: 6px;
                 min-width: 0;
                 flex-shrink: 0;
-                max-width: 44%;
             }
             .game-viewport-header-left a.arc-btn {
-                padding: 5px 8px !important;
+                padding: 6px 12px !important;
                 flex-shrink: 0;
+                font-weight: 700;
             }
             .game-viewport-header-actions {
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 5px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
-                flex-shrink: 1;
+                flex: 1;
                 justify-content: flex-end;
-                max-width: 56%;
                 padding-left: 2px;
             }
             .game-viewport-header-actions::-webkit-scrollbar {
@@ -145,15 +154,50 @@
             .game-viewport-header-actions .arc-btn {
                 flex-shrink: 0;
                 padding: 6px;
-                min-width: 32px;
-                height: 32px;
+                min-width: 34px;
+                height: 34px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
             }
+            .mobile-game-info-subbar {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+                background: rgba(0, 0, 0, 0.45);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            }
+            .mobile-subbar-icon {
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
+                object-fit: cover;
+                flex-shrink: 0;
+                border: 1px solid var(--arc-border);
+            }
+            .mobile-subbar-title {
+                font-size: 0.95rem;
+                font-weight: 800;
+                color: var(--arc-text-main, #ffffff);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .mobile-subbar-type {
+                font-size: 0.72rem;
+                font-weight: 700;
+                color: var(--arc-accent, #ffd700);
+                background: rgba(255, 215, 0, 0.12);
+                border: 1px solid rgba(255, 215, 0, 0.3);
+                border-radius: 20px;
+                padding: 2px 8px;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
             .game-iframe-wrapper {
                 min-height: 0 !important;
-                height: calc(100dvh - 65px) !important;
+                height: calc(100dvh - 105px) !important;
             }
         }
     </style>
@@ -170,7 +214,7 @@
                         <span>Hub</span>
                     </a>
 
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <div class="desktop-game-info" style="display: flex; align-items: center; gap: 8px; min-width: 0;">
                         <img src="<%= game.icon %>" alt="<%= game.name %>" style="width: 30px; height: 30px; border-radius: 8px; object-fit: cover; flex-shrink: 0;" class="protect-asset">
                         <div style="min-width: 0;">
                             <strong style="font-size: 0.96rem; display: block; color: var(--arc-text-main); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= game.name %></strong>
@@ -229,6 +273,15 @@
                     <button type="button" class="arc-btn arc-btn-icon" id="fullscreenToggleBtn" title="Fullscreen">
                         <i class="fas fa-expand"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Mobile Game Title & Type Subbar (Displays below controls on mobile) -->
+            <div class="mobile-game-info-subbar">
+                <img src="<%= game.icon %>" alt="<%= game.name %>" class="mobile-subbar-icon protect-asset">
+                <div style="min-width: 0; display: flex; align-items: center; gap: 8px;">
+                    <strong class="mobile-subbar-title"><%= game.name %></strong>
+                    <span class="mobile-subbar-type"><%= game.typeLabel %></span>
                 </div>
             </div>
 

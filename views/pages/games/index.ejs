@@ -177,9 +177,7 @@
     <div class="splash-stage" id="splashScreen">
         <!-- 1:1 Video Animation (Shown only on first visit, unskippable) -->
         <div class="video-box" id="splashVideoBox" style="display: none;">
-            <video id="splashVideo" playsinline webkit-playsinline autoplay preload="auto">
-                <source src="/games/pocketclassics/assets/logo.mp4" type="video/mp4">
-            </video>
+            <video id="splashVideo" playsinline webkit-playsinline preload="none"></video>
         </div>
 
         <!-- Static Logo Screen with Developer Logo (Shown on 2nd and subsequent visits) -->
@@ -274,6 +272,8 @@
                 }
 
                 if (video) {
+                    video.src = '/games/pocketclassics/assets/logo.mp4';
+                    video.load();
                     video.muted = false;
                     video.volume = 1.0;
 
@@ -344,6 +344,14 @@
                 });
 
             } else {
+                if (video) {
+                    try {
+                        video.pause();
+                        video.muted = true;
+                        video.removeAttribute('src');
+                        video.load();
+                    } catch (e) {}
+                }
                 // ============================================================
                 // 2ND+ VISIT: STATIC SCREEN WITH DEVELOPER LOGO ONLY (NO TEXT)
                 // Fast 1.8s progress bar, automatically switch to next theme on revisit

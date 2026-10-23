@@ -959,10 +959,25 @@ async function createAdminRouter() {
                             handler: async (request, response, context) => {
                                 const vtHash = context.record.params.virusTotalId || "";
                                 const vtAnalysis = context.record.params.virusTotalAnalysisId || "";
+                                const extUrl = context.record.params.externalDownloadUrl || context.record.params.directDownloadUrl || "";
+                                const isUrl = Boolean(vtHash.startsWith('u-') || vtAnalysis.startsWith('u-') || extUrl || context.record.params.fileKey === 'external-link');
                                 let vtUrl = `https://www.virustotal.com/`;
-                                if (vtHash.length === 64) vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
-                                else if (vtAnalysis) vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-                                else if (vtHash) vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                                if (vtHash.startsWith('u-') || vtAnalysis.startsWith('u-')) {
+                                    const raw = vtHash.startsWith('u-') ? vtHash : vtAnalysis;
+                                    const clean = (raw.lastIndexOf('-') > 2) ? raw.slice(2, raw.lastIndexOf('-')) : raw.slice(2);
+                                    vtUrl = `https://www.virustotal.com/gui/url/${encodeURIComponent(clean)}`;
+                                } else if (isUrl && extUrl) {
+                                    const b64 = Buffer.from(extUrl.trim()).toString('base64').replace(/=+$/, '');
+                                    vtUrl = `https://www.virustotal.com/gui/url/${encodeURIComponent(b64)}`;
+                                } else if (isUrl && vtHash) {
+                                    vtUrl = `https://www.virustotal.com/gui/url/${encodeURIComponent(vtHash)}`;
+                                } else if (vtHash.length === 64) {
+                                    vtUrl = `https://www.virustotal.com/gui/file/${vtHash}`;
+                                } else if (vtAnalysis) {
+                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+                                } else if (vtHash) {
+                                    vtUrl = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+                                }
                                 
                                 const updatedRecord = context.record.toJSON(context.currentAdmin);
                                 updatedRecord.params.redirectUrl = vtUrl;
@@ -1309,12 +1324,13 @@ async function createAdminRouter() {
                 resource: DocPage,
                 options: {
                     navigation: docsNav,
-                    listProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug'],
-                    editProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'featuredImageKey', 'content'], 
-                    showProperties: ['title', 'category', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
+                    listProperties: ['title', 'category', 'customReadingTime', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug'],
+                    editProperties: ['title', 'category', 'customReadingTime', 'assignedPlatform', 'showOnDownloadPage', 'order', 'featuredImageKey', 'content'], 
+                    showProperties: ['title', 'category', 'customReadingTime', 'assignedPlatform', 'showOnDownloadPage', 'order', 'slug', 'featuredImageKey', 'content', 'createdAt'],
                     properties: {
                         content: { type: 'richtext' },
                         featuredImageKey: { description: 'Optional: Paste a direct image URL (https://...) or B2 Key for the cover image.' },
+                        customReadingTime: { description: 'Optional: Custom estimated read time (e.g., "5 min read", "10 min read"). If blank, auto-calculated based on content length.' },
                         category: { isSortable: true },
                         assignedPlatform: { 
                             availableValues: [
@@ -1368,10 +1384,14 @@ async function createAdminRouter() {
                     navigation: docsNav,
                     id: 'License',
                     name: 'Licenses',
-                    listProperties: ['name', 'slug', 'shortDescription', 'createdAt'],
-                    showProperties: ['name', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
-                    editProperties: ['name', 'slug', 'shortDescription', 'content'],
-                    properties: { content: { type: 'richtext' }, shortDescription: { type: 'textarea' } }
+                    listProperties: ['name', 'badgeText', 'slug', 'shortDescription', 'createdAt'],
+                    showProperties: ['name', 'badgeText', 'slug', 'shortDescription', 'content', 'createdAt', 'updatedAt'],
+                    editProperties: ['name', 'badgeText', 'slug', 'shortDescription', 'content'],
+                    properties: { 
+                        content: { type: 'richtext' }, 
+                        shortDescription: { type: 'textarea' },
+                        badgeText: { description: 'Badge text shown on License Hub card (defaults to "Free Software / GPL", e.g., "GPL-Compatible", "Permissive / Open Source", etc.)' }
+                    }
                 }
             },
             {

@@ -965,6 +965,31 @@ function getUserAvatarUrl(u) {
     .badge-admin { background: rgba(33, 150, 243, 0.2); color: #64b5f6; border: 1px solid #2196f3; }
     .badge-premium { background: rgba(186, 104, 200, 0.2); color: #e1bee7; border: 1px solid #ba68c8; }
     .badge-creator { background: rgba(255, 112, 67, 0.2); color: #ffab91; border: 1px solid #ff7043; }
+    .badge-bot-highlight {
+        background: linear-gradient(135deg, rgba(88, 101, 242, 0.3) 0%, rgba(168, 85, 247, 0.35) 100%);
+        color: #d8b4fe;
+        border: 1px solid #a855f7;
+        font-size: 0.68rem;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        letter-spacing: 0.5px;
+        box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+    .badge-bot-highlight i {
+        font-size: 0.72rem;
+        color: #60a5fa;
+    }
+    .message-bot-name {
+        color: #c084fc !important;
+        font-weight: 700;
+        text-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+    }
     .message-time {
         font-size: 0.75rem;
         color: #72767d;
@@ -2864,17 +2889,34 @@ function getUserAvatarUrl(u) {
                 <% messages.forEach(msg => { %>
                     <% const isMyMessage = user && String(user._id) === String(msg.sender ? msg.sender._id : ''); %>
                     <% if (msg.isDeleted && isMyMessage) { return; } %>
-                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" <%- `style="${msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : ''}"` %>>
-                        <% 
-                            const isSystemMsg = msg.isSystemMessage || !msg.sender;
-                            const senderAvatar = isSystemMsg ? '/images/team-logo.png' : getUserAvatarUrl(msg.sender);
-                        %>
-                        <img src="<%= senderAvatar %>" alt="Sender Avatar" class="message-avatar" onerror="this.onerror=null; this.src='<%= isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png' %>';">
+                    <% 
+                        const isBotMsg = Boolean(msg.isBot || (msg.sender && (msg.sender.isBot || msg.sender.username === 'Club Bot')) || msg.botName);
+                        const isSystemMsg = Boolean(msg.isSystemMessage || !msg.sender);
+                        let senderUsername = (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods';
+                        let senderAvatar = '/images/default-avatar.png';
+                        if (isBotMsg) {
+                            senderUsername = msg.botName || (msg.sender && msg.sender.username) || 'Club Bot';
+                            senderAvatar = msg.botAvatar || (msg.sender && (msg.sender.signedAvatarUrl || msg.sender.cardAvatarUrl || msg.sender.avatar)) || '/images/gemini.png';
+                        } else if (isSystemMsg) {
+                            senderAvatar = '/images/team-logo.png';
+                        } else {
+                            senderAvatar = getUserAvatarUrl(msg.sender);
+                        }
+                    %>
+                    <div class="message-item <%= msg.isPinned ? 'pinned-msg-item' : '' %>" id="msg-<%= msg._id %>" data-sender-username="<%= senderUsername %>" <%- `style="${msg.isPinned ? 'border-left: 3px solid var(--gold); background: rgba(255,215,0,0.02);' : ''}"` %>>
+                        <img src="<%= senderAvatar %>" alt="Sender Avatar" class="message-avatar" onerror="this.onerror=null; this.src='<%= isBotMsg ? '/images/gemini.png' : (isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png') %>';">
                         <div class="message-content-col">
                             <div class="message-header-row">
-                                <a href="/users/<%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>" class="message-username" target="_blank">
-                                    <%= (msg.sender && msg.sender.username) ? msg.sender.username : 'GPLMods' %>
-                                </a>
+                                <% if (isBotMsg) { %>
+                                    <span class="message-username message-bot-name">
+                                        <%= senderUsername %>
+                                    </span>
+                                    <span class="badge-bot-highlight"><i class="fas fa-robot"></i> BOT</span>
+                                <% } else { %>
+                                    <a href="/users/<%= senderUsername %>" class="message-username" target="_blank">
+                                        <%= senderUsername %>
+                                    </a>
+                                <% } %>
 
                                 <!-- Badges -->
                                 <% if (msg.sender && msg.sender.role === 'owner') { %>
@@ -5118,34 +5160,49 @@ function getUserAvatarUrl(u) {
         msgDiv.className = `message-item ${msg.isPinned ? 'pinned-msg-item' : ''} ${isMentioned ? 'message-highlighted-mention' : ''}`;
         msgDiv.id = `msg-${msg._id}`;
 
-        const isSystemMsg = msg.isSystemMessage || !msg.sender;
-        const senderAvatar = (msg.sender && (msg.sender.signedAvatarUrl || msg.sender.cardAvatarUrl || msg.sender.avatarUrl || msg.sender.avatar)) || (isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png');
-        const senderName = msg.sender?.username || 'GPLMods';
+        const isBotMsg = Boolean(msg.isBot || (msg.sender && (msg.sender.isBot || msg.sender.username === 'Club Bot')) || msg.botName);
+        const isSystemMsg = Boolean(msg.isSystemMessage || !msg.sender);
+        let senderAvatar = '/images/default-avatar.png';
+        let senderName = msg.sender?.username || 'GPLMods';
+
+        if (isBotMsg) {
+            senderName = msg.botName || msg.sender?.username || 'Club Bot';
+            senderAvatar = msg.botAvatar || msg.sender?.signedAvatarUrl || msg.sender?.avatar || '/images/gemini.png';
+        } else if (isSystemMsg) {
+            senderAvatar = (msg.sender && (msg.sender.signedAvatarUrl || msg.sender.avatar)) || '/images/team-logo.png';
+        } else {
+            senderAvatar = (msg.sender && (msg.sender.signedAvatarUrl || msg.sender.cardAvatarUrl || msg.sender.avatarUrl || msg.sender.avatar)) || '/images/default-avatar.png';
+        }
+
         msgDiv.dataset.senderUsername = senderName;
         const roleBadges = [];
 
-        if (msg.sender?.role === 'owner') roleBadges.push('<span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>');
-        else if (msg.sender?.role === 'admin') roleBadges.push('<span class="badge-icon-tag badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>');
-        if (msg.sender?.membership === 'premium' || msg.sender?.isPremium) roleBadges.push('<span class="badge-icon-tag badge-premium"><i class="fas fa-star"></i> Premium</span>');
-        if (msg.sender?.isCreator) roleBadges.push('<span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>');
+        if (isBotMsg) {
+            roleBadges.push('<span class="badge-bot-highlight"><i class="fas fa-robot"></i> BOT</span>');
+        } else {
+            if (msg.sender?.role === 'owner') roleBadges.push('<span class="badge-icon-tag badge-owner"><i class="fas fa-crown"></i> Owner</span>');
+            else if (msg.sender?.role === 'admin') roleBadges.push('<span class="badge-icon-tag badge-admin"><i class="fas fa-shield-alt"></i> Admin</span>');
+            if (msg.sender?.membership === 'premium' || msg.sender?.isPremium) roleBadges.push('<span class="badge-icon-tag badge-premium"><i class="fas fa-star"></i> Premium</span>');
+            if (msg.sender?.isCreator) roleBadges.push('<span class="badge-icon-tag badge-creator"><i class="fas fa-paint-brush"></i> Creator</span>');
 
-        // Sender club role badge
-        const senderMem = clubMembers.find(m => m.username === senderName);
-        if (senderMem && senderMem.roles && senderMem.roles.length > 0) {
-            const roleName = senderMem.roles[0];
-            const matchingRole = clubRoles.find(r => r.name === roleName);
-            if (matchingRole && matchingRole.name !== 'everyone') {
-                roleBadges.push(`<span class="discord-role-pill" style="border: 1px solid ${matchingRole.color || '#99AAB5'}50; color: ${matchingRole.color || '#99AAB5'}; background: ${matchingRole.color || '#99AAB5'}18;"><span class="role-dot" style="background: ${matchingRole.color || '#99AAB5'};"></span>${formatBadgeIcon(matchingRole.icon)} ${matchingRole.name}</span>`);
+            // Sender club role badge
+            const senderMem = clubMembers.find(m => m.username === senderName);
+            if (senderMem && senderMem.roles && senderMem.roles.length > 0) {
+                const roleName = senderMem.roles[0];
+                const matchingRole = clubRoles.find(r => r.name === roleName);
+                if (matchingRole && matchingRole.name !== 'everyone') {
+                    roleBadges.push(`<span class="discord-role-pill" style="border: 1px solid ${matchingRole.color || '#99AAB5'}50; color: ${matchingRole.color || '#99AAB5'}; background: ${matchingRole.color || '#99AAB5'}18;"><span class="role-dot" style="background: ${matchingRole.color || '#99AAB5'};"></span>${formatBadgeIcon(matchingRole.icon)} ${matchingRole.name}</span>`);
+                }
             }
         }
 
         const formattedBody = formatDiscordMentions(msg.content);
 
         msgDiv.innerHTML = `
-            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.onerror=null; this.src='${isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png'}';">
+            <img src="${senderAvatar}" alt="Avatar" class="message-avatar" onerror="this.onerror=null; this.src='${isBotMsg ? '/images/gemini.png' : (isSystemMsg ? '/images/team-logo.png' : '/images/default-avatar.png')}';">
             <div class="message-content-col">
                 <div class="message-header-row">
-                    <a href="/users/${senderName}" class="message-username" target="_blank">${senderName}</a>
+                    ${isBotMsg ? `<span class="message-username message-bot-name">${senderName}</span>` : `<a href="/users/${senderName}" class="message-username" target="_blank">${senderName}</a>`}
                     ${roleBadges.join(' ')}
                     <span class="message-time">${new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>

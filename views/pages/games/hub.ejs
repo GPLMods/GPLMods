@@ -112,15 +112,15 @@
                         <span class="card-badge <%= game.category === '2P' ? 'badge-2p' : 'badge-1p' %>">
                             <i class="fas <%= game.category === '2P' ? 'fa-user-friends' : 'fa-user' %>"></i> <%= game.category === '2P' ? '2P Online' : '1P Solo' %>
                         </span>
-                        <div class="card-floating-icon">
-                            <img src="<%= game.icon %>" alt="<%= game.name %> Icon" class="protect-asset" loading="lazy">
-                        </div>
                     </div>
 
                     <div class="card-body-content">
-                        <h3 class="card-title">
-                            <%= game.name %>
-                        </h3>
+                        <div class="card-title-row" style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <img src="<%= game.icon %>" alt="<%= game.name %> Icon" class="card-inline-icon protect-asset" loading="lazy">
+                            <h3 class="card-title" style="margin-bottom: 0; flex: 1;">
+                                <%= game.name %>
+                            </h3>
+                        </div>
 
                         <p class="card-desc">
                             <%= game.tagline %>

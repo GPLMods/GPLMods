@@ -174,7 +174,7 @@
                 <% licenses.forEach(license => { %>
                     <article class="license-card">
                         <div>
-                            <span class="license-type-badge"><i class="fas fa-certificate"></i> Free Software / GPL</span>
+                            <span class="license-type-badge"><i class="fas fa-certificate"></i> <%= license.badgeText || 'Free Software / GPL' %></span>
                             <h2><i class="fas fa-file-contract" style="color: var(--gold); font-size: 0.95em;"></i> <%= license.name %></h2>
                             <p><%= license.shortDescription || 'Full legal permissions, terms, conditions, and copyleft requirements.' %></p>
                         </div>

@@ -37,6 +37,11 @@ const DocPageSchema = new Schema({
         default: '',
         trim: true
     },
+    customReadingTime: {
+        type: String,
+        default: '',
+        trim: true
+    },
     showOnDownloadPage: {
         type: Boolean,
         default: false

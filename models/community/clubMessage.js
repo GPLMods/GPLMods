@@ -74,7 +74,21 @@ const ClubMessageSchema = new Schema({
     sender: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: function() { return !this.isSystemMessage; }
+        required: function() { return !this.isSystemMessage && !this.isBot; }
+    },
+    isBot: {
+        type: Boolean,
+        default: false
+    },
+    botName: {
+        type: String,
+        default: 'Club Bot',
+        trim: true
+    },
+    botAvatar: {
+        type: String,
+        default: '/images/gemini.png',
+        trim: true
     },
     content: {
         type: String,

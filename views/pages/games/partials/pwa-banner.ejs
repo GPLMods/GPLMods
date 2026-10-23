@@ -54,7 +54,7 @@
                         <span style="font-size: 0.74rem; color: var(--arc-text-muted);" id="pwaDomainOrigin">GPLMods Arcade</span>
                     </div>
                 </div>
-                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">
+                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0; height: fit-content; align-self: center; line-height: 1.2;">
                     <i class="fas fa-shield-alt"></i> Verified
                 </span>
             </div>
@@ -157,8 +157,8 @@
                     params.get('source') === 'pwa' ||
                     params.get('mode') === 'pwa'
                 );
-                const storedInstalled = localStorage.getItem('arc_pwa_installed') === 'true' || 
-                                        localStorage.getItem('gpl_pwa_installed') === 'true';
+                // Dedicated Pocket Classics Arcade PWA check only
+                const storedInstalled = localStorage.getItem('arc_pwa_installed') === 'true';
                 return isStandalone || storedInstalled;
             } catch (e) {
                 return false;
@@ -252,31 +252,11 @@
             }
         }
 
-        // Banner Install Button: Directly prompt browser native install if available, otherwise open instructional modal
+        // Banner Install Button: Open the rich Pocket Classics modal
         if (installBtn) {
-            installBtn.addEventListener('click', async (e) => {
+            installBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const promptEvent = deferredPrompt || window.arcadeDeferredPrompt;
-                if (promptEvent) {
-                    try {
-                        promptEvent.prompt();
-                        const { outcome } = await promptEvent.userChoice;
-                        if (outcome === 'accepted') {
-                            localStorage.setItem('arc_pwa_installed', 'true');
-                            if (banner) banner.remove();
-                            if (window.ArcadeToast) {
-                                window.ArcadeToast.show('Pocket Classics installed successfully!', 'success');
-                            }
-                        }
-                    } catch (err) {
-                        console.warn('[PWA] Direct prompt failed:', err);
-                        openInstallModal();
-                    }
-                    deferredPrompt = null;
-                    window.arcadeDeferredPrompt = null;
-                } else {
-                    openInstallModal();
-                }
+                openInstallModal();
             });
         }
 

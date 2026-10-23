@@ -3,6 +3,7 @@ const Schema = mongoose.Schema;
 
 const LicenseSchema = new Schema({
     name: { type: String, required: true, unique: true, trim: true },
+    badgeText: { type: String, default: 'Free Software / GPL', trim: true },
     slug: { type: String, required: true, unique: true, trim: true, lowercase: true },
     shortDescription: { type: String, default: '', trim: true },
     content: { type: String, required: true }

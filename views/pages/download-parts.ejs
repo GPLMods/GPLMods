@@ -400,9 +400,16 @@
         if (rawVtId) {
             const vtStr = String(rawVtId).trim();
             if (vtStr.startsWith('u-')) {
-                vtUrl = 'https://www.virustotal.com/gui/url-analysis/' + encodeURIComponent(vtStr);
+                const cleanUrlId = (vtStr.lastIndexOf('-') > 2) ? vtStr.slice(2, vtStr.lastIndexOf('-')) : vtStr.slice(2);
+                vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(cleanUrlId);
             } else if (isUrlScan) {
-                vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(vtStr);
+                const extTarget = file.externalDownloadUrl || file.directDownloadUrl || '';
+                if (extTarget && (vtStr.length < 20 || vtStr.includes(' '))) {
+                    const b64 = Buffer.from(extTarget.trim()).toString('base64').replace(/=+$/, '');
+                    vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(b64);
+                } else {
+                    vtUrl = 'https://www.virustotal.com/gui/url/' + encodeURIComponent(vtStr);
+                }
             } else if (vtStr.length === 64 && !vtStr.includes('-')) {
                 vtUrl = 'https://www.virustotal.com/gui/file/' + encodeURIComponent(vtStr);
             } else {

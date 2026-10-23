@@ -24,10 +24,30 @@ const ActionRedirect = (props) => {
         } else if (actionName === 'viewVirusTotal') {
             const vtHash = record.params.virusTotalId || '';
             const vtAnalysis = record.params.virusTotalAnalysisId || '';
-            if (vtHash.length === 64) url = `https://www.virustotal.com/gui/file/${vtHash}`;
-            else if (vtAnalysis) url = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
-            else if (vtHash) url = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
-            else url = `https://www.virustotal.com/`;
+            const extUrl = record.params.externalDownloadUrl || record.params.directDownloadUrl || '';
+            const isUrl = Boolean(vtHash.startsWith('u-') || vtAnalysis.startsWith('u-') || extUrl || record.params.fileKey === 'external-link');
+            if (vtHash.startsWith('u-') || vtAnalysis.startsWith('u-')) {
+                const raw = vtHash.startsWith('u-') ? vtHash : vtAnalysis;
+                const clean = (raw.lastIndexOf('-') > 2) ? raw.slice(2, raw.lastIndexOf('-')) : raw.slice(2);
+                url = `https://www.virustotal.com/gui/url/${encodeURIComponent(clean)}`;
+            } else if (isUrl && extUrl) {
+                try {
+                    const b64 = window.btoa(unescape(encodeURIComponent(extUrl.trim()))).replace(/=+$/, '');
+                    url = `https://www.virustotal.com/gui/url/${encodeURIComponent(b64)}`;
+                } catch (e) {
+                    url = vtHash ? `https://www.virustotal.com/gui/url/${encodeURIComponent(vtHash)}` : 'https://www.virustotal.com/';
+                }
+            } else if (isUrl && vtHash) {
+                url = `https://www.virustotal.com/gui/url/${encodeURIComponent(vtHash)}`;
+            } else if (vtHash.length === 64) {
+                url = `https://www.virustotal.com/gui/file/${vtHash}`;
+            } else if (vtAnalysis) {
+                url = `https://www.virustotal.com/gui/file-analysis/${vtAnalysis}`;
+            } else if (vtHash) {
+                url = `https://www.virustotal.com/gui/file-analysis/${vtHash}`;
+            } else {
+                url = `https://www.virustotal.com/`;
+            }
         }
     }
 

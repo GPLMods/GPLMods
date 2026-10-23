@@ -353,6 +353,22 @@ canvas.protect-asset,
     object-fit: cover;
 }
 
+.card-inline-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1.5px solid var(--arc-border);
+    background: #0a0a0c;
+    object-fit: cover;
+    flex-shrink: 0;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.arcade-game-card:hover .card-inline-icon {
+    transform: scale(1.08);
+    border-color: var(--arc-accent);
+}
+
 .card-body-content {
     padding: 14px 16px 14px 16px;
     display: flex;
@@ -912,8 +928,8 @@ canvas.protect-asset,
 
 .game-iframe-wrapper {
     width: 100%;
-    min-height: 600px;
-    height: 75vh;
+    min-height: 680px;
+    height: 82vh;
     border: none;
     background: #000;
 }

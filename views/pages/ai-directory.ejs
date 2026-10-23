@@ -289,7 +289,7 @@
         .ai-tag-grid li a {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 8px;
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid #333;
@@ -299,13 +299,26 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 0.86rem;
-            text-align: center;
+            text-align: left;
             transition: all 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .ai-tag-grid li a i {
+            flex-shrink: 0;
+            color: var(--gold);
+        }
+
+        .ai-tag-text {
+            min-width: 0;
+            flex: 1;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            width: 100%;
-            box-sizing: border-box;
+            display: block;
         }
 
         .ai-tag-grid li a:hover,
@@ -495,7 +508,7 @@
                 <h2 id="sec-devs"><i class="fas fa-building"></i> Developer Index</h2>
                 <ul class="ai-tag-grid">
                     <% developers.forEach(dev=> { %>
-                        <li data-searchable="<%= dev.toLowerCase() %>"><a href="/developer?name=<%= encodeURIComponent(dev) %>"><i class="fas fa-building"></i> <%= dev %></a></li>
+                        <li data-searchable="<%= dev.toLowerCase() %>"><a href="/developer?name=<%= encodeURIComponent(dev) %>" title="<%= dev %>"><i class="fas fa-building"></i> <span class="ai-tag-text"><%= dev %></span></a></li>
                     <% }) %>
                 </ul>
             </div>
@@ -505,7 +518,7 @@
                 <h2 id="sec-creators"><i class="fas fa-users"></i> Community Creators</h2>
                 <ul class="ai-tag-grid">
                     <% uploaders.forEach(uploader=> { %>
-                        <li data-searchable="<%= uploader.toLowerCase() %>"><a href="/user/<%= slugify(uploader).toLowerCase() %>"><i class="fas fa-user"></i> <%= uploader %></a></li>
+                        <li data-searchable="<%= uploader.toLowerCase() %>"><a href="/user/<%= slugify(uploader).toLowerCase() %>" title="<%= uploader %>"><i class="fas fa-user"></i> <span class="ai-tag-text"><%= uploader %></span></a></li>
                     <% }) %>
                 </ul>
             </div>

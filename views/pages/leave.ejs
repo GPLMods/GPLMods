@@ -181,6 +181,15 @@
         flex-shrink: 0;
     }
 
+    .leave-filename-pill {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
+    }
+
     .security-checklist {
         background: rgba(255, 180, 0, 0.05);
         border: 1px solid rgba(255, 180, 0, 0.2);
@@ -206,6 +215,8 @@
         color: #C0C0C0;
         font-size: 0.82rem;
         line-height: 1.6;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .countdown-indicator {
@@ -336,7 +347,7 @@
                     </div>
                     <div class="info-meta">
                         <div class="info-meta-label">File Requested</div>
-                        <div class="info-meta-value"><%= filename %></div>
+                        <div class="info-meta-value leave-filename-pill" title="<%= filename %>"><%= filename %></div>
                     </div>
                 </div>
             </div>
@@ -372,7 +383,7 @@
             <ul class="security-list">
                 <li>This external mirror is not hosted directly by GPL Mods.</li>
                 <li>Do not enter personal passwords or financial details on external landing pages.</li>
-                <li>Ensure the downloaded file name matches <strong><%= filename %></strong> before running or installing.</li>
+                <li>Ensure the downloaded file name matches <strong class="leave-filename-pill" style="max-width: 280px; vertical-align: middle;" title="<%= filename %>"><%= filename %></strong> before running or installing.</li>
             </ul>
         </div>
 
@@ -415,7 +426,11 @@
     (function() {
         var secondsLeft = 5;
         var timerEl = document.getElementById('countdownSecs');
-        var targetUrl = <%= JSON.stringify(targetUrl) %>;
+        var targetUrl = <%- JSON.stringify(targetUrl || '') %>;
+        if (!targetUrl) {
+            var proceedBtn = document.getElementById('proceedBtn');
+            if (proceedBtn) targetUrl = proceedBtn.getAttribute('href') || '/';
+        }
 
         window._leaveRedirectTimer = setInterval(function() {
             secondsLeft--;

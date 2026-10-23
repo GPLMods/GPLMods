@@ -561,6 +561,15 @@ async function broadcastPromotion(customAdText = null, customAdUrl = null) {
     // 3. BROADCAST TO GPLMODS CLUBS (User Request: "Also add this features to club")
     try {
         const clubs = await Club.find({ isDefault: true }).lean();
+        let botUser = null;
+        try {
+            if (global.getOrCreateClubBotUser) {
+                botUser = await global.getOrCreateClubBotUser();
+            } else {
+                botUser = await User.findOne({ username: 'Club Bot' });
+            }
+        } catch (e) {}
+
         for (const club of clubs) {
             const channel = await ClubChannel.findOne({ club: club._id, isDefault: true }).lean() ||
                             await ClubChannel.findOne({ club: club._id, name: 'general' }).lean();
@@ -568,13 +577,16 @@ async function broadcastPromotion(customAdText = null, customAdUrl = null) {
                 await ClubMessage.create({
                     club: club._id,
                     channel: channel._id,
-                    sender: club.creator,
+                    sender: botUser ? botUser._id : club.creator,
                     content: `📢 **Community Sponsor & Deals:** ${adText} [Visit Deal](${adUrl})`,
-                    isSystemMessage: true
+                    isSystemMessage: true,
+                    isBot: true,
+                    botName: 'Club Bot',
+                    botAvatar: '/images/gemini.png'
                 });
             }
         }
-        console.log(`[Promo Bot] Successfully posted sponsor broadcast to GPLMods Clubs.`);
+        console.log(`[Promo Bot] Successfully posted sponsor broadcast to GPLMods Clubs as Club Bot.`);
     } catch (clubErr) {
         console.warn(`[Promo Bot] Error posting promo to clubs:`, clubErr.message);
     }

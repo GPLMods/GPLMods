@@ -464,6 +464,32 @@ global.profanityFilter = profanityFilter;
 
 app.set('view engine', 'ejs');
 
+// --- HELPER: GET OR CREATE DEDICATED CLUB BOT ACCOUNT ---
+async function getOrCreateClubBotUser() {
+    try {
+        let botUser = await User.findOne({ username: 'Club Bot' });
+        if (!botUser) {
+            botUser = await User.findOne({ email: 'clubbot@gplmods.com' });
+        }
+        if (!botUser) {
+            botUser = await User.create({
+                username: 'Club Bot',
+                email: 'clubbot@gplmods.com',
+                role: 'admin',
+                avatar: '/images/gemini.png',
+                cardAvatarUrl: '/images/gemini.png',
+                signedAvatarUrl: '/images/gemini.png',
+                isBot: true,
+                badges: ['bot']
+            });
+        }
+        return botUser;
+    } catch (err) {
+        return await User.findOne({ username: 'Club Bot' }) || null;
+    }
+}
+global.getOrCreateClubBotUser = getOrCreateClubBotUser;
+
 // --- HELPER: AUTOMATED MOD FEEDS POSTING TO CLUBS (#new-uploads and #new-updates) ---
 async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
     try {
@@ -486,6 +512,7 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
         const targetChannelName = isUpdate ? 'new-updates' : 'new-uploads';
         const io = app.get('io');
         const resolvedIcon = await getSmartImageUrl(file.iconKey || file.iconUrl);
+        const botUser = await getOrCreateClubBotUser();
 
         for (const club of clubs) {
             // Check tracking preference if club is not default and not owned by uploader
@@ -507,7 +534,7 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
             const modMsg = await ClubMessage.create({
                 club: club._id,
                 channel: channel._id,
-                sender: uploaderId || club.creator,
+                sender: botUser ? botUser._id : (uploaderId || club.creator),
                 content: contentText,
                 modUpdate: {
                     modId: file._id,
@@ -519,7 +546,10 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
                     changelog: whatsNew || (isUpdate ? 'General improvements.' : 'Initial release.'),
                     isNewUpload: !isUpdate
                 },
-                isSystemMessage: true
+                isSystemMessage: true,
+                isBot: true,
+                botName: 'Club Bot',
+                botAvatar: '/images/gemini.png'
             });
 
             if (io) {
@@ -530,10 +560,16 @@ async function notifyClubModFeeds(file, isUpdate = false, whatsNew = '') {
                     content: contentText,
                     modUpdate: modMsg.modUpdate,
                     createdAt: modMsg.createdAt,
+                    isBot: true,
+                    botName: 'Club Bot',
+                    botAvatar: '/images/gemini.png',
                     sender: {
-                        username: 'GPL Mods Feeds',
-                        signedAvatarUrl: '/images/team-logo.png',
+                        _id: botUser ? botUser._id : null,
+                        username: 'Club Bot',
+                        signedAvatarUrl: '/images/gemini.png',
+                        avatar: '/images/gemini.png',
                         role: 'admin',
+                        isBot: true,
                         badges: []
                     }
                 });
@@ -13544,8 +13580,18 @@ async function checkAndUpdateFileVirusTotal(fileId) {
                 if (type === 'file') {
                     trueHash = vtResponse.data.meta.file_info.sha256;
                 } else {
-                    const parts = vtId.split('-');
-                    if (parts.length >= 2) trueHash = parts[1];
+                    trueHash = vtResponse.data?.meta?.url_info?.id
+                        || vtResponse.data?.data?.relationships?.item?.data?.id;
+                    if (!trueHash) {
+                        if (vtId.startsWith('u-') && vtId.lastIndexOf('-') > 2) {
+                            trueHash = vtId.slice(2, vtId.lastIndexOf('-'));
+                        } else if (file.externalDownloadUrl || file.directDownloadUrl) {
+                            const rawUrl = file.externalDownloadUrl || file.directDownloadUrl;
+                            trueHash = Buffer.from(rawUrl.trim()).toString('base64').replace(/=+$/, '');
+                        } else {
+                            trueHash = vtId;
+                        }
+                    }
                 }
             }
         }
@@ -13637,8 +13683,18 @@ async function checkAndUpdatePartVirusTotal(fileId, partId) {
                 if (type === 'file') {
                     trueHash = vtResponse.data.meta.file_info.sha256;
                 } else {
-                    const parts = vtId.split('-');
-                    if (parts.length >= 2) trueHash = parts[1];
+                    trueHash = vtResponse.data?.meta?.url_info?.id
+                        || vtResponse.data?.data?.relationships?.item?.data?.id;
+                    if (!trueHash) {
+                        if (vtId.startsWith('u-') && vtId.lastIndexOf('-') > 2) {
+                            trueHash = vtId.slice(2, vtId.lastIndexOf('-'));
+                        } else if (part.directDownloadUrl || part.downloadUrl) {
+                            const rawUrl = part.directDownloadUrl || part.downloadUrl;
+                            trueHash = Buffer.from(rawUrl.trim()).toString('base64').replace(/=+$/, '');
+                        } else {
+                            trueHash = vtId;
+                        }
+                    }
                 }
             }
         }
@@ -13693,6 +13749,32 @@ function pollVirusTotalInBackground(fileId, maxAttempts = 12, intervalMs = 15000
 global.checkAndUpdateFileVirusTotal = checkAndUpdateFileVirusTotal;
 global.checkAndUpdatePartVirusTotal = checkAndUpdatePartVirusTotal;
 global.pollVirusTotalInBackground = pollVirusTotalInBackground;
+
+// Self-heal corrupted or incomplete virusTotalId on URL scans for completed scans
+(async () => {
+    try {
+        const urlFiles = await File.find({
+            $or: [
+                { virusTotalId: { $regex: /^u-/ } },
+                { virusTotalAnalysisId: { $regex: /^u-/ }, virusTotalScanDate: { $ne: null } }
+            ]
+        }).select('_id virusTotalId virusTotalAnalysisId externalDownloadUrl directDownloadUrl fileKey fileUrl');
+
+        for (const uf of urlFiles) {
+            let fixedId = null;
+            const rawId = uf.virusTotalId || uf.virusTotalAnalysisId;
+            if (rawId && rawId.startsWith('u-') && rawId.lastIndexOf('-') > 2) {
+                fixedId = rawId.slice(2, rawId.lastIndexOf('-'));
+            } else if (uf.externalDownloadUrl || uf.directDownloadUrl || (uf.fileKey === 'external-link' && uf.fileUrl)) {
+                const u = uf.externalDownloadUrl || uf.directDownloadUrl || uf.fileUrl;
+                fixedId = Buffer.from(u.trim()).toString('base64').replace(/=+$/, '');
+            }
+            if (fixedId) {
+                await File.updateOne({ _id: uf._id }, { $set: { virusTotalId: fixedId } });
+            }
+        }
+    } catch (e) {}
+})();
 
 // VT Refresh Route (Single / Main File)
 app.post('/api/refresh-vt-scan/:fileId', async (req, res) => {
@@ -16936,6 +17018,11 @@ app.get(['/docs', '/docs/:slug', '/docs/category/:categorySlug'], async (req, re
         allPages.forEach(p => {
             const wordCount = (p.content || '').replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
             p.readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 180));
+            if (p.customReadingTime && p.customReadingTime.trim()) {
+                p.readingTimeDisplay = p.customReadingTime.trim();
+            } else {
+                p.readingTimeDisplay = `${p.readingTimeMinutes} min read`;
+            }
             p.plainSummary = (p.content || '').replace(/<[^>]+>/g, ' ').slice(0, 140).trim() + '...';
         });
 

@@ -453,7 +453,7 @@
                             <a href="/docs/<%= p.slug %>" class="category-article-card">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                                     <span class="reading-badge">
-                                        <i class="fas fa-clock"></i> <%= p.readingTimeMinutes || 2 %> min read
+                                        <i class="fas fa-clock"></i> <%= p.readingTimeDisplay || (p.customReadingTime || ((p.readingTimeMinutes || 2) + ' min read')) %>
                                     </span>
                                     <span style="font-size: 0.75em; color: #777;">
                                         <%= new Date(p.updatedAt).toLocaleDateString() %>
@@ -505,7 +505,7 @@
                         </span>
                     <% } %>
                     <span class="reading-badge">
-                        <i class="fas fa-clock"></i> <%= currentPage.readingTimeMinutes || 2 %> min read
+                        <i class="fas fa-clock"></i> <%= currentPage.readingTimeDisplay || (currentPage.customReadingTime || ((currentPage.readingTimeMinutes || 2) + ' min read')) %>
                     </span>
                 </div>
 

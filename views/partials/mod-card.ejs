@@ -30,7 +30,7 @@
                 <div class="mod-type-tag <%= isExtraLong ? 'extra-long-version' : (isLongVer ? 'long-version' : '') %>" 
                      data-ver-len="<%= vStr.length %>" 
                      title="<%= file.version %>" 
-                     style="border-radius: 12px !important;"><%= file.version %></div>
+                     style="border-radius: 12px !important;"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: block;"><%= file.version %></span></div>
             <% } %>
         </div>
         
@@ -50,12 +50,12 @@
                     <%= typeof truncateText !== 'undefined' ? truncateText(file.name, 22) : file.name %>
                 </a>
             </h3>
-            <p style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                <span><%= file.developer %></span>
+            <p style="display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0;">
+                <span class="mod-developer-name" title="<%= file.developer %>"><%= file.developer %></span>
                 <% if (file.isVariant) { %>
-                    <span style="color: #c084fc; font-size: 0.78em; font-weight: 600; white-space: nowrap;"><i class="fas fa-code-branch"></i> @<%= file.uploader %></span>
+                    <span style="color: #c084fc; font-size: 0.78em; font-weight: 600; white-space: nowrap; flex-shrink: 0;" title="Variant by @<%= file.uploader %>"><i class="fas fa-code-branch"></i> @<%= file.uploader %></span>
                 <% } else if (isModMaster) { %>
-                    <span style="color: var(--gold); font-size: 0.78em; font-weight: 600; white-space: nowrap;" title="Main Mod with <%= file.variants.length %> variant(s)"><i class="fas fa-crown"></i> Master</span>
+                    <span style="color: var(--gold); font-size: 0.78em; font-weight: 600; white-space: nowrap; flex-shrink: 0;" title="Main Mod with <%= file.variants.length %> variant(s)"><i class="fas fa-crown"></i> Master</span>
                 <% } %>
             </p>
             <div class="rating" style="margin-bottom: 10px;">
