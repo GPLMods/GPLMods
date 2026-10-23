@@ -326,6 +326,32 @@
                                 </div>
                                 <% }) %>
                     </div>
+
+                <% const hasPartMirrors = file.downloadParts && file.downloadParts.some(p => p.mirror1Url || p.mirror2Url); %>
+                <% if (hasPartMirrors && typeof showAds !== 'undefined' && showAds && !isUploaderDistributor) { %>
+                    <!-- Linkvertise API for Alternative Parts Mirrors (Free Users Only) -->
+                    <script src="https://publisher.linkvertise.com/cdn/linkvertise.js"></script>
+                    <script>
+                        (function() {
+                            var pubId = <%= (typeof linkvertiseId !== 'undefined' && linkvertiseId) ? linkvertiseId : 5373913 %>;
+                            function initLinkvertise() {
+                                if (typeof linkvertise === 'function') {
+                                    try {
+                                        linkvertise(pubId, { whitelist: [], blacklist: ["https://gplmods.webredirect.org/"] });
+                                    } catch (e) {
+                                        console.warn("[Linkvertise API] Notice:", e);
+                                    }
+                                }
+                            }
+                            if (typeof linkvertise === 'function') {
+                                initLinkvertise();
+                            } else {
+                                window.addEventListener('load', initLinkvertise);
+                            }
+                        })();
+                    </script>
+                <% } %>
+
                 </div>
 
                 <!-- ======== DYNAMIC SECURITY SCANS ======== -->

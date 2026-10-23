@@ -133,32 +133,43 @@
                 flex-shrink: 0;
             }
             .game-viewport-header-left a.arc-btn {
-                padding: 6px 12px !important;
+                padding: 6px 10px !important;
                 flex-shrink: 0;
                 font-weight: 700;
+                font-size: 0.82rem;
+                height: 32px;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
             }
             .game-viewport-header-actions {
                 display: flex;
                 align-items: center;
-                gap: 5px;
+                gap: 4px;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
-                flex: 1;
-                justify-content: flex-end;
-                padding-left: 2px;
+                margin-left: auto;
+                justify-content: flex-start;
+                padding-left: 4px;
+                padding-right: 2px;
+                max-width: calc(100% - 68px);
             }
             .game-viewport-header-actions::-webkit-scrollbar {
                 display: none;
             }
             .game-viewport-header-actions .arc-btn {
                 flex-shrink: 0;
-                padding: 6px;
-                min-width: 34px;
-                height: 34px;
+                padding: 0;
+                min-width: 32px;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
+                font-size: 0.88rem;
+                box-sizing: border-box;
             }
             .mobile-game-info-subbar {
                 display: flex;
